@@ -777,10 +777,10 @@ const HeroBanners = () => {
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                   <div>
                     <h3 className="text-base font-bold text-slate-800 line-clamp-1">
-                      {slide.title || "Untitled Slide"}
+                      Slide #{slide.order}
                     </h3>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                      {slide.subtitle || "No subtitle provided."}
+                    <p className="text-xs text-slate-500 mt-1 truncate font-mono">
+                      {slide.image ? slide.image.split("/").pop() : "No image"}
                     </p>
                   </div>
 
@@ -1093,25 +1093,16 @@ const HeroBanners = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">Title</label>
-                  <input
-                    type="text"
-                    value={slideForm.title}
-                    onChange={(e) => setSlideForm({ ...slideForm, title: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0891b2]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">Subtitle</label>
-                  <input
-                    type="text"
-                    value={slideForm.subtitle}
-                    onChange={(e) => setSlideForm({ ...slideForm, subtitle: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0891b2]"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Slide Order (क्रम)</label>
+                <input
+                  type="number"
+                  value={slideForm.order}
+                  onChange={(e) => setSlideForm({ ...slideForm, order: Number(e.target.value) || 0 })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0891b2]"
+                  placeholder="e.g. 1"
+                  required
+                />
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">

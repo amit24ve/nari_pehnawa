@@ -98,43 +98,7 @@ const HeroSection = () => {
               loading={i === 0 ? "eager" : "lazy"}
             />
 
-            {/* Gradient overlay */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.1) 100%)",
-              }}
-            />
 
-            {/* Text overlay — only on active slide */}
-            {i === current && (slide.title || slide.subtitle) && (
-              <div className="absolute inset-0 flex flex-col items-center justify-end pb-16 md:pb-20 px-6 text-center z-10">
-                {slide.title && (
-                  <h2
-                    className="text-white font-bold drop-shadow-lg mb-2 leading-tight inline-flex items-center justify-center gap-2 flex-wrap text-center"
-                    style={{ fontSize: "clamp(1.4rem, 4vw, 3rem)" }}
-                  >
-                    <NariHeadingDecoration className="w-8 h-8 md:w-12 md:h-12" />
-                    <span>{slide.title}</span>
-                    <NariHeadingDecoration flip={true} className="w-8 h-8 md:w-12 md:h-12" />
-                  </h2>
-                )}
-                {slide.subtitle && (
-                  <p className="text-white/80 text-sm md:text-base max-w-xl mb-4 font-light">
-                    {slide.subtitle}
-                  </p>
-                )}
-                {slide.cta_text && slide.cta_link && (
-                  <Link
-                    to={slide.cta_link}
-                    className="inline-block bg-white text-[#8B0000] text-xs md:text-sm font-bold px-6 py-2.5 rounded-full shadow-lg tracking-wide hover:bg-[#f5f5f5] transition-colors"
-                  >
-                    {slide.cta_text}
-                  </Link>
-                )}
-              </div>
-            )}
           </div>
         ))}
 
