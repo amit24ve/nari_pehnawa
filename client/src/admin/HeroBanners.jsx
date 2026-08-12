@@ -52,7 +52,7 @@ const HeroBanners = () => {
     is_active: true,
   };
   const [slideForm, setSlideForm] = useState(initialSlideState);
-  const [slideImgTab, setSlideImgTab] = useState("url");
+  const [slideImgTab, setSlideImgTab] = useState("upload");
   const [slideUploading, setSlideUploading] = useState(false);
   const slideFileRef = useRef(null);
 
@@ -121,7 +121,7 @@ const HeroBanners = () => {
       order: slide.order || 0,
       is_active: slide.is_active !== false,
     });
-    setSlideImgTab("url");
+    setSlideImgTab("upload");
     setShowSlideModal(true);
   };
 
@@ -192,7 +192,7 @@ const HeroBanners = () => {
   const [editingCategory, setEditingCategory] = useState(null);
   const [catSubmitting, setCatSubmitting] = useState(false);
   const [catForm, setCatForm] = useState({ tagline: "", image: "" });
-  const [catImgTab, setCatImgTab] = useState("url");
+  const [catImgTab, setCatImgTab] = useState("upload");
   const [catUploading, setCatUploading] = useState(false);
   const catFileRef = useRef(null);
 
@@ -217,7 +217,7 @@ const HeroBanners = () => {
       tagline: cat.tagline || "",
       image: cat.image || "",
     });
-    setCatImgTab("url");
+    setCatImgTab("upload");
     setShowCatModal(true);
   };
 
@@ -293,6 +293,66 @@ const HeroBanners = () => {
     is_active: true
   };
   const [reelForm, setReelForm] = useState(initialReelState);
+  const [reelVideoTab, setReelVideoTab] = useState("upload");
+  const [reelThumbTab, setReelThumbTab] = useState("upload");
+  const [reelVideoUploading, setReelVideoUploading] = useState(false);
+  const [reelThumbUploading, setReelThumbUploading] = useState(false);
+  const reelVideoRef = useRef(null);
+  const reelThumbRef = useRef(null);
+
+  const handleReelVideoUpload = async (file) => {
+    if (!file) return;
+    setReelVideoUploading(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${API_BASE}/upload/image`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: fd,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Upload failed");
+      }
+      const data = await res.json();
+      const fullUrl = `${API_BASE}${data.url}`;
+      setReelForm((prev) => ({ ...prev, video_url: fullUrl }));
+      setSuccess("Reel video uploaded!");
+    } catch (e) {
+      setError(`Video upload: ${e.message}`);
+    } finally {
+      setReelVideoUploading(false);
+    }
+  };
+
+  const handleReelThumbUpload = async (file) => {
+    if (!file) return;
+    setReelThumbUploading(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${API_BASE}/upload/image`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: fd,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Upload failed");
+      }
+      const data = await res.json();
+      const fullUrl = `${API_BASE}${data.url}`;
+      setReelForm((prev) => ({ ...prev, thumbnail: fullUrl }));
+      setSuccess("Reel thumbnail uploaded!");
+    } catch (e) {
+      setError(`Thumbnail upload: ${e.message}`);
+    } finally {
+      setReelThumbUploading(false);
+    }
+  };
 
   const fetchReels = async () => {
     setReelsLoading(true);
@@ -358,6 +418,8 @@ const HeroBanners = () => {
       order: reel.order || 0,
       is_active: reel.is_active !== false
     });
+    setReelVideoTab("upload");
+    setReelThumbTab("upload");
     setShowReelModal(true);
   };
 
@@ -409,6 +471,36 @@ const HeroBanners = () => {
     is_active: true
   };
   const [celebForm, setCelebForm] = useState(initialCelebState);
+  const [celebImgTab, setCelebImgTab] = useState("upload");
+  const [celebUploading, setCelebUploading] = useState(false);
+  const celebFileRef = useRef(null);
+
+  const handleCelebImageUpload = async (file) => {
+    if (!file) return;
+    setCelebUploading(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${API_BASE}/upload/image`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: fd,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Upload failed");
+      }
+      const data = await res.json();
+      const fullUrl = `${API_BASE}${data.url}`;
+      setCelebForm((prev) => ({ ...prev, image: fullUrl }));
+      setSuccess("Celeb outfit image uploaded!");
+    } catch (e) {
+      setError(`Image upload: ${e.message}`);
+    } finally {
+      setCelebUploading(false);
+    }
+  };
 
   const fetchCelebLooks = async () => {
     setCelebLoading(true);
@@ -471,6 +563,7 @@ const HeroBanners = () => {
       order: look.order || 0,
       is_active: look.is_active !== false
     });
+    setCelebImgTab("upload");
     setShowCelebModal(true);
   };
 
@@ -546,7 +639,7 @@ const HeroBanners = () => {
                 ...initialSlideState,
                 order: slides.length + 1,
               });
-              setSlideImgTab("url");
+              setSlideImgTab("upload");
               setShowSlideModal(true);
             }}
             className="flex items-center gap-2 px-4 py-2.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-sm font-semibold transition-all shadow-md shadow-[#0891b2]/20 self-start sm:self-auto"
@@ -560,6 +653,8 @@ const HeroBanners = () => {
             onClick={() => {
               setEditingReel(null);
               setReelForm({ ...initialReelState, order: reels.length + 1 });
+              setReelVideoTab("upload");
+              setReelThumbTab("upload");
               setShowReelModal(true);
             }}
             className="flex items-center gap-2 px-4 py-2.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-sm font-semibold transition-all shadow-md shadow-[#0891b2]/20 self-start sm:self-auto"
@@ -573,6 +668,7 @@ const HeroBanners = () => {
             onClick={() => {
               setEditingCeleb(null);
               setCelebForm({ ...initialCelebState, order: celebLooks.length + 1 });
+              setCelebImgTab("upload");
               setShowCelebModal(true);
             }}
             className="flex items-center gap-2 px-4 py-2.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-sm font-semibold transition-all shadow-md shadow-[#0891b2]/20 self-start sm:self-auto"
@@ -930,14 +1026,71 @@ const HeroBanners = () => {
 
             <form onSubmit={handleSaveSlide} className="space-y-4 text-left">
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">Slide Image URL</label>
-                <input
-                  type="text"
-                  value={slideForm.image}
-                  onChange={(e) => setSlideForm({ ...slideForm, image: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-[#0891b2]"
-                  placeholder="Enter full image URL"
-                />
+                <label className="block text-xs font-bold text-slate-600 mb-2">Slide Image</label>
+                <div className="flex border-b border-slate-200 mb-3 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setSlideImgTab("upload")}
+                    className={`pb-2 text-xs font-bold border-b-2 transition-all ${
+                      slideImgTab === "upload"
+                        ? "border-[#0891b2] text-[#0891b2]"
+                        : "border-transparent text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    Upload File
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSlideImgTab("url")}
+                    className={`pb-2 text-xs font-bold border-b-2 transition-all ${
+                      slideImgTab === "url"
+                        ? "border-[#0891b2] text-[#0891b2]"
+                        : "border-transparent text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    Image URL
+                  </button>
+                </div>
+
+                {slideImgTab === "upload" ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="file"
+                        ref={slideFileRef}
+                        onChange={(e) => handleSlideImageUpload(e.target.files[0])}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => slideFileRef.current?.click()}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition"
+                      >
+                        <Upload className="w-4 h-4" />
+                        {slideUploading ? "Uploading..." : "Choose Image"}
+                      </button>
+                      {slideForm.image && (
+                        <span className="text-xs text-slate-500 truncate max-w-[250px]">
+                          {slideForm.image.split("/").pop()}
+                        </span>
+                      )}
+                    </div>
+                    {slideForm.image && (
+                      <div className="mt-2 relative w-full h-24 bg-slate-50 rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center">
+                        <img src={slideForm.image} alt="Preview" className="h-full object-contain" />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={slideForm.image}
+                    onChange={(e) => setSlideForm({ ...slideForm, image: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-[#0891b2]"
+                    placeholder="Enter full image URL"
+                  />
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -1002,26 +1155,135 @@ const HeroBanners = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">Video MP4 URL</label>
-                <input
-                  type="text"
-                  value={reelForm.video_url}
-                  onChange={(e) => setReelForm({ ...reelForm, video_url: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0891b2]"
-                  placeholder="e.g. https://.../video.mp4"
-                  required
-                />
+                <label className="block text-xs font-bold text-slate-600 mb-2">Video MP4</label>
+                <div className="flex border-b border-slate-200 mb-3 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setReelVideoTab("upload")}
+                    className={`pb-2 text-xs font-bold border-b-2 transition-all ${
+                      reelVideoTab === "upload"
+                        ? "border-[#0891b2] text-[#0891b2]"
+                        : "border-transparent text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    Upload Video
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReelVideoTab("url")}
+                    className={`pb-2 text-xs font-bold border-b-2 transition-all ${
+                      reelVideoTab === "url"
+                        ? "border-[#0891b2] text-[#0891b2]"
+                        : "border-transparent text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    Video URL
+                  </button>
+                </div>
+
+                {reelVideoTab === "upload" ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="file"
+                        ref={reelVideoRef}
+                        onChange={(e) => handleReelVideoUpload(e.target.files[0])}
+                        accept="video/*"
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => reelVideoRef.current?.click()}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition"
+                      >
+                        <Upload className="w-4 h-4" />
+                        {reelVideoUploading ? "Uploading..." : "Choose Video"}
+                      </button>
+                      {reelForm.video_url && (
+                        <span className="text-xs text-slate-500 truncate max-w-[250px]">
+                          {reelForm.video_url.split("/").pop()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={reelForm.video_url}
+                    onChange={(e) => setReelForm({ ...reelForm, video_url: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0891b2]"
+                    placeholder="e.g. https://.../video.mp4"
+                    required
+                  />
+                )}
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">Thumbnail Cover Image URL</label>
-                <input
-                  type="text"
-                  value={reelForm.thumbnail}
-                  onChange={(e) => setReelForm({ ...reelForm, thumbnail: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0891b2]"
-                  placeholder="e.g. https://.../image.jpg"
-                />
+                <label className="block text-xs font-bold text-slate-600 mb-2">Thumbnail Cover Image</label>
+                <div className="flex border-b border-slate-200 mb-3 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setReelThumbTab("upload")}
+                    className={`pb-2 text-xs font-bold border-b-2 transition-all ${
+                      reelThumbTab === "upload"
+                        ? "border-[#0891b2] text-[#0891b2]"
+                        : "border-transparent text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    Upload Thumbnail
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReelThumbTab("url")}
+                    className={`pb-2 text-xs font-bold border-b-2 transition-all ${
+                      reelThumbTab === "url"
+                        ? "border-[#0891b2] text-[#0891b2]"
+                        : "border-transparent text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    Thumbnail URL
+                  </button>
+                </div>
+
+                {reelThumbTab === "upload" ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="file"
+                        ref={reelThumbRef}
+                        onChange={(e) => handleReelThumbUpload(e.target.files[0])}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => reelThumbRef.current?.click()}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition"
+                      >
+                        <Upload className="w-4 h-4" />
+                        {reelThumbUploading ? "Uploading..." : "Choose Thumbnail"}
+                      </button>
+                      {reelForm.thumbnail && (
+                        <span className="text-xs text-slate-500 truncate max-w-[250px]">
+                          {reelForm.thumbnail.split("/").pop()}
+                        </span>
+                      )}
+                    </div>
+                    {reelForm.thumbnail && (
+                      <div className="mt-2 relative w-full h-24 bg-slate-50 rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center">
+                        <img src={reelForm.thumbnail} alt="Preview" className="h-full object-contain" />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={reelForm.thumbnail}
+                    onChange={(e) => setReelForm({ ...reelForm, thumbnail: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0891b2]"
+                    placeholder="e.g. https://.../image.jpg"
+                  />
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -1111,15 +1373,72 @@ const HeroBanners = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">Outfit Image URL</label>
-                <input
-                  type="text"
-                  value={celebForm.image}
-                  onChange={(e) => setCelebForm({ ...celebForm, image: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0891b2]"
-                  placeholder="e.g. https://.../image.jpg"
-                  required
-                />
+                <label className="block text-xs font-bold text-slate-600 mb-2">Outfit Image</label>
+                <div className="flex border-b border-slate-200 mb-3 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setCelebImgTab("upload")}
+                    className={`pb-2 text-xs font-bold border-b-2 transition-all ${
+                      celebImgTab === "upload"
+                        ? "border-[#0891b2] text-[#0891b2]"
+                        : "border-transparent text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    Upload File
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCelebImgTab("url")}
+                    className={`pb-2 text-xs font-bold border-b-2 transition-all ${
+                      celebImgTab === "url"
+                        ? "border-[#0891b2] text-[#0891b2]"
+                        : "border-transparent text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    Image URL
+                  </button>
+                </div>
+
+                {celebImgTab === "upload" ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="file"
+                        ref={celebFileRef}
+                        onChange={(e) => handleCelebImageUpload(e.target.files[0])}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => celebFileRef.current?.click()}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition"
+                      >
+                        <Upload className="w-4 h-4" />
+                        {celebUploading ? "Uploading..." : "Choose Image"}
+                      </button>
+                      {celebForm.image && (
+                        <span className="text-xs text-slate-500 truncate max-w-[250px]">
+                          {celebForm.image.split("/").pop()}
+                        </span>
+                      )}
+                    </div>
+                    {celebForm.image && (
+                      <div className="mt-2 relative w-full h-24 bg-slate-50 rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center">
+                        <img src={celebForm.image} alt="Preview" className="h-full object-contain" />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={celebForm.image}
+                    onChange={(e) => setCelebForm({ ...celebForm, image: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0891b2]"
+                    placeholder="e.g. https://.../image.jpg"
+                    required
+                  />
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -1195,13 +1514,70 @@ const HeroBanners = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">Banner Image URL</label>
-                <input
-                  type="text"
-                  value={catForm.image}
-                  onChange={(e) => setCatForm({ ...catForm, image: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0891b2]"
-                />
+                <label className="block text-xs font-bold text-slate-600 mb-2">Banner Image</label>
+                <div className="flex border-b border-slate-200 mb-3 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setCatImgTab("upload")}
+                    className={`pb-2 text-xs font-bold border-b-2 transition-all ${
+                      catImgTab === "upload"
+                        ? "border-[#0891b2] text-[#0891b2]"
+                        : "border-transparent text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    Upload File
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCatImgTab("url")}
+                    className={`pb-2 text-xs font-bold border-b-2 transition-all ${
+                      catImgTab === "url"
+                        ? "border-[#0891b2] text-[#0891b2]"
+                        : "border-transparent text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    Image URL
+                  </button>
+                </div>
+
+                {catImgTab === "upload" ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="file"
+                        ref={catFileRef}
+                        onChange={(e) => handleCatImageUpload(e.target.files[0])}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => catFileRef.current?.click()}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition"
+                      >
+                        <Upload className="w-4 h-4" />
+                        {catUploading ? "Uploading..." : "Choose Image"}
+                      </button>
+                      {catForm.image && (
+                        <span className="text-xs text-slate-500 truncate max-w-[250px]">
+                          {catForm.image.split("/").pop()}
+                        </span>
+                      )}
+                    </div>
+                    {catForm.image && (
+                      <div className="mt-2 relative w-full h-24 bg-slate-50 rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center">
+                        <img src={catForm.image} alt="Preview" className="h-full object-contain" />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={catForm.image}
+                    onChange={(e) => setCatForm({ ...catForm, image: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0891b2]"
+                  />
+                )}
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
