@@ -79,7 +79,7 @@ const HeroSection = () => {
   }, [next]);
 
   return (
-    <section className="relative overflow-hidden bg-white select-none mx-2.5 rounded-2xl shadow-sm">
+    <section className="relative overflow-hidden bg-white select-none mx-2.5 shadow-sm">
       <div
         className="relative w-full"
         style={{ height: "clamp(280px, calc(40.14vw - 8px), 580px)" }}
