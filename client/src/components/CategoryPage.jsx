@@ -17,8 +17,16 @@ import { useWishlist } from "../context/WishlistProvider";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
+// Organic Pebble fluid curve shapes matching homepage cards
+const pebbleShapes = [
+  "rounded-[45%_55%_65%_35%/55%_45%_55%_45%]",
+  "rounded-[55%_45%_35%_65%/45%_65%_35%_55%]",
+  "rounded-[65%_35%_55%_45%/50%_40%_60%_50%]",
+  "rounded-[50%_60%_40%_60%/60%_50%_50%_40%]",
+];
+
 // ── Inline Product Card ────────────────────────────────────────
-const CatProductCard = ({ product, onWishlistToggle, isWishlisted }) => {
+const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0 }) => {
   const [hearted, setHearted] = useState(isWishlisted || false);
   const [selectedSize, setSelectedSize] = useState(null);
   const navigate = useNavigate();
@@ -28,12 +36,16 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted }) => {
   const discountBg = discount >= 50 ? "bg-red-600" : "bg-orange-500";
   const sizes = product.sizes?.length > 0 ? product.sizes : [];
 
+  // Pick organic pebble shape based on index
+  const shapeIndex = typeof index === "number" ? index % pebbleShapes.length : 0;
+  const pebbleClass = pebbleShapes[shapeIndex];
+
   return (
     <div
       onClick={() => navigate(`/product/${product.id}`)}
-      className="bg-white rounded-xl overflow-hidden group cursor-pointer hover:shadow-[0_8px_32px_rgba(139,0,0,0.15)] transition-all duration-300 hover:-translate-y-0.5"
+      className="bg-white p-2 rounded-2xl overflow-hidden group cursor-pointer hover:shadow-2xl active:shadow-2xl transition-all duration-500 ease-in-out hover:-translate-y-1.5 active:-translate-y-1 flex flex-col justify-between"
     >
-      <div className="relative overflow-hidden bg-gray-100">
+      <div className={`relative overflow-hidden bg-gradient-to-br from-pink-100/50 to-amber-50/50 ${pebbleClass} border-[#8B0000]/15 border-2 group-hover:rounded-2xl group-active:rounded-2xl shadow-md group-hover:border-[#8B0000] group-active:border-[#8B0000] transition-all duration-500 ease-in-out`}>
         {discount > 0 && (
           <span
             className={`absolute top-2.5 left-2.5 z-20 ${discountBg} text-white text-[10px] font-bold px-2 py-0.5 rounded`}
@@ -71,7 +83,7 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted }) => {
             e.target.src =
               "https://images.pexels.com/photos/5704849/pexels-photo-5704849.jpeg?auto=compress&cs=tinysrgb&w=600";
           }}
-          className="w-full h-[260px] sm:h-[280px] object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-[260px] sm:h-[280px] object-cover group-hover:scale-105 transition-transform duration-700"
         />
 
         {/* Size overlay on hover — only if product has sizes */}
@@ -101,11 +113,11 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted }) => {
         )}
       </div>
 
-      <div className="p-3">
-        <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-snug mb-1.5">
+      <div className="p-3 text-center z-10">
+        <h3 className="text-xs sm:text-sm font-serif font-bold text-gray-900 line-clamp-1 leading-snug mb-1.5">
           {product.name}
-        </p>
-        <div className="flex items-center gap-1 mb-2">
+        </h3>
+        <div className="flex items-center justify-center gap-1 mb-2">
           <div className="flex items-center gap-0.5 bg-emerald-700 rounded px-1.5 py-0.5">
             <span className="text-[10px] font-bold text-white">
               {(product.rating || 4.0).toFixed(1)}
@@ -116,18 +128,18 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted }) => {
             ({(product.review_count || 0).toLocaleString("en-IN")})
           </span>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-base font-bold text-gray-900">
-            Rs.{(product.price || 0).toLocaleString("en-IN")}
+        <div className="flex items-center justify-center gap-2 flex-wrap">
+          <span className="text-sm sm:text-base font-bold text-gray-900 font-sans">
+            ₹{(product.price || 0).toLocaleString("en-IN")}
           </span>
           {product.original_price && product.original_price > product.price && (
-            <span className="text-xs text-gray-500 line-through">
-              Rs.{product.original_price.toLocaleString("en-IN")}
+            <span className="text-xs text-gray-500 line-through font-sans">
+              ₹{product.original_price.toLocaleString("en-IN")}
             </span>
           )}
           {discount > 0 && (
-            <span className="text-[11px] font-semibold text-orange-400">
-              {discount}% off
+            <span className="text-[10px] font-bold text-[#8B0000]">
+              ({discount}% OFF)
             </span>
           )}
         </div>
@@ -775,10 +787,11 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
-                {displayProducts.map((product) => (
+                {displayProducts.map((product, idx) => (
                   <CatProductCard
                     key={product.id}
                     product={product}
+                    index={idx}
                     onWishlistToggle={toggleWishlist}
                     isWishlisted={isInWishlist(product.id)}
                   />

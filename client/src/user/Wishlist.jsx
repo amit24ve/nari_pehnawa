@@ -14,6 +14,14 @@ import { useCart } from "../context/CartProvider";
 
 const SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
+// Organic Pebble fluid curve shapes matching homepage cards
+const pebbleShapes = [
+  "rounded-[45%_55%_65%_35%/55%_45%_55%_45%]",
+  "rounded-[55%_45%_35%_65%/45%_65%_35%_55%]",
+  "rounded-[65%_35%_55%_45%/50%_40%_60%_50%]",
+  "rounded-[50%_60%_40%_60%/60%_50%_50%_40%]",
+];
+
 const Wishlist = () => {
   const { wishlist, removeFromWishlist, clearWishlist } = useWishlist();
   const { addToCart, loading } = useCart();
@@ -95,18 +103,22 @@ const Wishlist = () => {
 
       {/* Product Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {wishlist.map((item) => (
-          <div
-            key={item.id}
-            className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group"
-          >
-            {/* Image */}
-            <div className="relative h-52 sm:h-64 bg-gray-50 overflow-hidden">
-              <img
-                src={item.image || "/gob-kurta-set-1.png"}
-                alt={item.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
+        {wishlist.map((item, idx) => {
+          const shapeIndex = idx % pebbleShapes.length;
+          const pebbleClass = pebbleShapes[shapeIndex];
+          return (
+            <div
+              key={item.id}
+              className="bg-white p-2 rounded-2xl border border-gray-100 shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden group cursor-pointer flex flex-col justify-between"
+              onClick={() => navigate(`/product/${item.id}`)}
+            >
+              {/* Image */}
+              <div className={`relative h-52 sm:h-64 bg-gradient-to-br from-pink-100/50 to-amber-50/50 ${pebbleClass} border-[#8B0000]/15 border-2 group-hover:rounded-2xl group-active:rounded-2xl shadow-md group-hover:border-[#8B0000] group-active:border-[#8B0000] transition-all duration-500 ease-in-out overflow-hidden`}>
+                <img
+                  src={item.image || "/gob-kurta-set-1.png"}
+                  alt={item.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
               {/* Remove button */}
               <button
                 onClick={() => removeFromWishlist(item.id)}
@@ -120,6 +132,7 @@ const Wishlist = () => {
                 </div>
               )}
               {/* Added to cart success indicator */}
+              {/* Added to cart success indicator */}
               {addedItemId === item.id && (
                 <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
                   <div className="bg-white rounded-full p-3 shadow-lg">
@@ -130,14 +143,13 @@ const Wishlist = () => {
             </div>
 
             {/* Info */}
-            <div className="p-4">
-              <p className="text-xs text-gray-400 mb-1">{item.brand}</p>
-              <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 mb-2">
+            <div className="p-4 text-center z-10" onClick={(e) => e.stopPropagation()}>
+              <h3 className="font-serif font-bold text-gray-800 text-sm line-clamp-1 mb-2">
                 {item.name}
               </h3>
 
               {/* Stars */}
-              <div className="flex items-center gap-1 mb-3">
+              <div className="flex items-center justify-center gap-1 mb-3">
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
@@ -148,7 +160,7 @@ const Wishlist = () => {
               </div>
 
               {/* Price */}
-              <div className="flex items-baseline gap-2 mb-4">
+              <div className="flex items-baseline justify-center gap-2 mb-4">
                 <span className="text-lg font-bold text-gray-900">
                   ₹{item.price?.toLocaleString("en-IN")}
                 </span>
@@ -167,7 +179,10 @@ const Wishlist = () => {
 
               {/* Actions */}
               <button
-                onClick={() => openSizePicker(item)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openSizePicker(item);
+                }}
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#8B0000] hover:bg-[#6B0000] text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-60"
               >
@@ -176,7 +191,7 @@ const Wishlist = () => {
               </button>
             </div>
           </div>
-        ))}
+        );})}
       </div>
 
       {/* Size Picker Modal */}
