@@ -28,7 +28,6 @@ const pebbleShapes = [
 // ── Inline Product Card ────────────────────────────────────────
 const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0 }) => {
   const [hearted, setHearted] = useState(isWishlisted || false);
-  const [selectedSize, setSelectedSize] = useState(null);
   const navigate = useNavigate();
   useEffect(() => setHearted(isWishlisted), [isWishlisted]);
 
@@ -86,31 +85,6 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0 }) 
           className="w-full h-[260px] sm:h-[280px] object-cover group-hover:scale-105 transition-transform duration-700"
         />
 
-        {/* Size overlay on hover — only if product has sizes */}
-        {sizes.length > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 bg-black/55 backdrop-blur-sm py-2.5 px-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-10">
-            <p className="text-[10px] text-gray-300 text-center mb-1.5 font-medium">
-              Select Size
-            </p>
-            <div className="flex justify-center gap-1.5 flex-wrap">
-              {sizes.map((s) => (
-                <button
-                  key={s}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedSize(selectedSize === s ? null : s);
-                  }}
-                  className={`px-2.5 py-1 text-[10px] font-semibold rounded transition-all ${selectedSize === s
-                      ? "bg-white text-gray-900 border border-white"
-                      : "border border-white/60 text-gray-100 hover:border-white hover:bg-white/10"
-                    }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="p-3 text-center z-10">
@@ -143,11 +117,6 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0 }) 
             </span>
           )}
         </div>
-        {selectedSize && (
-          <p className="text-[11px] text-[#8B0000] font-semibold mt-1.5">
-            Size: {selectedSize} ✓
-          </p>
-        )}
       </div>
     </div>
   );
