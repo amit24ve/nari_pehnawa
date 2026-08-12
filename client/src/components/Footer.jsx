@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Mail, MapPin, ShieldCheck, Award, Headset, RefreshCw, Truck, MessageSquare, X, CheckCircle, Loader2 } from "lucide-react";
 
@@ -53,7 +53,6 @@ const Footer = () => {
   const [showInquiryModal, setShowInquiryModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -61,20 +60,6 @@ const Footer = () => {
     subject: "General Query",
     message: ""
   });
-
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/categories/?is_active=true`)
-      .then((r) => r.json())
-      .then((data) => setCategories(Array.isArray(data) ? data : []))
-      .catch(() => { });
-  }, []);
-
-  const buildCategoryPath = (cat) =>
-    cat.link ||
-    `/category/${cat.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")}`;
 
   const handleInquirySubmit = async (e) => {
     e.preventDefault();
@@ -155,7 +140,7 @@ const Footer = () => {
                 />
               </Link>
               <div className="text-[10px] tracking-[0.2em] text-[#8B0000] font-black uppercase drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]">
-                — Har Nari, Har Andaz —
+                — Traditional Ka Tadka —
               </div>
             </div>
 
@@ -185,30 +170,20 @@ const Footer = () => {
           <div>
             <h4 style={headStyle}>Shop</h4>
             <ul className="space-y-2.5">
-              <li key="New Arrivals">
+              <li>
                 <Link
                   to="/new-arrivals"
                   className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]"
                 >
-                  New Arrivals
+                  Fashion
                 </Link>
               </li>
-              {categories.map((cat) => (
-                <li key={cat.name}>
-                  <Link
-                    to={buildCategoryPath(cat)}
-                    className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]"
-                  >
-                    {cat.name}
-                  </Link>
-                </li>
-              ))}
-              <li key="Sale">
+              <li>
                 <Link
-                  to="/category/sale"
+                  to="/category/home-decor"
                   className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]"
                 >
-                  Sale
+                  Home Decor
                 </Link>
               </li>
             </ul>
@@ -219,7 +194,6 @@ const Footer = () => {
             <h4 style={headStyle}>Help &amp; Support</h4>
             <ul className="space-y-2.5">
               {[
-                ["Contact Us", "/support/contact-us"],
                 ["FAQs", "/support/faqs"],
                 ["Track Order", "/user/orders"],
                 ["Size Guide", "/support/size-guide"],
@@ -229,7 +203,7 @@ const Footer = () => {
                 <li key={label}>
                   <Link
                     to={path}
-                    className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]"
+                    className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.95)]"
                   >
                     {label}
                   </Link>
@@ -243,16 +217,13 @@ const Footer = () => {
             <h4 style={headStyle}>About Us</h4>
             <ul className="space-y-2.5">
               {[
-                ["About Nari Pehnawa", "/support/about-us"],
-                ["Our Story", "/owner"],
-                ["Become a Seller", "/support/become-a-seller"],
                 ["Terms & Conditions", "/support/terms-conditions"],
                 ["Refund Policy", "/support/refund-policy"],
               ].map(([label, path]) => (
                 <li key={label}>
                   <Link
                     to={path}
-                    className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]"
+                    className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.95)]"
                   >
                     {label}
                   </Link>
