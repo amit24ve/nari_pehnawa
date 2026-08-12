@@ -79,10 +79,10 @@ const HeroSection = () => {
   }, [next]);
 
   return (
-    <section className="relative overflow-hidden bg-gray-900 select-none">
+    <section className="relative overflow-hidden bg-white select-none mx-2.5 rounded-2xl shadow-sm">
       <div
         className="relative w-full"
-        style={{ height: "clamp(260px, 55vw, 520px)" }}
+        style={{ aspectRatio: "1024 / 411", height: "auto" }}
       >
         {slides.map((slide, i) => (
           <div
