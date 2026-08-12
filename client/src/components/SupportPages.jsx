@@ -142,14 +142,20 @@ export default function SupportPages() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Subject</label>
-                    <input
-                      type="text"
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Inquiry Topic</label>
+                    <select
                       value={contactForm.subject}
                       onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
-                      placeholder="e.g. Order Status, Sizing Query"
-                      className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 focus:outline-none focus:border-[#8B0000] transition-colors font-medium"
-                    />
+                      className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 focus:outline-none focus:border-[#8B0000] transition-colors font-semibold bg-white"
+                    >
+                      <option value="General Query">General Query</option>
+                      <option value="Kurti Size & Fit">Kurti Sizing &amp; Fit Assistance</option>
+                      <option value="Custom Stitching">Custom Stitching &amp; Measurement Request</option>
+                      <option value="Order Tracking & Delivery">Order Status &amp; Delivery Help</option>
+                      <option value="Return & Exchange">Return or Exchange Inquiry</option>
+                      <option value="Payment & Refund">Payment or Refund Issue</option>
+                      <option value="Bulk & Wholesale">Bulk Order &amp; Wholesale Inquiry</option>
+                    </select>
                   </div>
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Message *</label>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Mail, MapPin, ShieldCheck, Award, Headset, RefreshCw, Truck, MessageSquare, X, CheckCircle, Loader2 } from "lucide-react";
 
@@ -53,13 +53,28 @@ const Footer = () => {
   const [showInquiryModal, setShowInquiryModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     email: "",
-    subject: "General Inquiry",
+    subject: "General Query",
     message: ""
   });
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/categories/?is_active=true`)
+      .then((r) => r.json())
+      .then((data) => setCategories(Array.isArray(data) ? data : []))
+      .catch(() => { });
+  }, []);
+
+  const buildCategoryPath = (cat) =>
+    cat.link ||
+    `/category/${cat.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")}`;
 
   const handleInquirySubmit = async (e) => {
     e.preventDefault();
@@ -67,10 +82,14 @@ const Footer = () => {
 
     setSubmitting(true);
     try {
+      const payload = { ...formData };
+      if (!payload.email || !payload.email.trim()) {
+        payload.email = null;
+      }
       const res = await fetch(`${API_BASE_URL}/inquiries/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -166,23 +185,32 @@ const Footer = () => {
           <div>
             <h4 style={headStyle}>Shop</h4>
             <ul className="space-y-2.5">
-              {[
-                ["Kurti Sets", "/category/palazzo-set-kurtis"],
-                ["Sarees", "/category/sarees"],
-                ["Dresses", "/category/dresses"],
-                ["Lehenga", "/category/lehenga"],
-                ["New Arrivals", "/new-arrivals"],
-                ["Sale", "/category/sale"],
-              ].map(([label, path]) => (
-                <li key={label}>
+              <li key="New Arrivals">
+                <Link
+                  to="/new-arrivals"
+                  className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]"
+                >
+                  New Arrivals
+                </Link>
+              </li>
+              {categories.map((cat) => (
+                <li key={cat.name}>
                   <Link
-                    to={path}
+                    to={buildCategoryPath(cat)}
                     className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]"
                   >
-                    {label}
+                    {cat.name}
                   </Link>
                 </li>
               ))}
+              <li key="Sale">
+                <Link
+                  to="/category/sale"
+                  className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]"
+                >
+                  Sale
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -477,10 +505,13 @@ const Footer = () => {
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                     className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-semibold"
                   >
-                    <option value="General Inquiry">General Inquiry / Question</option>
-                    <option value="Order Help">Order Status / Delivery Issue</option>
-                    <option value="Custom Size / Fit">Custom Stitching &amp; Size Assistance</option>
-                    <option value="Wholesale / Seller">Bulk Purchase / Wholesale Inquiry</option>
+                    <option value="General Query">General Query</option>
+                    <option value="Kurti Size & Fit">Kurti Sizing &amp; Fit Assistance</option>
+                    <option value="Custom Stitching">Custom Stitching &amp; Measurement Request</option>
+                    <option value="Order Tracking & Delivery">Order Status &amp; Delivery Help</option>
+                    <option value="Return & Exchange">Return or Exchange Inquiry</option>
+                    <option value="Payment & Refund">Payment or Refund Issue</option>
+                    <option value="Bulk & Wholesale">Bulk Order &amp; Wholesale Inquiry</option>
                   </select>
                 </div>
 

@@ -759,7 +759,7 @@ const ProductPage = () => {
           
           {/* Trust Badges Bar */}
           <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200/80 grid grid-cols-1 md:grid-cols-2 gap-6 shadow-xs">
-            <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
               {[
                 [ShieldCheck, "Premium Quality"],
                 [RotateCcw, "Easy 15-Day Returns"],
@@ -787,71 +787,71 @@ const ProductPage = () => {
           {/* Full Specifications & Description Accordion */}
           <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs space-y-6">
             <Accordion title="Complete Product Specifications & Story" defaultOpen icon={Award}>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-3">
+              <div className="space-y-8 pt-3">
                 
-                {/* Specs Table */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-800 border-b pb-2">
-                    Specifications Matrix
-                  </h4>
-                  <table className="w-full text-sm">
-                    <tbody>
-                      <tr className="border-b border-gray-100">
-                        <td className="py-2.5 pr-4 font-semibold text-gray-700 w-36 align-top">Fabric</td>
-                        <td className="py-2.5 text-gray-600">{product.fabric || "Cotton Blend"}</td>
-                      </tr>
-                      <tr className="border-b border-gray-100">
-                        <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Pattern / Work</td>
-                        <td className="py-2.5 text-gray-600">{product.pattern || "Embroidered / Printed"}</td>
-                      </tr>
-                      <tr className="border-b border-gray-100">
-                        <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Sleeve Style</td>
-                        <td className="py-2.5 text-gray-600">{product.sleeve_type || "3/4 Sleeves"}</td>
-                      </tr>
-                      <tr className="border-b border-gray-100">
-                        <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Fit Type</td>
-                        <td className="py-2.5 text-gray-600">{product.fit_type || "Regular Comfort Fit"}</td>
-                      </tr>
-                      <tr className="border-b border-gray-100">
-                        <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Occasion</td>
-                        <td className="py-2.5 text-gray-600">Festive, Casual, Office Wear</td>
-                      </tr>
-                      <tr className="border-b border-gray-100">
-                        <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Country of Origin</td>
-                        <td className="py-2.5 text-gray-600">India 🇮🇳</td>
-                      </tr>
-                      <tr className="border-b border-gray-100">
-                        <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">HSN Code</td>
-                        <td className="py-2.5 text-gray-600">{product.hsn_code || "621133"}</td>
-                      </tr>
-                      <tr>
-                        <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Wash & Care</td>
-                        <td className="py-2.5 text-gray-600">Hand Wash or Gentle Machine Wash in Cold Water</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
                 {/* Rich Story & Style Tips */}
-                <div className="space-y-5">
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-800 border-b pb-2 mb-2">
-                      Product Overview
-                    </h4>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      {product.description ||
-                        `Elevate your ethnic fashion quotient with the stunning ${product.name} from Nari Pehnawa. Crafted with precision craftsmanship and rich color tones, this piece combines Indian elegance with day-long comfort.`}
-                    </p>
-                  </div>
-
+                <div className="space-y-4">
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-gray-800 border-b pb-2 mb-2">
+                    Product Overview
+                  </h4>
+                  <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                    {product.description ||
+                      `Elevate your ethnic fashion quotient with the stunning ${product.name} from Nari Pehnawa. Crafted with precision craftsmanship and rich color tones, this piece combines Indian elegance with day-long comfort.`}
+                  </p>
+                  
                   {product.style_tip && (
-                    <div className="bg-amber-50/80 rounded-xl p-4 border border-amber-200/70 space-y-1">
+                    <div className="bg-amber-50/80 rounded-xl p-4 border border-amber-200/70 space-y-1 max-w-2xl">
                       <h5 className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1">
                         💡 Style Tip
                       </h5>
                       <p className="text-xs text-amber-800 leading-relaxed">{product.style_tip}</p>
                     </div>
                   )}
+                </div>
+
+                {/* Specs Table */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-gray-800 border-b pb-2">
+                    Specifications Matrix
+                  </h4>
+                  <div className="max-w-2xl overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <tbody>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2.5 pr-4 font-semibold text-gray-700 w-36 align-top">Fabric</td>
+                          <td className="py-2.5 text-gray-600">{product.fabric || "Cotton Blend"}</td>
+                        </tr>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Pattern / Work</td>
+                          <td className="py-2.5 text-gray-600">{product.pattern || "Embroidered / Printed"}</td>
+                        </tr>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Sleeve Style</td>
+                          <td className="py-2.5 text-gray-600">{product.sleeve_type || "3/4 Sleeves"}</td>
+                        </tr>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Fit Type</td>
+                          <td className="py-2.5 text-gray-600">{product.fit_type || "Regular Comfort Fit"}</td>
+                        </tr>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Occasion</td>
+                          <td className="py-2.5 text-gray-600">Festive, Casual, Office Wear</td>
+                        </tr>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Country of Origin</td>
+                          <td className="py-2.5 text-gray-600">India 🇮🇳</td>
+                        </tr>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">HSN Code</td>
+                          <td className="py-2.5 text-gray-600">{product.hsn_code || "621133"}</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Wash & Care</td>
+                          <td className="py-2.5 text-gray-600">Hand Wash or Gentle Machine Wash in Cold Water</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
               </div>
