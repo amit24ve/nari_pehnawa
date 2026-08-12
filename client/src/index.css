@@ -1,0 +1,257 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap");
+
+@import "tailwindcss";
+
+@keyframes marquee {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+@keyframes waveFloat {
+    0%, 100% {
+        transform: translateY(0px) scale(1);
+    }
+    50% {
+        transform: translateY(-4px) scale(1.01);
+    }
+}
+
+.animate-marquee {
+    display: inline-flex;
+    animation: marquee 28s linear infinite;
+    width: max-content;
+}
+
+.animate-wave-float {
+    animation: waveFloat 4s ease-in-out infinite;
+}
+
+/* Hide scrollbar cross-browser */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Custom sleek scrollbar for admin panel */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #0891b2;
+}
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+@theme {
+    --font-sans: "Inter", system-ui, sans-serif;
+    --font-serif: "Playfair Display", serif;
+
+    /* Maroon Brand Palette */
+    --color-maroon-50: #fff5f5;
+    --color-maroon-100: #ffe0e0;
+    --color-maroon-200: #ffc0c0;
+    --color-maroon-300: #ff8080;
+    --color-maroon-400: #d45050;
+    --color-maroon-500: #a52a2a;
+    --color-maroon-600: #8b0000;
+    --color-maroon-700: #6b0000;
+    --color-maroon-800: #4a0000;
+    --color-maroon-900: #2a0000;
+
+    /* Warm Cream Palette */
+    --color-cream-50: #ffffff;
+    --color-cream-100: #fdf8f5;
+    --color-cream-200: #faf0e8;
+    --color-cream-300: #f5e6d8;
+    --color-cream-400: #edd8c5;
+    --color-cream-500: #e0c9b0;
+}
+
+@layer base {
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: var(--font-sans);
+        background-color: #ffffff;
+        color: #1a1a1a;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    /* Mobile: Force 2 columns for product grids */
+    @media (max-width: 640px) {
+        .grid-cols-1 {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        }
+    }
+}
+
+@layer components {
+    .btn-primary {
+        background: linear-gradient(to right, #8b0000, #a52a2a);
+        color: #ffffff;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 15px rgba(139, 0, 0, 0.2);
+        transition: all 0.3s;
+    }
+
+    .btn-primary:hover {
+        box-shadow: 0 8px 25px rgba(139, 0, 0, 0.3);
+        transform: scale(1.05);
+    }
+
+    .btn-secondary {
+        background: transparent;
+        color: #8b0000;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        border-radius: 0.5rem;
+        border: 2px solid #8b0000;
+        transition: all 0.3s;
+    }
+
+    .btn-secondary:hover {
+        background: #8b0000;
+        color: #ffffff;
+    }
+}
+
+/* ── Admin Panel Clean Light Theme Overrides ── */
+div.min-h-screen.bg-slate-50 {
+    color: #1f2937 !important;
+
+    /* Turn dark backgrounds into white panels/cards */
+    .bg-\[\#0b1220\], 
+    .bg-\[\#0f1724\], 
+    .bg-\[\#111827\], 
+    .bg-gradient-to-br.from-\[\#111827\].to-\[\#1a2332\],
+    .bg-gradient-to-br.from-\[\#111827\].to-\[\#1a2332\]\/50 {
+        background-image: none !important;
+        background-color: #ffffff !important;
+        color: #1f2937 !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    /* Gradients */
+    .from-\[\#111827\] {
+        --tw-gradient-from: #ffffff !important;
+        --tw-gradient-stops: #ffffff, #ffffff !important;
+    }
+    .to-\[\#1a2332\] {
+        --tw-gradient-to: #ffffff !important;
+    }
+
+    /* Table headers, alternate row backgrounds */
+    .bg-\[\#0b1220\/60\] {
+        background-color: #f8fafc !important;
+        color: #475569 !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+    }
+
+    /* Row hover states */
+    .hover\:bg-\[\#0f1724\/50\]:hover, 
+    .hover\:bg-\[\#0f1724\]\/50:hover, 
+    .hover\:bg-gray-800\/50:hover {
+        background-color: #f8fafc !important;
+    }
+
+    /* Input wrappers and borders */
+    .bg-\[\#0b1220\/50\], 
+    .bg-\[\#0f1724\/50\], 
+    .bg-\[\#111827\/50\] {
+        background-color: #f8fafc !important;
+        border-color: #cbd5e1 !important;
+        color: #1f2937 !important;
+    }
+
+    /* Text color overrides */
+    .text-gray-200, 
+    .text-gray-300, 
+    .text-gray-400, 
+    .text-gray-500 {
+        color: #4b5563 !important;
+    }
+    .text-white {
+        color: #0f172a !important;
+    }
+
+    /* Borders */
+    .border-gray-800, 
+    .border-gray-800\/50, 
+    .border-gray-750, 
+    .border-gray-700, 
+    .border-gray-850, 
+    .border-gray-900, 
+    .border-\[\#421212\/40\], 
+    .border-\[\#421212\/30\],
+    .border-red-950\/40,
+    .border-red-950\/20 {
+        border-color: #e2e8f0 !important;
+    }
+
+    /* Buttons / badges styling */
+    .bg-\[\#d4af37\] {
+        background-color: #0891b2 !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 6px -1px rgba(8, 145, 178, 0.1) !important;
+    }
+    .hover\:bg-\[\#c49d2f\]:hover,
+    .hover\:brightness-110:hover {
+        background-color: #06b6d4 !important;
+        color: #ffffff !important;
+    }
+    .text-\[\#0f1724\] {
+        color: #ffffff !important;
+    }
+    .text-\[\#d4af37\] {
+        color: #0891b2 !important;
+    }
+
+    /* Focus and hover borders */
+    .focus\:border-\[\#d4af37\]:focus {
+        border-color: #0891b2 !important;
+        box-shadow: 0 0 0 1px #0891b2 !important;
+    }
+    .hover\:border-\[\#d4af37\]:hover {
+        border-color: #0891b2 !important;
+    }
+    
+    /* Toggle active slide status or general toggles */
+    .bg-emerald-950\/40 {
+        background-color: #ecfdf5 !important;
+        color: #047857 !important;
+        border: 1px solid #a7f3d0 !important;
+    }
+    .text-emerald-400 {
+        color: #047857 !important;
+    }
+}
+

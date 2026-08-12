@@ -1,0 +1,50 @@
+# Dependency directories
+node_modules/
+client/node_modules/
+server/node_modules/
+venv/
+server/venv/
+env/
+.env
+.env.local
+.env.*.local
+client/.env
+client/.env.*
+server/.env
+server/.env.*
+
+# Build outputs
+dist/
+client/dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+server/server.log
+server/uvicorn.log
+
+# Python caches
+__pycache__/
+server/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# SSL / Certificates / Private keys (avoid uploading sensitive files)
+*.key
+*.crt
+*.pem
+server/ssl.crt
+server/ssl.key
+
+# IDEs / OS files
+.DS_Store
+.idea/
+.vscode/
+
+# Local uploads and media
+uploads/
+server/uploads/
