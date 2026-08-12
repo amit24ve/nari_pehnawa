@@ -102,9 +102,6 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted }) => {
       </div>
 
       <div className="p-3">
-        <p className="text-[11px] text-gray-500 mb-0.5">
-          {product.brand || "Nari Pehnawa"}
-        </p>
         <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-snug mb-1.5">
           {product.name}
         </p>

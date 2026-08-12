@@ -1,8 +1,38 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { SectionHeading } from "./NariHeadingDecoration";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
+
 const AsFeaturedOn = () => {
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
+
+  const handleNewsletterSubmit = async (e) => {
+    e.preventDefault();
+    if (!newsletterEmail.trim()) return;
+
+    setNewsletterSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/inquiries/subscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: newsletterEmail.trim() })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setNewsletterEmail("");
+        alert("Thank you! You have subscribed to our newsletter successfully.");
+      } else {
+        alert(data.detail || "Failed to subscribe. Please try again.");
+      }
+    } catch (err) {
+      console.error("Newsletter error:", err);
+      alert("Network error. Please try again.");
+    } finally {
+      setNewsletterSubmitting(false);
+    }
+  };
   const scrollContainerRef = useRef(null);
 
   const mediaLogos = [
@@ -142,18 +172,22 @@ const AsFeaturedOn = () => {
             </p>
 
             {/* Email Form */}
-            <form className="flex gap-3 max-w-md mx-auto">
+            <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto w-full px-4">
               <input
                 type="email"
                 placeholder="Enter your email"
                 className="flex-1 px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8B0000]"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+                disabled={newsletterSubmitting}
                 required
               />
               <button
                 type="submit"
-                className="bg-[#8B0000] hover:bg-[#6B0000] text-white px-8 py-3 rounded-lg font-bold hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+                disabled={newsletterSubmitting}
+                className="bg-[#8B0000] hover:bg-[#6B0000] text-white px-8 py-3 rounded-lg font-bold hover:shadow-lg transform hover:scale-105 transition-all duration-300 disabled:opacity-60"
               >
-                SIGN ME UP!
+                {newsletterSubmitting ? "SIGNING UP..." : "SIGN ME UP!"}
               </button>
             </form>
           </div>

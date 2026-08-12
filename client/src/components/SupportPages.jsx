@@ -45,10 +45,14 @@ export default function SupportPages() {
 
     setSubmitting(true);
     try {
+      const payload = { ...contactForm };
+      if (!payload.email || !payload.email.trim()) {
+        payload.email = null;
+      }
       const res = await fetch(`${API_BASE_URL}/inquiries/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(contactForm)
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -56,7 +60,12 @@ export default function SupportPages() {
         setContactForm({ name: "", phone: "", email: "", subject: "General Inquiry", message: "" });
         setTimeout(() => setFormSubmitted(false), 5000);
       } else {
-        alert(data.detail || "Failed to send message");
+        const errorDetail = typeof data.detail === "string" 
+          ? data.detail 
+          : Array.isArray(data.detail) 
+            ? data.detail.map(d => `${d.loc.join('.')}: ${d.msg}`).join(", ") 
+            : "Failed to send message";
+        alert(errorDetail);
       }
     } catch (err) {
       console.error("Contact form error:", err);

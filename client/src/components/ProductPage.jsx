@@ -508,10 +508,7 @@ const ProductPage = () => {
             
             {/* Header info */}
             <div>
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#8B0000]">
-                  {product.brand || "Nari Pehnawa"}
-                </span>
+              <div className="flex items-center justify-end gap-2 mb-1">
                 <span className="text-[11px] font-mono text-gray-400">SKU: {sku}</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-serif font-bold text-gray-900 leading-snug mb-3">

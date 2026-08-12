@@ -106,9 +106,6 @@ const ProductCard = ({
 
             {/* Product Details - Always 100% Front & Visible */}
             <div className="p-3 text-center z-10">
-                <p className="text-[11px] font-bold text-[#8B0000] uppercase tracking-wider mb-0.5">
-                    {product.brand || "Nari Pehnawa"}
-                </p>
                 <h3 className={`text-xs sm:text-sm font-serif font-bold text-gray-900 line-clamp-1 leading-snug mb-1.5 group-hover:text-[#8B0000] transition-colors ${
                     isHovered ? "text-[#8B0000]" : ""
                 }`}>

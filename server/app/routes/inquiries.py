@@ -14,12 +14,33 @@ class InquiryCreate(BaseModel):
     subject: Optional[str] = "General Inquiry"
     message: str = Field(..., min_length=5, description="Inquiry details")
 
+class NewsletterSubscribe(BaseModel):
+    email: EmailStr
+
 class InquiryStatusUpdate(BaseModel):
     status: str = Field(..., description="Status: Pending, Contacted, Resolved")
 
 class InquiryReply(BaseModel):
     reply_message: str = Field(..., min_length=2, description="Admin reply message")
     status: Optional[str] = "Resolved"
+
+@router.post("/subscribe", status_code=201)
+async def subscribe_newsletter(payload: NewsletterSubscribe):
+    """Subscribe a new email address to the newsletter"""
+    try:
+        db = get_database()
+        email_clean = payload.email.strip().lower()
+        exists = db.newsletter_subscribers.find_one({"email": email_clean})
+        if exists:
+            return {"success": True, "message": "Already subscribed"}
+        
+        db.newsletter_subscribers.insert_one({
+            "email": email_clean,
+            "subscribed_at": datetime.now(timezone.utc).isoformat()
+        })
+        return {"success": True, "message": "Subscribed successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Subscription failed: {str(e)}")
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def submit_inquiry(payload: InquiryCreate):
