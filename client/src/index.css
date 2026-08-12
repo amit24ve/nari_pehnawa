@@ -97,10 +97,14 @@
         color: #1a1a1a;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+        overflow-x: hidden;
+        width: 100%;
     }
 
     html {
         scroll-behavior: smooth;
+        overflow-x: hidden;
+        width: 100%;
     }
 
     /* Mobile: Force 2 columns for product grids */
