@@ -6,7 +6,7 @@ from datetime import datetime
 class User(BaseModel):
     id: str
     email: EmailStr
-    name: str
+    name: str = "User"
     role: Optional[str] = "customer"  # customer or admin
     is_admin: Optional[bool] = False
     age: Optional[int] = None

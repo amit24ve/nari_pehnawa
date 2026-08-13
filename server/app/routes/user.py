@@ -64,6 +64,8 @@ def get_users(
         users = list(cursor)
         for user in users:
             user["id"] = str(user["_id"])
+            if "name" not in user or not user["name"]:
+                user["name"] = user.get("full_name") or "User"
             # Get order count for each user
             user["orders_count"] = orders_collection.count_documents({"user_id": user["id"]})
             user.pop("_id", None)
@@ -88,6 +90,8 @@ def get_current_user_profile(current_user: dict = Depends(get_current_user)):
             raise HTTPException(status_code=404, detail="User not found")
         
         user["id"] = str(user["_id"])
+        if "name" not in user or not user["name"]:
+            user["name"] = user.get("full_name") or "User"
         user["orders_count"] = orders_collection.count_documents({"user_id": user_id})
         user.pop("_id", None)
         user.pop("password_hash", None)
@@ -136,6 +140,8 @@ def update_current_user_profile_v2(user_update: UserUpdate, current_user: dict =
         # Get updated user
         updated_user = users_collection.find_one({"_id": ObjectId(user_id)})
         updated_user["id"] = str(updated_user["_id"])
+        if "name" not in updated_user or not updated_user["name"]:
+            updated_user["name"] = updated_user.get("full_name") or "User"
         updated_user.pop("_id", None)
         updated_user.pop("password_hash", None)
         
@@ -157,6 +163,8 @@ def get_user(user_id: str, current_user: dict = Depends(get_current_user)):
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         user["id"] = str(user["_id"])
+        if "name" not in user or not user["name"]:
+            user["name"] = user.get("full_name") or "User"
         user.pop("_id", None)
         user.pop("password_hash", None)
         return user
@@ -176,6 +184,8 @@ def get_user_by_email(email: str):
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         user["id"] = str(user["_id"])
+        if "name" not in user or not user["name"]:
+            user["name"] = user.get("full_name") or "User"
         user.pop("_id", None)
         user.pop("password_hash", None)
         return user
@@ -211,6 +221,8 @@ def update_user(user_id: str, user_update: UserUpdate, current_user: dict = Depe
         # Get updated user
         updated_user = users_collection.find_one({"_id": ObjectId(user_id)})
         updated_user["id"] = str(updated_user["_id"])
+        if "name" not in updated_user or not updated_user["name"]:
+            updated_user["name"] = updated_user.get("full_name") or "User"
         updated_user.pop("_id", None)
         updated_user.pop("password_hash", None)
         

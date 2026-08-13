@@ -4,10 +4,10 @@ from datetime import datetime
 
 
 class ReviewBase(BaseModel):
-    product_id: str
+    product_id: Optional[str] = "unknown"
     product_name: Optional[str] = None
-    user_id: str
-    user_name: str
+    user_id: Optional[str] = "unknown"
+    user_name: Optional[str] = "Anonymous"
     rating: float = Field(ge=1, le=5)
     title: Optional[str] = None
     comment: Optional[str] = None

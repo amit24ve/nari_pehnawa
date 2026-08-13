@@ -53,6 +53,12 @@ def get_all_reviews(
         reviews = list(reviews_collection.find(query).skip(skip).limit(limit).sort("created_at", -1))
         for review in reviews:
             review["_id"] = str(review["_id"])
+            if "user_name" not in review or not review["user_name"]:
+                review["user_name"] = review.get("reviewer_name") or "Anonymous"
+            if "user_id" not in review or not review["user_id"]:
+                review["user_id"] = "unknown"
+            if "product_id" not in review or not review["product_id"]:
+                review["product_id"] = "unknown"
         return reviews
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -70,6 +76,12 @@ def get_product_reviews(product_id: str, skip: int = 0, limit: int = 10):
         }).skip(skip).limit(limit).sort("created_at", -1))
         for review in reviews:
             review["_id"] = str(review["_id"])
+            if "user_name" not in review or not review["user_name"]:
+                review["user_name"] = review.get("reviewer_name") or "Anonymous"
+            if "user_id" not in review or not review["user_id"]:
+                review["user_id"] = "unknown"
+            if "product_id" not in review or not review["product_id"]:
+                review["product_id"] = product_id
         return reviews
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -85,6 +97,12 @@ def get_review(review_id: str):
         if not review:
             raise HTTPException(status_code=404, detail="Review not found")
         review["_id"] = str(review["_id"])
+        if "user_name" not in review or not review["user_name"]:
+            review["user_name"] = review.get("reviewer_name") or "Anonymous"
+        if "user_id" not in review or not review["user_id"]:
+            review["user_id"] = "unknown"
+        if "product_id" not in review or not review["product_id"]:
+            review["product_id"] = "unknown"
         return review
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
