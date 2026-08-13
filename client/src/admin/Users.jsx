@@ -89,11 +89,11 @@ const Users = () => {
     const getRoleBadge = (role) => {
         const roleConfig = {
             admin: {
-                color: "bg-purple-900/40 text-purple-300 border-purple-800/50",
+                color: "bg-purple-50 text-purple-700 border border-purple-200",
                 icon: Shield,
             },
             customer: {
-                color: "bg-blue-900/40 text-blue-300 border-blue-800/50",
+                color: "bg-blue-50 text-blue-700 border border-blue-200",
                 icon: User,
             },
         };
@@ -111,12 +111,12 @@ const Users = () => {
 
     const getStatusBadge = (status) => {
         return status === "active" ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-green-900/40 text-green-300 border-green-800/50">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-emerald-50 text-emerald-700 border-emerald-200">
                 <Check className="w-3.5 h-3.5" />
                 Active
             </span>
         ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-gray-700/40 text-gray-400 border-gray-600/50">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-slate-50 text-slate-600 border-slate-200">
                 Inactive
             </span>
         );

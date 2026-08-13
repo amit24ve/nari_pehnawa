@@ -88,12 +88,12 @@ const PaymentHistory = () => {
   }, []);
 
   const statusConfig = {
-    captured: { label: "Paid Online", color: "bg-green-900/40 text-green-300 border-green-800/50", icon: CheckCircle },
-    cod_pending: { label: "COD Pending", color: "bg-yellow-900/40 text-yellow-300 border-yellow-800/50", icon: Clock },
-    cod_completed: { label: "COD Collected", color: "bg-blue-900/40 text-blue-300 border-blue-800/50", icon: CheckCircle },
-    failed: { label: "Failed", color: "bg-red-900/40 text-red-300 border-red-800/50", icon: XCircle },
-    created: { label: "Initiated", color: "bg-gray-700/40 text-gray-300 border-gray-700/50", icon: Clock },
-    refunded: { label: "Refunded", color: "bg-purple-900/40 text-purple-300 border-purple-800/50", icon: RefreshCw },
+    captured: { label: "Paid Online", color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: CheckCircle },
+    cod_pending: { label: "COD Pending", color: "bg-amber-50 text-amber-700 border-amber-200", icon: Clock },
+    cod_completed: { label: "COD Collected", color: "bg-blue-50 text-blue-700 border-blue-200", icon: CheckCircle },
+    failed: { label: "Failed", color: "bg-rose-50 text-rose-700 border-rose-200", icon: XCircle },
+    created: { label: "Initiated", color: "bg-slate-50 text-slate-600 border-slate-200", icon: Clock },
+    refunded: { label: "Refunded", color: "bg-purple-50 text-purple-700 border-purple-200", icon: RefreshCw },
   };
 
   const getStatusBadge = (status) => {
