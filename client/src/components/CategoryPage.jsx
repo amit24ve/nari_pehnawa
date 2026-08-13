@@ -28,6 +28,7 @@ const pebbleShapes = [
 // ── Inline Product Card ────────────────────────────────────────
 const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0 }) => {
   const [hearted, setHearted] = useState(isWishlisted || false);
+  const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
   useEffect(() => setHearted(isWishlisted), [isWishlisted]);
 
@@ -42,9 +43,20 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0 }) 
   return (
     <div
       onClick={() => navigate(`/product/${product.id}`)}
-      className="bg-white p-2 rounded-2xl overflow-hidden group cursor-pointer hover:shadow-2xl active:shadow-2xl transition-all duration-500 ease-in-out hover:-translate-y-1.5 active:-translate-y-1 flex flex-col justify-between"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onTouchStart={() => setIsHovered(true)}
+      onTouchEnd={() => setTimeout(() => setIsHovered(false), 400)}
+      onTouchCancel={() => setIsHovered(false)}
+      className={`bg-white p-2 rounded-2xl overflow-hidden group cursor-pointer hover:shadow-2xl active:shadow-2xl transition-all duration-500 ease-in-out hover:-translate-y-1.5 active:-translate-y-1 flex flex-col justify-between ${
+        isHovered ? "-translate-y-1.5 shadow-2xl" : ""
+      }`}
     >
-      <div className={`relative overflow-hidden bg-gradient-to-br from-pink-100/50 to-amber-50/50 ${pebbleClass} border-[#8B0000]/15 border-2 group-hover:rounded-2xl group-active:rounded-2xl shadow-md group-hover:border-[#8B0000] group-active:border-[#8B0000] transition-all duration-500 ease-in-out`}>
+      <div className={`relative overflow-hidden bg-gradient-to-br from-pink-100/50 to-amber-50/50 ${
+        isHovered
+            ? "rounded-2xl border-[#8B0000]"
+            : `${pebbleClass} border-[#8B0000]/15`
+      } group-hover:rounded-2xl group-active:rounded-2xl shadow-md border-2 group-hover:border-[#8B0000] group-active:border-[#8B0000] transition-all duration-500 ease-in-out`}>
         {discount > 0 && (
           <span
             className={`absolute top-2.5 left-2.5 z-20 ${discountBg} text-white text-[10px] font-bold px-2 py-0.5 rounded`}
@@ -63,7 +75,7 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0 }) 
             setHearted(!hearted);
             onWishlistToggle && onWishlistToggle(product);
           }}
-          className="absolute top-2.5 right-2.5 z-20 bg-white/90 hover:bg-white p-1.5 rounded-full shadow transition-transform hover:scale-110"
+          className="absolute top-2.5 right-2.5 z-30 bg-white/90 hover:bg-white p-1.5 rounded-full shadow border border-gray-100 transition-transform hover:scale-110"
           aria-label="Wishlist"
         >
           <Heart
@@ -82,13 +94,17 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0 }) 
             e.target.src =
               "https://images.pexels.com/photos/5704849/pexels-photo-5704849.jpeg?auto=compress&cs=tinysrgb&w=600";
           }}
-          className="w-full h-[260px] sm:h-[280px] object-cover group-hover:scale-105 transition-transform duration-700"
+          className={`w-full h-[260px] sm:h-[280px] object-cover transition-transform duration-700 group-hover:scale-105 ${
+              isHovered ? "scale-105" : ""
+          }`}
         />
 
       </div>
 
       <div className="p-3 text-center z-10">
-        <h3 className="text-xs sm:text-sm font-serif font-bold text-gray-900 line-clamp-1 leading-snug mb-1.5">
+        <h3 className={`text-xs sm:text-sm font-serif font-bold text-gray-900 line-clamp-1 leading-snug mb-1.5 group-hover:text-[#8B0000] transition-colors ${
+            isHovered ? "text-[#8B0000]" : ""
+        }`}>
           {product.name}
         </h3>
         <div className="flex items-center justify-center gap-1 mb-2">

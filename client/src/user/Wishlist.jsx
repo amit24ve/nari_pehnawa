@@ -144,7 +144,7 @@ const Wishlist = () => {
 
             {/* Info */}
             <div className="p-4 text-center z-10" onClick={(e) => e.stopPropagation()}>
-              <h3 className="font-serif font-bold text-gray-800 text-sm line-clamp-1 mb-2">
+              <h3 className="font-serif font-bold text-gray-800 text-sm line-clamp-1 mb-2 group-hover:text-[#8B0000] transition-colors">
                 {item.name}
               </h3>
 
