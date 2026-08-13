@@ -349,6 +349,264 @@ const Orders = () => {
       if (res.invoice_url) window.open(res.invoice_url, "_blank", "noopener,noreferrer");
     });
 
+  const handlePrintCustomInvoice = (order) => {
+    if (!order) return;
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      alert("Please allow popups to print the invoice.");
+      return;
+    }
+
+    const itemsHtml = (order.items || []).map((item) => `
+      <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 10px 0; font-family: sans-serif; font-size: 13px; color: #333;">
+          <strong>${item.name || "Product"}</strong>
+          ${item.size ? `<br><span style="color: #666; font-size: 11px; margin-top: 4px; display: inline-block;">Size: ${item.size}</span>` : ""}
+        </td>
+        <td style="padding: 10px 0; text-align: center; font-family: sans-serif; font-size: 13px; color: #333;">${item.quantity || 1}</td>
+        <td style="padding: 10px 0; text-align: right; font-family: sans-serif; font-size: 13px; color: #333;">₹${(item.price || 0).toLocaleString("en-IN")}</td>
+        <td style="padding: 10px 0; text-align: right; font-family: sans-serif; font-size: 13px; color: #333; font-weight: bold;">₹${((item.price || 0) * (item.quantity || 1)).toLocaleString("en-IN")}</td>
+      </tr>
+    `).join("");
+
+    const orderDate = order.created_at ? new Date(order.created_at).toLocaleDateString("en-IN", {
+      day: "2-digit", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit"
+    }) : "—";
+
+    const discountAmount = order.discount || 0;
+    const shippingCost = order.shipping_cost || 0;
+    const subtotal = (order.items || []).reduce((acc, item) => acc + (item.price || 0) * (item.quantity || 1), 0);
+    const grandTotal = order.total_amount || (subtotal + shippingCost - discountAmount);
+
+    const invoiceHtml = `
+      <html>
+        <head>
+          <title>Invoice - ${order.order_number || order.orderId}</title>
+          <style>
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
+            .invoice-box { max-width: 800px; margin: auto; padding: 30px; border: 1px solid #eee; box-shadow: 0 0 10px rgba(0, 0, 0, .15); font-size: 14px; line-height: 24px; color: #555; }
+            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #8B0000; padding-bottom: 20px; margin-bottom: 20px; }
+            .logo { font-size: 26px; font-weight: bold; color: #8B0000; letter-spacing: 1px; font-family: Georgia, serif; }
+            .company-details { text-align: right; font-size: 12px; line-height: 18px; }
+            .title { font-size: 22px; font-weight: bold; color: #333; margin-bottom: 5px; }
+            .invoice-details { font-size: 12px; color: #777; line-height: 18px; }
+            .addresses { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; font-size: 12px; }
+            .address-block { background: #fdfaf9; padding: 15px; border-radius: 8px; border: 1px solid #f5ebe6; }
+            .section-title { font-weight: bold; color: #8B0000; margin-bottom: 8px; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+            .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            .items-table th { background: #fdfaf9; color: #8B0000; text-align: left; padding: 10px; font-size: 11px; font-weight: bold; border-bottom: 2px solid #f5ebe6; text-transform: uppercase; }
+            .summary-table { width: 40%; margin-left: auto; font-size: 13px; line-height: 24px; }
+            .summary-table td { padding: 4px 0; }
+            .summary-table .total-row { font-size: 16px; font-weight: bold; color: #8B0000; border-top: 2px solid #8B0000; }
+            .footer { border-top: 1px solid #eee; margin-top: 40px; padding-top: 20px; text-align: center; font-size: 11px; color: #999; }
+            @media print {
+              body { padding: 0; }
+              .invoice-box { border: none; box-shadow: none; padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-box">
+            <div class="header">
+              <div>
+                <div class="logo">NARI PEHNAWA</div>
+                <div style="font-size: 10px; color: #666; font-weight: bold; tracking: 1px;">— TRADITIONAL KA TADKA —</div>
+              </div>
+              <div class="company-details">
+                <strong>Nari Pehnawa</strong><br>
+                Baisiya, Sultanpur, Uttar Pradesh, India<br>
+                Email: support@naripehnawa.com | Mob: +91 9140228795
+              </div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 25px; align-items: flex-end;">
+              <div>
+                <div class="title">RETAIL INVOICE</div>
+                <div class="invoice-details">
+                  Invoice No: <strong>INV-${order.order_number || order.orderId}</strong><br>
+                  Order Date: ${orderDate}
+                </div>
+              </div>
+              <div style="text-align: right; font-size: 12px; color: #555;">
+                Payment Status: <strong style="color: ${order.payment_status === "paid" || order.payment_status === "captured" ? "#15803d" : "#b45309"}">${(order.payment_status || "Pending").toUpperCase()}</strong><br>
+                Payment Mode: <strong>${(order.payment_method || "COD").toUpperCase()}</strong>
+              </div>
+            </div>
+
+            <div class="addresses">
+              <div class="address-block">
+                <div class="section-title">Billed To</div>
+                <strong>${order.shipping_address?.full_name || order.customer?.name || "Customer"}</strong><br>
+                ${order.shipping_address?.address_line1 || ""}, ${order.shipping_address?.address_line2 || ""}<br>
+                ${order.shipping_address?.city || ""}, ${order.shipping_address?.state || ""} - ${order.shipping_address?.postal_code || ""}<br>
+                Phone: ${order.shipping_address?.phone || order.customer?.phone || "—"}<br>
+                Email: ${order.customer?.email || "—"}
+              </div>
+              <div class="address-block">
+                <div class="section-title">Shipped To</div>
+                <strong>${order.shipping_address?.full_name || order.customer?.name || "Customer"}</strong><br>
+                ${order.shipping_address?.address_line1 || ""}, ${order.shipping_address?.address_line2 || ""}<br>
+                ${order.shipping_address?.city || ""}, ${order.shipping_address?.state || ""} - ${order.shipping_address?.postal_code || ""}<br>
+                Phone: ${order.shipping_address?.phone || order.customer?.phone || "—"}
+              </div>
+            </div>
+
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th style="width: 55%;">Product Description</th>
+                  <th style="width: 10%; text-align: center;">Qty</th>
+                  <th style="width: 15%; text-align: right;">Unit Price</th>
+                  <th style="width: 20%; text-align: right;">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+            </table>
+
+            <table class="summary-table">
+              <tr>
+                <td>Subtotal:</td>
+                <td style="text-align: right;">₹${subtotal.toLocaleString("en-IN")}</td>
+              </tr>
+              ${discountAmount > 0 ? `
+              <tr>
+                <td style="color: #15803d;">Coupon Discount:</td>
+                <td style="text-align: right; color: #15803d;">- ₹${discountAmount.toLocaleString("en-IN")}</td>
+              </tr>` : ""}
+              <tr>
+                <td>Shipping & Handling:</td>
+                <td style="text-align: right;">₹${shippingCost.toLocaleString("en-IN")}</td>
+              </tr>
+              <tr class="total-row">
+                <td>Total:</td>
+                <td style="text-align: right;">₹${grandTotal.toLocaleString("en-IN")}</td>
+              </tr>
+            </table>
+
+            <div class="footer">
+              <p>Thank you for shopping with Nari Pehnawa!</p>
+              <p style="font-size: 10px; color: #bbb;">This is a computer-generated invoice and requires no signature.</p>
+            </div>
+          </div>
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                window.close();
+              }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(invoiceHtml);
+    printWindow.document.close();
+  };
+
+  const handlePrintPackingSlip = (order) => {
+    if (!order) return;
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      alert("Please allow popups to print the packing slip.");
+      return;
+    }
+
+    const itemsHtml = (order.items || []).map((item) => `
+      <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 10px 0; font-family: sans-serif; font-size: 13px; color: #333;">
+          <strong>${item.name || "Product"}</strong>
+          ${item.size ? `<br><span style="color: #666; font-size: 11px; margin-top: 4px; display: inline-block;">Size: ${item.size}</span>` : ""}
+        </td>
+        <td style="padding: 10px 0; text-align: center; font-family: sans-serif; font-size: 13px; color: #333; font-weight: bold;">${item.quantity || 1}</td>
+      </tr>
+    `).join("");
+
+    const orderDate = order.created_at ? new Date(order.created_at).toLocaleDateString("en-IN", {
+      day: "2-digit", month: "short", year: "numeric"
+    }) : "—";
+
+    const packingSlipHtml = `
+      <html>
+        <head>
+          <title>Packing Slip - ${order.order_number || order.orderId}</title>
+          <style>
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
+            .slip-box { max-width: 800px; margin: auto; padding: 30px; border: 1px solid #eee; font-size: 14px; line-height: 24px; }
+            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; }
+            .logo { font-size: 24px; font-weight: bold; font-family: Georgia, serif; }
+            .addresses { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 30px; }
+            .address-block { background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
+            .section-title { font-weight: bold; text-transform: uppercase; font-size: 11px; color: #555; margin-bottom: 8px; }
+            .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            .items-table th { background: #f9f9f9; color: #333; text-align: left; padding: 10px; font-size: 11px; font-weight: bold; border-bottom: 2px solid #eee; text-transform: uppercase; }
+            .footer { border-top: 1px solid #eee; margin-top: 40px; padding-top: 20px; text-align: center; font-size: 11px; color: #999; }
+            @media print {
+              body { padding: 0; }
+              .slip-box { border: none; padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="slip-box">
+            <div class="header">
+              <div>
+                <div class="logo">NARI PEHNAWA</div>
+                <div style="font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #555;">Packing Slip</div>
+              </div>
+              <div style="text-align: right; font-size: 12px;">
+                Order Number: <strong>${order.order_number || order.orderId}</strong><br>
+                Order Date: ${orderDate}
+              </div>
+            </div>
+
+            <div class="addresses">
+              <div class="address-block">
+                <div class="section-title">Shipping Address</div>
+                <strong>${order.shipping_address?.full_name || order.customer?.name || "Customer"}</strong><br>
+                ${order.shipping_address?.address_line1 || ""}, ${order.shipping_address?.address_line2 || ""}<br>
+                ${order.shipping_address?.city || ""}, ${order.shipping_address?.state || ""} - ${order.shipping_address?.postal_code || ""}<br>
+                Phone: ${order.shipping_address?.phone || order.customer?.phone || "—"}
+              </div>
+            </div>
+
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th style="width: 80%;">Product Name</th>
+                  <th style="width: 20%; text-align: center;">Quantity</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+            </table>
+
+            <div class="footer">
+              <p>Nari Pehnawa Packing Slip</p>
+            </div>
+          </div>
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                window.close();
+              }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(packingSlipHtml);
+    printWindow.document.close();
+  };
+
   const handleCancelShipment = () => {
     if (!window.confirm("Cancel shipment with the courier?")) return;
     runShippingAction("cancel", () => shippingApi.cancelShipment(selectedOrder.orderId));
@@ -1417,17 +1675,33 @@ const Orders = () => {
                     <h5 className="font-bold text-slate-800 flex items-center gap-1.5"><Printer className="w-4 h-4 text-[#0891b2]" /> Document Print Center</h5>
                     <div className="space-y-2">
                       <button
-                        onClick={() => window.print()}
+                        onClick={() => handlePrintCustomInvoice(selectedOrder)}
                         className="w-full flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition text-[11px] font-bold text-slate-700 text-left"
                       >
-                        <span>Print Invoice Template</span>
+                        <span>Print Retail Invoice (Local)</span>
                         <Printer className="w-3.5 h-3.5 text-slate-400" />
                       </button>
+
+                      {selectedOrder.shipment_id ? (
+                        <button
+                          onClick={handlePrintLabel}
+                          disabled={shippingActionLoading === "label"}
+                          className="w-full flex items-center justify-between p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition text-[11px] font-bold text-emerald-700 text-left disabled:opacity-50"
+                        >
+                          <span>{shippingActionLoading === "label" ? "Fetching Label..." : "Print Courier Slip (Shiprocket)"}</span>
+                          <Truck className="w-3.5 h-3.5 text-emerald-500" />
+                        </button>
+                      ) : (
+                        <div className="p-2.5 bg-slate-100 text-slate-400 rounded-xl text-[10px] italic text-center">
+                          Courier slip available after shipping fulfillment
+                        </div>
+                      )}
+
                       <button
-                        onClick={() => window.print()}
+                        onClick={() => handlePrintPackingSlip(selectedOrder)}
                         className="w-full flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition text-[11px] font-bold text-slate-700 text-left"
                       >
-                        <span>Print Packing Slip</span>
+                        <span>Print Packing Slip (Local)</span>
                         <FileText className="w-3.5 h-3.5 text-slate-400" />
                       </button>
                     </div>
