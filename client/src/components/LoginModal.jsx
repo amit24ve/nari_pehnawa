@@ -150,21 +150,21 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
       ></div>
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 my-auto">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 my-auto max-h-[90vh] flex flex-col overflow-hidden">
         {/* Top accent bar */}
         <div className="h-1 w-full bg-gradient-to-r from-[#8B0000] to-[#a52a2a] rounded-t-2xl"></div>
 
         {/* Close Button */}
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-all duration-300 z-10"
+          className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-all duration-300 z-20 bg-white"
           aria-label="Close"
         >
           <X className="w-5 h-5 text-gray-500 hover:text-gray-800" />
         </button>
 
         {/* Content */}
-        <div className="p-5 sm:p-6">
+        <div className="p-5 sm:p-6 overflow-y-auto flex-1">
           {/* Header */}
           <div className="text-center mb-4 sm:mb-5">
             {/* Logo */}
