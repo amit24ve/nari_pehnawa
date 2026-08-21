@@ -43,7 +43,7 @@ class UserUpdate(BaseModel):
 
 
 class PasswordChange(BaseModel):
-    current_password: str
+    current_password: Optional[str] = None
     new_password: str
 
 

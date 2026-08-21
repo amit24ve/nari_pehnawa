@@ -225,8 +225,8 @@ const CheckoutModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl w-full max-w-xl my-8 shadow-2xl">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-xl shadow-2xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-fadeIn">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <div>
@@ -259,6 +259,9 @@ const CheckoutModal = ({
             />
           </div>
         )}
+
+        {/* Scrollable Content Wrapper */}
+        <div className="overflow-y-auto flex-1 p-1">
 
         {/* STEP 1: Address */}
         {step === 1 && (
@@ -566,6 +569,7 @@ const CheckoutModal = ({
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

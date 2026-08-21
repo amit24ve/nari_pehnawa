@@ -261,8 +261,8 @@ def change_password(password_data: PasswordChange, current_user: dict = Depends(
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
-        # Verify current password
-        if not verify_password(password_data.current_password, user.get("password_hash")):
+        # Verify current password if provided
+        if password_data.current_password and not verify_password(password_data.current_password, user.get("password_hash")):
             raise HTTPException(status_code=400, detail="Current password is incorrect")
         
         # Hash and update new password

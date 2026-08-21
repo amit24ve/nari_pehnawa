@@ -194,10 +194,9 @@ const Wishlist = () => {
         );})}
       </div>
 
-      {/* Size Picker Modal */}
-      {sizePickerItem && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
+      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-fadeIn">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-900">Select Size</h3>
@@ -208,6 +207,9 @@ const Wishlist = () => {
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
+
+            {/* Scrollable Modal Content */}
+            <div className="overflow-y-auto flex-1 p-0.5 space-y-4">
 
             {/* Product info */}
             <div className="flex items-center gap-3 mb-5 pb-4 border-b border-gray-100">
@@ -255,6 +257,7 @@ const Wishlist = () => {
               <ShoppingCart className="w-4 h-4" />
               {loading ? "Adding..." : "Add to Cart"}
             </button>
+            </div>
           </div>
         </div>
       )}
