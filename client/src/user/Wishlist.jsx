@@ -193,10 +193,10 @@ const Wishlist = () => {
           </div>
         );})}
       </div>
-
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-fadeIn">
+      {/* Size Picker Modal */}
+      {sizePickerItem && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-fadeIn">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-900">Select Size</h3>
