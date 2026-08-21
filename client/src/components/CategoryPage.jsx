@@ -14,6 +14,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useWishlist } from "../context/WishlistProvider";
+import useSEO from "../hooks/useSEO";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
@@ -171,6 +172,11 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
   const displayName =
     propCategoryName ||
     (urlSlug || "").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+  useSEO(
+    `${displayName} | Nari Pehnawa | Traditional Ka Tadka`,
+    `Explore Nari Pehnawa's exclusive collection of premium ${displayName}. Handcrafted designs, sarees, and kurtis in Sultanpur, Uttar Pradesh.`
+  );
 
   // Product state
   const [products, setProducts] = useState([]);

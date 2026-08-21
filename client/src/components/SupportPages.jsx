@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Mail, MapPin, CheckCircle, HelpCircle, FileText, Truck, ShieldAlert, Award, CreditCard, Ruler, RefreshCw, Star, Info, Send } from "lucide-react";
 
+import useSEO from "../hooks/useSEO";
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
 const supportTopics = [
@@ -23,6 +25,27 @@ export default function SupportPages() {
   const { pageType } = useParams();
   const navigate = useNavigate();
   const activeTab = pageType || "contact-us";
+
+  const topic = supportTopics.find(t => t.slug === activeTab);
+  const pageTitle = topic ? `${topic.label} | Nari Pehnawa` : "Support & Help | Nari Pehnawa";
+  
+  // Custom descriptions based on the active tab
+  let pageDesc = "Nari Pehnawa Support page. Find customer care contacts, FAQs, and help center details.";
+  if (activeTab === "refund-policy") {
+    pageDesc = "Read Nari Pehnawa's 15-day refund and return policy. Learn how to initiate easy product returns and refunds.";
+  } else if (activeTab === "about-us") {
+    pageDesc = "Learn about Nari Pehnawa, our vision to bring authentic Indian ethnic wear with Traditional Ka Tadka, and our Sultanpur origins.";
+  } else if (activeTab === "contact-us") {
+    pageDesc = "Get in touch with Nari Pehnawa. Contact our customer support team for inquiries, order tracking, and complaints.";
+  } else if (activeTab === "privacy-policy") {
+    pageDesc = "Privacy Policy of Nari Pehnawa. Read how we protect and manage your personal data and transaction security.";
+  } else if (activeTab === "terms-conditions") {
+    pageDesc = "Nari Pehnawa Terms and Conditions of service. Understand our rules of use, customer obligations, and legal notices.";
+  } else if (activeTab === "shipping-delivery") {
+    pageDesc = "Learn about Nari Pehnawa shipping, delivery timelines, and courier partnerships with Shiprocket across India.";
+  }
+
+  useSEO(pageTitle, pageDesc);
 
   // Form states
   const [contactForm, setContactForm] = useState({ name: "", phone: "", email: "", subject: "General Inquiry", message: "" });

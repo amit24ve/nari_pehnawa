@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import useSEO from "./hooks/useSEO";
 import {
     BrowserRouter as Router,
     Routes,
@@ -56,6 +57,10 @@ import UserAddresses from "./user/Addresses";
 import UserSettings from "./user/Settings";
 
 function HomePage() {
+    useSEO(
+        "Nari Pehnawa | Traditional Ka Tadka | Authentic Women Ethnic Wear, Kurtis & Sarees",
+        "Nari Pehnawa (naripehnawa.com) is India's leading online boutique for handcrafted Anarkali Kurtis, Chikankari Sets, Palazzo Suits, Sarees & Designer Ethnic Wear. Free Shipping & Fast Delivery."
+    );
     return (
         <>
             <HeroSection />

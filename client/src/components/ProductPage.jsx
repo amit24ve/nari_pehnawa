@@ -41,6 +41,7 @@ import { useAuth } from "../context/AuthProvider";
 import ProductCard from "./ProductCard";
 import ImageZoomModal from "./ImageZoomModal";
 import CheckoutModal from "./CheckoutModal";
+import useSEO from "../hooks/useSEO";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 const FALLBACK_IMG = "https://images.pexels.com/photos/5704849/pexels-photo-5704849.jpeg?auto=compress&cs=tinysrgb&w=600";
@@ -82,6 +83,11 @@ const ProductPage = () => {
 
   // Core Product State
   const [product, setProduct] = useState(null);
+
+  useSEO(
+    product ? `${product.name} | Nari Pehnawa` : "Authentic Women Ethnic Wear | Nari Pehnawa",
+    product ? `${product.description || product.name}. Shop original handcrafted Indian ethnic wear at Nari Pehnawa.` : "Handcrafted Anarkali Kurtis, Chikankari Sets, Palazzo Suits, Sarees & Designer Ethnic Wear at Nari Pehnawa."
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [related, setRelated] = useState([]);
