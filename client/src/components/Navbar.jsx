@@ -203,16 +203,6 @@ const Navbar = () => {
       label: "My Orders",
     },
     {
-      to: "/user/wishlist",
-      icon: <Heart className="w-4 h-4" />,
-      label: "Wishlist",
-    },
-    {
-      to: "/user/addresses",
-      icon: <MapPin className="w-4 h-4" />,
-      label: "Addresses",
-    },
-    {
       to: "/user/settings",
       icon: <Settings className="w-4 h-4" />,
       label: "Settings",

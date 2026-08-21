@@ -224,19 +224,6 @@ const Settings = () => {
                     </label>
                 </div>
             </div>
-
-            {/* Danger Zone */}
-            <div className="bg-white rounded-xl shadow-sm border-2 border-red-200 p-4 sm:p-6">
-                <h2 className="text-lg sm:text-xl font-bold text-red-600 mb-3 sm:mb-4">Danger Zone</h2>
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                    <button className="w-full sm:w-auto px-5 sm:px-6 py-2 border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-semibold text-sm sm:text-base">
-                        Deactivate Account
-                    </button>
-                    <button className="w-full sm:w-auto px-5 sm:px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold text-sm sm:text-base">
-                        Delete Account
-                    </button>
-                </div>
-            </div>
         </div>
     );
 };

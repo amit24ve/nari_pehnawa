@@ -52,8 +52,6 @@ import { CartProvider } from "./context/CartProvider";
 import AccountLayout from "./user/AccountLayout";
 import UserProfile from "./user/Profile";
 import UserOrders from "./user/Orders";
-import UserWishlist from "./user/Wishlist";
-import UserAddresses from "./user/Addresses";
 import UserSettings from "./user/Settings";
 
 function HomePage() {
@@ -224,8 +222,6 @@ function MainLayout() {
                         />
                         <Route path="profile" element={<UserProfile />} />
                         <Route path="orders" element={<UserOrders />} />
-                        <Route path="wishlist" element={<UserWishlist />} />
-                        <Route path="addresses" element={<UserAddresses />} />
                         <Route path="settings" element={<UserSettings />} />
                     </Route>
                 </Routes>
