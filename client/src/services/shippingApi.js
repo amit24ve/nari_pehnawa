@@ -119,6 +119,47 @@ export const shippingApi = {
 
   /** Admin: get (and persist) the invoice PDF URL */
   getInvoice: (shipmentId) => request(`/shipping/invoice/${shipmentId}`),
+
+  /** Admin: generate manifest for shipment IDs */
+  generateManifest: (shipmentIds) =>
+    request("/shipping/manifest/generate", {
+      method: "POST",
+      body: { shipment_ids: shipmentIds },
+    }),
+
+  /** Admin: get (and generate if needed) manifest PDF URL */
+  getManifest: (shipmentId) => request(`/shipping/manifest/${shipmentId}`),
+
+  /** Admin: bulk invoice generation */
+  bulkInvoices: (orderIds) =>
+    request("/shipping/bulk/invoices", {
+      method: "POST",
+      body: { ids: orderIds },
+    }),
+
+  /** Admin: bulk label generation */
+  bulkLabels: (shipmentIds) =>
+    request("/shipping/bulk/labels", {
+      method: "POST",
+      body: { shipment_ids: shipmentIds },
+    }),
+
+  /** Admin: bulk manifest generation */
+  bulkManifests: (shipmentIds) =>
+    request("/shipping/bulk/manifests", {
+      method: "POST",
+      body: { shipment_ids: shipmentIds },
+    }),
+
+  /** Admin: bulk tracking status synchronization */
+  bulkSync: (shipmentIds) =>
+    request("/shipping/bulk/sync", {
+      method: "POST",
+      body: { shipment_ids: shipmentIds },
+    }),
+
+  /** Public: customer-facing order tracking information */
+  trackPublic: (orderId) => request(`/shipping/track-public/${orderId}`),
 };
 
 export default shippingApi;

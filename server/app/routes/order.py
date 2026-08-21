@@ -428,7 +428,8 @@ def get_order(order_id: str, current_user: dict = Depends(get_current_user)):
                         if product:
                             item_dict["product"] = {
                                 "name": product.get("name", item.get("product_name")),
-                                "image_url": product.get("image_url", "/placeholder.jpg")
+                                "image_url": product.get("image_url", "/placeholder.jpg"),
+                                "pickup_location": product.get("pickup_location")
                             }
                     except Exception as e:
                         print(f"Error fetching product: {e}")

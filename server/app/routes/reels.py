@@ -1,10 +1,11 @@
 from datetime import datetime
 from typing import List, Optional
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from app.database import get_database
 from app.security import require_admin
+from app.utils.cache import cache_response, clear_api_cache
 
 router = APIRouter(prefix="/reels", tags=["WatchAndBuyReels"])
 
@@ -96,7 +97,8 @@ def get_default_reels():
 
 
 @router.get("/", response_model=List[ReelOut])
-def get_reels(active_only: bool = True):
+@cache_response(expire_seconds=300)
+def get_reels(request: Request, active_only: bool = True):
     db = get_database()
     query = {"is_active": True} if active_only else {}
     collection = db["watch_buy_reels"]
@@ -119,6 +121,7 @@ def create_reel(data: ReelCreate, _admin=Depends(require_admin)):
     doc["created_at"] = datetime.now()
     result = db["watch_buy_reels"].insert_one(doc)
     doc["_id"] = result.inserted_id
+    clear_api_cache()
     return _fmt(doc)
 
 
@@ -137,6 +140,7 @@ def update_reel(reel_id: str, data: ReelUpdate, _admin=Depends(require_admin)):
     )
     if not result:
         raise HTTPException(status_code=404, detail="Reel not found")
+    clear_api_cache()
     return _fmt(result)
 
 
@@ -150,6 +154,7 @@ def delete_reel(reel_id: str, _admin=Depends(require_admin)):
     result = db["watch_buy_reels"].delete_one({"_id": oid})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Reel not found")
+    clear_api_cache()
     return {"success": True}
 
 
@@ -165,4 +170,5 @@ def toggle_reel(reel_id: str, _admin=Depends(require_admin)):
         raise HTTPException(status_code=404, detail="Reel not found")
     new_state = not doc.get("is_active", True)
     db["watch_buy_reels"].update_one({"_id": oid}, {"$set": {"is_active": new_state}})
+    clear_api_cache()
     return {"success": True, "is_active": new_state}

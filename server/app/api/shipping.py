@@ -48,6 +48,8 @@ from app.schemas.shipping import (
     SchedulePickupResponse,
     ServiceabilityResponse,
     TrackShipmentResponse,
+    GenerateManifestRequest,
+    BulkActionRequest,
 )
 from app.security import get_current_user, require_admin
 from app.services.shiprocket_service import (
@@ -466,6 +468,21 @@ async def fulfill_order(
     order_data = {k: v for k, v in order.items() if k != "_id"}
     if pickup_location:
         order_data["pickup_location"] = pickup_location
+    else:
+        # Fallback to resolve from products in the order
+        items = order_data.get("items", []) or []
+        for item in items:
+            pid = item.get("product_id") or item.get("id") or item.get("_id")
+            if pid:
+                try:
+                    from bson import ObjectId
+                    db = repo.db
+                    prod = db["products"].find_one({"_id": ObjectId(str(pid))})
+                    if prod and prod.get("pickup_location"):
+                        order_data["pickup_location"] = prod["pickup_location"]
+                        break
+                except Exception:
+                    pass
 
     try:
         result = await sr.fulfill_order(order_id, order_data, repo)
@@ -564,3 +581,320 @@ async def shiprocket_webhook(
         await repo.update_order_status(str(order["_id"]), order_status_map[mapped_status])
 
     return {"success": True, "matched": True, "order_id": str(order["_id"]), "status": mapped_status}
+
+
+# ── Manifest & Bulk Actions Endpoints ──────────────────────────────────────────
+
+
+@router.post("/manifest/generate")
+async def generate_manifest_route(
+    payload: GenerateManifestRequest,
+    current_user: dict = Depends(require_admin),
+    sr: ShiprocketService = Depends(get_shiprocket_service),
+    repo: ShippingRepository = Depends(get_shipping_repository),
+):
+    """Generate and print manifest for a list of shipment IDs (Admin only)."""
+    if not payload.shipment_ids:
+        raise HTTPException(status_code=400, detail="shipment_ids list cannot be empty")
+    
+    try:
+        # Step 1: Generate manifest
+        await sr.generate_manifest(payload.shipment_ids)
+        # Step 2: Print manifest (returns print URL)
+        print_res = await sr.print_manifest(payload.shipment_ids)
+    except ShiprocketAPIError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+    manifest_url = print_res.get("manifest_url")
+    if not manifest_url:
+        raise HTTPException(status_code=502, detail="Shiprocket did not return a manifest URL")
+
+    # Update manifest URL for all matching orders in database
+    for shipment_id in payload.shipment_ids:
+        order = await repo.find_order_by_shipment_id(shipment_id)
+        if order:
+            await repo.update_shipping_info(
+                str(order["_id"]),
+                ShippingInfo(manifest_url=manifest_url)
+            )
+
+    return {"success": True, "manifest_url": manifest_url}
+
+
+@router.get("/manifest/{shipment_id}")
+async def get_manifest_route(
+    shipment_id: int,
+    current_user: dict = Depends(require_admin),
+    sr: ShiprocketService = Depends(get_shiprocket_service),
+    repo: ShippingRepository = Depends(get_shipping_repository),
+):
+    """Get or generate the manifest PDF URL for a shipment (Admin only)."""
+    order = await repo.find_order_by_shipment_id(shipment_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found for this shipment_id")
+
+    # If already generated, return existing URL
+    existing_url = (order.get("shipping") or {}).get("manifest_url")
+    if existing_url:
+        return {"success": True, "shipment_id": shipment_id, "manifest_url": existing_url}
+
+    # Otherwise, generate and print
+    try:
+        await sr.generate_manifest([shipment_id])
+        print_res = await sr.print_manifest([shipment_id])
+    except ShiprocketAPIError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+    manifest_url = print_res.get("manifest_url")
+    if not manifest_url:
+        raise HTTPException(status_code=502, detail="Shiprocket did not return a manifest URL")
+
+    await repo.update_shipping_info(
+        str(order["_id"]),
+        ShippingInfo(manifest_url=manifest_url)
+    )
+
+    return {"success": True, "shipment_id": shipment_id, "manifest_url": manifest_url}
+
+
+@router.post("/bulk/invoices")
+async def bulk_generate_invoices(
+    payload: BulkActionRequest,
+    current_user: dict = Depends(require_admin),
+    sr: ShiprocketService = Depends(get_shiprocket_service),
+    repo: ShippingRepository = Depends(get_shipping_repository),
+):
+    """Generate consolidated invoices for multiple orders in bulk (Admin only)."""
+    if not payload.ids:
+        raise HTTPException(status_code=400, detail="Order IDs list cannot be empty")
+
+    shiprocket_order_ids = []
+    matched_orders = []
+    
+    for oid in payload.ids:
+        order = await repo.get_order(str(oid)) if len(str(oid)) == 24 else None
+        if not order:
+            # Try finding by shiprocket order ID directly
+            order = await repo.find_order_by_shiprocket_order_id(oid)
+        
+        if order:
+            sr_order_id = (order.get("shipping") or {}).get("shiprocket_order_id")
+            if sr_order_id:
+                shiprocket_order_ids.append(sr_order_id)
+                matched_orders.append(order)
+
+    if not shiprocket_order_ids:
+        raise HTTPException(status_code=404, detail="No matching Shiprocket orders found")
+
+    try:
+        result = await sr.generate_invoice(shiprocket_order_ids)
+    except ShiprocketAPIError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+    invoice_url = result.get("invoice_url")
+    if not invoice_url:
+        raise HTTPException(status_code=502, detail="Shiprocket did not return an invoice URL")
+
+    # Update invoice url in DB for all matched orders
+    for order in matched_orders:
+        await repo.update_shipping_info(
+            str(order["_id"]),
+            ShippingInfo(invoice_url=invoice_url)
+        )
+
+    return {"success": True, "invoice_url": invoice_url, "processed_count": len(shiprocket_order_ids)}
+
+
+@router.post("/bulk/labels")
+async def bulk_generate_labels(
+    payload: GenerateManifestRequest,
+    current_user: dict = Depends(require_admin),
+    sr: ShiprocketService = Depends(get_shiprocket_service),
+    repo: ShippingRepository = Depends(get_shipping_repository),
+):
+    """Generate consolidated shipping labels for multiple shipments in bulk (Admin only)."""
+    if not payload.shipment_ids:
+        raise HTTPException(status_code=400, detail="shipment_ids list cannot be empty")
+
+    try:
+        result = await sr.generate_label(payload.shipment_ids)
+    except ShiprocketAPIError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+    label_url = result.get("label_url")
+    if not label_url:
+        raise HTTPException(status_code=502, detail="Shiprocket did not return a label URL")
+
+    # Update label url in DB for all matched orders
+    for shipment_id in payload.shipment_ids:
+        order = await repo.find_order_by_shipment_id(shipment_id)
+        if order:
+            await repo.update_shipping_info(
+                str(order["_id"]),
+                ShippingInfo(label_url=label_url)
+            )
+
+    return {"success": True, "label_url": label_url, "processed_count": len(payload.shipment_ids)}
+
+
+@router.post("/bulk/manifests")
+async def bulk_generate_manifests(
+    payload: GenerateManifestRequest,
+    current_user: dict = Depends(require_admin),
+    sr: ShiprocketService = Depends(get_shiprocket_service),
+    repo: ShippingRepository = Depends(get_shipping_repository),
+):
+    """Generate consolidated manifests for multiple shipments in bulk (Admin only)."""
+    if not payload.shipment_ids:
+        raise HTTPException(status_code=400, detail="shipment_ids list cannot be empty")
+
+    try:
+        await sr.generate_manifest(payload.shipment_ids)
+        result = await sr.print_manifest(payload.shipment_ids)
+    except ShiprocketAPIError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+    manifest_url = result.get("manifest_url")
+    if not manifest_url:
+        raise HTTPException(status_code=502, detail="Shiprocket did not return a manifest URL")
+
+    # Update manifest url in DB for all matched orders
+    for shipment_id in payload.shipment_ids:
+        order = await repo.find_order_by_shipment_id(shipment_id)
+        if order:
+            await repo.update_shipping_info(
+                str(order["_id"]),
+                ShippingInfo(manifest_url=manifest_url)
+            )
+
+    return {"success": True, "manifest_url": manifest_url, "processed_count": len(payload.shipment_ids)}
+
+
+@router.post("/bulk/sync")
+async def bulk_sync_shipments(
+    payload: GenerateManifestRequest,
+    current_user: dict = Depends(require_admin),
+    sr: ShiprocketService = Depends(get_shiprocket_service),
+    repo: ShippingRepository = Depends(get_shipping_repository),
+):
+    """Sync tracking/shipping statuses in bulk for multiple shipment IDs (Admin only)."""
+    if not payload.shipment_ids:
+        raise HTTPException(status_code=400, detail="shipment_ids list cannot be empty")
+
+    success_count = 0
+    for shipment_id in payload.shipment_ids:
+        order = await repo.find_order_by_shipment_id(shipment_id)
+        if order:
+            awb = (order.get("shipping") or {}).get("awb")
+            if awb:
+                try:
+                    raw = await sr.track_by_awb(awb)
+                    summary = build_tracking_summary(awb, raw)
+                    mapped_status = map_shiprocket_status(summary["current_status"])
+                    await repo.update_shipping_info(
+                        str(order["_id"]),
+                        ShippingInfo(
+                            current_status=summary["current_status"],
+                            shipment_status=mapped_status,
+                            estimated_delivery=summary.get("estimated_delivery") or None,
+                            delivered_date=summary.get("delivered_date") or None,
+                        )
+                    )
+                    # Mirror order status
+                    order_status_map = {
+                        "delivered": "delivered",
+                        "in_transit": "shipped",
+                        "out_for_delivery": "shipped",
+                        "picked_up": "shipped",
+                        "cancelled": "cancelled",
+                    }
+                    if mapped_status in order_status_map:
+                        await repo.update_order_status(str(order["_id"]), order_status_map[mapped_status])
+                    success_count += 1
+                except Exception:
+                    pass
+
+    return {"success": True, "processed_count": len(payload.shipment_ids), "synced_count": success_count}
+
+
+@router.get("/track-public/{order_id}")
+async def track_shipment_public(
+    order_id: str,
+    sr: ShiprocketService = Depends(get_shiprocket_service),
+    repo: ShippingRepository = Depends(get_shipping_repository),
+):
+    """
+    Public order tracking endpoint. No authorization required.
+    Does not expose sensitive backend fields, only returns customer-safe normalized tracking data.
+    """
+    try:
+        ObjectId(order_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid order_id")
+
+    order = await repo.get_order(order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    shipping = order.get("shipping", {}) or {}
+    awb = shipping.get("awb")
+
+    if not awb:
+        return {
+            "order_number": order.get("order_number") or str(order.get("_id")),
+            "current_status": "Processing",
+            "shipment_status": "new",
+            "tracking_history": []
+        }
+
+    try:
+        raw = await sr.track_by_awb(awb)
+        summary = build_tracking_summary(awb, raw)
+        mapped_status = map_shiprocket_status(summary["current_status"])
+        
+        # Sync latest status back to DB
+        await repo.update_shipping_info(
+            str(order["_id"]),
+            ShippingInfo(
+                current_status=summary["current_status"],
+                shipment_status=mapped_status,
+                estimated_delivery=summary.get("estimated_delivery") or None,
+                delivered_date=summary.get("delivered_date") or None,
+            )
+        )
+        
+        # Mirror order status
+        order_status_map = {
+            "delivered": "delivered",
+            "in_transit": "shipped",
+            "out_for_delivery": "shipped",
+            "picked_up": "shipped",
+            "cancelled": "cancelled",
+        }
+        if mapped_status in order_status_map:
+            await repo.update_order_status(str(order["_id"]), order_status_map[mapped_status])
+            
+        return {
+            "order_number": order.get("order_number") or str(order.get("_id")),
+            "awb": awb,
+            "current_status": summary["current_status"],
+            "shipment_status": mapped_status,
+            "courier_name": summary.get("courier_name"),
+            "estimated_delivery": summary.get("estimated_delivery"),
+            "delivered_date": summary.get("delivered_date"),
+            "tracking_url": summary.get("tracking_url"),
+            "tracking_history": summary.get("tracking_history")
+        }
+    except Exception:
+        # Fallback to local stored info
+        return {
+            "order_number": order.get("order_number") or str(order.get("_id")),
+            "awb": awb,
+            "current_status": shipping.get("current_status", "Unknown"),
+            "shipment_status": shipping.get("shipment_status", "new"),
+            "courier_name": shipping.get("courier_name"),
+            "estimated_delivery": shipping.get("estimated_delivery"),
+            "delivered_date": shipping.get("delivered_date"),
+            "tracking_url": shipping.get("tracking_url"),
+            "tracking_history": []
+        }

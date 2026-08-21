@@ -240,7 +240,7 @@ const Footer = () => {
                 <div className="flex items-start gap-2">
                   <MapPin className="w-4 h-4 text-[#8B0000] flex-shrink-0 mt-0.5" />
                   <span className="text-[#3a0808] font-bold leading-relaxed drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]">
-                    Nari Pehnawa,<br />Baisiya, Sultanpur, Uttar Pradesh, India, 228151
+                    Nari Pehnawa,<br />Sultanpur, Uttar Pradesh, India, 228151
                   </span>
                 </div>
                 <div className="flex items-center gap-2">

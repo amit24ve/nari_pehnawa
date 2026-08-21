@@ -187,7 +187,7 @@ export default function SupportPages() {
                   <div>
                     <h4 className="font-bold text-gray-900 font-serif mb-1">Our Location</h4>
                     <p className="text-sm text-gray-600 leading-relaxed font-medium">
-                      Nari Pehnawa,<br />Baisiya, Sultanpur, Uttar Pradesh, India, 228151
+                      Nari Pehnawa,<br />Sultanpur, Uttar Pradesh, India, 228151
                     </p>
                   </div>
                 </div>

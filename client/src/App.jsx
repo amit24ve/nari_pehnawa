@@ -26,6 +26,7 @@ import WelcomePopup from "./components/WelcomePopup";
 import GoogleAuthCallback from "./components/GoogleAuthCallback";
 import OwnerPage from "./components/OwnerPage";
 import SupportPages from "./components/SupportPages";
+import PublicOrderTracking from "./components/PublicOrderTracking";
 import "./App.css";
 import AIChatbot from "./components/AIChatbot";
 import AdminLayout from "./admin/AdminLayout";
@@ -198,6 +199,10 @@ function MainLayout() {
                     <Route
                         path="/category/:categoryName"
                         element={<CategoryPage />}
+                    />
+                    <Route
+                        path="/order-tracking/:orderId"
+                        element={<PublicOrderTracking />}
                     />
 
                     {/* My Account (no separate dashboard — reached only via the

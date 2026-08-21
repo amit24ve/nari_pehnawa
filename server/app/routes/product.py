@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException, Query, Depends, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Query, Depends, BackgroundTasks, Request
 from typing import List, Optional
 from pydantic import BaseModel
 from app.database.schemas.product import Product, ProductCreate, ProductUpdate
 from app.database import get_database
 from app.security import require_admin
 from bson import ObjectId
+from app.utils.cache import cache_response, clear_api_cache
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -85,13 +86,16 @@ def create_product(product: ProductCreate, background_tasks: BackgroundTasks, cu
             product_data.get("image", "")
         )
         
+        clear_api_cache()
         return product_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/", response_model=List[Product])
+@cache_response(expire_seconds=300)
 def get_products(
+    request: Request,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=5000),
     category: Optional[str] = None,
@@ -141,7 +145,9 @@ def get_products(
 
 
 @router.get("/count")
+@cache_response(expire_seconds=300)
 def get_product_count(
+    request: Request,
     category: Optional[str] = None,
     on_sale: Optional[bool] = None,
     is_new: Optional[bool] = None,
@@ -182,7 +188,8 @@ def get_product_count(
 
 
 @router.get("/{product_id}", response_model=Product)
-def get_product(product_id: str):
+@cache_response(expire_seconds=300)
+def get_product(product_id: str, request: Request):
     """Get a single product by ID"""
     db = get_database()
     products_collection = db["products"]
@@ -218,6 +225,7 @@ def update_product(product_id: str, product: ProductUpdate, current_user: dict =
         if not result:
             raise HTTPException(status_code=404, detail="Product not found")
         result["_id"] = str(result["_id"])
+        clear_api_cache()
         return result
     except HTTPException:
         raise
@@ -235,6 +243,7 @@ def delete_product(product_id: str, current_user: dict = Depends(require_admin))
         result = products_collection.delete_one({"_id": ObjectId(product_id)})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Product not found")
+        clear_api_cache()
         return {"message": "Product deleted successfully"}
     except HTTPException:
         raise

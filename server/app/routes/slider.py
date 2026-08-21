@@ -8,11 +8,12 @@ from datetime import datetime
 from typing import List, Optional
 
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from app.database import get_database
 from app.security import require_admin
+from app.utils.cache import cache_response, clear_api_cache
 
 router = APIRouter(prefix="/slider", tags=["Slider"])
 
@@ -55,7 +56,8 @@ def _fmt(doc: dict) -> dict:
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @router.get("/", response_model=List[SlideOut])
-def get_slides(active_only: bool = True):
+@cache_response(expire_seconds=300)
+def get_slides(request: Request, active_only: bool = True):
     """Public — fetch all slides ordered by `order` field."""
     db = get_database()
     query = {"is_active": True} if active_only else {}
@@ -70,6 +72,7 @@ def create_slide(data: SlideCreate, _admin=Depends(require_admin)):
     doc["created_at"] = datetime.now()
     result = db["hero_slides"].insert_one(doc)
     doc["_id"] = result.inserted_id
+    clear_api_cache()
     return _fmt(doc)
 
 
@@ -88,6 +91,7 @@ def update_slide(slide_id: str, data: SlideUpdate, _admin=Depends(require_admin)
     )
     if not result:
         raise HTTPException(status_code=404, detail="Slide not found")
+    clear_api_cache()
     return _fmt(result)
 
 
@@ -101,6 +105,7 @@ def delete_slide(slide_id: str, _admin=Depends(require_admin)):
     result = db["hero_slides"].delete_one({"_id": oid})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Slide not found")
+    clear_api_cache()
     return {"success": True}
 
 
@@ -116,4 +121,5 @@ def toggle_slide(slide_id: str, _admin=Depends(require_admin)):
         raise HTTPException(status_code=404, detail="Slide not found")
     new_state = not doc.get("is_active", True)
     db["hero_slides"].update_one({"_id": oid}, {"$set": {"is_active": new_state}})
+    clear_api_cache()
     return {"success": True, "is_active": new_state}

@@ -47,15 +47,33 @@ class ShippingRepository:
         self, shiprocket_order_id: Any
     ) -> Optional[dict]:
         def _fetch():
-            return self.orders.find_one(
-                {"shipping.shiprocket_order_id": shiprocket_order_id}
-            )
+            try:
+                int_val = int(shiprocket_order_id)
+            except (ValueError, TypeError):
+                int_val = None
+
+            query = {"$or": [{"shipping.shiprocket_order_id": shiprocket_order_id}]}
+            if int_val is not None:
+                query["$or"].append({"shipping.shiprocket_order_id": int_val})
+            
+            query["$or"].append({"shipping.shiprocket_order_id": str(shiprocket_order_id)})
+            return self.orders.find_one(query)
 
         return await asyncio.to_thread(_fetch)
 
     async def find_order_by_shipment_id(self, shipment_id: Any) -> Optional[dict]:
         def _fetch():
-            return self.orders.find_one({"shipping.shipment_id": shipment_id})
+            try:
+                int_val = int(shipment_id)
+            except (ValueError, TypeError):
+                int_val = None
+
+            query = {"$or": [{"shipping.shipment_id": shipment_id}]}
+            if int_val is not None:
+                query["$or"].append({"shipping.shipment_id": int_val})
+            
+            query["$or"].append({"shipping.shipment_id": str(shipment_id)})
+            return self.orders.find_one(query)
 
         return await asyncio.to_thread(_fetch)
 

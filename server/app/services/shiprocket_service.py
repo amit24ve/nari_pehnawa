@@ -214,6 +214,16 @@ class ShiprocketService:
 
     def _build_order_payload(self, order_id: str, order_data: dict, dimensions: Optional[dict] = None) -> dict:
         addr = order_data.get("shipping_address", {}) or {}
+        if isinstance(addr, str):
+            parts = [p.strip() for p in addr.split(",") if p.strip()]
+            addr = {
+                "full_name": order_data.get("customer_name") or "Customer",
+                "phone": str(order_data.get("phone") or "").replace("+91", "").strip(),
+                "address_line1": addr[:100],
+                "city": parts[-3] if len(parts) >= 3 else "Mumbai",
+                "state": parts[-2] if len(parts) >= 2 else "Maharashtra",
+                "postal_code": parts[-1] if len(parts) >= 1 and parts[-1].strip().isdigit() else "400053",
+            }
         items = order_data.get("items", []) or []
         dims = dimensions or {}
 
@@ -367,6 +377,16 @@ class ShiprocketService:
         payload = {"ids": order_ids}
         return await self._request("POST", "/orders/print/invoice", json_body=payload)
 
+    async def generate_manifest(self, shipment_ids: list[int]) -> dict:
+        """POST /manifests/generate — generates manifest."""
+        payload = {"shipment_id": shipment_ids}
+        return await self._request("POST", "/manifests/generate", json_body=payload)
+
+    async def print_manifest(self, shipment_ids: list[int]) -> dict:
+        """POST /manifests/print — returns a `manifest_url` PDF link."""
+        payload = {"shipment_id": shipment_ids}
+        return await self._request("POST", "/manifests/print", json_body=payload)
+
     # ── Courier reassignment (cancel AWB then regenerate with a new courier) ──
 
     async def reassign_courier(self, shipment_id: int, courier_id: int) -> dict:
@@ -433,6 +453,12 @@ class ShiprocketService:
         try:
             awb_result = await self.generate_awb(shipment_id)
             response_data = awb_result.get("response", {}).get("data", awb_result)
+            
+            # Raise a clear error if AWB assignment fails (e.g. insufficient wallet balance)
+            assign_err = response_data.get("awb_assign_error") or awb_result.get("message")
+            if not (response_data.get("awb_code") or awb_result.get("awb_code")) and assign_err:
+                raise ShiprocketAPIError(f"AWB assignment failed: {assign_err}", detail=awb_result)
+
             info.awb = response_data.get("awb_code") or awb_result.get("awb_code")
             info.tracking_number = info.awb
             info.courier_name = response_data.get("courier_name") or awb_result.get("courier_name")
@@ -441,8 +467,9 @@ class ShiprocketService:
             info.shipment_status = "awb_assigned" if info.awb else info.shipment_status
         except ShiprocketAPIError as exc:
             logger.error("fulfill_order: AWB generation failed for shipment %s: %s", shipment_id, exc)
-            info.error = f"AWB generation failed: {exc}"
+            info.error = str(exc)
             await repo.update_shipping_info(order_id, info)
+            raise
             return info.to_dict()
 
         await repo.update_shipping_info(order_id, info)

@@ -32,6 +32,7 @@ class ShippingInfo:
     shipping_cost: Optional[float] = None
     label_url: Optional[str] = None
     invoice_url: Optional[str] = None
+    manifest_url: Optional[str] = None
     estimated_delivery: Optional[str] = None
     current_status: Optional[str] = None
     last_synced_at: Optional[datetime] = None

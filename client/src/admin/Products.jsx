@@ -23,7 +23,7 @@ import {
     Upload,
     Tag,
 } from "lucide-react";
-import { shippingApi } from "../services/shippingApi";
+import shippingApi from "../services/shippingApi";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
@@ -92,7 +92,10 @@ const Products = () => {
             setLoading(true);
             setError(null);
             shippingApi.getPickupLocations()
-                .then((res) => setPickupLocations(res.locations || []))
+                .then((res) => {
+                    const locationsList = Array.isArray(res) ? res : (res?.shipping_address || []);
+                    setPickupLocations(locationsList);
+                })
                 .catch(() => {});
             const token = getAuthToken();
             const headers = {
@@ -118,15 +121,16 @@ const Products = () => {
             }
 
             const data = await response.json();
+            const productsList = Array.isArray(data) ? data : [];
 
             if (countResponse && countResponse.ok) {
                 const countData = await countResponse.json();
-                setTotalProducts(countData.count ?? data.length);
+                setTotalProducts(countData.count ?? productsList.length);
             } else {
-                setTotalProducts(data.length);
+                setTotalProducts(productsList.length);
             }
 
-            const transformedProducts = data.map((product) => ({
+            const transformedProducts = productsList.map((product) => ({
                 ...product,
                 id: product._id || product.id,
                 title: product.name || product.title,
@@ -237,6 +241,33 @@ const Products = () => {
         }
     };
 
+    const handleImageFileUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploadingImage(true);
+        try {
+            const fd = new FormData();
+            fd.append("file", file);
+            const token = getAuthToken();
+            const res = await fetch(`${API_BASE_URL}/upload/image`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` },
+                body: fd,
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || "Upload failed");
+            }
+            const { url } = await res.json();
+            const fullUrl = `${API_BASE_URL}${url}`;
+            setFormData((f) => ({ ...f, image: fullUrl }));
+        } catch (err) {
+            alert(`Image upload error: ${err.message}`);
+        } finally {
+            setUploadingImage(false);
+        }
+    };
+
     const handleEdit = (product) => {
         setEditingProductId(product.id);
         setFormData({
@@ -249,8 +280,8 @@ const Products = () => {
             category: product.category || "",
             image: product.image || "",
             sku: product.sku || "",
-            sizes: product.sizes ? product.sizes.join(",") : "S,M,L,XL",
-            colors: product.colors ? product.colors.join(",") : "",
+            sizes: Array.isArray(product.sizes) ? product.sizes.join(",") : (product.sizes || "S,M,L,XL"),
+            colors: Array.isArray(product.colors) ? product.colors.join(",") : (product.colors || ""),
             fabric: product.fabric || "",
             brand: product.brand || "Nari Pehnawa",
             delivery_charge: product.delivery_charge !== undefined && product.delivery_charge !== null ? product.delivery_charge : "",
@@ -776,11 +807,11 @@ const Products = () => {
                                                         <Share2 className="w-4 h-4" />
                                                     </button>
                                                     <button
-                                                        onClick={() => handlePrintSingleQRLabel(p)}
-                                                        className="p-2 bg-cyan-600/10 text-cyan-400 border border-cyan-600/20 rounded-xl hover:bg-cyan-600/20 transition"
-                                                        title="Print QR Label"
+                                                        onClick={() => window.open(`/product/${p.id}`, "_blank")}
+                                                        className="p-2 bg-emerald-600/10 text-emerald-400 border border-emerald-600/20 rounded-xl hover:bg-emerald-600/20 transition"
+                                                        title="View Product"
                                                     >
-                                                        <QrCode className="w-4 h-4" />
+                                                        <Eye className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleEdit(p)}

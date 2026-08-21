@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import List, Optional
 from app.database.schemas.category import Category, CategoryCreate, CategoryUpdate
 from app.database import get_database
 from app.security import require_admin
 from bson import ObjectId
+from app.utils.cache import cache_response, clear_api_cache
 
 router = APIRouter(prefix="/categories", tags=["Categories"])
 
@@ -17,13 +18,15 @@ def create_category(category: CategoryCreate, current_user: dict = Depends(requi
         category_data = category.model_dump()
         result = categories_collection.insert_one(category_data)
         category_data["_id"] = str(result.inserted_id)
+        clear_api_cache()
         return category_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/", response_model=List[Category])
-def get_categories(is_active: Optional[bool] = None):
+@cache_response(expire_seconds=300)
+def get_categories(request: Request, is_active: Optional[bool] = None):
     db = get_database()
     categories_collection = db["categories"]
     try:
@@ -40,7 +43,8 @@ def get_categories(is_active: Optional[bool] = None):
 
 
 @router.get("/{category_id}", response_model=Category)
-def get_category(category_id: str):
+@cache_response(expire_seconds=300)
+def get_category(category_id: str, request: Request):
     """Get a specific category by ID"""
     db = get_database()
     categories_collection = db["categories"]
@@ -73,6 +77,7 @@ def update_category(category_id: str, category: CategoryUpdate, current_user: di
         if not result:
             raise HTTPException(status_code=404, detail="Category not found")
         result["_id"] = str(result["_id"])
+        clear_api_cache()
         return result
     except HTTPException:
         raise
@@ -89,6 +94,7 @@ def delete_category(category_id: str, current_user: dict = Depends(require_admin
         result = categories_collection.delete_one({"_id": ObjectId(category_id)})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Category not found")
+        clear_api_cache()
         return {"message": "Category deleted successfully"}
     except HTTPException:
         raise

@@ -4,7 +4,7 @@ Pydantic v2 request/response schemas for the Shiprocket shipping module.
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -208,6 +208,7 @@ class OrderShippingInfo(BaseModel):
     shipping_cost: Optional[float] = None
     label_url: Optional[str] = None
     invoice_url: Optional[str] = None
+    manifest_url: Optional[str] = None
     estimated_delivery: Optional[str] = None
     current_status: Optional[str] = None
 
@@ -232,3 +233,15 @@ class ShiprocketWebhookPayload(BaseModel):
 
     class Config:
         extra = "allow"
+
+
+# ── Bulk Actions & Manifest Requests ─────────────────────────────────────────
+
+
+class GenerateManifestRequest(BaseModel):
+    shipment_ids: List[Union[int, str]]
+
+
+class BulkActionRequest(BaseModel):
+    ids: List[Union[int, str]]
+

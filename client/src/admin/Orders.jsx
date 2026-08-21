@@ -8,7 +8,7 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  DollarSign,
+  IndianRupee,
   Calendar,
   User,
   Mail,
@@ -78,6 +78,10 @@ const Orders = () => {
   // Action Feedback States
   const [actionSuccessMsg, setActionSuccessMsg] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Bulk Selection States
+  const [selectedOrderIds, setSelectedOrderIds] = useState([]);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
   // Order Logs & Audit Trails
   const [orderLogs, setOrderLogs] = useState([]);
@@ -218,8 +222,28 @@ const Orders = () => {
     ];
   };
 
+  const fetchPickupLocations = async () => {
+    try {
+      const res = await shippingApi.getPickupLocations();
+      const locationsList = Array.isArray(res) ? res : (res?.shipping_address || []);
+      setPickupLocations(locationsList);
+      
+      // Auto-select the primary pickup location if present
+      if (locationsList.length > 0) {
+        const primary = locationsList.find(loc => loc.is_primary_location === true || loc.is_primary === 1);
+        const defaultLoc = primary ? primary.pickup_location : locationsList[0].pickup_location;
+        
+        setSelectedPickupLocation(prev => prev || defaultLoc);
+        setWarehouseAssigned(prev => prev || defaultLoc);
+      }
+    } catch (err) {
+      console.error("Failed to load pickup locations from Shiprocket:", err);
+    }
+  };
+
   useEffect(() => {
     fetchOrders();
+    fetchPickupLocations();
   }, []);
 
   const fetchOrderDetails = async (orderId) => {
@@ -280,20 +304,48 @@ const Orders = () => {
     setActionSuccessMsg(null);
     setIsEditingAddress(false);
     setIsEditingNotes(false);
+
+    if (pickupLocations.length === 0) {
+      fetchPickupLocations();
+    }
+
+    // Resolve the default warehouse location
+    const resolveDefaultWarehouse = (detailObj) => {
+      if (detailObj && detailObj.items && detailObj.items.length > 0) {
+        const itemWithLoc = detailObj.items.find(it => it.product && it.product.pickup_location);
+        if (itemWithLoc && itemWithLoc.product.pickup_location) {
+          return itemWithLoc.product.pickup_location;
+        }
+      }
+      const assignedVal = detailObj ? detailObj.warehouse_assigned : null;
+      if (assignedVal && assignedVal !== "Primary") {
+        return assignedVal;
+      }
+      if (pickupLocations.length > 0) {
+        const primary = pickupLocations.find(loc => loc.is_primary_location === true || loc.is_primary === 1);
+        return primary ? primary.pickup_location : pickupLocations[0].pickup_location;
+      }
+      return "";
+    };
+
     try {
       const detail = await fetchOrderDetails(order.orderId);
       setSelectedOrder(detail);
       setEditedAddress(detail.shippingAddress || {});
       setEditedNotes(detail.notes || "");
       setStaffAssigned(detail.staff_assigned || "");
-      setWarehouseAssigned(detail.warehouse_assigned || "");
+      const resolvedLoc = resolveDefaultWarehouse(detail);
+      setWarehouseAssigned(resolvedLoc);
+      setSelectedPickupLocation(resolvedLoc);
       fetchLogs(order.orderId);
     } catch {
       setSelectedOrder(order);
       setEditedAddress(order.shippingAddress || {});
       setEditedNotes(order.notes || "");
       setStaffAssigned(order.staff_assigned || "");
-      setWarehouseAssigned(order.warehouse_assigned || "");
+      const resolvedLoc = resolveDefaultWarehouse(order);
+      setWarehouseAssigned(resolvedLoc);
+      setSelectedPickupLocation(resolvedLoc);
       fetchLogs(order.orderId);
     }
     setShowDetailsModal(true);
@@ -415,7 +467,7 @@ const Orders = () => {
               </div>
               <div class="company-details">
                 <strong>Nari Pehnawa</strong><br>
-                Baisiya, Sultanpur, Uttar Pradesh, India<br>
+                Sultanpur, Uttar Pradesh, India<br>
                 Email: support@naripehnawa.com | Mob: +91 9140228795
               </div>
             </div>
@@ -610,6 +662,117 @@ const Orders = () => {
   const handleCancelShipment = () => {
     if (!window.confirm("Cancel shipment with the courier?")) return;
     runShippingAction("cancel", () => shippingApi.cancelShipment(selectedOrder.orderId));
+  };
+
+  const handleBulkInvoices = async () => {
+    if (!window.confirm(`Generate and print invoices for the ${selectedOrderIds.length} selected orders?`)) return;
+    setBulkActionLoading(true);
+    setError(null);
+    try {
+      const res = await shippingApi.bulkInvoices(selectedOrderIds);
+      if (res.invoice_url) {
+        window.open(res.invoice_url, "_blank", "noopener,noreferrer");
+      } else {
+        alert("Failed to generate bulk invoices.");
+      }
+    } catch (err) {
+      setError("Bulk Invoices Error: " + err.message);
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkLabels = async () => {
+    const selectedOrders = orders.filter(o => selectedOrderIds.includes(o.id));
+    const shipmentIds = selectedOrders.map(o => o.shipping?.shipment_id || o.shipment_id).filter(Boolean);
+
+    if (shipmentIds.length === 0) {
+      alert("None of the selected orders have shipment IDs generated. Please Fulfill Orders first.");
+      return;
+    }
+
+    if (!window.confirm(`Generate and print shipping labels for ${shipmentIds.length} processed shipments?`)) return;
+
+    setBulkActionLoading(true);
+    setError(null);
+    try {
+      const res = await shippingApi.bulkLabels(shipmentIds);
+      if (res.label_url) {
+        window.open(res.label_url, "_blank", "noopener,noreferrer");
+      } else {
+        alert("Failed to generate bulk labels.");
+      }
+    } catch (err) {
+      setError("Bulk Labels Error: " + err.message);
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkManifests = async () => {
+    const selectedOrders = orders.filter(o => selectedOrderIds.includes(o.id));
+    const shipmentIds = selectedOrders.map(o => o.shipping?.shipment_id || o.shipment_id).filter(Boolean);
+
+    if (shipmentIds.length === 0) {
+      alert("None of the selected orders have shipment IDs generated. Please Fulfill Orders first.");
+      return;
+    }
+
+    if (!window.confirm(`Generate and print manifests for ${shipmentIds.length} processed shipments?`)) return;
+
+    setBulkActionLoading(true);
+    setError(null);
+    try {
+      const res = await shippingApi.bulkManifests(shipmentIds);
+      if (res.manifest_url) {
+        window.open(res.manifest_url, "_blank", "noopener,noreferrer");
+      } else {
+        alert("Failed to generate bulk manifests.");
+      }
+    } catch (err) {
+      setError("Bulk Manifests Error: " + err.message);
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkSync = async () => {
+    const selectedOrders = orders.filter(o => selectedOrderIds.includes(o.id));
+    const shipmentIds = selectedOrders.map(o => o.shipping?.shipment_id || o.shipment_id).filter(Boolean);
+
+    if (shipmentIds.length === 0) {
+      alert("None of the selected orders have shipment IDs. Status sync skipped.");
+      return;
+    }
+
+    setBulkActionLoading(true);
+    setError(null);
+    try {
+      const res = await shippingApi.bulkSync(shipmentIds);
+      alert(`Bulk Status Sync Complete!\nProcessed shipments: ${res.processed_count}\nSuccessfully synced: ${res.synced_count}`);
+      fetchOrders();
+      setSelectedOrderIds([]);
+    } catch (err) {
+      setError("Bulk Sync Error: " + err.message);
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const toggleSelectOrder = (id) => {
+    setSelectedOrderIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = (paginatedOrders) => {
+    const paginatedIds = paginatedOrders.map(o => o.id);
+    const allSelected = paginatedIds.every(id => selectedOrderIds.includes(id));
+    if (allSelected) {
+      setSelectedOrderIds(prev => prev.filter(id => !paginatedIds.includes(id)));
+    } else {
+      setSelectedOrderIds(prev => [...new Set([...prev, ...paginatedIds])]);
+    }
   };
 
   const handleStatusChange = async (newStatus) => {
@@ -901,47 +1064,57 @@ const Orders = () => {
       {!loading && activeTab === "orders" && (
         <div className="space-y-6">
           
-          {/* Quick Metrics Dashboard Bar */}
-          <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-10 gap-3">
-            {[
-              { label: "All Orders", count: statusCounts.all, filter: () => { setStatusFilter("all"); setPaymentFilter("all"); setValueFilter("all"); setCustomFilter("all"); }, color: "border-slate-200 bg-slate-50/50" },
-              { label: "Today's", count: statusCounts.today, filter: () => { setCustomFilter("today"); setStatusFilter("all"); }, color: "border-cyan-200 bg-cyan-50/20" },
-              { label: "Pending", count: statusCounts.pending, filter: () => { setStatusFilter("pending"); setCustomFilter("all"); }, color: "border-amber-200 bg-amber-50/20" },
-              { label: "Processing", count: statusCounts.processing, filter: () => { setStatusFilter("processing"); setCustomFilter("all"); }, color: "border-blue-200 bg-blue-50/20" },
-              { label: "Ready to Ship", count: statusCounts.ready_to_ship, filter: () => { setStatusFilter("ready_to_ship"); setCustomFilter("all"); }, color: "border-teal-200 bg-teal-50/20" },
-              { label: "In Transit", count: statusCounts.in_transit, filter: () => { setStatusFilter("shipped"); setCustomFilter("all"); }, color: "border-purple-200 bg-purple-50/20" },
-              { label: "Delivered", count: statusCounts.delivered, filter: () => { setStatusFilter("delivered"); setCustomFilter("all"); }, color: "border-emerald-200 bg-emerald-50/20" },
-              { label: "COD Orders", count: statusCounts.cod, filter: () => { setPaymentFilter("cod"); setStatusFilter("all"); }, color: "border-slate-200 bg-slate-100/40" },
-              { label: "Prepaid", count: statusCounts.prepaid, filter: () => { setPaymentFilter("prepaid"); setStatusFilter("all"); }, color: "border-slate-200 bg-slate-100/40" },
-              { label: "High Value", count: statusCounts.high_value, filter: () => { setValueFilter("high"); setStatusFilter("all"); }, color: "border-rose-200 bg-rose-50/20" },
-            ].map((card, idx) => (
-              <button
-                key={idx}
-                onClick={card.filter}
-                className={`border rounded-xl p-3 text-left shadow-sm hover:shadow transition-all group ${card.color}`}
-              >
-                <div className="text-xl font-extrabold text-slate-800 font-mono tracking-tight group-hover:text-[#0891b2] transition-colors">{card.count}</div>
-                <div className="text-[10px] font-bold text-slate-500 mt-1 leading-tight">{card.label}</div>
-              </button>
-            ))}
-          </div>
+          {/* Integrated KPI Dashboard Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            {/* KPI Card 1: Total Sales Revenue */}
+            <div className="bg-white border border-slate-100 hover:shadow-md hover:border-[#0891b2]/30 transition-all duration-300 rounded-2xl p-5 shadow-sm relative overflow-hidden flex items-center justify-between group">
+              <div className="relative z-10">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Sales Revenue</span>
+                <span className="text-[9px] text-slate-500 block mt-0.5">Paid / COD Delivered</span>
+                <h4 className="text-2xl font-black font-mono mt-2 text-slate-800">₹{totalRevenue.toLocaleString()}</h4>
+              </div>
+              <div className="p-3 bg-cyan-50 rounded-2xl text-[#0891b2] group-hover:bg-[#0891b2] group-hover:text-white transition-all duration-300">
+                <IndianRupee className="w-5 h-5" />
+              </div>
+            </div>
 
-          {/* Revenue Bar */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl p-4 text-white shadow-sm flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-bold text-emerald-100 uppercase tracking-widest">Total Sales Revenue (Paid/COD Delivered)</span>
-                <h4 className="text-2xl font-black font-mono mt-1">₹{totalRevenue.toLocaleString()}</h4>
+            {/* KPI Card 2: Pending Payments */}
+            <div className="bg-white border border-slate-100 hover:shadow-md hover:border-[#0891b2]/30 transition-all duration-300 rounded-2xl p-5 shadow-sm relative overflow-hidden flex items-center justify-between group">
+              <div className="relative z-10">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pending Payments Value</span>
+                <span className="text-[9px] text-slate-500 block mt-0.5">Awaiting Confirmation</span>
+                <h4 className="text-2xl font-black font-mono mt-2 text-slate-800">₹{pendingPayments.toLocaleString()}</h4>
               </div>
-              <DollarSign className="w-8 h-8 opacity-25" />
-            </div>
-            <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl p-4 text-white shadow-sm flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-bold text-amber-100 uppercase tracking-widest">Pending Payments Value</span>
-                <h4 className="text-2xl font-black font-mono mt-1">₹{pendingPayments.toLocaleString()}</h4>
+              <div className="p-3 bg-cyan-50 rounded-2xl text-[#0891b2] group-hover:bg-[#0891b2] group-hover:text-white transition-all duration-300">
+                <Clock className="w-5 h-5" />
               </div>
-              <Clock className="w-8 h-8 opacity-25" />
             </div>
+
+            {/* KPI Card 3: Total Orders */}
+            <div className="bg-white border border-slate-100 hover:shadow-md hover:border-[#0891b2]/30 transition-all duration-300 rounded-2xl p-5 shadow-sm relative overflow-hidden flex items-center justify-between group">
+              <div className="relative z-10">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Orders Volume</span>
+                <span className="text-[9px] text-slate-500 block mt-0.5">All Lifetime Orders</span>
+                <h4 className="text-2xl font-black font-mono mt-2 text-slate-800">{statusCounts.all}</h4>
+              </div>
+              <div className="p-3 bg-cyan-50 rounded-2xl text-[#0891b2] group-hover:bg-[#0891b2] group-hover:text-white transition-all duration-300">
+                <Package className="w-5 h-5" />
+              </div>
+            </div>
+
+            {/* KPI Card 4: Pending Shipments */}
+            <div className="bg-white border border-slate-100 hover:shadow-md hover:border-[#0891b2]/30 transition-all duration-300 rounded-2xl p-5 shadow-sm relative overflow-hidden flex items-center justify-between group">
+              <div className="relative z-10">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pending Shipments</span>
+                <span className="text-[9px] text-slate-500 block mt-0.5">Ready to Ship / Processing</span>
+                <h4 className="text-2xl font-black font-mono mt-2 text-slate-800">{statusCounts.ready_to_ship + statusCounts.processing}</h4>
+              </div>
+              <div className="p-3 bg-cyan-50 rounded-2xl text-[#0891b2] group-hover:bg-[#0891b2] group-hover:text-white transition-all duration-300">
+                <Truck className="w-5 h-5" />
+              </div>
+            </div>
+
           </div>
 
           {/* Search & Filter Bar */}
@@ -1019,12 +1192,72 @@ const Orders = () => {
             </div>
           </div>
 
+          {/* Bulk Actions Bar */}
+          {selectedOrderIds.length > 0 && (
+            <div className="bg-[#8B0000]/5 border border-[#8B0000]/10 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 animate-fadeIn">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-[#8B0000] text-white flex items-center justify-center text-[10px] font-bold">
+                  {selectedOrderIds.length}
+                </span>
+                <span className="text-xs font-bold text-slate-800">Orders Selected</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={handleBulkInvoices}
+                  disabled={bulkActionLoading}
+                  className="px-3.5 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition disabled:opacity-40 shadow-sm flex items-center gap-1.5"
+                >
+                  <Printer className="w-3.5 h-3.5 text-slate-400" />
+                  Generate Invoices
+                </button>
+                <button
+                  onClick={handleBulkLabels}
+                  disabled={bulkActionLoading}
+                  className="px-3.5 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition disabled:opacity-40 shadow-sm flex items-center gap-1.5"
+                >
+                  <Tag className="w-3.5 h-3.5 text-slate-400" />
+                  Generate Labels
+                </button>
+                <button
+                  onClick={handleBulkManifests}
+                  disabled={bulkActionLoading}
+                  className="px-3.5 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition disabled:opacity-40 shadow-sm flex items-center gap-1.5"
+                >
+                  <FileText className="w-3.5 h-3.5 text-slate-400" />
+                  Generate Manifests
+                </button>
+                <button
+                  onClick={handleBulkSync}
+                  disabled={bulkActionLoading}
+                  className="px-3.5 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition disabled:opacity-40 shadow-md flex items-center gap-1.5"
+                >
+                  {bulkActionLoading ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  Sync Status
+                </button>
+                <button
+                  onClick={() => setSelectedOrderIds([])}
+                  className="px-3.5 py-2 text-slate-500 text-xs font-bold hover:text-slate-800 transition"
+                >
+                  Clear Selection
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Orders Table */}
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left text-xs">
                 <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                   <tr>
+                    <th className="py-4 px-6 w-12">
+                      <input
+                        type="checkbox"
+                        checked={paginatedOrders.length > 0 && paginatedOrders.every(o => selectedOrderIds.includes(o.id))}
+                        onChange={() => toggleSelectAll(paginatedOrders)}
+                        className="rounded border-slate-300 text-[#8B0000] focus:ring-[#8B0000] w-4 h-4 cursor-pointer"
+                      />
+                    </th>
                     <th className="py-4 px-6">Order ID &amp; No.</th>
                     <th className="py-4 px-6">Customer Profile</th>
                     <th className="py-4 px-6">Products Purchased</th>
@@ -1037,6 +1270,14 @@ const Orders = () => {
                 <tbody className="divide-y divide-slate-100 text-slate-700">
                   {paginatedOrders.map((o, idx) => (
                     <tr key={idx} className="hover:bg-slate-50/50 transition">
+                      <td className="py-3.5 px-6 w-12">
+                        <input
+                          type="checkbox"
+                          checked={selectedOrderIds.includes(o.id)}
+                          onChange={() => toggleSelectOrder(o.id)}
+                          className="rounded border-slate-300 text-[#8B0000] focus:ring-[#8B0000] w-4 h-4 cursor-pointer"
+                        />
+                      </td>
                       <td className="py-3.5 px-6">
                         <div className="font-mono font-semibold text-slate-800">{o.id}</div>
                         <div className="text-[9px] text-slate-400 mt-0.5">{o.date}</div>
@@ -1063,6 +1304,9 @@ const Orders = () => {
                         </div>
                         {o.awb_code && (
                           <div className="text-[9px] text-indigo-600 mt-0.5 font-mono">AWB: {o.awb_code} ({o.courier_name})</div>
+                        )}
+                        {o.warehouse_assigned && (
+                          <div className="text-[9px] text-emerald-600 mt-0.5 font-semibold">📍 Warehouse: {o.warehouse_assigned}</div>
                         )}
                       </td>
                       <td className="py-3.5 px-6">
@@ -1268,6 +1512,48 @@ const Orders = () => {
             </div>
 
             <div className="p-5 md:p-6 space-y-6">
+
+              {/* Visual Order Status Stepper */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-semibold text-slate-400">
+                  {[
+                    { label: "Order Placed", status: "pending", desc: selectedOrder.created_at },
+                    { label: "Processing", status: "processing", desc: "Warehouse confirmation" },
+                    { label: "AWB Generated", status: "pickup_scheduled", desc: selectedOrder.awb_code ? `AWB: ${selectedOrder.awb_code}` : "Awaiting shipment" },
+                    { label: "Shipped", status: "shipped", desc: selectedOrder.courier_name || "Transit" },
+                    { label: "Delivered", status: "delivered", desc: "Handover complete" }
+                  ].map((step, idx, arr) => {
+                    const isPassed = (() => {
+                      const orderStatus = selectedOrder.status;
+                      const seq = ["pending", "processing", "pickup_scheduled", "shipped", "delivered"];
+                      const currentIdx = seq.indexOf(orderStatus);
+                      const stepIdx = seq.indexOf(step.status);
+                      return stepIdx <= currentIdx;
+                    })();
+
+                    return (
+                      <React.Fragment key={idx}>
+                        <div className="flex items-center gap-3">
+                          <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border transition ${
+                            isPassed 
+                              ? "bg-[#8B0000] border-[#8B0000] text-white" 
+                              : "bg-slate-50 border-slate-200 text-slate-400"
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          <div>
+                            <span className={`block font-bold ${isPassed ? "text-slate-800" : "text-slate-400"}`}>{step.label}</span>
+                            <span className="text-[10px] text-slate-400 font-medium block mt-0.5">{step.desc}</span>
+                          </div>
+                        </div>
+                        {idx < arr.length - 1 && (
+                          <div className={`hidden md:block h-0.5 flex-1 transition ${isPassed ? "bg-[#8B0000]" : "bg-slate-250"}`} />
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              </div>
               
               {/* Feedback Banners */}
               {shippingActionError && (
@@ -1434,113 +1720,162 @@ const Orders = () => {
                   </div>
 
                   {/* Shiprocket Delivery Status */}
-                  <div className="bg-gradient-to-br from-slate-50 to-blue-50/10 border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-                    <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
-                      <Truck className="w-5 h-5 text-[#0891b2]" />
-                      <div>
-                        <h4 className="font-bold text-slate-800 text-sm">Shiprocket Courier Integration</h4>
-                        <p className="text-[9px] text-slate-400">Generate AWB manifest and request courier pick up</p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {!selectedOrder.awb_code ? (
-                        <div className="w-full flex flex-col gap-2.5">
-                          {pickupLocations.length > 0 && (
-                            <div className="flex flex-col gap-1">
-                              <label className="text-xs font-semibold text-slate-700">Pickup Warehouse Location:</label>
-                              <select
-                                value={selectedPickupLocation}
-                                onChange={(e) => setSelectedPickupLocation(e.target.value)}
-                                className="text-xs bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500 shadow-sm"
-                              >
-                                <option value="">Default (Primary Warehouse)</option>
-                                {pickupLocations.map((loc) => (
-                                  <option key={loc.id || loc.pickup_location} value={loc.pickup_location}>
-                                    {loc.pickup_location} — {loc.city}, {loc.state} ({loc.pin_code}) {loc.is_primary_location ? "★ Primary" : ""}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          )}
-                          <button
-                            onClick={handleCreateShipment}
-                            disabled={shippingActionLoading === "create"}
-                            className="px-3.5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-xs font-bold rounded-xl shadow-md hover:opacity-95 transition disabled:opacity-40 self-start"
-                          >
-                            {shippingActionLoading === "create" ? "Fulfilling Shiprocket..." : "Create Courier Shipment (Auto AWB)"}
-                          </button>
+                  <div className="bg-gradient-to-br from-slate-50 to-slate-100/30 border border-slate-200 rounded-2xl p-5 shadow-sm space-y-5">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-3.5">
+                      <div className="flex items-center gap-3">
+                        <Truck className="w-5 h-5 text-[#8B0000]" />
+                        <div>
+                          <h4 className="font-bold text-slate-800 text-sm">Shiprocket Fulfillment Hub</h4>
+                          <p className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Automated Shiprocket courier integration API</p>
                         </div>
-                      ) : (
-                        <>
-                          {selectedOrder.shipment_id && (
-                            <button
-                              onClick={handleSchedulePickup}
-                              disabled={shippingActionLoading === "pickup"}
-                              className="px-3.5 py-2 bg-amber-500 text-white text-xs font-bold rounded-xl shadow-md hover:bg-amber-600 transition disabled:opacity-40"
-                            >
-                              {shippingActionLoading === "pickup" ? "Scheduling Pickup..." : "Schedule Courier Pickup"}
-                            </button>
-                          )}
-                          
-                          <button
-                            onClick={handleTrackShipment}
-                            disabled={shippingActionLoading === "track"}
-                            className="px-3.5 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition disabled:opacity-40 shadow-sm"
-                          >
-                            {shippingActionLoading === "track" ? "Syncing status..." : "Track Live Status"}
-                          </button>
-
-                          {selectedOrder.shipment_id && (
-                            <>
-                              <button
-                                onClick={handlePrintLabel}
-                                disabled={shippingActionLoading === "label"}
-                                className="px-3.5 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition disabled:opacity-40 shadow-sm"
-                              >
-                                Print Shipping Label
-                              </button>
-                              
-                              <button
-                                 onClick={handleDownloadInvoice}
-                                 disabled={shippingActionLoading === "invoice"}
-                                 className="px-3.5 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition disabled:opacity-40 shadow-sm"
-                               >
-                                 Download Invoice
-                               </button>
-
-                               <button
-                                 onClick={handleCancelShipment}
-                                 disabled={shippingActionLoading === "cancel"}
-                                 className="px-3.5 py-2 bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl hover:bg-rose-100 transition disabled:opacity-40"
-                               >
-                                 Cancel Courier
-                               </button>
-                             </>
-                           )}
-                        </>
+                      </div>
+                      {selectedOrder.awb_code && (
+                        <span className="inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#8B0000]/5 text-[#8B0000] border border-[#8B0000]/10 capitalize">
+                          {trackingData?.current_status || "Shipment Created"}
+                        </span>
                       )}
                     </div>
 
-                    {selectedOrder.awb_code && (
-                      <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-2 text-xs">
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-slate-600">
-                          <div><span className="text-slate-400 block text-[10px]">AWB Tracking No.</span><span className="font-mono font-bold text-slate-800">{selectedOrder.awb_code}</span></div>
-                          <div><span className="text-slate-400 block text-[10px]">Logistics Partner</span><span className="font-semibold text-slate-800">{selectedOrder.courier_name}</span></div>
-                          <div><span className="text-slate-400 block text-[10px]">Shipment Status</span><span className="font-bold text-indigo-600">{trackingData?.current_status || "AWB Assigned"}</span></div>
+                    {/* Step-by-Step Action Board */}
+                    {!selectedOrder.awb_code ? (
+                      <div className="bg-white border border-[#8B0000]/10 rounded-xl p-4 space-y-4 shadow-sm">
+                        <div className="flex items-start gap-3">
+                          <span className="w-6 h-6 rounded-full bg-[#8B0000]/10 text-[#8B0000] font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                          <div className="space-y-1">
+                            <h5 className="font-bold text-slate-800 text-xs">Step 1: Register Shipment & Assign AWB</h5>
+                            <p className="text-slate-500 text-[11px] leading-relaxed">This action sends shipping details to Shiprocket and automatically fetches the AWB carrier code.</p>
+                          </div>
                         </div>
 
-                        {trackingData?.tracking_history && (
-                          <div className="mt-3 border-t border-slate-100 pt-2 space-y-2 max-h-32 overflow-y-auto">
-                            {trackingData.tracking_history.map((h, i) => (
-                              <div key={i} className="flex gap-2 text-[11px]">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#0891b2] mt-1.5 flex-shrink-0"></span>
-                                <div>
-                                  <p className="text-slate-700 font-semibold">{h.activity}</p>
-                                  <p className="text-slate-400 text-[10px]">{h.timestamp} • {h.location}</p>
+                        {pickupLocations.length > 0 && (
+                          <div className="flex flex-col gap-1.5 pl-9">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase">Fulfillment Pickup Location</label>
+                            <select
+                              value={selectedPickupLocation}
+                              onChange={(e) => setSelectedPickupLocation(e.target.value)}
+                              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-[#8B0000] cursor-pointer"
+                            >
+                              {pickupLocations.map((loc) => (
+                                <option key={loc.id || loc.pickup_location} value={loc.pickup_location}>
+                                  {loc.pickup_location} — {loc.city}, {loc.state} ({loc.pin_code}) {loc.is_primary_location ? "★ Primary" : ""}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        <div className="pl-9">
+                          <button
+                            onClick={handleCreateShipment}
+                            disabled={shippingActionLoading === "create"}
+                            className="px-4 py-2.5 bg-[#8B0000] text-white text-xs font-bold rounded-xl shadow-md hover:bg-[#720000] transition disabled:opacity-40 flex items-center gap-1.5"
+                          >
+                            {shippingActionLoading === "create" ? (
+                              <>
+                                <Loader className="w-3.5 h-3.5 animate-spin" />
+                                Processing with Shiprocket...
+                              </>
+                            ) : (
+                              "Generate Shipment & AWB Code"
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* Shipment Info Panel */}
+                        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 text-xs shadow-sm">
+                          <h5 className="font-bold text-slate-800 border-b border-slate-100 pb-2 uppercase text-[10px] tracking-wider text-slate-400">Shipment Metadata</h5>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-slate-600">
+                             <div>
+                               <span className="text-slate-400 block text-[10px] font-bold uppercase">AWB Code</span>
+                               <span className="font-mono font-bold text-slate-800 text-xs">{selectedOrder.awb_code}</span>
+                             </div>
+                             <div>
+                               <span className="text-slate-400 block text-[10px] font-bold uppercase">Courier Name</span>
+                               <span className="font-semibold text-slate-800 text-xs">{selectedOrder.courier_name || "N/A"}</span>
+                             </div>
+                             <div>
+                               <span className="text-slate-400 block text-[10px] font-bold uppercase">Shipment ID</span>
+                               <span className="font-mono text-slate-650 text-xs">{selectedOrder.shipment_id || "N/A"}</span>
+                             </div>
+                             <div>
+                               <span className="text-slate-400 block text-[10px] font-bold uppercase">Fulfillment Warehouse</span>
+                               <span className="font-semibold text-emerald-600 text-xs">📍 {selectedOrder.warehouse_assigned || "Primary"}</span>
+                             </div>
+                           </div>
+                        </div>
+
+                        {/* Scheduling & Actions Row */}
+                        <div className="flex flex-wrap gap-2.5">
+                          {selectedOrder.status !== "pickup_scheduled" && selectedOrder.status !== "shipped" && selectedOrder.status !== "delivered" && (
+                            <button
+                              onClick={handleSchedulePickup}
+                              disabled={shippingActionLoading === "pickup"}
+                              className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-md transition disabled:opacity-40 flex items-center gap-1.5"
+                            >
+                              {shippingActionLoading === "pickup" ? (
+                                <>
+                                  <Loader className="w-3.5 h-3.5 animate-spin" />
+                                  Scheduling Pickup...
+                                </>
+                              ) : (
+                                "Schedule Courier Pickup"
+                              )}
+                            </button>
+                          )}
+
+                          <button
+                            onClick={handleTrackShipment}
+                            disabled={shippingActionLoading === "track"}
+                            className="px-4 py-2.5 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition disabled:opacity-40 shadow-sm flex items-center gap-1.5"
+                          >
+                            {shippingActionLoading === "track" ? (
+                              <>
+                                <Loader className="w-3.5 h-3.5 animate-spin" />
+                                Syncing Live Status...
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
+                                Track Live Status
+                              </>
+                            )}
+                          </button>
+
+                          <button
+                            onClick={handleCancelShipment}
+                            disabled={shippingActionLoading === "cancel"}
+                            className="px-4 py-2.5 bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl hover:bg-rose-100 transition disabled:opacity-40"
+                          >
+                            Cancel Courier Shipment
+                          </button>
+                        </div>
+
+                        {/* Live Timeline logs */}
+                        {trackingData?.tracking_history && trackingData.tracking_history.length > 0 && (
+                          <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 text-xs shadow-sm">
+                            <h5 className="font-bold text-slate-800 border-b border-slate-100 pb-2 uppercase text-[10px] tracking-wider text-slate-400">Live Scanning Logs</h5>
+                            <div className="relative border-l border-slate-200 ml-2 pl-4 space-y-4 pt-1 max-h-48 overflow-y-auto">
+                              {trackingData.tracking_history.map((h, i) => (
+                                <div key={i} className="relative text-xs">
+                                  <span className={`absolute -left-[20.5px] top-1 w-2 h-2 rounded-full border-2 border-white ring-4 ${
+                                    i === 0 ? "bg-[#8B0000] ring-[#8B0000]/10" : "bg-slate-300 ring-slate-100"
+                                  }`} />
+                                  <div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className="font-bold text-slate-800">{h.activity}</span>
+                                      {h.location && (
+                                        <span className="px-1 py-0.2 rounded bg-slate-100 text-slate-500 text-[9px] font-medium border border-slate-200/50">
+                                          {h.location}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">{h.timestamp || h.date}</p>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1626,12 +1961,21 @@ const Orders = () => {
                         <label className="text-[10px] font-bold text-slate-400 block mb-1">Fulfillment Warehouse Location</label>
                         <select
                           value={warehouseAssigned}
-                          onChange={(e) => setWarehouseAssigned(e.target.value)}
+                          onChange={(e) => {
+                            setWarehouseAssigned(e.target.value);
+                            setSelectedPickupLocation(e.target.value);
+                          }}
                           className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none cursor-pointer"
                         >
-                          <option value="Primary">Primary Warehouse (Delhi)</option>
-                          <option value="Secondary">Secondary Hub (Mumbai)</option>
-                          <option value="Staging">Staging Hub (Kolkata)</option>
+                          {pickupLocations.length > 0 ? (
+                            pickupLocations.map((loc) => (
+                              <option key={loc.id || loc.pickup_location} value={loc.pickup_location}>
+                                {loc.pickup_location} — {loc.city}, {loc.state} ({loc.pin_code}) {loc.is_primary_location ? "★ Primary" : ""}
+                              </option>
+                            ))
+                          ) : (
+                            <option value="">Default (Primary Warehouse)</option>
+                          )}
                         </select>
                       </div>
 
@@ -1692,6 +2036,30 @@ const Orders = () => {
                           >
                             <span>{shippingActionLoading === "label" ? "Fetching Label..." : "Print Courier Slip (Shiprocket)"}</span>
                             <Truck className="w-3.5 h-3.5 text-emerald-500" />
+                          </button>
+
+                          <button
+                            onClick={async () => {
+                              setShippingActionLoading("manifest");
+                              setShippingActionError(null);
+                              try {
+                                const res = await shippingApi.getManifest(selectedOrder.shipment_id);
+                                if (res.manifest_url) {
+                                  window.open(res.manifest_url, "_blank", "noopener,noreferrer");
+                                } else {
+                                  alert("Failed to retrieve manifest URL.");
+                                }
+                              } catch (e) {
+                                setShippingActionError("Manifest Error: " + e.message);
+                              } finally {
+                                setShippingActionLoading(null);
+                              }
+                            }}
+                            disabled={shippingActionLoading === "manifest"}
+                            className="w-full flex items-center justify-between p-2.5 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition text-[11px] font-bold text-blue-700 text-left disabled:opacity-50"
+                          >
+                            <span>{shippingActionLoading === "manifest" ? "Fetching Manifest..." : "Print Manifest (Shiprocket)"}</span>
+                            <FileText className="w-3.5 h-3.5 text-blue-500" />
                           </button>
                         </>
                       ) : (
