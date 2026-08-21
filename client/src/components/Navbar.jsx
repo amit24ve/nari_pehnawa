@@ -194,13 +194,28 @@ const Navbar = () => {
   const userMenuItems = [
     {
       to: "/user/profile",
-      icon: <UserCircle className="w-4 h-4" />,
+      icon: <User className="w-4 h-4" />,
       label: "My Profile",
     },
     {
       to: "/user/orders",
-      icon: <Package className="w-4 h-4" />,
+      icon: <ShoppingBag className="w-4 h-4" />,
       label: "My Orders",
+    },
+    {
+      to: "/user/wishlist",
+      icon: <Heart className="w-4 h-4" />,
+      label: "Wishlist",
+    },
+    {
+      to: "/user/addresses",
+      icon: <MapPin className="w-4 h-4" />,
+      label: "Addresses",
+    },
+    {
+      to: "/user/settings",
+      icon: <Settings className="w-4 h-4" />,
+      label: "Settings",
     },
   ];
 
@@ -911,22 +926,17 @@ const Navbar = () => {
                         </>
                       ) : (
                         <>
-                          <Link
-                            to="/user/profile"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className="flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100"
-                          >
-                            <UserCircle className="w-4 h-4 text-gray-400" /> My
-                            Profile
-                          </Link>
-                          <Link
-                            to="/user/orders"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className="flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100"
-                          >
-                            <Package className="w-4 h-4 text-gray-400" /> My
-                            Orders
-                          </Link>
+                          {userMenuItems.map(({ to, icon, label }) => (
+                            <Link
+                              key={to}
+                              to={to}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className="flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100"
+                            >
+                              <span className="text-gray-400">{icon}</span>
+                              {label}
+                            </Link>
+                          ))}
                         </>
                       )}
                       <button

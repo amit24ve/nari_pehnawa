@@ -66,7 +66,7 @@ const Settings = () => {
                             type="password"
                             value={passwordForm.currentPassword}
                             onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
-                            className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent text-sm sm:text-base"
+                            className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0891b2] focus:border-transparent text-sm sm:text-base"
                             required
                         />
                     </div>
@@ -76,7 +76,7 @@ const Settings = () => {
                             type="password"
                             value={passwordForm.newPassword}
                             onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
-                            className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent text-sm sm:text-base"
+                            className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0891b2] focus:border-transparent text-sm sm:text-base"
                             required
                         />
                     </div>
@@ -86,13 +86,13 @@ const Settings = () => {
                             type="password"
                             value={passwordForm.confirmPassword}
                             onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                            className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent text-sm sm:text-base"
+                            className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0891b2] focus:border-transparent text-sm sm:text-base"
                             required
                         />
                     </div>
                     <button
                         type="submit"
-                        className="w-full sm:w-auto px-5 sm:px-6 py-2 bg-[#d4af37] text-white rounded-lg hover:bg-[#c9a961] transition-colors font-semibold text-sm sm:text-base"
+                        className="w-full sm:w-auto px-5 sm:px-6 py-2 bg-[#0891b2] text-white rounded-lg hover:bg-[#06b6d4] transition-colors font-semibold text-sm sm:text-base"
                     >
                         Update Password
                     </button>
@@ -124,7 +124,7 @@ const Settings = () => {
                             type="checkbox"
                             checked={notifications.orderUpdates}
                             onChange={() => handleNotificationChange('orderUpdates')}
-                            className="w-4 h-4 sm:w-5 sm:h-5 text-[#d4af37] rounded focus:ring-[#d4af37] flex-shrink-0 ml-2"
+                            className="w-4 h-4 sm:w-5 sm:h-5 text-[#0891b2] rounded focus:ring-[#0891b2] flex-shrink-0 ml-2"
                         />
                     </label>
 
@@ -140,7 +140,7 @@ const Settings = () => {
                             type="checkbox"
                             checked={notifications.promotions}
                             onChange={() => handleNotificationChange('promotions')}
-                            className="w-4 h-4 sm:w-5 sm:h-5 text-[#d4af37] rounded focus:ring-[#d4af37] flex-shrink-0 ml-2"
+                            className="w-4 h-4 sm:w-5 sm:h-5 text-[#0891b2] rounded focus:ring-[#0891b2] flex-shrink-0 ml-2"
                         />
                     </label>
 
@@ -156,7 +156,7 @@ const Settings = () => {
                             type="checkbox"
                             checked={notifications.newsletter}
                             onChange={() => handleNotificationChange('newsletter')}
-                            className="w-4 h-4 sm:w-5 sm:h-5 text-[#d4af37] rounded focus:ring-[#d4af37] flex-shrink-0 ml-2"
+                            className="w-4 h-4 sm:w-5 sm:h-5 text-[#0891b2] rounded focus:ring-[#0891b2] flex-shrink-0 ml-2"
                         />
                     </label>
 
@@ -172,7 +172,7 @@ const Settings = () => {
                             type="checkbox"
                             checked={notifications.sms}
                             onChange={() => handleNotificationChange('sms')}
-                            className="w-4 h-4 sm:w-5 sm:h-5 text-[#d4af37] rounded focus:ring-[#d4af37] flex-shrink-0 ml-2"
+                            className="w-4 h-4 sm:w-5 sm:h-5 text-[#0891b2] rounded focus:ring-[#0891b2] flex-shrink-0 ml-2"
                         />
                     </label>
                 </div>
@@ -203,7 +203,7 @@ const Settings = () => {
                             type="checkbox"
                             checked={privacy.showProfile}
                             onChange={() => handlePrivacyChange('showProfile')}
-                            className="w-4 h-4 sm:w-5 sm:h-5 text-[#d4af37] rounded focus:ring-[#d4af37] flex-shrink-0 ml-2"
+                            className="w-4 h-4 sm:w-5 sm:h-5 text-[#0891b2] rounded focus:ring-[#0891b2] flex-shrink-0 ml-2"
                         />
                     </label>
 
@@ -219,7 +219,7 @@ const Settings = () => {
                             type="checkbox"
                             checked={privacy.showOrders}
                             onChange={() => handlePrivacyChange('showOrders')}
-                            className="w-4 h-4 sm:w-5 sm:h-5 text-[#d4af37] rounded focus:ring-[#d4af37] flex-shrink-0 ml-2"
+                            className="w-4 h-4 sm:w-5 sm:h-5 text-[#0891b2] rounded focus:ring-[#0891b2] flex-shrink-0 ml-2"
                         />
                     </label>
                 </div>

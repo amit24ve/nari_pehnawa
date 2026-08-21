@@ -86,15 +86,15 @@ const Profile = () => {
             {/* Profile Card */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 {/* Profile Header */}
-                <div className="bg-gradient-to-r from-[#d4af37] to-[#c9a961] h-24 sm:h-32"></div>
+                <div className="bg-gradient-to-r from-[#0891b2] to-[#06b6d4] h-24 sm:h-32"></div>
                 <div className="px-4 sm:px-6 pb-4 sm:pb-6">
                     <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-12 sm:-mt-16 mb-4 sm:mb-6">
                         <div className="flex items-end gap-3 sm:gap-4">
                             <div className="relative">
-                                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-white border-4 border-white shadow-lg flex items-center justify-center text-3xl sm:text-4xl font-bold text-[#d4af37]">
+                                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-white border-4 border-white shadow-lg flex items-center justify-center text-3xl sm:text-4xl font-bold text-[#0891b2]">
                                     {formData.name?.charAt(0).toUpperCase() || 'U'}
                                 </div>
-                                <button className="absolute bottom-0 right-0 bg-[#d4af37] text-white p-1.5 sm:p-2 rounded-full shadow-lg hover:bg-[#c9a961] transition-colors">
+                                <button className="absolute bottom-0 right-0 bg-[#0891b2] text-white p-1.5 sm:p-2 rounded-full shadow-lg hover:bg-[#06b6d4] transition-colors">
                                     <Camera className="w-3 h-3 sm:w-4 sm:h-4" />
                                 </button>
                             </div>
@@ -107,7 +107,7 @@ const Profile = () => {
                             {!isEditing ? (
                                 <button
                                     onClick={() => setIsEditing(true)}
-                                    className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 bg-[#d4af37] text-white rounded-lg hover:bg-[#c9a961] transition-colors shadow-md text-sm sm:text-base w-full md:w-auto"
+                                    className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 bg-[#0891b2] text-white rounded-lg hover:bg-[#06b6d4] transition-colors shadow-md text-sm sm:text-base w-full md:w-auto"
                                 >
                                     <Edit2 className="w-4 h-4" />
                                     Edit Profile
@@ -152,7 +152,7 @@ const Profile = () => {
                                     value={formData.name}
                                     onChange={handleChange}
                                     disabled={!isEditing}
-                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all ${isEditing ? 'bg-white border-gray-300' : 'bg-gray-50 border-gray-200'}`}
+                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#0891b2] focus:border-transparent transition-all ${isEditing ? 'bg-white border-gray-300' : 'bg-gray-50 border-gray-200'}`}
                                 />
                             </div>
 
@@ -183,7 +183,7 @@ const Profile = () => {
                                     value={formData.age}
                                     onChange={handleChange}
                                     disabled={!isEditing}
-                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all ${isEditing ? 'bg-white border-gray-300' : 'bg-gray-50 border-gray-200'}`}
+                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#0891b2] focus:border-transparent transition-all ${isEditing ? 'bg-white border-gray-300' : 'bg-gray-50 border-gray-200'}`}
                                 />
                             </div>
 
@@ -199,7 +199,7 @@ const Profile = () => {
                                     onChange={handleChange}
                                     disabled={!isEditing}
                                     placeholder="+91 1234567890"
-                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all ${isEditing ? 'bg-white border-gray-300' : 'bg-gray-50 border-gray-200'}`}
+                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#0891b2] focus:border-transparent transition-all ${isEditing ? 'bg-white border-gray-300' : 'bg-gray-50 border-gray-200'}`}
                                 />
                             </div>
                         </div>
@@ -216,35 +216,14 @@ const Profile = () => {
                                 disabled={!isEditing}
                                 rows="4"
                                 placeholder="Tell us about yourself..."
-                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all ${isEditing ? 'bg-white border-gray-300' : 'bg-gray-50 border-gray-200'}`}
+                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#0891b2] focus:border-transparent transition-all ${isEditing ? 'bg-white border-gray-300' : 'bg-gray-50 border-gray-200'}`}
                             ></textarea>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Account Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-                    <div className="text-center">
-                        <p className="text-2xl sm:text-3xl font-bold text-[#d4af37]">0</p>
-                        <p className="text-xs sm:text-sm text-gray-600 mt-1">Total Orders</p>
-                    </div>
-                </div>
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-                    <div className="text-center">
-                        <p className="text-2xl sm:text-3xl font-bold text-[#d4af37]">0</p>
-                        <p className="text-xs sm:text-sm text-gray-600 mt-1">Wishlist Items</p>
-                    </div>
-                </div>
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-                    <div className="text-center">
-                        <p className="text-2xl sm:text-3xl font-bold text-[#d4af37]">₹0</p>
-                        <p className="text-xs sm:text-sm text-gray-600 mt-1">Total Spent</p>
-                    </div>
-                </div>
             </div>
-        </div>
     );
 };
 

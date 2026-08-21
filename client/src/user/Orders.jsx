@@ -75,7 +75,7 @@ const Orders = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#d4af37]"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0891b2]"></div>
             </div>
         );
     }
@@ -99,7 +99,7 @@ const Orders = () => {
                             placeholder="Search by order ID..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent text-sm sm:text-base"
+                            className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0891b2] focus:border-transparent text-sm sm:text-base"
                         />
                     </div>
 
@@ -110,7 +110,7 @@ const Orders = () => {
                                 key={option.value}
                                 onClick={() => setFilter(option.value)}
                                 className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-all text-xs sm:text-sm ${filter === option.value
-                                    ? 'bg-[#d4af37] text-white shadow-md'
+                                    ? 'bg-[#0891b2] text-white shadow-md'
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                     }`}
                             >
@@ -135,7 +135,7 @@ const Orders = () => {
                                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
                                         <div className="flex items-center gap-3 sm:gap-4">
                                             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                <Package className="w-5 h-5 sm:w-6 sm:h-6 text-[#d4af37]" />
+                                                <Package className="w-5 h-5 sm:w-6 sm:h-6 text-[#0891b2]" />
                                             </div>
                                             <div className="min-w-0">
                                                 <h3 className="font-bold text-gray-800 text-sm sm:text-base">Order #{order.order_number || order.id}</h3>
@@ -155,7 +155,7 @@ const Orders = () => {
                                             </span>
                                             <button
                                                 onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
-                                                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-[#d4af37] text-white rounded-lg hover:bg-[#c9a961] transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm"
+                                                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-[#0891b2] text-white rounded-lg hover:bg-[#06b6d4] transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm"
                                             >
                                                 <Truck className="w-4 h-4" />
                                                 {expandedOrderId === order.id ? 'Hide Tracking' : 'Track Order'}
@@ -201,7 +201,7 @@ const Orders = () => {
                                                     </div>
                                                 ))}
                                                 {order.items.length > 2 && (
-                                                    <p className="text-sm text-[#d4af37] font-semibold">+{order.items.length - 2} more items</p>
+                                                    <p className="text-sm text-[#0891b2] font-semibold">+{order.items.length - 2} more items</p>
                                                 )}
                                             </div>
                                         </div>
@@ -229,7 +229,7 @@ const Orders = () => {
                     </p>
                     <button
                         onClick={() => window.location.href = '/'}
-                        className="px-5 sm:px-6 py-2.5 sm:py-3 bg-[#d4af37] text-white rounded-lg hover:bg-[#c9a961] transition-colors text-sm sm:text-base"
+                        className="px-5 sm:px-6 py-2.5 sm:py-3 bg-[#0891b2] text-white rounded-lg hover:bg-[#06b6d4] transition-colors text-sm sm:text-base"
                     >
                         Start Shopping
                     </button>

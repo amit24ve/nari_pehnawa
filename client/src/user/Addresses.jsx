@@ -87,7 +87,7 @@ const Addresses = () => {
                     </div>
                     <button
                         onClick={() => setShowForm(true)}
-                        className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-[#d4af37] text-white rounded-lg hover:bg-[#c9a961] transition-colors shadow-md text-sm sm:text-base w-full sm:w-auto"
+                        className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-[#0891b2] text-white rounded-lg hover:bg-[#06b6d4] transition-colors shadow-md text-sm sm:text-base w-full sm:w-auto"
                     >
                         <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                         Add New
@@ -113,7 +113,7 @@ const Addresses = () => {
                                         value="home"
                                         checked={formData.type === 'home'}
                                         onChange={handleChange}
-                                        className="w-4 h-4 text-[#d4af37] focus:ring-[#d4af37]"
+                                        className="w-4 h-4 text-[#0891b2] focus:ring-[#0891b2]"
                                     />
                                     <Home className="w-4 h-4" />
                                     <span>Home</span>
@@ -125,7 +125,7 @@ const Addresses = () => {
                                         value="work"
                                         checked={formData.type === 'work'}
                                         onChange={handleChange}
-                                        className="w-4 h-4 text-[#d4af37] focus:ring-[#d4af37]"
+                                        className="w-4 h-4 text-[#0891b2] focus:ring-[#0891b2]"
                                     />
                                     <Building className="w-4 h-4" />
                                     <span>Work</span>
@@ -143,7 +143,7 @@ const Addresses = () => {
                                     value={formData.fullName}
                                     onChange={handleChange}
                                     required
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0891b2] focus:border-transparent"
                                 />
                             </div>
 
@@ -156,7 +156,7 @@ const Addresses = () => {
                                     value={formData.phone}
                                     onChange={handleChange}
                                     required
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0891b2] focus:border-transparent"
                                 />
                             </div>
                         </div>
@@ -171,7 +171,7 @@ const Addresses = () => {
                                 onChange={handleChange}
                                 placeholder="House No., Building Name"
                                 required
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0891b2] focus:border-transparent"
                             />
                         </div>
 
@@ -184,7 +184,7 @@ const Addresses = () => {
                                 value={formData.addressLine2}
                                 onChange={handleChange}
                                 placeholder="Road Name, Area, Colony"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0891b2] focus:border-transparent"
                             />
                         </div>
 
@@ -198,7 +198,7 @@ const Addresses = () => {
                                     value={formData.city}
                                     onChange={handleChange}
                                     required
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0891b2] focus:border-transparent"
                                 />
                             </div>
 
@@ -211,7 +211,7 @@ const Addresses = () => {
                                     value={formData.state}
                                     onChange={handleChange}
                                     required
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0891b2] focus:border-transparent"
                                 />
                             </div>
 
@@ -225,7 +225,7 @@ const Addresses = () => {
                                     onChange={handleChange}
                                     required
                                     pattern="[0-9]{6}"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0891b2] focus:border-transparent"
                                 />
                             </div>
                         </div>
@@ -238,7 +238,7 @@ const Addresses = () => {
                                     name="isDefault"
                                     checked={formData.isDefault}
                                     onChange={handleChange}
-                                    className="w-4 h-4 text-[#d4af37] rounded focus:ring-[#d4af37]"
+                                    className="w-4 h-4 text-[#0891b2] rounded focus:ring-[#0891b2]"
                                 />
                                 <span className="text-sm font-semibold text-gray-700">Set as default address</span>
                             </label>
@@ -248,7 +248,7 @@ const Addresses = () => {
                         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4">
                             <button
                                 type="submit"
-                                className="flex-1 px-4 sm:px-6 py-2 sm:py-3 bg-[#d4af37] text-white rounded-lg hover:bg-[#c9a961] transition-colors font-semibold text-sm sm:text-base"
+                                className="flex-1 px-4 sm:px-6 py-2 sm:py-3 bg-[#0891b2] text-white rounded-lg hover:bg-[#06b6d4] transition-colors font-semibold text-sm sm:text-base"
                             >
                                 {editingId ? 'Update Address' : 'Save Address'}
                             </button>
@@ -271,7 +271,7 @@ const Addresses = () => {
                         <div
                             key={address.id}
                             className={`bg-white rounded-xl shadow-sm border-2 p-4 sm:p-6 transition-all ${address.isDefault
-                                    ? 'border-[#d4af37] bg-yellow-50/30'
+                                    ? 'border-[#0891b2] bg-cyan-50/30'
                                     : 'border-gray-100 hover:border-gray-200'
                                 }`}
                         >
@@ -288,7 +288,7 @@ const Addresses = () => {
                                     <span className="font-bold text-gray-800 capitalize text-sm sm:text-base">{address.type}</span>
                                 </div>
                                 {address.isDefault && (
-                                    <span className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-[#d4af37] text-white text-xs font-semibold rounded-full">
+                                    <span className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-[#0891b2] text-white text-xs font-semibold rounded-full">
                                         <CheckCircle className="w-3 h-3" />
                                         Default
                                     </span>
@@ -323,7 +323,7 @@ const Addresses = () => {
                                 {!address.isDefault && (
                                     <button
                                         onClick={() => handleSetDefault(address.id)}
-                                        className="px-3 sm:px-4 py-2 border border-[#d4af37] text-[#d4af37] rounded-lg hover:bg-yellow-50 transition-colors text-xs sm:text-sm font-semibold"
+                                        className="px-3 sm:px-4 py-2 border border-[#0891b2] text-[#0891b2] rounded-lg hover:bg-cyan-50/50 transition-colors text-xs sm:text-sm font-semibold"
                                     >
                                         Set Default
                                     </button>
@@ -342,7 +342,7 @@ const Addresses = () => {
                         </p>
                         <button
                             onClick={() => setShowForm(true)}
-                            className="px-5 sm:px-6 py-2.5 sm:py-3 bg-[#d4af37] text-white rounded-lg hover:bg-[#c9a961] transition-colors text-sm sm:text-base"
+                            className="px-5 sm:px-6 py-2.5 sm:py-3 bg-[#0891b2] text-white rounded-lg hover:bg-[#06b6d4] transition-colors text-sm sm:text-base"
                         >
                             Add Address
                         </button>
