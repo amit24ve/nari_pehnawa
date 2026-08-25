@@ -9,7 +9,7 @@ import {
   XCircle,
   Wallet,
   TrendingUp,
-  DollarSign,
+  IndianRupee,
   AlertCircle,
   Loader,
   Download

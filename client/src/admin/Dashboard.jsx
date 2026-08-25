@@ -4,7 +4,7 @@ import {
   TrendingDown,
   Users,
   ShoppingCart,
-  DollarSign,
+  IndianRupee,
   Package,
   ArrowUpRight,
   Calendar,

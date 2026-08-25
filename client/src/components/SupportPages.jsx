@@ -347,43 +347,114 @@ export default function SupportPages() {
         return (
           <div className="space-y-6 animate-fadeIn">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 font-serif mb-2">Size Guide</h2>
-              <p className="text-gray-600">Find your perfect fit. Please measure yourself using a tape before selecting size.</p>
+              <h2 className="text-2xl font-bold text-gray-900 font-serif mb-2">Size Guide & Fit Chart</h2>
+              <p className="text-gray-600">Find your perfect fit. Please measure yourself using a measuring tape before choosing your size.</p>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
-              <div>
-                <h3 className="text-base font-bold text-gray-900 font-serif mb-3">Kurtis & Dresses Size Chart (Inches)</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-sm text-gray-600">
+            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-sm space-y-6">
+              <div className="text-center md:text-left">
+                <h3 className="text-xl sm:text-2xl font-extrabold text-[#8B0000] tracking-wide uppercase mb-1">
+                  KURTI SIZE CHART
+                </h3>
+                <p className="text-xs text-gray-500">All measurements are in inches.</p>
+              </div>
+
+              {/* Grid: Table + Kurti Diagram */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                {/* Table */}
+                <div className="md:col-span-8 overflow-x-auto">
+                  <table className="w-full text-center border-collapse border-2 border-gray-800 rounded-xl overflow-hidden text-xs sm:text-sm font-semibold">
                     <thead>
-                      <tr className="border-b border-gray-100 text-gray-900 bg-gray-50">
-                        <th className="py-3 px-4 font-bold">Size</th>
-                        <th className="py-3 px-4 font-bold">Chest</th>
-                        <th className="py-3 px-4 font-bold">Waist</th>
-                        <th className="py-3 px-4 font-bold">Hips</th>
-                        <th className="py-3 px-4 font-bold">Length</th>
+                      <tr className="bg-gray-50 text-[#8B0000] border-b-2 border-gray-800 uppercase tracking-tight">
+                        <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold">SIZE</th>
+                        <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">BUST<br/>SIZE</th>
+                        <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">KURTA<br/>WAIST</th>
+                        <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">KURTA<br/>HIP</th>
+                        <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">SHOULDER<br/>SIZE</th>
+                        <th className="py-3 px-2 font-extrabold leading-tight">KURTA<br/>LENGTH</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      <tr><td className="py-3 px-4 font-semibold text-gray-900">XS</td><td className="py-3 px-4">32</td><td className="py-3 px-4">26</td><td className="py-3 px-4">36</td><td className="py-3 px-4">44</td></tr>
-                      <tr><td className="py-3 px-4 font-semibold text-gray-900">S</td><td className="py-3 px-4">34</td><td className="py-3 px-4">28</td><td className="py-3 px-4">38</td><td className="py-3 px-4">44</td></tr>
-                      <tr><td className="py-3 px-4 font-semibold text-gray-900">M</td><td className="py-3 px-4">36</td><td className="py-3 px-4">30</td><td className="py-3 px-4">40</td><td className="py-3 px-4">44.5</td></tr>
-                      <tr><td className="py-3 px-4 font-semibold text-gray-900">L</td><td className="py-3 px-4">38</td><td className="py-3 px-4">32</td><td className="py-3 px-4">42</td><td className="py-3 px-4">45</td></tr>
-                      <tr><td className="py-3 px-4 font-semibold text-gray-900">XL</td><td className="py-3 px-4">40</td><td className="py-3 px-4">34</td><td className="py-3 px-4">44</td><td className="py-3 px-4">45.5</td></tr>
-                      <tr><td className="py-3 px-4 font-semibold text-gray-900">XXL</td><td className="py-3 px-4">42</td><td className="py-3 px-4">36</td><td className="py-3 px-4">46</td><td className="py-3 px-4">46</td></tr>
+                    <tbody className="divide-y-2 divide-gray-800 text-gray-900 font-bold">
+                      {[
+                        { size: "S", bust: "36", waist: "34", hip: "39", shoulder: "14", length: "44" },
+                        { size: "M", bust: "38", waist: "36", hip: "41", shoulder: "14.5", length: "44" },
+                        { size: "L", bust: "40", waist: "38", hip: "43", shoulder: "15", length: "44" },
+                        { size: "XL", bust: "42", waist: "40", hip: "45", shoulder: "15.5", length: "44" },
+                        { size: "2XL", bust: "44", waist: "42", hip: "47", shoulder: "16", length: "44" },
+                      ].map((row, i) => (
+                        <tr key={row.size} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
+                          <td className="py-3 px-2 border-r-2 border-gray-800 font-extrabold text-[#8B0000] text-sm">
+                            {row.size}
+                          </td>
+                          <td className="py-3 px-2 border-r-2 border-gray-800">{row.bust}</td>
+                          <td className="py-3 px-2 border-r-2 border-gray-800">{row.waist}</td>
+                          <td className="py-3 px-2 border-r-2 border-gray-800">{row.hip}</td>
+                          <td className="py-3 px-2 border-r-2 border-gray-800">{row.shoulder}</td>
+                          <td className="py-3 px-2">{row.length}</td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
+
+                {/* Kurti Diagram Illustration */}
+                <div className="md:col-span-4 flex flex-col items-center justify-center p-4 bg-red-50/30 rounded-2xl border border-red-100">
+                  <svg
+                    viewBox="0 0 200 320"
+                    className="w-full max-w-[170px] h-auto"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    {/* Kurti Outline */}
+                    <path
+                      d="M75 25 C85 45 115 45 125 25 L155 42 L185 135 L165 140 L150 78 L148 100 Q145 150 148 290 L52 290 Q55 150 52 100 L50 78 L35 140 L15 135 L45 42 Z"
+                      fill="#ffffff"
+                      stroke="#1e293b"
+                      strokeWidth="2.5"
+                      strokeLinejoin="round"
+                    />
+                    {/* Neckline */}
+                    <path
+                      d="M75 25 C85 50 115 50 125 25"
+                      stroke="#1e293b"
+                      strokeWidth="2.5"
+                      fill="none"
+                    />
+                    {/* Bust arrow */}
+                    <line x1="50" y1="88" x2="150" y2="88" stroke="#1e293b" strokeWidth="2" />
+                    <path d="M57 83 L50 88 L57 93 M143 83 L150 88 L143 93" stroke="#1e293b" strokeWidth="2" fill="none" />
+                    <text x="100" y="80" textAnchor="middle" fill="#1e293b" fontSize="12" fontWeight="bold">Bust</text>
+
+                    {/* Waist arrow */}
+                    <line x1="53" y1="145" x2="147" y2="145" stroke="#1e293b" strokeWidth="2" />
+                    <path d="M60 140 L53 145 L60 150 M140 140 L147 145 L140 150" stroke="#1e293b" strokeWidth="2" fill="none" />
+                    <text x="100" y="137" textAnchor="middle" fill="#1e293b" fontSize="12" fontWeight="bold">Waist</text>
+
+                    {/* Hip arrow */}
+                    <line x1="52" y1="195" x2="148" y2="195" stroke="#1e293b" strokeWidth="2" />
+                    <path d="M59 190 L52 195 L59 200 M141 190 L148 195 L141 200" stroke="#1e293b" strokeWidth="2" fill="none" />
+                    <text x="100" y="187" textAnchor="middle" fill="#1e293b" fontSize="12" fontWeight="bold">Hip</text>
+                  </svg>
+                  <span className="text-xs font-bold text-[#8B0000] mt-2 text-center">
+                    Kurti Fit Reference
+                  </span>
+                </div>
               </div>
 
-              <div>
-                <h3 className="text-base font-bold text-gray-900 font-serif mb-3">How to Measure</h3>
-                <ul className="list-disc pl-5 text-sm text-gray-600 space-y-2">
-                  <li><strong>Chest:</strong> Measure around the fullest part of your chest, keeping the tape horizontal.</li>
-                  <li><strong>Waist:</strong> Measure around the narrowest part of your waist, just above your belly button.</li>
-                  <li><strong>Hips:</strong> Measure around the widest part of your hips.</li>
-                </ul>
+              {/* How to Measure */}
+              <div className="pt-4 border-t border-gray-100 bg-gray-50/80 rounded-2xl p-4">
+                <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-2">How to Measure</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-600">
+                  <div>
+                    <strong className="text-gray-900">1. Bust:</strong> Measure around the fullest part of your chest, keeping the tape horizontal.
+                  </div>
+                  <div>
+                    <strong className="text-gray-900">2. Waist:</strong> Measure around the narrowest part of your natural waistline.
+                  </div>
+                  <div>
+                    <strong className="text-gray-900">3. Hip:</strong> Measure around the widest part of your hips.
+                  </div>
+                </div>
               </div>
             </div>
           </div>

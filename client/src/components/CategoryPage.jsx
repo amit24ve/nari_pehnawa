@@ -13,7 +13,7 @@ import {
   Check,
   RotateCcw,
   Sliders,
-  DollarSign,
+  IndianRupee,
   Layers,
   Palette,
   Sparkles,
@@ -529,7 +529,7 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                       : "border-gray-200 bg-white hover:bg-gray-50 text-gray-700"
                   }`}
                 >
-                  <DollarSign className="w-3.5 h-3.5 text-[#8B0000]" />
+                  <IndianRupee className="w-3.5 h-3.5 text-[#8B0000]" />
                   <span>Price</span>
                   {(isPriceFiltered || sortBy === "price-low" || sortBy === "price-high") && (
                     <span className="w-2 h-2 rounded-full bg-[#8B0000]" />
@@ -546,7 +546,7 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                   <div className="absolute left-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 p-4.5 z-50 animate-fadeIn">
                     <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
                       <span className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
-                        <DollarSign className="w-4 h-4 text-[#8B0000]" /> Price & Sorting
+                        <IndianRupee className="w-4 h-4 text-[#8B0000]" /> Price & Sorting
                       </span>
                       {isPriceFiltered && (
                         <button

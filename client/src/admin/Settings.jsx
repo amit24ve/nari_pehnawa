@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Store, DollarSign, Bell, Save, Check, Mail, Phone, MapPin, Globe,
+  Store, IndianRupee, Bell, Save, Check, Mail, Phone, MapPin, Globe,
   CreditCard, Truck, AlertCircle, Image, Plus, Trash2, Edit3, Eye,
   EyeOff, GripVertical, Loader2, Link as LinkIcon, Tag, Gift, HelpCircle,
   Megaphone, CheckCircle, XCircle, Download, FileText
@@ -328,7 +328,7 @@ const Settings = () => {
 
   const tabs = [
     { id: 'store', label: 'Store Info', icon: Store },
-    { id: 'pricing', label: 'Pricing', icon: DollarSign },
+    { id: 'pricing', label: 'Pricing', icon: IndianRupee },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'slider', label: 'Hero Slider', icon: Image },
     { id: 'coupons', label: 'Coupons', icon: Tag },
@@ -462,7 +462,7 @@ const Settings = () => {
         <form onSubmit={handlePricingSubmit} className="space-y-6 text-xs text-left">
           <div className="bg-gradient-to-br from-[#111827] to-[#1a2332] border border-gray-800/50 rounded-2xl p-5 shadow-lg space-y-4">
             <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-gray-800 pb-3">
-              <DollarSign className="w-4 h-4 text-[#d4af37]" /> Currency &amp; Pricing Rules
+              <IndianRupee className="w-4 h-4 text-[#d4af37]" /> Currency &amp; Pricing Rules
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -1097,63 +1097,127 @@ const ProductPage = () => {
         </div>
       </div>
 
-      {/* ── Size Guide Modal ── */}
+      {/* ── Size Guide Modal (Exact Kurti Size Chart) ── */}
       {showSizeChart && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setShowSizeChart(false)} />
-          <div className="relative bg-white rounded-2xl max-w-lg w-full p-6 z-10 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <button onClick={() => setShowSizeChart(false)} className="absolute top-4 right-4 p-1 hover:bg-gray-100 rounded-full">
+          <div className="relative bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 z-10 shadow-2xl max-h-[92vh] overflow-y-auto border border-gray-100">
+            <button
+              onClick={() => setShowSizeChart(false)}
+              className="absolute top-5 right-5 p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
               <X className="w-5 h-5 text-gray-500" />
             </button>
-            <h3 className="text-lg font-bold text-gray-900 mb-1">Kurti Size Guide & Measurements</h3>
-            <p className="text-xs text-gray-500 mb-4">All measurements are in inches. Choose your regular fit size.</p>
 
-            {/* Modal Tabs */}
-            <div className="flex border-b border-gray-200 mb-4 text-xs font-bold">
-              <button
-                onClick={() => setSizeChartTab("garment")}
-                className={`py-2 px-4 border-b-2 transition-colors ${
-                  sizeChartTab === "garment" ? "border-[#8B0000] text-[#8B0000]" : "border-transparent text-gray-500"
-                }`}
-              >
-                Garment Size
-              </button>
-              <button
-                onClick={() => setSizeChartTab("body")}
-                className={`py-2 px-4 border-b-2 transition-colors ${
-                  sizeChartTab === "body" ? "border-[#8B0000] text-[#8B0000]" : "border-transparent text-gray-500"
-                }`}
-              >
-                Body Size
-              </button>
+            {/* Header */}
+            <div className="text-center mb-6">
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-[#8B0000] tracking-wider uppercase">
+                KURTI SIZE CHART
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                All measurements are in inches. Measure yourself before choosing your regular size.
+              </p>
             </div>
 
-            <table className="w-full text-xs text-center border border-gray-200 rounded-xl overflow-hidden">
-              <thead className="bg-gray-50 text-gray-700">
-                <tr>
-                  <th className="py-2.5 border-b font-bold">Size</th>
-                  <th className="py-2.5 border-b font-bold">Bust (in)</th>
-                  <th className="py-2.5 border-b font-bold">Waist (in)</th>
-                  <th className="py-2.5 border-b font-bold">Length (in)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  ["S", 36, 32, 44],
-                  ["M", 38, 34, 45],
-                  ["L", 40, 36, 45],
-                  ["XL", 42, 38, 46],
-                  ["XXL", 44, 40, 46],
-                ].map(([sz, b, w, l]) => (
-                  <tr key={sz} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                    <td className="py-2.5 font-bold text-gray-900">{sz}</td>
-                    <td className="py-2.5">{b}</td>
-                    <td className="py-2.5">{w}</td>
-                    <td className="py-2.5">{l}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {/* Main Content Grid: Table + Kurti Diagram */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+              {/* Size Table */}
+              <div className="md:col-span-8 overflow-x-auto">
+                <table className="w-full text-center border-collapse border-2 border-gray-800 rounded-xl overflow-hidden text-xs sm:text-sm font-semibold">
+                  <thead>
+                    <tr className="bg-gray-50 text-[#8B0000] border-b-2 border-gray-800 uppercase tracking-tight">
+                      <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold">SIZE</th>
+                      <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">BUST<br/>SIZE</th>
+                      <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">KURTA<br/>WAIST</th>
+                      <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">KURTA<br/>HIP</th>
+                      <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">SHOULDER<br/>SIZE</th>
+                      <th className="py-3 px-2 font-extrabold leading-tight">KURTA<br/>LENGTH</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y-2 divide-gray-800 text-gray-900 font-bold">
+                    {[
+                      { size: "S", bust: "36", waist: "34", hip: "39", shoulder: "14", length: "44" },
+                      { size: "M", bust: "38", waist: "36", hip: "41", shoulder: "14.5", length: "44" },
+                      { size: "L", bust: "40", waist: "38", hip: "43", shoulder: "15", length: "44" },
+                      { size: "XL", bust: "42", waist: "40", hip: "45", shoulder: "15.5", length: "44" },
+                      { size: "2XL", bust: "44", waist: "42", hip: "47", shoulder: "16", length: "44" },
+                    ].map((row, i) => (
+                      <tr key={row.size} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
+                        <td className="py-3 px-2 border-r-2 border-gray-800 font-extrabold text-[#8B0000] text-sm">
+                          {row.size}
+                        </td>
+                        <td className="py-3 px-2 border-r-2 border-gray-800">{row.bust}</td>
+                        <td className="py-3 px-2 border-r-2 border-gray-800">{row.waist}</td>
+                        <td className="py-3 px-2 border-r-2 border-gray-800">{row.hip}</td>
+                        <td className="py-3 px-2 border-r-2 border-gray-800">{row.shoulder}</td>
+                        <td className="py-3 px-2">{row.length}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Kurti Diagram Illustration */}
+              <div className="md:col-span-4 flex flex-col items-center justify-center p-3 bg-red-50/30 rounded-2xl border border-red-100">
+                <svg
+                  viewBox="0 0 200 320"
+                  className="w-full max-w-[160px] h-auto"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  {/* Kurti Body Outline */}
+                  <path
+                    d="M75 25 C85 45 115 45 125 25 L155 42 L185 135 L165 140 L150 78 L148 100 Q145 150 148 290 L52 290 Q55 150 52 100 L50 78 L35 140 L15 135 L45 42 Z"
+                    fill="#ffffff"
+                    stroke="#1e293b"
+                    strokeWidth="2.5"
+                    strokeLinejoin="round"
+                  />
+                  {/* Neckline */}
+                  <path
+                    d="M75 25 C85 50 115 50 125 25"
+                    stroke="#1e293b"
+                    strokeWidth="2.5"
+                    fill="none"
+                  />
+                  {/* Bust arrow */}
+                  <line x1="50" y1="88" x2="150" y2="88" stroke="#1e293b" strokeWidth="2" />
+                  <path d="M57 83 L50 88 L57 93 M143 83 L150 88 L143 93" stroke="#1e293b" strokeWidth="2" fill="none" />
+                  <text x="100" y="80" textAnchor="middle" fill="#1e293b" fontSize="12" fontWeight="bold">Bust</text>
+
+                  {/* Waist arrow */}
+                  <line x1="53" y1="145" x2="147" y2="145" stroke="#1e293b" strokeWidth="2" />
+                  <path d="M60 140 L53 145 L60 150 M140 140 L147 145 L140 150" stroke="#1e293b" strokeWidth="2" fill="none" />
+                  <text x="100" y="137" textAnchor="middle" fill="#1e293b" fontSize="12" fontWeight="bold">Waist</text>
+
+                  {/* Hip arrow */}
+                  <line x1="52" y1="195" x2="148" y2="195" stroke="#1e293b" strokeWidth="2" />
+                  <path d="M59 190 L52 195 L59 200 M141 190 L148 195 L141 200" stroke="#1e293b" strokeWidth="2" fill="none" />
+                  <text x="100" y="187" textAnchor="middle" fill="#1e293b" fontSize="12" fontWeight="bold">Hip</text>
+                </svg>
+                <span className="text-[11px] font-bold text-[#8B0000] mt-2 text-center">
+                  Measurement Guide
+                </span>
+              </div>
+            </div>
+
+            {/* How to Measure Guidelines */}
+            <div className="mt-6 pt-4 border-t border-gray-100 bg-gray-50/80 rounded-2xl p-4">
+              <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-2">
+                How to Measure Your Body:
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-600">
+                <div>
+                  <strong className="text-gray-900">1. Bust:</strong> Measure around the fullest part of your chest with tape horizontal.
+                </div>
+                <div>
+                  <strong className="text-gray-900">2. Waist:</strong> Measure around your natural waistline, just above the navel.
+                </div>
+                <div>
+                  <strong className="text-gray-900">3. Hip:</strong> Measure around the fullest part of your hips/seat.
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
