@@ -4,9 +4,7 @@ import { NariHeadingDecoration } from "./NariHeadingDecoration";
 import {
   ChevronDown,
   ChevronUp,
-  Filter,
   X,
-  SlidersHorizontal,
   Heart,
   Star,
   ShoppingBag,
@@ -14,6 +12,12 @@ import {
   Loader2,
   Check,
   RotateCcw,
+  Sliders,
+  DollarSign,
+  Layers,
+  Palette,
+  Sparkles,
+  Percent,
 } from "lucide-react";
 import { useWishlist } from "../context/WishlistProvider";
 import useSEO from "../hooks/useSEO";
@@ -139,29 +143,6 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0 }) 
   );
 };
 
-// ── Filter Accordion Section (Used in Drawer) ─────────────────
-const FilterSection = ({ title, children, defaultOpen = true }) => {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="border-b border-gray-200 pb-4 mb-4 last:border-0">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center justify-between w-full mb-3 text-left"
-      >
-        <span className="text-[13px] font-bold text-gray-800 uppercase tracking-wide">
-          {title}
-        </span>
-        {open ? (
-          <ChevronUp className="w-4 h-4 text-gray-400" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-gray-400" />
-        )}
-      </button>
-      {open && children}
-    </div>
-  );
-};
-
 // ── Main CategoryPage ─────────────────────────────────────────
 const CategoryPage = ({ categoryName: propCategoryName }) => {
   const { categoryName: urlSlug } = useParams();
@@ -186,13 +167,10 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
 
   // UI & Filter states
   const [sortBy, setSortBy] = useState("featured");
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState(null); // 'price' | sectionId | null
+  const [activeDropdown, setActiveDropdown] = useState(null); // 'price' | 'size' | 'color' | 'fabric' | 'pattern' | 'discount' | null
   const [priceRange, setPriceRange] = useState([0, 25000]);
   const [activeFilters, setActiveFilters] = useState({});
-  const [showMoreMap, setShowMoreMap] = useState({});
-  const [showMobileSort, setShowMobileSort] = useState(false);
 
   const filterBarRef = useRef(null);
 
@@ -240,7 +218,6 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
       setApiError(null);
       setProducts([]);
       setActiveFilters({});
-      setShowMoreMap({});
       setActiveDropdown(null);
       setSortBy("featured");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -306,21 +283,23 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
 
     const sections = [];
     if (allSizes.length > 0)
-      sections.push({ id: "size", label: "Size", options: allSizes });
+      sections.push({ id: "size", label: "Size", options: allSizes, icon: Layers });
     if (allColors.length > 0)
-      sections.push({ id: "color", label: "Color", options: allColors });
+      sections.push({ id: "color", label: "Color", options: allColors, icon: Palette });
     if (allFabrics.length > 0)
-      sections.push({ id: "fabric", label: "Fabric", options: allFabrics });
+      sections.push({ id: "fabric", label: "Fabric", options: allFabrics, icon: Sparkles });
     if (allPatterns.length > 0)
       sections.push({
         id: "pattern",
         label: "Pattern",
         options: allPatterns,
+        icon: Sliders,
       });
     sections.push({
       id: "discount",
       label: "Discount",
       options: ["10% & above", "25% & above", "40% & above", "50% & above"],
+      icon: Percent,
     });
 
     return { priceRange: [minP, maxP], sections };
@@ -361,14 +340,16 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
   const clearAll = () => {
     setActiveFilters({});
     setPriceRange(filterConfig.priceRange);
+    setSortBy("featured");
   };
+
+  const isPriceFiltered =
+    priceRange[0] > filterConfig.priceRange[0] ||
+    priceRange[1] < filterConfig.priceRange[1];
 
   const totalActiveCount =
     Object.values(activeFilters).reduce((n, s) => n + s.size, 0) +
-    (priceRange[0] > filterConfig.priceRange[0] ||
-    priceRange[1] < filterConfig.priceRange[1]
-      ? 1
-      : 0);
+    (isPriceFiltered ? 1 : 0);
 
   // ── Filter + sort products ───────────────────────────────────
   const displayProducts = useMemo(() => {
@@ -429,108 +410,6 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
     { value: "discount", label: "Best Discount" },
     { value: "rating", label: "Top Rated" },
   ];
-
-  // ── Full Filter Panel (for Mobile Drawer) ──────────────────────
-  const FilterPanel = () => (
-    <div className="space-y-0">
-      <FilterSection title="Price Range">
-        <div className="px-1">
-          <div className="flex justify-between text-sm text-gray-600 mb-3">
-            <span>₹{priceRange[0].toLocaleString("en-IN")}</span>
-            <span>₹{priceRange[1].toLocaleString("en-IN")}</span>
-          </div>
-          <input
-            type="range"
-            min={filterConfig.priceRange[0]}
-            max={filterConfig.priceRange[1]}
-            step={100}
-            value={priceRange[1]}
-            onChange={(e) =>
-              setPriceRange([priceRange[0], Number(e.target.value)])
-            }
-            className="w-full accent-[#8B0000] cursor-pointer"
-          />
-          <div className="flex gap-2 mt-3">
-            <input
-              type="number"
-              value={priceRange[0]}
-              onChange={(e) =>
-                setPriceRange([Number(e.target.value), priceRange[1]])
-              }
-              placeholder="Min"
-              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-[#8B0000]"
-            />
-            <input
-              type="number"
-              value={priceRange[1]}
-              onChange={(e) =>
-                setPriceRange([priceRange[0], Number(e.target.value)])
-              }
-              placeholder="Max"
-              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-[#8B0000]"
-            />
-          </div>
-        </div>
-      </FilterSection>
-
-      {filterConfig.sections.map((sec, idx) => (
-        <FilterSection key={sec.id} title={sec.label} defaultOpen={idx < 2}>
-          <div className="space-y-2">
-            {(showMoreMap[sec.id] ? sec.options : sec.options.slice(0, 8)).map(
-              (opt) => {
-                const selected = (activeFilters[sec.id] || new Set()).has(opt);
-                return (
-                  <label
-                    key={opt}
-                    className="flex items-center gap-2.5 cursor-pointer group"
-                    onClick={() => toggleFilter(sec.id, opt)}
-                  >
-                    <div
-                      className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-all ${
-                        selected
-                          ? "bg-[#8B0000] border-[#8B0000]"
-                          : "border-gray-300 group-hover:border-[#8B0000]"
-                      }`}
-                    >
-                      {selected && (
-                        <span className="text-white text-[10px] font-bold">
-                          ✓
-                        </span>
-                      )}
-                    </div>
-                    <span
-                      className={`text-[13px] leading-snug transition-colors ${
-                        selected
-                          ? "text-[#8B0000] font-medium"
-                          : "text-gray-600 group-hover:text-gray-800"
-                      }`}
-                    >
-                      {opt}
-                    </span>
-                  </label>
-                );
-              },
-            )}
-            {sec.options.length > 8 && (
-              <button
-                onClick={() =>
-                  setShowMoreMap((m) => ({
-                    ...m,
-                    [sec.id]: !m[sec.id],
-                  }))
-                }
-                className="text-[12px] text-[#8B0000] hover:text-[#a52a2a] font-medium mt-1"
-              >
-                {showMoreMap[sec.id]
-                  ? "- Show Less"
-                  : `+ ${sec.options.length - 8} More`}
-              </button>
-            )}
-          </div>
-        </FilterSection>
-      ))}
-    </div>
-  );
 
   // ── Render ───────────────────────────────────────────
   return (
@@ -627,107 +506,128 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
         </div>
       </div>
 
-      {/* ── HORIZONTAL FILTER & SORT BAR (Directly Below Hero) ── */}
+      {/* ── HORIZONTAL DIRECT DROPDOWN FILTER BAR (Directly Below Hero) ── */}
       <div
         ref={filterBarRef}
-        className="sticky top-[60px] md:top-[70px] z-30 bg-white border-b border-gray-200/90 shadow-sm"
+        className="sticky top-[60px] md:top-[70px] z-30 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm"
       >
         <div className="max-w-[1440px] mx-auto px-4 xl:px-8 py-3">
           <div className="flex items-center justify-between gap-3 flex-wrap lg:flex-nowrap">
-            {/* Horizontal Filter Box Pills (Left Section) */}
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1 flex-1 min-w-0">
-              {/* "All Filters" Drawer Button */}
-              <button
-                onClick={() => setShowMobileFilters(true)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex-shrink-0 ${
-                  totalActiveCount > 0
-                    ? "bg-[#8B0000] text-white shadow-sm"
-                    : "bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200"
-                }`}
-              >
-                <SlidersHorizontal className="w-4 h-4" />
-                <span>All Filters</span>
-                {totalActiveCount > 0 && (
-                  <span className="w-5 h-5 rounded-full bg-white text-[#8B0000] text-[11px] font-bold flex items-center justify-center">
-                    {totalActiveCount}
-                  </span>
-                )}
-              </button>
-
-              {/* Price Range Pill Dropdown */}
-              <div className="relative flex-shrink-0">
+            {/* Filter Dropdown Boxes (Left / Main) */}
+            <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+              
+              {/* 1. Price Dropdown Box (With Sorting + Range Filter) */}
+              <div className="relative">
                 <button
+                  type="button"
                   onClick={() =>
                     setActiveDropdown(activeDropdown === "price" ? null : "price")
                   }
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium border transition-all ${
-                    priceRange[0] > filterConfig.priceRange[0] ||
-                    priceRange[1] < filterConfig.priceRange[1]
-                      ? "border-[#8B0000] bg-[#8B0000]/10 text-[#8B0000] font-semibold"
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-all shadow-xs ${
+                    isPriceFiltered || sortBy === "price-low" || sortBy === "price-high"
+                      ? "border-[#8B0000] bg-[#8B0000]/10 text-[#8B0000]"
                       : "border-gray-200 bg-white hover:bg-gray-50 text-gray-700"
                   }`}
                 >
+                  <DollarSign className="w-3.5 h-3.5 text-[#8B0000]" />
                   <span>Price</span>
-                  {(priceRange[0] > filterConfig.priceRange[0] ||
-                    priceRange[1] < filterConfig.priceRange[1]) && (
+                  {(isPriceFiltered || sortBy === "price-low" || sortBy === "price-high") && (
                     <span className="w-2 h-2 rounded-full bg-[#8B0000]" />
                   )}
                   <ChevronDown
-                    className={`w-3.5 h-3.5 transition-transform ${
-                      activeDropdown === "price" ? "rotate-180" : ""
+                    className={`w-3.5 h-3.5 text-gray-500 transition-transform ${
+                      activeDropdown === "price" ? "rotate-180 text-[#8B0000]" : ""
                     }`}
                   />
                 </button>
 
                 {/* Price Dropdown Card */}
                 {activeDropdown === "price" && (
-                  <div className="absolute left-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-40 animate-fadeIn">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-bold text-gray-900 uppercase">
-                        Price Range
+                  <div className="absolute left-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 p-4.5 z-50 animate-fadeIn">
+                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+                      <span className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <DollarSign className="w-4 h-4 text-[#8B0000]" /> Price & Sorting
                       </span>
-                      <button
-                        onClick={() => setPriceRange(filterConfig.priceRange)}
-                        className="text-[11px] text-gray-400 hover:text-red-600"
-                      >
-                        Reset
-                      </button>
+                      {isPriceFiltered && (
+                        <button
+                          onClick={() => setPriceRange(filterConfig.priceRange)}
+                          className="text-[11px] text-[#8B0000] hover:underline font-medium"
+                        >
+                          Reset Range
+                        </button>
+                      )}
                     </div>
-                    <div className="flex justify-between text-xs text-gray-600 mb-2 font-medium">
-                      <span>₹{priceRange[0].toLocaleString("en-IN")}</span>
-                      <span>₹{priceRange[1].toLocaleString("en-IN")}</span>
+
+                    {/* Quick Price Sorting */}
+                    <div className="mb-4">
+                      <p className="text-[11px] font-bold text-gray-500 uppercase mb-2">Sort by Price</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => setSortBy("price-low")}
+                          className={`py-1.5 px-2 rounded-lg text-xs font-medium border transition-colors flex items-center justify-center gap-1 ${
+                            sortBy === "price-low"
+                              ? "bg-[#8B0000] border-[#8B0000] text-white"
+                              : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+                          }`}
+                        >
+                          Low to High
+                        </button>
+                        <button
+                          onClick={() => setSortBy("price-high")}
+                          className={`py-1.5 px-2 rounded-lg text-xs font-medium border transition-colors flex items-center justify-center gap-1 ${
+                            sortBy === "price-high"
+                              ? "bg-[#8B0000] border-[#8B0000] text-white"
+                              : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+                          }`}
+                        >
+                          High to Low
+                        </button>
+                      </div>
                     </div>
-                    <input
-                      type="range"
-                      min={filterConfig.priceRange[0]}
-                      max={filterConfig.priceRange[1]}
-                      step={100}
-                      value={priceRange[1]}
-                      onChange={(e) =>
-                        setPriceRange([priceRange[0], Number(e.target.value)])
-                      }
-                      className="w-full accent-[#8B0000] cursor-pointer"
-                    />
-                    <div className="flex gap-2 mt-3 mb-3">
+
+                    {/* Price Range Slider */}
+                    <div className="pt-3 border-t border-gray-100">
+                      <div className="flex justify-between text-xs text-gray-700 mb-2 font-bold">
+                        <span>₹{priceRange[0].toLocaleString("en-IN")}</span>
+                        <span>₹{priceRange[1].toLocaleString("en-IN")}</span>
+                      </div>
                       <input
-                        type="number"
-                        value={priceRange[0]}
-                        onChange={(e) =>
-                          setPriceRange([Number(e.target.value), priceRange[1]])
-                        }
-                        placeholder="Min"
-                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800"
-                      />
-                      <input
-                        type="number"
+                        type="range"
+                        min={filterConfig.priceRange[0]}
+                        max={filterConfig.priceRange[1]}
+                        step={100}
                         value={priceRange[1]}
                         onChange={(e) =>
                           setPriceRange([priceRange[0], Number(e.target.value)])
                         }
-                        placeholder="Max"
-                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800"
+                        className="w-full accent-[#8B0000] cursor-pointer"
                       />
+                      <div className="flex gap-2 mt-2.5 mb-3">
+                        <div className="flex-1">
+                          <span className="text-[10px] text-gray-400 block mb-0.5">Min (₹)</span>
+                          <input
+                            type="number"
+                            value={priceRange[0]}
+                            onChange={(e) =>
+                              setPriceRange([Number(e.target.value), priceRange[1]])
+                            }
+                            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-[#8B0000]"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <span className="text-[10px] text-gray-400 block mb-0.5">Max (₹)</span>
+                          <input
+                            type="number"
+                            value={priceRange[1]}
+                            onChange={(e) =>
+                              setPriceRange([priceRange[0], Number(e.target.value)])
+                            }
+                            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-[#8B0000]"
+                          />
+                        </div>
+                      </div>
                     </div>
+
                     {/* Quick Presets */}
                     <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-gray-100">
                       {[
@@ -739,58 +639,66 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                         <button
                           key={p.label}
                           onClick={() => setPriceRange([0, p.max])}
-                          className="text-[11px] py-1 px-2 rounded-lg bg-gray-50 hover:bg-[#8B0000]/10 hover:text-[#8B0000] text-gray-600 transition-colors text-center"
+                          className={`text-[11px] py-1 px-2 rounded-lg border transition-colors text-center ${
+                            priceRange[1] === p.max && priceRange[0] === 0
+                              ? "bg-[#8B0000]/10 border-[#8B0000] text-[#8B0000] font-semibold"
+                              : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+                          }`}
                         >
                           {p.label}
                         </button>
                       ))}
                     </div>
+
                     <button
                       onClick={() => setActiveDropdown(null)}
-                      className="w-full mt-3 py-1.5 bg-[#8B0000] hover:bg-[#700000] text-white text-xs font-semibold rounded-lg transition-colors"
+                      className="w-full mt-3 py-2 bg-[#8B0000] hover:bg-[#700000] text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
                     >
-                      Apply
+                      Apply Filter
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* Dynamic Section Box Pills (Size, Color, Fabric, Pattern, Discount) */}
+              {/* 2. Dynamic Section Dropdown Boxes (Size, Color, Fabric, Pattern, Discount) */}
               {filterConfig.sections.map((sec) => {
                 const selectedCount = (activeFilters[sec.id] || new Set()).size;
                 const isOpen = activeDropdown === sec.id;
+                const IconComponent = sec.icon || Layers;
 
                 return (
-                  <div key={sec.id} className="relative flex-shrink-0">
+                  <div key={sec.id} className="relative">
                     <button
+                      type="button"
                       onClick={() =>
                         setActiveDropdown(isOpen ? null : sec.id)
                       }
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium border transition-all ${
+                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-all shadow-xs ${
                         selectedCount > 0
-                          ? "border-[#8B0000] bg-[#8B0000]/10 text-[#8B0000] font-semibold"
+                          ? "border-[#8B0000] bg-[#8B0000]/10 text-[#8B0000]"
                           : "border-gray-200 bg-white hover:bg-gray-50 text-gray-700"
                       }`}
                     >
+                      <IconComponent className="w-3.5 h-3.5 text-[#8B0000]" />
                       <span>{sec.label}</span>
                       {selectedCount > 0 && (
-                        <span className="w-4 h-4 rounded-full bg-[#8B0000] text-white text-[10px] font-bold flex items-center justify-center">
+                        <span className="w-5 h-5 rounded-full bg-[#8B0000] text-white text-[11px] font-bold flex items-center justify-center">
                           {selectedCount}
                         </span>
                       )}
                       <ChevronDown
-                        className={`w-3.5 h-3.5 transition-transform ${
-                          isOpen ? "rotate-180" : ""
+                        className={`w-3.5 h-3.5 text-gray-500 transition-transform ${
+                          isOpen ? "rotate-180 text-[#8B0000]" : ""
                         }`}
                       />
                     </button>
 
                     {/* Section Dropdown Card */}
                     {isOpen && (
-                      <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-40 animate-fadeIn">
+                      <div className="absolute left-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 z-50 animate-fadeIn">
                         <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
-                          <span className="text-xs font-bold text-gray-900 uppercase">
-                            {sec.label}
+                          <span className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <IconComponent className="w-4 h-4 text-[#8B0000]" /> Select {sec.label}
                           </span>
                           {selectedCount > 0 && (
                             <button
@@ -801,50 +709,77 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                                   return updated;
                                 });
                               }}
-                              className="text-[11px] text-[#8B0000] hover:underline"
+                              className="text-[11px] text-[#8B0000] hover:underline font-medium"
                             >
                               Clear
                             </button>
                           )}
                         </div>
 
-                        {/* Options List */}
-                        <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
-                          {sec.options.map((opt) => {
-                            const isSelected = (
-                              activeFilters[sec.id] || new Set()
-                            ).has(opt);
+                        {/* Special Grid Layout for Sizes */}
+                        {sec.id === "size" ? (
+                          <div className="grid grid-cols-4 gap-2 mb-3">
+                            {sec.options.map((opt) => {
+                              const isSelected = (
+                                activeFilters[sec.id] || new Set()
+                              ).has(opt);
 
-                            return (
-                              <label
-                                key={opt}
-                                onClick={() => toggleFilter(sec.id, opt)}
-                                className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors text-xs ${
-                                  isSelected
-                                    ? "bg-[#8B0000]/10 text-[#8B0000] font-semibold"
-                                    : "hover:bg-gray-50 text-gray-700"
-                                }`}
-                              >
-                                <span>{opt}</span>
-                                <div
-                                  className={`w-4 h-4 rounded border flex items-center justify-center ${
+                              return (
+                                <button
+                                  key={opt}
+                                  type="button"
+                                  onClick={() => toggleFilter(sec.id, opt)}
+                                  className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all text-center ${
                                     isSelected
-                                      ? "bg-[#8B0000] border-[#8B0000]"
-                                      : "border-gray-300"
+                                      ? "bg-[#8B0000] border-[#8B0000] text-white shadow-sm"
+                                      : "bg-gray-50 border-gray-200 text-gray-700 hover:border-[#8B0000] hover:bg-[#8B0000]/5"
                                   }`}
                                 >
-                                  {isSelected && (
-                                    <Check className="w-3 h-3 text-white stroke-[3]" />
-                                  )}
+                                  {opt}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          /* Standard List with Checkbox for Other Sections */
+                          <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 mb-3">
+                            {sec.options.map((opt) => {
+                              const isSelected = (
+                                activeFilters[sec.id] || new Set()
+                              ).has(opt);
+
+                              return (
+                                <div
+                                  key={opt}
+                                  onClick={() => toggleFilter(sec.id, opt)}
+                                  className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-colors text-xs ${
+                                    isSelected
+                                      ? "bg-[#8B0000]/10 text-[#8B0000] font-bold"
+                                      : "hover:bg-gray-50 text-gray-700"
+                                  }`}
+                                >
+                                  <span className="truncate mr-2">{opt}</span>
+                                  <div
+                                    className={`w-4 h-4 rounded-md border flex items-center justify-center flex-shrink-0 transition-all ${
+                                      isSelected
+                                        ? "bg-[#8B0000] border-[#8B0000]"
+                                        : "border-gray-300 bg-white"
+                                    }`}
+                                  >
+                                    {isSelected && (
+                                      <Check className="w-3 h-3 text-white stroke-[3]" />
+                                    )}
+                                  </div>
                                 </div>
-                              </label>
-                            );
-                          })}
-                        </div>
+                              );
+                            })}
+                          </div>
+                        )}
 
                         <button
+                          type="button"
                           onClick={() => setActiveDropdown(null)}
-                          className="w-full mt-3 py-1.5 bg-[#8B0000] hover:bg-[#700000] text-white text-xs font-semibold rounded-lg transition-colors"
+                          className="w-full py-2 bg-[#8B0000] hover:bg-[#700000] text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
                         >
                           Done
                         </button>
@@ -857,8 +792,9 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
               {/* Reset All Filters Button */}
               {totalActiveCount > 0 && (
                 <button
+                  type="button"
                   onClick={clearAll}
-                  className="flex items-center gap-1 px-3 py-2 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors flex-shrink-0"
+                  className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Reset All</span>
@@ -867,9 +803,9 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
             </div>
 
             {/* Right Side: Products Count & Sort Dropdown */}
-            <div className="flex items-center gap-3 flex-shrink-0 self-end lg:self-auto w-full lg:w-auto justify-between lg:justify-end pt-2 lg:pt-0 border-t lg:border-t-0 border-gray-100">
-              <span className="text-xs sm:text-sm text-gray-500 font-medium whitespace-nowrap">
-                <span className="font-bold text-gray-900">
+            <div className="flex items-center gap-3 flex-shrink-0 w-full lg:w-auto justify-between lg:justify-end pt-2 lg:pt-0 border-t lg:border-t-0 border-gray-100">
+              <span className="text-xs sm:text-sm text-gray-500 font-semibold whitespace-nowrap">
+                <span className="text-gray-900 font-bold">
                   {displayProducts.length}
                 </span>{" "}
                 Products
@@ -878,8 +814,9 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
               {/* Sort By Dropdown */}
               <div className="relative">
                 <button
+                  type="button"
                   onClick={() => setShowSortDropdown(!showSortDropdown)}
-                  className="flex items-center gap-2 px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-700 hover:border-[#8B0000] transition-colors justify-between shadow-sm min-w-[150px] sm:min-w-[180px]"
+                  className="flex items-center gap-2 px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm font-semibold text-gray-700 hover:border-[#8B0000] transition-colors justify-between shadow-xs min-w-[160px] sm:min-w-[190px]"
                 >
                   <span className="flex items-center gap-1.5 truncate">
                     <ArrowUpDown className="w-3.5 h-3.5 text-[#8B0000]" />
@@ -890,28 +827,32 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                   </span>
                   <ChevronDown
                     className={`w-3.5 h-3.5 text-gray-400 transition-transform ${
-                      showSortDropdown ? "rotate-180" : ""
+                      showSortDropdown ? "rotate-180 text-[#8B0000]" : ""
                     }`}
                   />
                 </button>
 
                 {showSortDropdown && (
-                  <div className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-gray-200 rounded-2xl shadow-2xl z-40 overflow-hidden animate-fadeIn">
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 overflow-hidden animate-fadeIn">
                     <div className="py-1">
                       {SORT_OPTIONS.map((opt) => (
                         <button
                           key={opt.value}
+                          type="button"
                           onClick={() => {
                             setSortBy(opt.value);
                             setShowSortDropdown(false);
                           }}
-                          className={`w-full text-left px-4 py-2.5 text-xs sm:text-sm transition-colors ${
+                          className={`w-full flex items-center justify-between px-4 py-2.5 text-xs sm:text-sm font-medium transition-colors ${
                             sortBy === opt.value
                               ? "text-[#8B0000] font-bold bg-[#8B0000]/10"
                               : "text-gray-700 hover:bg-gray-50"
                           }`}
                         >
-                          {opt.label}
+                          <span>{opt.label}</span>
+                          {sortBy === opt.value && (
+                            <Check className="w-3.5 h-3.5 text-[#8B0000]" />
+                          )}
                         </button>
                       ))}
                     </div>
@@ -927,29 +868,31 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
               <span className="text-[11px] font-bold text-gray-400 uppercase mr-1">
                 Active:
               </span>
-              {(priceRange[0] > filterConfig.priceRange[0] ||
-                priceRange[1] < filterConfig.priceRange[1]) && (
+              {isPriceFiltered && (
                 <button
+                  type="button"
                   onClick={() => setPriceRange(filterConfig.priceRange)}
-                  className="flex items-center gap-1 px-2.5 py-0.5 bg-[#8B0000]/10 border border-[#8B0000]/30 text-[#8B0000] text-xs rounded-full hover:bg-[#8B0000]/20 transition-colors"
+                  className="flex items-center gap-1 px-2.5 py-1 bg-[#8B0000]/10 border border-[#8B0000]/30 text-[#8B0000] text-xs font-semibold rounded-full hover:bg-[#8B0000]/20 transition-colors"
                 >
-                  ₹{priceRange[0]} - ₹{priceRange[1]} <X className="w-3 h-3" />
+                  Price: ₹{priceRange[0]} - ₹{priceRange[1]} <X className="w-3 h-3" />
                 </button>
               )}
               {Object.entries(activeFilters).map(([secId, vals]) =>
                 [...vals].map((v) => (
                   <button
                     key={`${secId}-${v}`}
+                    type="button"
                     onClick={() => removeFilter(secId, v)}
-                    className="flex items-center gap-1 px-2.5 py-0.5 bg-[#8B0000]/10 border border-[#8B0000]/30 text-[#8B0000] text-xs rounded-full hover:bg-[#8B0000]/20 transition-colors"
+                    className="flex items-center gap-1 px-2.5 py-1 bg-[#8B0000]/10 border border-[#8B0000]/30 text-[#8B0000] text-xs font-semibold rounded-full hover:bg-[#8B0000]/20 transition-colors"
                   >
                     {v} <X className="w-3 h-3" />
                   </button>
                 )),
               )}
               <button
+                type="button"
                 onClick={clearAll}
-                className="text-xs text-red-600 hover:underline ml-1 font-medium"
+                className="text-xs text-red-600 hover:underline ml-1 font-bold"
               >
                 Clear All
               </button>
@@ -958,7 +901,7 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
         </div>
       </div>
 
-      {/* ── FULL WIDTH PRODUCT GRID (No Left Sidebar!) ── */}
+      {/* ── FULL WIDTH 4-COLUMN PRODUCT GRID ── */}
       <div className="max-w-[1440px] mx-auto px-4 xl:px-8 py-6 sm:py-8">
         <main className="w-full min-w-0">
           {loading ? (
@@ -977,7 +920,7 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
               <p className="text-gray-400 text-sm">{apiError}</p>
             </div>
           ) : displayProducts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-3xl border border-gray-100 p-8">
+            <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-3xl border border-gray-100 p-8 shadow-sm">
               <ShoppingBag className="w-16 h-16 text-gray-300 mb-4" />
               <h3 className="text-xl font-semibold text-gray-600 mb-2">
                 {totalActiveCount > 0
@@ -991,6 +934,7 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
               </p>
               {totalActiveCount > 0 && (
                 <button
+                  type="button"
                   onClick={clearAll}
                   className="px-6 py-2.5 bg-[#8B0000] hover:bg-[#700000] text-white rounded-full text-sm font-semibold transition-colors shadow-md"
                 >
@@ -1014,95 +958,6 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
           )}
         </main>
       </div>
-
-      {/* ── Mobile Sort Bottom Sheet ── */}
-      {showMobileSort && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/60 z-40 lg:hidden"
-            onClick={() => setShowMobileSort(false)}
-          />
-          <div className="fixed bottom-0 left-0 right-0 bg-white z-50 lg:hidden rounded-t-3xl max-h-[70vh] overflow-y-auto animate-slideUp">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 sticky top-0 bg-white">
-              <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                <ArrowUpDown className="w-4 h-4 text-[#8B0000]" /> Sort By
-              </h2>
-              <button
-                onClick={() => setShowMobileSort(false)}
-                className="p-1.5 text-gray-500 hover:text-gray-900"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="py-2">
-              {SORT_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => {
-                    setSortBy(opt.value);
-                    setShowMobileSort(false);
-                  }}
-                  className={`w-full flex items-center justify-between px-5 py-3.5 text-sm transition-colors ${
-                    sortBy === opt.value
-                      ? "text-[#8B0000] font-semibold bg-[#8B0000]/5"
-                      : "text-gray-700"
-                  }`}
-                >
-                  {opt.label}
-                  {sortBy === opt.value && (
-                    <span className="w-2 h-2 rounded-full bg-[#8B0000]" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* ── Mobile & Desktop Filter Drawer ("All Filters") ── */}
-      {showMobileFilters && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/60 z-40 backdrop-blur-xs"
-            onClick={() => setShowMobileFilters(false)}
-          />
-          <div className="fixed inset-y-0 right-0 w-[90%] max-w-md bg-white z-50 flex flex-col shadow-2xl animate-slideLeft">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <SlidersHorizontal className="w-5 h-5 text-[#8B0000]" /> Filters
-                {totalActiveCount > 0 && (
-                  <span className="bg-[#8B0000] text-white text-[11px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {totalActiveCount}
-                  </span>
-                )}
-              </h2>
-              <button
-                onClick={() => setShowMobileFilters(false)}
-                className="p-1.5 text-gray-500 hover:text-gray-900 rounded-full hover:bg-gray-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-5 py-4">
-              <FilterPanel />
-            </div>
-            <div className="px-5 py-4 border-t border-gray-200 flex gap-3 bg-gray-50">
-              <button
-                onClick={clearAll}
-                className="flex-1 py-3 border border-gray-300 text-gray-700 bg-white rounded-xl text-sm font-semibold hover:bg-gray-100 transition-colors"
-              >
-                Reset All
-              </button>
-              <button
-                onClick={() => setShowMobileFilters(false)}
-                className="flex-1 py-3 bg-[#8B0000] hover:bg-[#700000] text-white rounded-xl text-sm font-semibold transition-colors shadow-md"
-              >
-                Show {displayProducts.length} Items
-              </button>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 };
