@@ -117,11 +117,11 @@ const Users = () => {
     const getRoleBadge = (role) => {
         const roleConfig = {
             admin: {
-                color: "bg-purple-50 text-purple-700 border border-purple-200",
+                color: "bg-[#8B0000]/25 text-amber-300 border-[#8B0000]/60",
                 icon: Shield,
             },
             customer: {
-                color: "bg-blue-50 text-blue-700 border border-blue-200",
+                color: "bg-amber-500/15 text-amber-200 border-amber-500/30",
                 icon: User,
             },
         };
@@ -129,9 +129,9 @@ const Users = () => {
         const Icon = config.icon;
         return (
             <span
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${config.color}`}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${config.color}`}
             >
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className="w-3.5 h-3.5 text-amber-400" />
                 {role.charAt(0).toUpperCase() + role.slice(1)}
             </span>
         );
@@ -139,12 +139,12 @@ const Users = () => {
 
     const getStatusBadge = (status) => {
         return status === "active" ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-emerald-50 text-emerald-700 border-emerald-200">
-                <Check className="w-3.5 h-3.5" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border bg-emerald-950/40 text-emerald-300 border-emerald-500/40">
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
                 Active
             </span>
         ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-slate-50 text-slate-600 border-slate-200">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border bg-stone-800/60 text-stone-400 border-stone-700">
                 Inactive
             </span>
         );
@@ -372,41 +372,61 @@ const Users = () => {
                             {
                                 label: "Total Users",
                                 count: roleCounts.all,
-                                color: "from-gray-700 to-gray-800",
+                                gradient: "from-[#1a202c] to-[#111827]",
+                                border: "border-amber-500/25",
+                                text: "text-amber-200",
+                                countColor: "text-white",
                                 icon: User,
+                                iconColor: "text-[#d4af37]",
+                                glow: "shadow-[0_0_15px_rgba(212,175,55,0.08)]",
                             },
                             {
                                 label: "Admins",
                                 count: roleCounts.admin,
-                                color: "from-purple-900/40 to-purple-800/40",
+                                gradient: "from-[#2b080f] to-[#190407]",
+                                border: "border-[#8B0000]/60",
+                                text: "text-red-300",
+                                countColor: "text-amber-300",
                                 icon: Shield,
+                                iconColor: "text-[#d4af37]",
+                                glow: "shadow-[0_0_15px_rgba(139,0,0,0.15)]",
                             },
                             {
                                 label: "Customers",
                                 count: roleCounts.customer,
-                                color: "from-blue-900/40 to-blue-800/40",
+                                gradient: "from-[#241a10] to-[#150f08]",
+                                border: "border-amber-600/30",
+                                text: "text-amber-300/90",
+                                countColor: "text-[#d4af37]",
                                 icon: User,
+                                iconColor: "text-amber-400",
+                                glow: "shadow-[0_0_15px_rgba(212,175,55,0.08)]",
                             },
                             {
                                 label: "Active Users",
                                 count: statusCounts.active,
-                                color: "from-green-900/40 to-green-800/40",
+                                gradient: "from-[#0c2419] to-[#06140d]",
+                                border: "border-emerald-500/30",
+                                text: "text-emerald-300/90",
+                                countColor: "text-emerald-300",
                                 icon: Check,
+                                iconColor: "text-emerald-400",
+                                glow: "shadow-[0_0_15px_rgba(16,185,129,0.08)]",
                             },
                         ].map((stat, idx) => {
                             const Icon = stat.icon;
                             return (
                                 <div
                                     key={idx}
-                                    className={`bg-gradient-to-br ${stat.color} border border-gray-800/50 rounded-xl p-4 hover:scale-105 transition-transform duration-200`}
+                                    className={`bg-gradient-to-br ${stat.gradient} border ${stat.border} ${stat.glow} rounded-2xl p-4 md:p-5 hover:scale-[1.03] transition-all duration-300`}
                                 >
                                     <div className="flex items-center justify-between mb-2">
-                                        <Icon className="w-5 h-5 text-gray-300" />
+                                        <Icon className={`w-5 h-5 ${stat.iconColor}`} />
                                     </div>
-                                    <div className="text-2xl font-bold text-gray-100">
+                                    <div className={`text-2xl md:text-3xl font-extrabold ${stat.countColor}`}>
                                         {stat.count}
                                     </div>
-                                    <div className="text-xs text-gray-400 mt-1">
+                                    <div className={`text-xs font-medium ${stat.text} mt-1`}>
                                         {stat.label}
                                     </div>
                                 </div>
@@ -593,7 +613,7 @@ const Users = () => {
                                                         onClick={() =>
                                                             handleViewUser(user.id)
                                                         }
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-900/40 text-blue-300 border border-blue-800/50 rounded-lg hover:bg-blue-900/60 transition-colors text-sm font-medium"
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#8B0000]/25 text-amber-300 border border-[#8B0000]/60 rounded-lg hover:bg-[#8B0000] hover:text-white transition-all text-sm font-medium shadow-sm"
                                                     >
                                                         <Eye className="w-3.5 h-3.5" />
                                                         View
@@ -602,7 +622,7 @@ const Users = () => {
                                                         onClick={() =>
                                                             handleEdit(user)
                                                         }
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#d4af37] text-[#0f1724] rounded-lg hover:bg-[#c49d2f] transition-colors text-sm font-medium"
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#d4af37] text-[#0f1724] rounded-lg hover:bg-[#c49d2f] transition-colors text-sm font-medium font-semibold shadow-sm"
                                                     >
                                                         <Edit className="w-3.5 h-3.5" />
                                                         Edit
@@ -676,7 +696,7 @@ const Users = () => {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => handleViewUser(user.id)}
-                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-900/40 text-blue-300 border border-blue-800/50 rounded-lg hover:bg-blue-900/60 transition-colors text-sm font-medium"
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-[#8B0000]/25 text-amber-300 border border-[#8B0000]/60 rounded-lg hover:bg-[#8B0000] hover:text-white transition-all text-sm font-medium shadow-sm"
                                     >
                                         <Eye className="w-4 h-4" />
                                         View
@@ -875,12 +895,12 @@ const Users = () => {
 
             {/* User Detailed View Modal (Addresses, Orders & Tracking in IST) */}
             {showViewModal && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-5">
-                    <div className="bg-[#0f1724] border border-gray-800 rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-2xl animate-fadeIn">
+                <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-5">
+                    <div className="bg-[#0b0f17] border border-[#8B0000]/40 rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-[0_0_50px_rgba(139,0,0,0.25)] animate-fadeIn">
                         {/* Modal Header */}
-                        <div className="border-b border-gray-800/80 p-5 sm:p-6 flex justify-between items-center bg-[#111827]/80">
-                            <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#8B0000] to-[#550000] text-amber-300 font-extrabold text-lg flex items-center justify-center shadow-md">
+                        <div className="border-b border-[#8B0000]/50 p-5 sm:p-6 flex justify-between items-center bg-gradient-to-r from-[#8B0000] via-[#5c0000] to-[#2b0000]">
+                            <div className="flex items-center gap-3.5">
+                                <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-[#d4af37] via-[#f5e6b3] to-[#b8860b] text-[#550000] font-black text-xl flex items-center justify-center shadow-lg border-2 border-amber-300/50">
                                     {viewDetails?.user?.avatar ? (
                                         <img src={viewDetails.user.avatar} alt="Avatar" className="w-full h-full rounded-2xl object-cover" />
                                     ) : (
@@ -888,18 +908,18 @@ const Users = () => {
                                     )}
                                 </div>
                                 <div>
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="text-lg sm:text-xl font-bold text-white">
+                                    <div className="flex items-center gap-2.5 flex-wrap">
+                                        <h3 className="text-lg sm:text-xl font-bold text-white font-serif tracking-wide">
                                             {viewDetails?.user?.name || "Customer Details"}
                                         </h3>
                                         {viewDetails?.user && getRoleBadge(viewDetails.user.role)}
                                     </div>
-                                    <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-2">
+                                    <p className="text-xs text-amber-200/80 mt-1 flex items-center gap-2 flex-wrap">
                                         <span>{viewDetails?.user?.email}</span>
                                         {viewDetails?.user?.phone && (
                                             <>
                                                 <span>•</span>
-                                                <span className="text-amber-400/90">{viewDetails.user.phone}</span>
+                                                <span className="text-amber-300 font-semibold">{viewDetails.user.phone}</span>
                                             </>
                                         )}
                                     </p>
@@ -910,58 +930,58 @@ const Users = () => {
                                     setShowViewModal(false);
                                     setViewDetails(null);
                                 }}
-                                className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-xl"
+                                className="text-amber-200/80 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-xl"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
                         {/* Modal Body */}
-                        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1 text-xs sm:text-sm">
+                        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1 text-xs sm:text-sm bg-[#0b0f17]">
                             {viewLoading ? (
                                 <div className="py-20 text-center">
                                     <Loader2 className="w-10 h-10 text-[#d4af37] animate-spin mx-auto mb-3" />
-                                    <p className="text-gray-400">Loading user profile & order history...</p>
+                                    <p className="text-amber-200/80 font-medium">Loading user profile & order history...</p>
                                 </div>
                             ) : viewDetails ? (
                                 <>
                                     {/* Stats Banner */}
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                        <div className="bg-[#162032] border border-gray-800 rounded-2xl p-3.5">
-                                            <span className="text-gray-400 text-xs block mb-1">Total Orders</span>
-                                            <span className="text-xl font-extrabold text-white">{viewDetails.stats?.total_orders || 0}</span>
+                                        <div className="bg-gradient-to-br from-[#181f2c] to-[#101520] border border-amber-500/20 rounded-2xl p-4 shadow-sm">
+                                            <span className="text-amber-200/70 text-xs block mb-1 font-medium">Total Orders</span>
+                                            <span className="text-2xl font-black text-white">{viewDetails.stats?.total_orders || 0}</span>
                                         </div>
-                                        <div className="bg-[#162032] border border-gray-800 rounded-2xl p-3.5">
-                                            <span className="text-gray-400 text-xs block mb-1">Total Spend</span>
-                                            <span className="text-xl font-extrabold text-[#d4af37]">₹{(viewDetails.stats?.total_spent || 0).toLocaleString("en-IN")}</span>
+                                        <div className="bg-gradient-to-br from-[#241a10] to-[#16100a] border border-amber-500/35 rounded-2xl p-4 shadow-sm">
+                                            <span className="text-amber-300/80 text-xs block mb-1 font-medium">Total Spend</span>
+                                            <span className="text-2xl font-black text-[#d4af37]">₹{(viewDetails.stats?.total_spent || 0).toLocaleString("en-IN")}</span>
                                         </div>
-                                        <div className="bg-[#162032] border border-gray-800 rounded-2xl p-3.5">
-                                            <span className="text-gray-400 text-xs block mb-1">Delivered</span>
-                                            <span className="text-xl font-extrabold text-emerald-400">{viewDetails.stats?.delivered_orders || 0}</span>
+                                        <div className="bg-gradient-to-br from-[#0c2419] to-[#071710] border border-emerald-500/30 rounded-2xl p-4 shadow-sm">
+                                            <span className="text-emerald-300/80 text-xs block mb-1 font-medium">Delivered</span>
+                                            <span className="text-2xl font-black text-emerald-300">{viewDetails.stats?.delivered_orders || 0}</span>
                                         </div>
-                                        <div className="bg-[#162032] border border-gray-800 rounded-2xl p-3.5">
-                                            <span className="text-gray-400 text-xs block mb-1">In Transit / Active</span>
-                                            <span className="text-xl font-extrabold text-blue-400">{viewDetails.stats?.in_transit_orders || 0}</span>
+                                        <div className="bg-gradient-to-br from-[#2b080f] to-[#190407] border border-[#8B0000]/50 rounded-2xl p-4 shadow-sm">
+                                            <span className="text-red-300/80 text-xs block mb-1 font-medium">In Transit / Active</span>
+                                            <span className="text-2xl font-black text-amber-300">{viewDetails.stats?.in_transit_orders || 0}</span>
                                         </div>
                                     </div>
 
                                     {/* Customer Overview */}
-                                    <div className="bg-[#162032]/60 border border-gray-800 rounded-2xl p-4 space-y-2">
-                                        <h4 className="font-bold text-gray-200 uppercase tracking-wider text-xs flex items-center gap-2">
+                                    <div className="bg-gradient-to-br from-[#141a24] to-[#0e121a] border border-amber-500/20 rounded-2xl p-4.5 space-y-2.5">
+                                        <h4 className="font-bold text-amber-300 uppercase tracking-wider text-xs flex items-center gap-2">
                                             <User className="w-4 h-4 text-[#d4af37]" /> Account Overview
                                         </h4>
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-300 pt-1">
                                             <div>
-                                                <span className="text-gray-500 block">Sign-in Provider:</span>
-                                                <span className="font-semibold text-white uppercase">{viewDetails.user?.auth_provider || "Email"}</span>
+                                                <span className="text-gray-400 block mb-0.5">Sign-in Provider:</span>
+                                                <span className="font-bold text-white uppercase bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">{viewDetails.user?.auth_provider || "Email"}</span>
                                             </div>
                                             <div>
-                                                <span className="text-gray-500 block">Joined Date (IST):</span>
-                                                <span className="font-semibold text-white">{viewDetails.user?.created_at_ist || viewDetails.user?.joined_date}</span>
+                                                <span className="text-gray-400 block mb-0.5">Joined Date (IST):</span>
+                                                <span className="font-semibold text-amber-100">{viewDetails.user?.created_at_ist || viewDetails.user?.joined_date}</span>
                                             </div>
                                             <div>
-                                                <span className="text-gray-500 block">Account Status:</span>
-                                                <span className={`font-semibold ${viewDetails.user?.status === 'active' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                                <span className="text-gray-400 block mb-0.5">Account Status:</span>
+                                                <span className={`font-bold ${viewDetails.user?.status === 'active' ? 'text-emerald-400' : 'text-amber-400'}`}>
                                                     {viewDetails.user?.status?.toUpperCase()}
                                                 </span>
                                             </div>
@@ -970,15 +990,15 @@ const Users = () => {
 
                                     {/* Saved Delivery Addresses */}
                                     <div>
-                                        <h4 className="font-bold text-gray-200 uppercase tracking-wider text-xs mb-3 flex items-center gap-2">
+                                        <h4 className="font-bold text-amber-300 uppercase tracking-wider text-xs mb-3 flex items-center gap-2">
                                             <MapPin className="w-4 h-4 text-[#d4af37]" /> Saved Delivery Addresses ({viewDetails.addresses?.length || 0})
                                         </h4>
                                         {viewDetails.addresses && viewDetails.addresses.length > 0 ? (
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 {viewDetails.addresses.map((addr, idx) => (
-                                                    <div key={idx} className="bg-[#162032] border border-gray-800 rounded-2xl p-4 relative">
+                                                    <div key={idx} className="bg-[#141a24] border border-amber-500/15 hover:border-[#8B0000]/50 transition-colors rounded-2xl p-4 relative shadow-sm">
                                                         {addr.is_default && (
-                                                            <span className="absolute top-3 right-3 px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold rounded-full">
+                                                            <span className="absolute top-3 right-3 px-2.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold rounded-full">
                                                                 Default
                                                             </span>
                                                         )}
@@ -989,10 +1009,10 @@ const Users = () => {
                                                             {addr.address_line1}
                                                             {addr.address_line2 ? `, ${addr.address_line2}` : ""}
                                                             <br />
-                                                            {addr.city}, {addr.state} - <strong className="text-white">{addr.pincode}</strong>
+                                                            {addr.city}, {addr.state} - <strong className="text-amber-300 font-mono">{addr.pincode}</strong>
                                                         </p>
                                                         {addr.phone && (
-                                                            <p className="text-xs text-amber-400/90 mt-2 font-medium">
+                                                            <p className="text-xs text-amber-400 mt-2 font-medium">
                                                                 Phone: {addr.phone}
                                                             </p>
                                                         )}
@@ -1000,7 +1020,7 @@ const Users = () => {
                                                 ))}
                                             </div>
                                         ) : (
-                                            <div className="p-4 bg-[#162032]/40 border border-gray-800 rounded-2xl text-center text-xs text-gray-500">
+                                            <div className="p-4 bg-[#141a24]/50 border border-gray-800 rounded-2xl text-center text-xs text-gray-400">
                                                 No saved addresses found.
                                             </div>
                                         )}
@@ -1008,27 +1028,27 @@ const Users = () => {
 
                                     {/* Full Order & Shipment Tracking History */}
                                     <div>
-                                        <h4 className="font-bold text-gray-200 uppercase tracking-wider text-xs mb-3 flex items-center gap-2">
+                                        <h4 className="font-bold text-amber-300 uppercase tracking-wider text-xs mb-3 flex items-center gap-2">
                                             <ShoppingBag className="w-4 h-4 text-[#d4af37]" /> Order &amp; Tracking History ({viewDetails.orders?.length || 0})
                                         </h4>
                                         {viewDetails.orders && viewDetails.orders.length > 0 ? (
                                             <div className="space-y-3">
                                                 {viewDetails.orders.map((ord, idx) => (
-                                                    <div key={idx} className="bg-[#162032] border border-gray-800 rounded-2xl p-4 hover:border-gray-700 transition-colors">
-                                                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-800 pb-3 mb-3">
+                                                    <div key={idx} className="bg-[#141a24] border border-gray-800 hover:border-[#8B0000]/50 transition-colors rounded-2xl p-4 shadow-sm">
+                                                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-800/80 pb-3 mb-3">
                                                             <div>
-                                                                <span className="font-extrabold text-white text-sm">
+                                                                <span className="font-extrabold text-amber-300 text-sm font-mono">
                                                                     Order #{ord.order_id}
                                                                 </span>
                                                                 <span className="text-xs text-gray-400 block mt-0.5">
-                                                                    Placed on: <strong className="text-gray-300">{ord.created_at_ist}</strong>
+                                                                    Placed on: <strong className="text-gray-200 font-medium">{ord.created_at_ist}</strong>
                                                                 </span>
                                                             </div>
                                                             <div className="flex items-center gap-2">
                                                                 <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                                                                    ord.status === 'delivered' ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-700/50' :
-                                                                    ord.status === 'cancelled' ? 'bg-red-900/40 text-red-300 border border-red-700/50' :
-                                                                    'bg-blue-900/40 text-blue-300 border border-blue-700/50'
+                                                                    ord.status === 'delivered' ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-600/50' :
+                                                                    ord.status === 'cancelled' ? 'bg-red-950/60 text-red-300 border border-red-700/50' :
+                                                                    'bg-[#8B0000]/40 text-amber-300 border border-[#8B0000]/60'
                                                                 }`}>
                                                                     {ord.status.toUpperCase()}
                                                                 </span>
@@ -1040,13 +1060,13 @@ const Users = () => {
 
                                                         {/* Items Summary */}
                                                         {ord.items && ord.items.length > 0 && (
-                                                            <div className="space-y-1.5 mb-3 bg-[#0f1724]/70 p-2.5 rounded-xl text-xs">
+                                                            <div className="space-y-1.5 mb-3 bg-[#0a0d14]/90 p-3 rounded-xl text-xs border border-gray-800/60">
                                                                 {ord.items.map((it, itemIdx) => (
                                                                     <div key={itemIdx} className="flex justify-between items-center text-gray-300">
-                                                                        <span className="truncate pr-2">
-                                                                            {it.name || it.product_name} <span className="text-gray-500 font-semibold">x{it.quantity}</span>
+                                                                        <span className="truncate pr-2 text-gray-200">
+                                                                            {it.name || it.product_name} <span className="text-amber-400/80 font-bold">x{it.quantity}</span>
                                                                         </span>
-                                                                        <span className="font-semibold text-white whitespace-nowrap">
+                                                                        <span className="font-semibold text-white whitespace-nowrap font-mono">
                                                                             ₹{((it.price || 0) * (it.quantity || 1)).toLocaleString("en-IN")}
                                                                         </span>
                                                                     </div>
@@ -1061,14 +1081,14 @@ const Users = () => {
                                                                 <strong className="text-white uppercase">{ord.payment_status}</strong> ({ord.payment_method})
                                                             </div>
                                                             {ord.awb_code ? (
-                                                                <div className="text-right sm:text-right text-blue-400 font-medium flex items-center justify-end gap-1.5">
-                                                                    <Truck className="w-3.5 h-3.5" />
-                                                                    <span>AWB: <strong className="text-white">{ord.awb_code}</strong></span>
-                                                                    {ord.courier_name && <span className="text-gray-400">({ord.courier_name})</span>}
+                                                                <div className="text-right sm:text-right text-amber-300 font-medium flex items-center justify-end gap-1.5 bg-[#8B0000]/20 px-2.5 py-1 rounded-lg border border-[#8B0000]/40">
+                                                                    <Truck className="w-3.5 h-3.5 text-[#d4af37]" />
+                                                                    <span>AWB: <strong className="text-white font-mono">{ord.awb_code}</strong></span>
+                                                                    {ord.courier_name && <span className="text-amber-200/70">({ord.courier_name})</span>}
                                                                 </div>
                                                             ) : (
-                                                                <div className="text-right text-gray-500">
-                                                                    Shipment: {ord.shipment_status || "Pending Dispatch"}
+                                                                <div className="text-right text-gray-400">
+                                                                    Shipment: <span className="text-amber-300/80 font-medium">{ord.shipment_status || "Pending Dispatch"}</span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -1076,7 +1096,7 @@ const Users = () => {
                                                 ))}
                                             </div>
                                         ) : (
-                                            <div className="p-4 bg-[#162032]/40 border border-gray-800 rounded-2xl text-center text-xs text-gray-500">
+                                            <div className="p-4 bg-[#141a24]/50 border border-gray-800 rounded-2xl text-center text-xs text-gray-400">
                                                 No orders placed yet.
                                             </div>
                                         )}
@@ -1086,13 +1106,13 @@ const Users = () => {
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="p-4 border-t border-gray-800 bg-[#111827]/80 flex justify-end">
+                        <div className="p-4 border-t border-[#8B0000]/30 bg-[#0e131d] flex justify-end">
                             <button
                                 onClick={() => {
                                     setShowViewModal(false);
                                     setViewDetails(null);
                                 }}
-                                className="px-5 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-xs font-bold transition-colors"
+                                className="px-6 py-2.5 bg-gradient-to-r from-[#8B0000] to-[#5c0000] hover:from-[#a30000] hover:to-[#700000] text-white rounded-xl text-xs font-bold transition-all shadow-md"
                             >
                                 Close
                             </button>
