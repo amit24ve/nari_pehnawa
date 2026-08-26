@@ -156,7 +156,7 @@ const AdminLayout = () => {
             </aside>
 
             {/* Main Content */}
-            <div className="flex-1 lg:ml-64">
+            <div className="flex-1 lg:ml-64 min-w-0 w-full flex flex-col min-h-screen overflow-x-hidden">
                 {/* Mobile/Tablet Header */}
                 <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200 shadow-sm">
                     <div className="flex items-center gap-3">
@@ -433,7 +433,7 @@ const AdminLayout = () => {
                 )}
 
                 {/* Main content area */}
-                <main className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto">
+                <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 w-full max-w-[1600px] mx-auto min-w-0">
                     <Outlet />
                 </main>
             </div>

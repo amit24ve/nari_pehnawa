@@ -310,10 +310,10 @@ const Users = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 w-full min-w-0">
             {/* Loading State */}
             {loading && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm">
+                <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm w-full">
                     <Loader2 className="w-10 h-10 text-[#0891b2] mx-auto mb-4 animate-spin" />
                     <p className="text-slate-500 text-sm font-medium">Loading users...</p>
                 </div>
@@ -321,15 +321,15 @@ const Users = () => {
 
             {/* Error State */}
             {error && !loading && (
-                <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3 w-full">
                     <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                         <p className="text-red-800 font-semibold text-sm">Error loading users</p>
-                        <p className="text-red-600 text-xs mt-0.5">{error}</p>
+                        <p className="text-red-600 text-xs mt-0.5 break-words">{error}</p>
                     </div>
                     <button
                         onClick={fetchUsers}
-                        className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition text-xs font-bold shadow-sm"
+                        className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition text-xs font-bold shadow-sm flex-shrink-0"
                     >
                         Retry
                     </button>
@@ -339,9 +339,9 @@ const Users = () => {
             {!loading && !error && (
                 <>
                     {/* Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div>
-                            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
+                        <div className="min-w-0">
+                            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight truncate">
                                 Users Management
                             </h2>
                             <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
@@ -350,14 +350,14 @@ const Users = () => {
                         </div>
                         <button
                             onClick={handleExportCSV}
-                            className="self-start sm:self-auto px-4 py-2.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition"
+                            className="self-start sm:self-auto px-4 py-2.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition flex-shrink-0"
                         >
                             <Download className="w-4 h-4" /> Export CSV
                         </button>
                     </div>
 
                     {/* Stats Cards (Cyan Admin Palette) */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full">
                         {/* Stat 1: Total Users */}
                         <div className="bg-white border border-slate-100 hover:shadow-md hover:border-[#0891b2]/30 transition-all duration-300 rounded-2xl p-5 shadow-sm relative overflow-hidden flex items-center justify-between group">
                             <div className="relative z-10">
@@ -408,10 +408,10 @@ const Users = () => {
                     </div>
 
                     {/* Search and Filters Bar */}
-                    <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-4">
-                        <div className="flex flex-col md:flex-row gap-4">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-4 shadow-sm space-y-3 sm:space-y-4 w-full min-w-0">
+                        <div className="flex flex-col md:flex-row gap-3 sm:gap-4 w-full">
                             {/* Search */}
-                            <div className="flex-1 relative">
+                            <div className="flex-1 relative min-w-0">
                                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <input
                                     type="text"
@@ -433,7 +433,7 @@ const Users = () => {
                             </button>
 
                             {/* Role Filter - Desktop */}
-                            <div className="hidden md:flex items-center gap-2">
+                            <div className="hidden md:flex items-center gap-2 flex-shrink-0">
                                 <Filter className="w-4 h-4 text-slate-400" />
                                 <select
                                     value={roleFilter}
@@ -450,7 +450,7 @@ const Users = () => {
                             </div>
 
                             {/* Sort Selector */}
-                            <div className="hidden md:flex items-center gap-2">
+                            <div className="hidden md:flex items-center gap-2 flex-shrink-0">
                                 <select
                                     value={sortBy}
                                     onChange={(e) => setSortBy(e.target.value)}
@@ -466,27 +466,44 @@ const Users = () => {
 
                         {/* Mobile Filters */}
                         {showFilters && (
-                            <div className="md:hidden pt-3 border-t border-slate-100">
-                                <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                                    Filter by Role
-                                </label>
-                                <select
-                                    value={roleFilter}
-                                    onChange={(e) => setRoleFilter(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-700 focus:outline-none focus:border-[#0891b2]"
-                                >
-                                    <option value="all">All Roles ({roleCounts.all})</option>
-                                    <option value="admin">Admin ({roleCounts.admin})</option>
-                                    <option value="customer">Customer ({roleCounts.customer})</option>
-                                </select>
+                            <div className="md:hidden pt-3 border-t border-slate-100 space-y-3">
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                                        Filter by Role
+                                    </label>
+                                    <select
+                                        value={roleFilter}
+                                        onChange={(e) => setRoleFilter(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-700 focus:outline-none focus:border-[#0891b2]"
+                                    >
+                                        <option value="all">All Roles ({roleCounts.all})</option>
+                                        <option value="admin">Admin ({roleCounts.admin})</option>
+                                        <option value="customer">Customer ({roleCounts.customer})</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                                        Sort by
+                                    </label>
+                                    <select
+                                        value={sortBy}
+                                        onChange={(e) => setSortBy(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-700 focus:outline-none focus:border-[#0891b2]"
+                                    >
+                                        <option value="name">Sort by Name</option>
+                                        <option value="email">Sort by Email</option>
+                                        <option value="role">Sort by Role</option>
+                                        <option value="date">Sort by Date</option>
+                                    </select>
+                                </div>
                             </div>
                         )}
                     </div>
 
                     {/* Users Table - Desktop */}
-                    <div className="hidden lg:block bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-slate-200">
+                    <div className="hidden lg:block bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm w-full min-w-0">
+                        <div className="overflow-x-auto w-full">
+                            <table className="w-full min-w-[700px] divide-y divide-slate-200">
                                 <thead className="bg-slate-50">
                                     <tr>
                                         <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -800,31 +817,31 @@ const Users = () => {
 
             {/* User Detailed View Modal (Cyan Admin Palette with IST timestamps) */}
             {showViewModal && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-5">
-                    <div className="bg-white border border-slate-200 rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-2xl animate-fadeIn">
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
+                    <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-2xl animate-fadeIn min-w-0">
                         {/* Modal Header (Cyan Gradient) */}
-                        <div className="bg-gradient-to-r from-[#0891b2] to-[#06b6d4] text-white p-5 sm:p-6 flex justify-between items-center shadow-md">
-                            <div className="flex items-center gap-3.5">
-                                <div className="w-13 h-13 rounded-2xl bg-white/20 text-white font-black text-xl flex items-center justify-center border border-white/30 backdrop-blur-sm shadow-inner">
+                        <div className="bg-gradient-to-r from-[#0891b2] to-[#06b6d4] text-white p-4 sm:p-6 flex justify-between items-center shadow-md flex-shrink-0">
+                            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                                <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-white/20 text-white font-black text-lg sm:text-xl flex items-center justify-center border border-white/30 backdrop-blur-sm shadow-inner flex-shrink-0">
                                     {viewDetails?.user?.avatar ? (
                                         <img src={viewDetails.user.avatar} alt="Avatar" className="w-full h-full rounded-2xl object-cover" />
                                     ) : (
                                         (viewDetails?.user?.name || "U").charAt(0).toUpperCase()
                                     )}
                                 </div>
-                                <div>
-                                    <div className="flex items-center gap-2.5 flex-wrap">
-                                        <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                                <div className="min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <h3 className="text-base sm:text-xl font-bold text-white tracking-tight truncate">
                                             {viewDetails?.user?.name || "Customer Details"}
                                         </h3>
                                         {viewDetails?.user && (
-                                            <span className="px-2.5 py-0.5 bg-white/20 text-white border border-white/30 rounded-full text-xs font-bold backdrop-blur-sm">
+                                            <span className="px-2 py-0.5 bg-white/20 text-white border border-white/30 rounded-full text-[10px] sm:text-xs font-bold backdrop-blur-sm">
                                                 {viewDetails.user.role?.toUpperCase()}
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-xs text-cyan-100 mt-1 flex items-center gap-2 flex-wrap">
-                                        <span>{viewDetails?.user?.email}</span>
+                                    <p className="text-xs text-cyan-100 mt-0.5 sm:mt-1 flex items-center gap-2 flex-wrap">
+                                        <span className="truncate">{viewDetails?.user?.email}</span>
                                         {viewDetails?.user?.phone && (
                                             <>
                                                 <span>•</span>
@@ -839,14 +856,14 @@ const Users = () => {
                                     setShowViewModal(false);
                                     setViewDetails(null);
                                 }}
-                                className="text-white/80 hover:text-white transition p-2 hover:bg-white/10 rounded-xl"
+                                className="text-white/80 hover:text-white transition p-2 hover:bg-white/10 rounded-xl flex-shrink-0"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
                         {/* Modal Body */}
-                        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1 text-xs sm:text-sm bg-slate-50/50">
+                        <div className="p-3.5 sm:p-5 md:p-6 overflow-y-auto space-y-4 sm:space-y-6 flex-1 text-xs sm:text-sm bg-slate-50/50 min-w-0 w-full">
                             {viewLoading ? (
                                 <div className="py-20 text-center">
                                     <Loader2 className="w-10 h-10 text-[#0891b2] animate-spin mx-auto mb-3" />
