@@ -13,7 +13,17 @@ import {
     Check,
     AlertCircle,
     Loader2,
-    Download
+    Download,
+    Eye,
+    Phone,
+    MapPin,
+    Package,
+    Truck,
+    ExternalLink,
+    IndianRupee,
+    Clock,
+    Globe,
+    ShoppingBag
 } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
@@ -21,6 +31,9 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:71
 const Users = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [viewLoading, setViewLoading] = useState(false);
+    const [viewDetails, setViewDetails] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [roleFilter, setRoleFilter] = useState("all");
     const [showFilters, setShowFilters] = useState(false);
@@ -28,6 +41,31 @@ const Users = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+
+    const handleViewUser = async (userId) => {
+        try {
+            setViewLoading(true);
+            setShowViewModal(true);
+            const token = localStorage.getItem("neel_token") || localStorage.getItem("token");
+            const response = await fetch(`${API_BASE_URL}/users/${userId}/details`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setViewDetails(data);
+            } else {
+                throw new Error("Failed to fetch user details");
+            }
+        } catch (err) {
+            console.error("Error fetching user details:", err);
+            alert("Could not load user details");
+        } finally {
+            setViewLoading(false);
+        }
+    };
 
     // Fetch all users on component mount
     useEffect(() => {
@@ -553,6 +591,15 @@ const Users = () => {
                                                 <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={() =>
+                                                            handleViewUser(user.id)
+                                                        }
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-900/40 text-blue-300 border border-blue-800/50 rounded-lg hover:bg-blue-900/60 transition-colors text-sm font-medium"
+                                                    >
+                                                        <Eye className="w-3.5 h-3.5" />
+                                                        View
+                                                    </button>
+                                                    <button
+                                                        onClick={() =>
                                                             handleEdit(user)
                                                         }
                                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#d4af37] text-[#0f1724] rounded-lg hover:bg-[#c49d2f] transition-colors text-sm font-medium"
@@ -627,6 +674,13 @@ const Users = () => {
                                 </div>
 
                                 <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleViewUser(user.id)}
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-900/40 text-blue-300 border border-blue-800/50 rounded-lg hover:bg-blue-900/60 transition-colors text-sm font-medium"
+                                    >
+                                        <Eye className="w-4 h-4" />
+                                        View
+                                    </button>
                                     <button
                                         onClick={() => handleEdit(user)}
                                         className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-[#d4af37] text-[#0f1724] rounded-lg hover:bg-[#c49d2f] transition-colors text-sm font-medium"
@@ -815,6 +869,234 @@ const Users = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* User Detailed View Modal (Addresses, Orders & Tracking in IST) */}
+            {showViewModal && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-5">
+                    <div className="bg-[#0f1724] border border-gray-800 rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-2xl animate-fadeIn">
+                        {/* Modal Header */}
+                        <div className="border-b border-gray-800/80 p-5 sm:p-6 flex justify-between items-center bg-[#111827]/80">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#8B0000] to-[#550000] text-amber-300 font-extrabold text-lg flex items-center justify-center shadow-md">
+                                    {viewDetails?.user?.avatar ? (
+                                        <img src={viewDetails.user.avatar} alt="Avatar" className="w-full h-full rounded-2xl object-cover" />
+                                    ) : (
+                                        (viewDetails?.user?.name || "U").charAt(0).toUpperCase()
+                                    )}
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-lg sm:text-xl font-bold text-white">
+                                            {viewDetails?.user?.name || "Customer Details"}
+                                        </h3>
+                                        {viewDetails?.user && getRoleBadge(viewDetails.user.role)}
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-2">
+                                        <span>{viewDetails?.user?.email}</span>
+                                        {viewDetails?.user?.phone && (
+                                            <>
+                                                <span>•</span>
+                                                <span className="text-amber-400/90">{viewDetails.user.phone}</span>
+                                            </>
+                                        )}
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setShowViewModal(false);
+                                    setViewDetails(null);
+                                }}
+                                className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-xl"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1 text-xs sm:text-sm">
+                            {viewLoading ? (
+                                <div className="py-20 text-center">
+                                    <Loader2 className="w-10 h-10 text-[#d4af37] animate-spin mx-auto mb-3" />
+                                    <p className="text-gray-400">Loading user profile & order history...</p>
+                                </div>
+                            ) : viewDetails ? (
+                                <>
+                                    {/* Stats Banner */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                        <div className="bg-[#162032] border border-gray-800 rounded-2xl p-3.5">
+                                            <span className="text-gray-400 text-xs block mb-1">Total Orders</span>
+                                            <span className="text-xl font-extrabold text-white">{viewDetails.stats?.total_orders || 0}</span>
+                                        </div>
+                                        <div className="bg-[#162032] border border-gray-800 rounded-2xl p-3.5">
+                                            <span className="text-gray-400 text-xs block mb-1">Total Spend</span>
+                                            <span className="text-xl font-extrabold text-[#d4af37]">₹{(viewDetails.stats?.total_spent || 0).toLocaleString("en-IN")}</span>
+                                        </div>
+                                        <div className="bg-[#162032] border border-gray-800 rounded-2xl p-3.5">
+                                            <span className="text-gray-400 text-xs block mb-1">Delivered</span>
+                                            <span className="text-xl font-extrabold text-emerald-400">{viewDetails.stats?.delivered_orders || 0}</span>
+                                        </div>
+                                        <div className="bg-[#162032] border border-gray-800 rounded-2xl p-3.5">
+                                            <span className="text-gray-400 text-xs block mb-1">In Transit / Active</span>
+                                            <span className="text-xl font-extrabold text-blue-400">{viewDetails.stats?.in_transit_orders || 0}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Customer Overview */}
+                                    <div className="bg-[#162032]/60 border border-gray-800 rounded-2xl p-4 space-y-2">
+                                        <h4 className="font-bold text-gray-200 uppercase tracking-wider text-xs flex items-center gap-2">
+                                            <User className="w-4 h-4 text-[#d4af37]" /> Account Overview
+                                        </h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-300 pt-1">
+                                            <div>
+                                                <span className="text-gray-500 block">Sign-in Provider:</span>
+                                                <span className="font-semibold text-white uppercase">{viewDetails.user?.auth_provider || "Email"}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500 block">Joined Date (IST):</span>
+                                                <span className="font-semibold text-white">{viewDetails.user?.created_at_ist || viewDetails.user?.joined_date}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500 block">Account Status:</span>
+                                                <span className={`font-semibold ${viewDetails.user?.status === 'active' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                                    {viewDetails.user?.status?.toUpperCase()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Saved Delivery Addresses */}
+                                    <div>
+                                        <h4 className="font-bold text-gray-200 uppercase tracking-wider text-xs mb-3 flex items-center gap-2">
+                                            <MapPin className="w-4 h-4 text-[#d4af37]" /> Saved Delivery Addresses ({viewDetails.addresses?.length || 0})
+                                        </h4>
+                                        {viewDetails.addresses && viewDetails.addresses.length > 0 ? (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {viewDetails.addresses.map((addr, idx) => (
+                                                    <div key={idx} className="bg-[#162032] border border-gray-800 rounded-2xl p-4 relative">
+                                                        {addr.is_default && (
+                                                            <span className="absolute top-3 right-3 px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold rounded-full">
+                                                                Default
+                                                            </span>
+                                                        )}
+                                                        <div className="font-bold text-white mb-1">
+                                                            {addr.full_name || viewDetails.user?.name}
+                                                        </div>
+                                                        <p className="text-xs text-gray-300 leading-relaxed">
+                                                            {addr.address_line1}
+                                                            {addr.address_line2 ? `, ${addr.address_line2}` : ""}
+                                                            <br />
+                                                            {addr.city}, {addr.state} - <strong className="text-white">{addr.pincode}</strong>
+                                                        </p>
+                                                        {addr.phone && (
+                                                            <p className="text-xs text-amber-400/90 mt-2 font-medium">
+                                                                Phone: {addr.phone}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="p-4 bg-[#162032]/40 border border-gray-800 rounded-2xl text-center text-xs text-gray-500">
+                                                No saved addresses found.
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Full Order & Shipment Tracking History */}
+                                    <div>
+                                        <h4 className="font-bold text-gray-200 uppercase tracking-wider text-xs mb-3 flex items-center gap-2">
+                                            <ShoppingBag className="w-4 h-4 text-[#d4af37]" /> Order &amp; Tracking History ({viewDetails.orders?.length || 0})
+                                        </h4>
+                                        {viewDetails.orders && viewDetails.orders.length > 0 ? (
+                                            <div className="space-y-3">
+                                                {viewDetails.orders.map((ord, idx) => (
+                                                    <div key={idx} className="bg-[#162032] border border-gray-800 rounded-2xl p-4 hover:border-gray-700 transition-colors">
+                                                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-800 pb-3 mb-3">
+                                                            <div>
+                                                                <span className="font-extrabold text-white text-sm">
+                                                                    Order #{ord.order_id}
+                                                                </span>
+                                                                <span className="text-xs text-gray-400 block mt-0.5">
+                                                                    Placed on: <strong className="text-gray-300">{ord.created_at_ist}</strong>
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                                                                    ord.status === 'delivered' ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-700/50' :
+                                                                    ord.status === 'cancelled' ? 'bg-red-900/40 text-red-300 border border-red-700/50' :
+                                                                    'bg-blue-900/40 text-blue-300 border border-blue-700/50'
+                                                                }`}>
+                                                                    {ord.status.toUpperCase()}
+                                                                </span>
+                                                                <span className="font-bold text-[#d4af37] text-sm">
+                                                                    ₹{ord.total.toLocaleString("en-IN")}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Items Summary */}
+                                                        {ord.items && ord.items.length > 0 && (
+                                                            <div className="space-y-1.5 mb-3 bg-[#0f1724]/70 p-2.5 rounded-xl text-xs">
+                                                                {ord.items.map((it, itemIdx) => (
+                                                                    <div key={itemIdx} className="flex justify-between items-center text-gray-300">
+                                                                        <span className="truncate pr-2">
+                                                                            {it.name || it.product_name} <span className="text-gray-500 font-semibold">x{it.quantity}</span>
+                                                                        </span>
+                                                                        <span className="font-semibold text-white whitespace-nowrap">
+                                                                            ₹{((it.price || 0) * (it.quantity || 1)).toLocaleString("en-IN")}
+                                                                        </span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Shipment & Live Tracking Information */}
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
+                                                            <div className="text-gray-400">
+                                                                <span>Payment: </span>
+                                                                <strong className="text-white uppercase">{ord.payment_status}</strong> ({ord.payment_method})
+                                                            </div>
+                                                            {ord.awb_code ? (
+                                                                <div className="text-right sm:text-right text-blue-400 font-medium flex items-center justify-end gap-1.5">
+                                                                    <Truck className="w-3.5 h-3.5" />
+                                                                    <span>AWB: <strong className="text-white">{ord.awb_code}</strong></span>
+                                                                    {ord.courier_name && <span className="text-gray-400">({ord.courier_name})</span>}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="text-right text-gray-500">
+                                                                    Shipment: {ord.shipment_status || "Pending Dispatch"}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="p-4 bg-[#162032]/40 border border-gray-800 rounded-2xl text-center text-xs text-gray-500">
+                                                No orders placed yet.
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            ) : null}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-4 border-t border-gray-800 bg-[#111827]/80 flex justify-end">
+                            <button
+                                onClick={() => {
+                                    setShowViewModal(false);
+                                    setViewDetails(null);
+                                }}
+                                className="px-5 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-xs font-bold transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

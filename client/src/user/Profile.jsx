@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthProvider';
-import { User, Mail, Calendar, Edit2, Save, X, Camera, MapPin, Plus, Trash2, Home, Building, CheckCircle, Smartphone } from 'lucide-react';
+import { User, Mail, Calendar, Edit2, Save, X, Camera, MapPin, Plus, Trash2, Home, Building, CheckCircle, Smartphone, Lock, Key, ShieldCheck, Loader2 } from 'lucide-react';
 
 const INDIAN_STATES = [
     "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana",
@@ -21,6 +21,15 @@ const Profile = () => {
         phone: '',
         bio: ''
     });
+
+    // Password State
+    const [passwordForm, setPasswordForm] = useState({
+        current_password: '',
+        new_password: '',
+        confirm_password: ''
+    });
+    const [passwordLoading, setPasswordLoading] = useState(false);
+    const [passwordMsg, setPasswordMsg] = useState({ type: '', text: '' });
 
     // Address States
     const [addresses, setAddresses] = useState([]);
@@ -226,6 +235,48 @@ const Profile = () => {
         }
     };
 
+    const handlePasswordChange = async (e) => {
+        e.preventDefault();
+        setPasswordMsg({ type: '', text: '' });
+        if (passwordForm.new_password.length < 6) {
+            setPasswordMsg({ type: 'error', text: 'Password must be at least 6 characters long' });
+            return;
+        }
+        if (passwordForm.new_password !== passwordForm.confirm_password) {
+            setPasswordMsg({ type: 'error', text: 'New passwords do not match' });
+            return;
+        }
+
+        setPasswordLoading(true);
+        const API_URL = import.meta.env.VITE_API_URL || 'https://naripehnawa.com:7100';
+        const token = localStorage.getItem('neel_token') || localStorage.getItem('token');
+        try {
+            const res = await fetch(`${API_URL}/users/me/change-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    current_password: passwordForm.current_password || undefined,
+                    new_password: passwordForm.new_password
+                })
+            });
+
+            if (res.ok) {
+                setPasswordMsg({ type: 'success', text: 'Password updated successfully!' });
+                setPasswordForm({ current_password: '', new_password: '', confirm_password: '' });
+            } else {
+                const data = await res.json().catch(() => ({}));
+                setPasswordMsg({ type: 'error', text: data.detail || 'Failed to update password' });
+            }
+        } catch (err) {
+            setPasswordMsg({ type: 'error', text: err.message || 'Something went wrong' });
+        } finally {
+            setPasswordLoading(false);
+        }
+    };
+
     const resetAddressForm = () => {
         setAddressForm({
             type: 'home',
@@ -258,19 +309,16 @@ const Profile = () => {
             )}
 
             {/* Profile Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 {/* Profile Header Background */}
-                <div className="bg-gradient-to-r from-[#0891b2] to-[#06b6d4] h-24 sm:h-32"></div>
+                <div className="bg-gradient-to-r from-[#8B0000] to-[#550000] h-24 sm:h-32"></div>
                 <div className="px-4 sm:px-6 pb-4 sm:pb-6">
                     <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-12 sm:-mt-16 mb-4 sm:mb-6">
                         <div className="flex items-end gap-3 sm:gap-4">
                             <div className="relative">
-                                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-white border-4 border-white shadow-lg flex items-center justify-center text-3xl sm:text-4xl font-bold text-[#0891b2]">
+                                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-white border-4 border-white shadow-lg flex items-center justify-center text-3xl sm:text-4xl font-bold text-[#8B0000]">
                                     {formData.name?.charAt(0).toUpperCase() || 'U'}
                                 </div>
-                                <button className="absolute bottom-0 right-0 bg-[#0891b2] text-white p-1.5 sm:p-2 rounded-full shadow-lg hover:bg-[#06b6d4] transition-colors">
-                                    <Camera className="w-3 h-3 sm:w-4 sm:h-4" />
-                                </button>
                             </div>
                             <div className="pb-1 sm:pb-2">
                                 <h2 className="text-xl sm:text-2xl font-bold text-gray-800">{formData.name || 'User'}</h2>
@@ -281,7 +329,7 @@ const Profile = () => {
                             {!isEditing ? (
                                 <button
                                     onClick={() => setIsEditing(true)}
-                                    className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 bg-[#0891b2] text-white rounded-lg hover:bg-[#06b6d4] transition-colors shadow-md text-sm sm:text-base w-full md:w-auto"
+                                    className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 bg-[#8B0000] text-white rounded-xl hover:bg-[#700000] transition-colors shadow-md text-sm sm:text-base w-full md:w-auto font-medium"
                                 >
                                     <Edit2 className="w-4 h-4" />
                                     Edit Profile
@@ -652,6 +700,82 @@ const Profile = () => {
                         <p className="text-xs sm:text-sm text-gray-500">No saved addresses found. Add one to speed up checkout!</p>
                     </div>
                 )}
+            </div>
+
+            {/* Security & Password Section */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+                <div className="border-b border-gray-100 pb-4 mb-4 sm:mb-6">
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <Lock className="w-5 h-5 text-[#8B0000]" />
+                        Security &amp; Password
+                    </h2>
+                    <p className="text-xs sm:text-sm text-gray-600">Change your password or create a new password for direct login</p>
+                </div>
+
+                {passwordMsg.text && (
+                    <div className={`p-3 sm:p-4 rounded-xl text-xs sm:text-sm mb-4 ${passwordMsg.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+                        {passwordMsg.text}
+                    </div>
+                )}
+
+                <form onSubmit={handlePasswordChange} className="space-y-4 max-w-lg">
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                            Current Password (leave blank if Google sign-in)
+                        </label>
+                        <input
+                            type="password"
+                            value={passwordForm.current_password}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
+                            placeholder="Enter current password"
+                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#8B0000] focus:bg-white"
+                        />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                                New Password *
+                            </label>
+                            <input
+                                type="password"
+                                required
+                                value={passwordForm.new_password}
+                                onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                                placeholder="Min. 6 characters"
+                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#8B0000] focus:bg-white"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                                Confirm New Password *
+                            </label>
+                            <input
+                                type="password"
+                                required
+                                value={passwordForm.confirm_password}
+                                onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
+                                placeholder="Repeat new password"
+                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#8B0000] focus:bg-white"
+                            />
+                        </div>
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={passwordLoading}
+                        className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#8B0000] hover:bg-[#700000] text-white rounded-xl text-xs sm:text-sm font-bold transition-all shadow-sm disabled:opacity-50"
+                    >
+                        {passwordLoading ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" /> Updating...
+                            </>
+                        ) : (
+                            <>
+                                <Key className="w-4 h-4" /> Update Password
+                            </>
+                        )}
+                    </button>
+                </form>
             </div>
         </div>
     );

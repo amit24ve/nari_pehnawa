@@ -4,9 +4,139 @@ from app.database.schemas.user import User, UserCreate, UserUpdate, PasswordChan
 from app.database import get_database
 from app.security import get_password_hash, get_current_user, require_admin, verify_password
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 router = APIRouter(prefix="/users", tags=["Users"])
+
+
+@router.get("/{user_id}/details")
+def get_user_detailed_view(user_id: str, current_user: dict = Depends(require_admin)):
+    """Get full user details including addresses and complete order history (Admin only)"""
+    db = get_database()
+    users_collection = db["users"]
+    addresses_collection = db["addresses"]
+    orders_collection = db["orders"]
+    try:
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user_id_str = str(user["_id"])
+        user_email = user.get("email")
+
+        # Format created_at to IST
+        created_raw = user.get("created_at")
+        created_ist = "N/A"
+        if isinstance(created_raw, datetime):
+            if created_raw.tzinfo is None:
+                created_raw = created_raw.replace(tzinfo=timezone.utc)
+            created_ist = created_raw.astimezone(ZoneInfo("Asia/Kolkata")).strftime("%d %b %Y, %I:%M %p IST")
+        elif created_raw:
+            try:
+                dt = datetime.fromisoformat(str(created_raw).replace("Z", "+00:00"))
+                created_ist = dt.astimezone(ZoneInfo("Asia/Kolkata")).strftime("%d %b %Y, %I:%M %p IST")
+            except Exception:
+                created_ist = str(created_raw)
+        else:
+            created_ist = user.get("joined_date") or "N/A"
+
+        # Format user fields
+        user_out = {
+            "id": user_id_str,
+            "email": user_email,
+            "name": user.get("name") or user.get("full_name") or user_email.split("@")[0],
+            "phone": user.get("phone") or "",
+            "role": user.get("role") or ("admin" if user.get("is_admin") else "customer"),
+            "status": user.get("status", "active"),
+            "auth_provider": user.get("auth_provider") or "email",
+            "avatar": user.get("avatar") or "",
+            "age": user.get("age"),
+            "bio": user.get("bio") or "",
+            "joined_date": user.get("joined_date") or created_ist[:11],
+            "created_at_ist": created_ist,
+            "last_login": user.get("last_login") or "",
+        }
+
+        # Fetch saved addresses
+        addresses_cursor = addresses_collection.find({"user_id": user_id_str})
+        addresses = []
+        for addr in addresses_cursor:
+            addr["id"] = str(addr["_id"])
+            addr.pop("_id", None)
+            addresses.append(addr)
+
+        # Fetch all orders (by user_id or email)
+        orders_query = {
+            "$or": [
+                {"user_id": user_id_str},
+                {"customer_email": user_email},
+                {"email": user_email}
+            ]
+        }
+        orders_cursor = orders_collection.find(orders_query).sort("_id", -1)
+        orders = []
+        total_spent = 0
+        delivered_count = 0
+        in_transit_count = 0
+
+        for o in orders_cursor:
+            order_id = o.get("order_id") or str(o.get("_id"))
+            total = float(o.get("total_amount") or o.get("total") or 0)
+            total_spent += total
+            
+            status = (o.get("status") or "pending").lower()
+            if status in ["delivered", "complete", "completed"]:
+                delivered_count += 1
+            elif status in ["shipped", "in_transit", "dispatched", "out_for_delivery"]:
+                in_transit_count += 1
+
+            # Format order created_at to IST
+            o_created_raw = o.get("created_at")
+            o_created_ist = "N/A"
+            if isinstance(o_created_raw, datetime):
+                if o_created_raw.tzinfo is None:
+                    o_created_raw = o_created_raw.replace(tzinfo=timezone.utc)
+                o_created_ist = o_created_raw.astimezone(ZoneInfo("Asia/Kolkata")).strftime("%d %b %Y, %I:%M %p IST")
+            elif o_created_raw:
+                try:
+                    dt = datetime.fromisoformat(str(o_created_raw).replace("Z", "+00:00"))
+                    o_created_ist = dt.astimezone(ZoneInfo("Asia/Kolkata")).strftime("%d %b %Y, %I:%M %p IST")
+                except Exception:
+                    o_created_ist = str(o_created_raw)
+
+            orders.append({
+                "id": str(o.get("_id")),
+                "order_id": order_id,
+                "created_at_ist": o_created_ist,
+                "total": total,
+                "items_count": len(o.get("items") or []),
+                "items": o.get("items") or [],
+                "status": status,
+                "payment_status": o.get("payment_status") or "pending",
+                "payment_method": o.get("payment_method") or "Online",
+                "shipping_address": o.get("shipping_address") or "",
+                "phone": o.get("phone") or "",
+                "awb_code": o.get("awb_code") or o.get("tracking_number") or "",
+                "courier_name": o.get("courier_name") or o.get("courier_company_id") or "",
+                "shipment_status": o.get("shipment_status") or status
+            })
+
+        return {
+            "user": user_out,
+            "addresses": addresses,
+            "orders": orders,
+            "stats": {
+                "total_orders": len(orders),
+                "total_spent": total_spent,
+                "delivered_orders": delivered_count,
+                "in_transit_orders": in_transit_count
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/", response_model=User, status_code=201)
