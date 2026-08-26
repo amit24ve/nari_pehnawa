@@ -28,7 +28,7 @@ const OwnerPage = () => {
   useEffect(() => {
     // 1. Save old SEO elements
     const oldTitle = document.title;
-    
+
     // Set dynamic Page Title
     document.title = "About Us & Founders | Nari Pehnawa - Pooja Verma & Ritika Singh";
 
@@ -252,33 +252,33 @@ const OwnerPage = () => {
 
   return (
     <div className="bg-[#FAF6F0] dark:bg-[#120202] text-[#2E0F15] dark:text-[#F7ECE1] transition-colors duration-300 font-sans overflow-x-hidden min-h-screen flex flex-col justify-between">
-      
+
       {/* ── STICKY GLASSMORPHISM HEADER (WINE & GOLD ACCENTS) ── */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#FAF6F0]/90 dark:bg-[#120202]/90 backdrop-blur-lg border-b border-[#c5a880]/30 dark:border-[#580C1F]/30 transition-all duration-300">
         <div className="max-w-[1200px] mx-auto px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between gap-2">
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className="font-serif text-sm xs:text-base sm:text-2xl font-bold tracking-widest text-[#580C1F] dark:text-[#d4af37] hover:opacity-85 transition-opacity flex items-center gap-1 sm:gap-1.5 whitespace-nowrap"
           >
             <Sparkle className="w-4 h-4 sm:w-5 sm:h-5 text-[#d4af37] animate-spin-slow flex-shrink-0" />
             NARI PEHNAWA
           </Link>
-          
+
           <div className="flex items-center gap-2 sm:gap-6">
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               className="text-xs sm:text-sm font-semibold tracking-wider uppercase text-zinc-700 hover:text-[#580C1F] dark:text-zinc-300 dark:hover:text-[#d4af37] transition-colors hidden sm:block"
             >
               Home
             </Link>
-            <Link 
-              to="/new-arrivals" 
+            <Link
+              to="/new-arrivals"
               className="text-xs sm:text-sm font-semibold tracking-wider uppercase text-zinc-700 hover:text-[#580C1F] dark:text-zinc-300 dark:hover:text-[#d4af37] transition-colors hidden sm:block"
             >
               New Arrivals
             </Link>
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               className="inline-flex items-center gap-1 px-3 py-1.5 sm:px-6 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-bold bg-[#580C1F] hover:bg-[#3D0814] text-white transition-all shadow-md shadow-[#580C1F]/10 hover:shadow-lg whitespace-nowrap"
             >
               Back To Store
@@ -290,11 +290,11 @@ const OwnerPage = () => {
 
       {/* Main content wrapper */}
       <main className="flex-grow pt-[56px] sm:pt-[78px]">
-        
+
         {/* ── HERO BANNER ── */}
         <section className="relative h-[340px] xs:h-[400px] sm:h-[500px] md:h-[600px] flex items-center justify-center overflow-hidden">
-          <div 
-            className="absolute inset-0 bg-cover bg-center transition-transform duration-10000 ease-out hover:scale-105" 
+          <div
+            className="absolute inset-0 bg-cover bg-center transition-transform duration-10000 ease-out hover:scale-105"
             style={{ backgroundImage: `url('/motivational-hero.png')` }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#120202] via-[#120202]/50 to-black/40 mix-blend-multiply" />
@@ -309,11 +309,11 @@ const OwnerPage = () => {
               <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#d4af37] animate-pulse flex-shrink-0" />
               Empowering Self-Reliance
             </div>
-            
+
             <h1 className="font-serif text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight text-white leading-tight">
               Meet The <span className="text-[#d4af37] font-light italic font-serif">Founders</span>
             </h1>
-            
+
             <p className="text-xs sm:text-lg md:text-xl text-[#F7ECE1] font-light max-w-2xl mx-auto leading-relaxed opacity-90">
               The inspirational journey, dreams, and dedication behind the creation of Nari Pehnawa.
             </p>
@@ -336,11 +336,11 @@ const OwnerPage = () => {
         {/* ── SECTION 1: OUR STORY (ABOUT US - IMMERSIVE BANNER) ── */}
         <section className="py-10 sm:py-16 max-w-[1200px] mx-auto px-4 sm:px-6">
           <div className="w-full relative bg-[#FDFBF7] dark:bg-[#1B0606]/60 rounded-[36px] border border-[#c5a880]/30 shadow-2xl p-6 sm:p-12 md:p-16 transition-transform duration-500 hover:scale-[1.01] overflow-hidden">
-            
+
             {/* Background design elements */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#d4af37]/5 rounded-full filter blur-3xl pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#580C1F]/5 rounded-full filter blur-3xl pointer-events-none" />
-            
+
             <div className="relative z-10 text-center space-y-4 max-w-3xl mx-auto mb-10 sm:mb-14">
               <div className="flex items-center justify-center gap-2">
                 <span className="w-6 h-[1.5px] bg-[#d4af37]" />
@@ -389,7 +389,7 @@ const OwnerPage = () => {
                 </div>
               </div>
             </div>
-            
+
           </div>
         </section>
 
@@ -432,7 +432,7 @@ const OwnerPage = () => {
                   </div>
                 </div>
                 <div className="text-xs sm:text-sm text-zinc-850 dark:text-zinc-200 leading-relaxed font-light italic pl-3 border-l-2 border-[#d4af37] bg-[#580C1F]/5 py-2 rounded-r-lg">
-                  "Every challenge is a stepping stone. Stepping out of a small town taught me that with self-belief and hard work, any dream is achievable. I want Nari Pehnawa to be a symbol of that strength for every woman."
+                  "As the Owner of Nari Pehnava, I focus on delivering superior quality, innovative designs, and effortless comfort. From thoughtfully crafting each design to carefully sourcing fabrics, we prioritize excellence at every stage. Our aim is to make fashion accessible, special, and unique for every woman.."
                 </div>
               </div>
             </div>
@@ -587,7 +587,7 @@ const OwnerPage = () => {
 
             {/* Curated category grid */}
             <div className="w-full lg:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-6">
-              
+
               <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#1B0606] border border-[#c5a880]/20 hover:border-[#580C1F] transition-all duration-300 shadow-md">
                 <h4 className="font-serif text-base sm:text-lg font-bold text-[#580C1F] dark:text-[#d4af37] mb-2 flex items-center gap-2">
                   <Sparkle className="w-4 h-4 text-[#d4af37] flex-shrink-0" />
@@ -635,7 +635,7 @@ const OwnerPage = () => {
         {/* ── SECTION 6: WHY TRUST US (3 PROMINENT REASONS) ── */}
         <section className="py-12 sm:py-24 bg-[#24060C] text-white relative overflow-hidden">
           <div className="absolute inset-0 opacity-5 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white via-[#580C1F] to-black" />
-          
+
           <div className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6">
             <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 space-y-2">
               <span className="text-[#c5a880] text-xs font-bold uppercase tracking-widest">Section 06</span>
@@ -661,8 +661,8 @@ const OwnerPage = () => {
                   desc: "What you see in the photo is exactly what will reach your home. Customers' satisfaction is our success."
                 }
               ].map((item, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className="p-6 sm:p-8 rounded-3xl bg-white/5 border border-[#c5a880]/15 hover:bg-white/10 transition-all duration-300 flex flex-col items-center text-center gap-3"
                 >
                   <div className="p-3.5 rounded-2xl bg-white/10 flex-shrink-0">
@@ -691,7 +691,7 @@ const OwnerPage = () => {
                 Clear descriptions, real product images without extreme studio filters, honest material details, and straightforward refund policies.
               </p>
             </div>
-            
+
             <div className="border-t-2 border-[#580C1F] dark:border-[#d4af37] pt-4 space-y-2 transition-transform duration-300 hover:translate-y-[-2px]">
               <h3 className="font-serif text-lg sm:text-xl font-bold text-[#2E0F15] dark:text-white">II. Women Empowerment</h3>
               <p className="text-xs sm:text-sm text-zinc-800 dark:text-[#f2fcf9]/90 font-light leading-relaxed">
@@ -715,13 +715,13 @@ const OwnerPage = () => {
 
           <div className="max-w-[800px] mx-auto px-4 sm:px-6 text-center space-y-6 sm:space-y-8 relative z-10">
             <Quote className="w-10 h-10 sm:w-16 sm:h-16 text-[#d4af37]/20 mx-auto" />
-            
+
             <h3 className="font-serif text-xs uppercase tracking-widest text-[#dfc384]">Section 08 — A Letter to our Customers</h3>
-            
+
             <blockquote className="font-serif text-lg sm:text-2xl text-white/95 font-medium italic leading-relaxed">
               "We started Nari Pehnawa with single-minded dedication—to stand on our feet and to bring you the best designs directly. Every order you place is a vote of confidence in our friendship, dreams, and craftsmanship. We promise to never compromise on your trust and satisfaction."
             </blockquote>
-            
+
             <div className="space-y-1">
               <h4 className="font-bold text-[#dfc384] tracking-wider text-sm sm:text-base animate-pulse">
                 — Pooja Verma & Ritika Singh
@@ -738,20 +738,20 @@ const OwnerPage = () => {
       {/* ── STANDALONE PREMIUM BOTTOM FOOTER ── */}
       <footer className="bg-[#120202] text-[#F7ECE1]/80 border-t border-[#580C1F]/20 py-8 sm:py-16 px-4 sm:px-6">
         <div className="flex flex-col md:grid md:grid-cols-3 gap-6 sm:gap-12 items-center text-center md:text-left">
-          
+
           <div className="space-y-2">
             <h4 className="font-serif text-lg sm:text-2xl font-bold text-white tracking-widest leading-none">NARI PEHNAWA</h4>
             <p className="text-[10px] sm:text-xs text-zinc-400 max-w-sm leading-relaxed mx-auto md:mx-0">
               Celebrating ethnic pride, modern cuts, and factory-direct pricing for standard Indian ladies' garments.
             </p>
           </div>
-          
+
           <div className="flex justify-center gap-6 text-xs sm:text-sm font-semibold text-zinc-300">
             <Link to="/" className="hover:text-[#d4af37] transition-colors">Home</Link>
             <Link to="/new-arrivals" className="hover:text-[#d4af37] transition-colors">New Arrivals</Link>
             <Link to="/" className="hover:text-[#d4af37] transition-colors">Sale</Link>
           </div>
-          
+
           <div className="text-zinc-555 text-[10px] sm:text-xs md:text-right leading-relaxed">
             © 2026 Nari Pehnawa. All Rights Reserved.<br />
             Crafted with passion, trust, and dedication.
