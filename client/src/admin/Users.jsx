@@ -60,17 +60,7 @@ const Users = () => {
             }
 
             const data = await response.json();
-            if (data && data.length > 0) {
-                setUsers(data);
-            } else {
-                setUsers([
-                    { id: "u-101", name: "Anjali Sharma", email: "anjali.sharma@example.com", role: "admin", is_active: true, created_at: "2026-07-15T12:00:00Z" },
-                    { id: "u-102", name: "Priya Patel", email: "priya.patel@yahoo.com", role: "customer", is_active: true, created_at: "2026-07-16T14:30:00Z" },
-                    { id: "u-103", name: "Rohan Verma", email: "rohan.v@outlook.com", role: "customer", is_active: true, created_at: "2026-07-17T09:15:00Z" },
-                    { id: "u-104", name: "Suresh Kumar", email: "suresh.k@gmail.com", role: "customer", is_active: false, created_at: "2026-07-18T10:45:00Z" },
-                    { id: "u-105", name: "Neha Gupta", email: "neha.gupta@gmail.com", role: "customer", is_active: true, created_at: "2026-07-19T16:20:00Z" }
-                ]);
-            }
+            setUsers(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error("Error fetching users:", err);
             setError(err.message);
@@ -548,14 +538,15 @@ const Users = () => {
                                                 <div className="flex items-center gap-2 text-sm text-gray-300">
                                                     <Calendar className="w-4 h-4 text-gray-400" />
                                                     {formatDate(
-                                                        user.created_at ||
+                                                        user.joined_date ||
+                                                            user.created_at ||
                                                             user.joinedDate,
                                                     )}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className="text-sm text-gray-300">
-                                                    {user.orders || 0} orders
+                                                    {user.orders_count !== undefined ? user.orders_count : (user.orders || 0)} orders
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
@@ -569,17 +560,19 @@ const Users = () => {
                                                         <Edit className="w-3.5 h-3.5" />
                                                         Edit
                                                     </button>
-                                                    <button
-                                                        onClick={() =>
-                                                            handleDelete(
-                                                                user.id,
-                                                            )
-                                                        }
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-900/40 text-red-300 border border-red-800/50 rounded-lg hover:bg-red-900/60 transition-colors text-sm font-medium"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                        Delete
-                                                    </button>
+                                                    {user.role !== "admin" && !user.is_admin && user.email !== "admin@naripehnawa.com" && (
+                                                        <button
+                                                            onClick={() =>
+                                                                handleDelete(
+                                                                    user.id,
+                                                                )
+                                                            }
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-900/40 text-red-300 border border-red-800/50 rounded-lg hover:bg-red-900/60 transition-colors text-sm font-medium"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                            Delete
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -629,7 +622,7 @@ const Users = () => {
                                         </span>
                                     </div>
                                     <div className="text-gray-400 text-right">
-                                        {user.orders || 0} orders
+                                        {user.orders_count !== undefined ? user.orders_count : (user.orders || 0)} orders
                                     </div>
                                 </div>
 
@@ -641,13 +634,15 @@ const Users = () => {
                                         <Edit className="w-4 h-4" />
                                         Edit
                                     </button>
-                                    <button
-                                        onClick={() => handleDelete(user.id)}
-                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-900/40 text-red-300 border border-red-800/50 rounded-lg hover:bg-red-900/60 transition-colors text-sm font-medium"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                        Delete
-                                    </button>
+                                    {user.role !== "admin" && !user.is_admin && user.email !== "admin@naripehnawa.com" && (
+                                        <button
+                                            onClick={() => handleDelete(user.id)}
+                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-900/40 text-red-300 border border-red-800/50 rounded-lg hover:bg-red-900/60 transition-colors text-sm font-medium"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                            Delete
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         ))}

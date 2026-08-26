@@ -60,14 +60,30 @@ def get_users(
                 {"email": {"$regex": search, "$options": "i"}}
             ]
         
-        cursor = users_collection.find(query).skip(skip).limit(limit)
+        cursor = users_collection.find(query).sort("_id", -1).skip(skip).limit(limit)
         users = list(cursor)
         for user in users:
             user["id"] = str(user["_id"])
-            if "name" not in user or not user["name"]:
-                user["name"] = user.get("full_name") or "User"
+            if not user.get("name"):
+                user["name"] = user.get("full_name") or user.get("email", "").split("@")[0] or "Customer"
+            if not user.get("role"):
+                user["role"] = "admin" if user.get("is_admin") else "customer"
+            if not user.get("status"):
+                user["status"] = "active"
+            
+            # Format joined date properly
+            joined = user.get("joined_date") or user.get("created_at")
+            if isinstance(joined, datetime):
+                user["joined_date"] = joined.strftime("%Y-%m-%d")
+            elif joined:
+                user["joined_date"] = str(joined)[:10]
+            else:
+                user["joined_date"] = datetime.now().strftime("%Y-%m-%d")
+
             # Get order count for each user
-            user["orders_count"] = orders_collection.count_documents({"user_id": user["id"]})
+            user["orders_count"] = orders_collection.count_documents({
+                "$or": [{"user_id": user["id"]}, {"email": user.get("email")}]
+            })
             user.pop("_id", None)
             user.pop("password_hash", None)
         return users
@@ -239,9 +255,15 @@ def delete_user(user_id: str, current_user: dict = Depends(require_admin)):
     db = get_database()
     users_collection = db["users"]
     try:
-        result = users_collection.delete_one({"_id": ObjectId(user_id)})
-        if result.deleted_count == 0:
+        target_user = users_collection.find_one({"_id": ObjectId(user_id)})
+        if not target_user:
             raise HTTPException(status_code=404, detail="User not found")
+        
+        # Protect Admin accounts from deletion
+        if target_user.get("role") == "admin" or target_user.get("is_admin") or target_user.get("email") == "admin@naripehnawa.com":
+            raise HTTPException(status_code=400, detail="Admin accounts cannot be deleted")
+
+        result = users_collection.delete_one({"_id": ObjectId(user_id)})
         return {"message": "User deleted successfully"}
     except HTTPException:
         raise

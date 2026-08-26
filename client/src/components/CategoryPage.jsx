@@ -506,52 +506,52 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
         </div>
       </div>
 
-      {/* ── HORIZONTAL DIRECT DROPDOWN FILTER BAR (Directly Below Hero) ── */}
+      {/* ── LUXURY HORIZONTAL DIRECT DROPDOWN FILTER BAR (Directly Below Hero) ── */}
       <div
         ref={filterBarRef}
-        className="sticky top-[60px] md:top-[70px] z-30 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm"
+        className="sticky top-[60px] md:top-[70px] z-30 bg-white/95 backdrop-blur-xl border-b border-amber-950/10 shadow-[0_4px_25px_rgba(0,0,0,0.03)]"
       >
         <div className="max-w-[1440px] mx-auto px-4 xl:px-8 py-3">
           <div className="flex items-center justify-between gap-3 flex-wrap lg:flex-nowrap">
-            {/* Filter Dropdown Boxes (Left / Main) */}
+            {/* Filter Dropdown Pills (Left / Main) */}
             <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
               
-              {/* 1. Price Dropdown Box (With Sorting + Range Filter) */}
+              {/* 1. Price Pill (With Sorting + Range Filter) */}
               <div className="relative">
                 <button
                   type="button"
                   onClick={() =>
                     setActiveDropdown(activeDropdown === "price" ? null : "price")
                   }
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-all shadow-xs ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 shadow-2xs ${
                     isPriceFiltered || sortBy === "price-low" || sortBy === "price-high"
-                      ? "border-[#8B0000] bg-[#8B0000]/10 text-[#8B0000]"
-                      : "border-gray-200 bg-white hover:bg-gray-50 text-gray-700"
+                      ? "bg-[#8B0000] text-white border border-[#8B0000] shadow-md shadow-red-950/15"
+                      : "bg-stone-50/80 hover:bg-white text-stone-700 border border-stone-200/90 hover:border-[#8B0000]/60 hover:text-[#8B0000]"
                   }`}
                 >
-                  <IndianRupee className="w-3.5 h-3.5 text-[#8B0000]" />
+                  <IndianRupee className={`w-3.5 h-3.5 ${isPriceFiltered || sortBy.startsWith("price") ? "text-amber-200" : "text-[#8B0000]"}`} />
                   <span>Price</span>
                   {(isPriceFiltered || sortBy === "price-low" || sortBy === "price-high") && (
-                    <span className="w-2 h-2 rounded-full bg-[#8B0000]" />
+                    <span className="w-2 h-2 rounded-full bg-amber-300 animate-pulse" />
                   )}
                   <ChevronDown
-                    className={`w-3.5 h-3.5 text-gray-500 transition-transform ${
-                      activeDropdown === "price" ? "rotate-180 text-[#8B0000]" : ""
+                    className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                      activeDropdown === "price" ? "rotate-180 text-amber-200" : "text-stone-400"
                     }`}
                   />
                 </button>
 
-                {/* Price Dropdown Card */}
+                {/* Price Luxury Flyout Card */}
                 {activeDropdown === "price" && (
-                  <div className="absolute left-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 p-4.5 z-50 animate-fadeIn">
-                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
-                      <span className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
-                        <IndianRupee className="w-4 h-4 text-[#8B0000]" /> Price & Sorting
+                  <div className="absolute left-0 top-full mt-2.5 w-84 bg-white/98 backdrop-blur-2xl rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.16)] border border-amber-950/10 p-5 z-50 animate-fadeIn ring-1 ring-black/5">
+                    <div className="flex items-center justify-between mb-3.5 pb-2.5 border-b border-stone-100">
+                      <span className="text-xs font-bold text-stone-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <IndianRupee className="w-4 h-4 text-[#8B0000]" /> Price &amp; Sorting
                       </span>
                       {isPriceFiltered && (
                         <button
                           onClick={() => setPriceRange(filterConfig.priceRange)}
-                          className="text-[11px] text-[#8B0000] hover:underline font-medium"
+                          className="text-[11px] text-[#8B0000] hover:text-[#680000] font-semibold"
                         >
                           Reset Range
                         </button>
@@ -560,24 +560,24 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
 
                     {/* Quick Price Sorting */}
                     <div className="mb-4">
-                      <p className="text-[11px] font-bold text-gray-500 uppercase mb-2">Sort by Price</p>
+                      <p className="text-[11px] font-bold text-stone-500 uppercase tracking-wider mb-2">Sort by Price</p>
                       <div className="grid grid-cols-2 gap-2">
                         <button
                           onClick={() => setSortBy("price-low")}
-                          className={`py-1.5 px-2 rounded-lg text-xs font-medium border transition-colors flex items-center justify-center gap-1 ${
+                          className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all flex items-center justify-center gap-1.5 ${
                             sortBy === "price-low"
-                              ? "bg-[#8B0000] border-[#8B0000] text-white"
-                              : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+                              ? "bg-[#8B0000] border-[#8B0000] text-white shadow-xs"
+                              : "bg-stone-50 border-stone-200 text-stone-700 hover:bg-stone-100/80"
                           }`}
                         >
                           Low to High
                         </button>
                         <button
                           onClick={() => setSortBy("price-high")}
-                          className={`py-1.5 px-2 rounded-lg text-xs font-medium border transition-colors flex items-center justify-center gap-1 ${
+                          className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all flex items-center justify-center gap-1.5 ${
                             sortBy === "price-high"
-                              ? "bg-[#8B0000] border-[#8B0000] text-white"
-                              : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+                              ? "bg-[#8B0000] border-[#8B0000] text-white shadow-xs"
+                              : "bg-stone-50 border-stone-200 text-stone-700 hover:bg-stone-100/80"
                           }`}
                         >
                           High to Low
@@ -586,8 +586,8 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                     </div>
 
                     {/* Price Range Slider */}
-                    <div className="pt-3 border-t border-gray-100">
-                      <div className="flex justify-between text-xs text-gray-700 mb-2 font-bold">
+                    <div className="pt-3 border-t border-stone-100">
+                      <div className="flex justify-between text-xs text-stone-800 mb-2 font-bold">
                         <span>₹{priceRange[0].toLocaleString("en-IN")}</span>
                         <span>₹{priceRange[1].toLocaleString("en-IN")}</span>
                       </div>
@@ -602,34 +602,34 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                         }
                         className="w-full accent-[#8B0000] cursor-pointer"
                       />
-                      <div className="flex gap-2 mt-2.5 mb-3">
+                      <div className="flex gap-2 mt-3 mb-3">
                         <div className="flex-1">
-                          <span className="text-[10px] text-gray-400 block mb-0.5">Min (₹)</span>
+                          <span className="text-[10px] text-stone-400 font-semibold block mb-1">Min (₹)</span>
                           <input
                             type="number"
                             value={priceRange[0]}
                             onChange={(e) =>
                               setPriceRange([Number(e.target.value), priceRange[1]])
                             }
-                            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-[#8B0000]"
+                            className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-stone-900 focus:outline-none focus:border-[#8B0000]"
                           />
                         </div>
                         <div className="flex-1">
-                          <span className="text-[10px] text-gray-400 block mb-0.5">Max (₹)</span>
+                          <span className="text-[10px] text-stone-400 font-semibold block mb-1">Max (₹)</span>
                           <input
                             type="number"
                             value={priceRange[1]}
                             onChange={(e) =>
                               setPriceRange([priceRange[0], Number(e.target.value)])
                             }
-                            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-[#8B0000]"
+                            className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-stone-900 focus:outline-none focus:border-[#8B0000]"
                           />
                         </div>
                       </div>
                     </div>
 
                     {/* Quick Presets */}
-                    <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-gray-100">
+                    <div className="grid grid-cols-2 gap-1.5 pt-3 border-t border-stone-100">
                       {[
                         { label: "Under ₹999", max: 999 },
                         { label: "Under ₹1,999", max: 1999 },
@@ -639,10 +639,10 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                         <button
                           key={p.label}
                           onClick={() => setPriceRange([0, p.max])}
-                          className={`text-[11px] py-1 px-2 rounded-lg border transition-colors text-center ${
+                          className={`text-[11px] py-1.5 px-2 rounded-xl border transition-all text-center font-medium ${
                             priceRange[1] === p.max && priceRange[0] === 0
-                              ? "bg-[#8B0000]/10 border-[#8B0000] text-[#8B0000] font-semibold"
-                              : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+                              ? "bg-[#8B0000]/10 border-[#8B0000] text-[#8B0000] font-bold"
+                              : "bg-stone-50/80 border-stone-200 text-stone-600 hover:bg-stone-100"
                           }`}
                         >
                           {p.label}
@@ -652,7 +652,7 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
 
                     <button
                       onClick={() => setActiveDropdown(null)}
-                      className="w-full mt-3 py-2 bg-[#8B0000] hover:bg-[#700000] text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+                      className="w-full mt-3.5 py-2.5 bg-[#8B0000] hover:bg-[#720000] text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-red-950/15"
                     >
                       Apply Filter
                     </button>
@@ -660,7 +660,7 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                 )}
               </div>
 
-              {/* 2. Dynamic Section Dropdown Boxes (Size, Color, Fabric, Pattern, Discount) */}
+              {/* 2. Dynamic Section Filter Pills (Size, Color, Fabric, Pattern, Discount) */}
               {filterConfig.sections.map((sec) => {
                 const selectedCount = (activeFilters[sec.id] || new Set()).size;
                 const isOpen = activeDropdown === sec.id;
@@ -673,31 +673,31 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                       onClick={() =>
                         setActiveDropdown(isOpen ? null : sec.id)
                       }
-                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-all shadow-xs ${
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 shadow-2xs ${
                         selectedCount > 0
-                          ? "border-[#8B0000] bg-[#8B0000]/10 text-[#8B0000]"
-                          : "border-gray-200 bg-white hover:bg-gray-50 text-gray-700"
+                          ? "bg-[#8B0000] text-white border border-[#8B0000] shadow-md shadow-red-950/15"
+                          : "bg-stone-50/80 hover:bg-white text-stone-700 border border-stone-200/90 hover:border-[#8B0000]/60 hover:text-[#8B0000]"
                       }`}
                     >
-                      <IconComponent className="w-3.5 h-3.5 text-[#8B0000]" />
+                      <IconComponent className={`w-3.5 h-3.5 ${selectedCount > 0 ? "text-amber-200" : "text-[#8B0000]"}`} />
                       <span>{sec.label}</span>
                       {selectedCount > 0 && (
-                        <span className="w-5 h-5 rounded-full bg-[#8B0000] text-white text-[11px] font-bold flex items-center justify-center">
+                        <span className="w-5 h-5 rounded-full bg-white text-[#8B0000] text-[11px] font-bold flex items-center justify-center">
                           {selectedCount}
                         </span>
                       )}
                       <ChevronDown
-                        className={`w-3.5 h-3.5 text-gray-500 transition-transform ${
-                          isOpen ? "rotate-180 text-[#8B0000]" : ""
+                        className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                          isOpen ? "rotate-180 text-amber-200" : "text-stone-400"
                         }`}
                       />
                     </button>
 
-                    {/* Section Dropdown Card */}
+                    {/* Section Flyout Card */}
                     {isOpen && (
-                      <div className="absolute left-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 z-50 animate-fadeIn">
-                        <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
-                          <span className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <div className="absolute left-0 top-full mt-2.5 w-76 bg-white/98 backdrop-blur-2xl rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.16)] border border-amber-950/10 p-5 z-50 animate-fadeIn ring-1 ring-black/5">
+                        <div className="flex items-center justify-between mb-3.5 pb-2.5 border-b border-stone-100">
+                          <span className="text-xs font-bold text-stone-900 uppercase tracking-wider flex items-center gap-1.5">
                             <IconComponent className="w-4 h-4 text-[#8B0000]" /> Select {sec.label}
                           </span>
                           {selectedCount > 0 && (
@@ -709,16 +709,16 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                                   return updated;
                                 });
                               }}
-                              className="text-[11px] text-[#8B0000] hover:underline font-medium"
+                              className="text-[11px] text-[#8B0000] hover:text-[#680000] font-semibold"
                             >
                               Clear
                             </button>
                           )}
                         </div>
 
-                        {/* Special Grid Layout for Sizes */}
+                        {/* Luxury Grid Layout for Sizes */}
                         {sec.id === "size" ? (
-                          <div className="grid grid-cols-4 gap-2 mb-3">
+                          <div className="grid grid-cols-4 gap-2 mb-3.5">
                             {sec.options.map((opt) => {
                               const isSelected = (
                                 activeFilters[sec.id] || new Set()
@@ -731,8 +731,8 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                                   onClick={() => toggleFilter(sec.id, opt)}
                                   className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all text-center ${
                                     isSelected
-                                      ? "bg-[#8B0000] border-[#8B0000] text-white shadow-sm"
-                                      : "bg-gray-50 border-gray-200 text-gray-700 hover:border-[#8B0000] hover:bg-[#8B0000]/5"
+                                      ? "bg-[#8B0000] border-[#8B0000] text-white shadow-xs"
+                                      : "bg-stone-50 border-stone-200 text-stone-700 hover:border-[#8B0000] hover:bg-[#8B0000]/5"
                                   }`}
                                 >
                                   {opt}
@@ -741,8 +741,8 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                             })}
                           </div>
                         ) : (
-                          /* Standard List with Checkbox for Other Sections */
-                          <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 mb-3">
+                          /* Standard List with Custom Indicators for Other Sections */
+                          <div className="max-h-60 overflow-y-auto space-y-1 pr-1 mb-3.5">
                             {sec.options.map((opt) => {
                               const isSelected = (
                                 activeFilters[sec.id] || new Set()
@@ -752,10 +752,10 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                                 <div
                                   key={opt}
                                   onClick={() => toggleFilter(sec.id, opt)}
-                                  className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-colors text-xs ${
+                                  className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all text-xs ${
                                     isSelected
                                       ? "bg-[#8B0000]/10 text-[#8B0000] font-bold"
-                                      : "hover:bg-gray-50 text-gray-700"
+                                      : "hover:bg-stone-50 text-stone-700 font-medium"
                                   }`}
                                 >
                                   <span className="truncate mr-2">{opt}</span>
@@ -763,7 +763,7 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                                     className={`w-4 h-4 rounded-md border flex items-center justify-center flex-shrink-0 transition-all ${
                                       isSelected
                                         ? "bg-[#8B0000] border-[#8B0000]"
-                                        : "border-gray-300 bg-white"
+                                        : "border-stone-300 bg-white"
                                     }`}
                                   >
                                     {isSelected && (
@@ -779,7 +779,7 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                         <button
                           type="button"
                           onClick={() => setActiveDropdown(null)}
-                          className="w-full py-2 bg-[#8B0000] hover:bg-[#700000] text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+                          className="w-full py-2.5 bg-[#8B0000] hover:bg-[#720000] text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-red-950/15"
                         >
                           Done
                         </button>
@@ -794,7 +794,7 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                 <button
                   type="button"
                   onClick={clearAll}
-                  className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Reset All</span>
@@ -803,20 +803,20 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
             </div>
 
             {/* Right Side: Products Count & Sort Dropdown */}
-            <div className="flex items-center gap-3 flex-shrink-0 w-full lg:w-auto justify-between lg:justify-end pt-2 lg:pt-0 border-t lg:border-t-0 border-gray-100">
-              <span className="text-xs sm:text-sm text-gray-500 font-semibold whitespace-nowrap">
-                <span className="text-gray-900 font-bold">
+            <div className="flex items-center gap-3 flex-shrink-0 w-full lg:w-auto justify-between lg:justify-end pt-2 lg:pt-0 border-t lg:border-t-0 border-stone-100">
+              <span className="text-xs sm:text-sm text-stone-500 font-medium whitespace-nowrap">
+                <span className="text-stone-900 font-extrabold text-sm">
                   {displayProducts.length}
                 </span>{" "}
                 Products
               </span>
 
-              {/* Sort By Dropdown */}
+              {/* Sort By Pill Dropdown */}
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowSortDropdown(!showSortDropdown)}
-                  className="flex items-center gap-2 px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm font-semibold text-gray-700 hover:border-[#8B0000] transition-colors justify-between shadow-xs min-w-[160px] sm:min-w-[190px]"
+                  className="flex items-center gap-2 px-4 py-2 bg-stone-50/80 hover:bg-white border border-stone-200/90 hover:border-[#8B0000] rounded-full text-xs sm:text-sm font-medium text-stone-700 transition-all justify-between shadow-2xs min-w-[160px] sm:min-w-[190px]"
                 >
                   <span className="flex items-center gap-1.5 truncate">
                     <ArrowUpDown className="w-3.5 h-3.5 text-[#8B0000]" />
@@ -826,15 +826,15 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                     </span>
                   </span>
                   <ChevronDown
-                    className={`w-3.5 h-3.5 text-gray-400 transition-transform ${
+                    className={`w-3.5 h-3.5 text-stone-400 transition-transform duration-200 ${
                       showSortDropdown ? "rotate-180 text-[#8B0000]" : ""
                     }`}
                   />
                 </button>
 
                 {showSortDropdown && (
-                  <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 overflow-hidden animate-fadeIn">
-                    <div className="py-1">
+                  <div className="absolute right-0 top-full mt-2.5 w-56 bg-white/98 backdrop-blur-2xl border border-amber-950/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.16)] z-50 overflow-hidden animate-fadeIn ring-1 ring-black/5">
+                    <div className="py-1.5">
                       {SORT_OPTIONS.map((opt) => (
                         <button
                           key={opt.value}
@@ -846,7 +846,7 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                           className={`w-full flex items-center justify-between px-4 py-2.5 text-xs sm:text-sm font-medium transition-colors ${
                             sortBy === opt.value
                               ? "text-[#8B0000] font-bold bg-[#8B0000]/10"
-                              : "text-gray-700 hover:bg-gray-50"
+                              : "text-stone-700 hover:bg-stone-50"
                           }`}
                         >
                           <span>{opt.label}</span>

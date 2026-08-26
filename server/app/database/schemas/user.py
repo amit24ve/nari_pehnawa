@@ -16,6 +16,8 @@ class User(BaseModel):
     orders_count: Optional[int] = 0
     phone: Optional[str] = None
     bio: Optional[str] = None
+    auth_provider: Optional[str] = None
+    avatar: Optional[str] = None
 
 
 class UserCreate(BaseModel):

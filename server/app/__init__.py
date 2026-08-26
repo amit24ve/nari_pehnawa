@@ -47,11 +47,6 @@ app.add_middleware(
 )
 
 connect_to_database()
-from app.database.seeder import seed_dummy_data
-try:
-    seed_dummy_data()
-except Exception as seeder_err:
-    print(f"Database seeding error at startup: {seeder_err}")
 
 
 
