@@ -22,7 +22,11 @@ import {
   ExternalLink,
   HelpCircle,
   Clock,
-  Sparkle
+  Sparkle,
+  Gem,
+  Scissors,
+  Check,
+  Feather
 } from "lucide-react";
 
 const OwnerPage = () => {
@@ -281,414 +285,471 @@ const OwnerPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#FAF6F0] text-[#120202] antialiased selection:bg-[#d4af37]/30 selection:text-[#580C1F]">
+    <div className="min-h-screen bg-[#FCFAF7] text-[#1E050A] antialiased selection:bg-[#D4AF37]/30 selection:text-[#580C1F] font-sans">
       
-      {/* ── STICKY LUXURY NAVIGATION BAR ── */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-[#c5a880]/25 shadow-xs">
-        <div className="max-w-[1300px] mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 group">
+      {/* ── TOP LUXURY ANNOUNCEMENT & NAVIGATION ── */}
+      <header className="sticky top-0 z-50 bg-[#FCFAF7]/95 backdrop-blur-md border-b border-[#E8DFC8]">
+        <div className="max-w-[1360px] mx-auto px-4 sm:px-8 h-18 sm:h-22 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-3.5 group">
             <img
               src="/logo.png"
               alt="Nari Pehnawa"
-              className="h-10 sm:h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+              className="h-10 sm:h-13 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
             />
-            <div className="hidden sm:block">
-              <span className="font-serif text-lg font-bold text-[#580C1F] tracking-wide block leading-none">
+            <div className="border-l border-[#C5A880]/40 pl-3">
+              <span className="font-serif text-lg sm:text-xl font-bold tracking-wider text-[#4A0A16] block leading-none">
                 NARI PEHNAWA
               </span>
-              <span className="text-[10px] text-[#c5a880] tracking-widest uppercase font-semibold">
-                Traditional Ka Tadka
+              <span className="text-[9px] sm:text-[10px] text-[#A67C52] tracking-[0.25em] uppercase font-semibold block mt-0.5">
+                Authentic Ethnic Heritage
               </span>
             </div>
           </Link>
 
-          <nav className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm font-semibold">
+          <nav className="flex items-center gap-2 sm:gap-6 text-xs sm:text-sm font-medium">
             <a
               href="#founders"
-              className="px-3 py-1.5 rounded-full text-[#580C1F] hover:bg-[#580C1F]/5 transition"
+              className="px-3 py-1.5 rounded-full text-[#4A0A16] hover:bg-[#4A0A16]/5 transition"
             >
               Founders
             </a>
             <a
-              href="#story"
-              className="hidden md:inline-block px-3 py-1.5 rounded-full text-zinc-700 hover:text-[#580C1F] transition"
+              href="#heritage"
+              className="hidden md:inline-block px-3 py-1.5 rounded-full text-stone-600 hover:text-[#4A0A16] transition"
             >
-              Our Story
+              Our Heritage
+            </a>
+            <a
+              href="#guarantee"
+              className="hidden lg:inline-block px-3 py-1.5 rounded-full text-stone-600 hover:text-[#4A0A16] transition"
+            >
+              The Promise
             </a>
             <a
               href="#faq"
-              className="px-3 py-1.5 rounded-full text-zinc-700 hover:text-[#580C1F] transition"
+              className="px-3 py-1.5 rounded-full text-stone-600 hover:text-[#4A0A16] transition"
             >
               FAQ
             </a>
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#580C1F] hover:bg-[#430816] text-[#F7ECE1] rounded-full text-xs font-bold shadow-md shadow-[#580C1F]/15 transition duration-200"
+              className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-[#580C1F] to-[#3B0714] text-[#FDFBF7] rounded-full text-xs sm:text-sm font-semibold shadow-md shadow-[#580C1F]/15 hover:shadow-lg transition-all"
             >
-              <Store className="w-3.5 h-3.5" />
-              <span>Visit Boutique</span>
+              <Store className="w-3.5 h-3.5 text-[#D4AF37]" />
+              <span>Explore Boutique</span>
             </Link>
           </nav>
         </div>
       </header>
 
-      {/* ── HERO BANNER SECTION (ROYAL MAROON & GOLD LUXURY) ── */}
-      <section className="relative overflow-hidden bg-[#180407] text-[#F7ECE1] py-16 sm:py-24 md:py-28 border-b border-[#c5a880]/30">
-        {/* Background Decorative Pattern & Glows */}
+      {/* ── HERO BANNER: HIGH-FASHION EDITORIAL PRESENTATION ── */}
+      <section className="relative overflow-hidden bg-[#160307] text-[#FAF5ED] py-20 sm:py-28 lg:py-32 border-b border-[#D4AF37]/30">
+        {/* Editorial Background Image with Depth Gradient Overlays */}
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-25 mix-blend-luminosity scale-105"
+          className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-luminosity scale-105 pointer-events-none"
           style={{ backgroundImage: `url('/motivational-hero.png')` }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#180407] via-[#180407]/80 to-[#24060C]/90" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#160307]/90 via-[#26050D]/85 to-[#160307]" />
         
-        <div className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6 text-center space-y-6">
+        {/* Subtle Decorative Golden Border Pattern */}
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/50 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/50 to-transparent" />
+
+        <div className="relative z-10 max-w-[1240px] mx-auto px-4 sm:px-8 text-center space-y-7">
+          
           {/* Verified Official Brand Leadership Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#d4af37]/15 border border-[#d4af37]/40 text-[#dfc384] text-xs sm:text-sm font-semibold tracking-wider uppercase shadow-inner">
-            <Sparkles className="w-4 h-4 text-[#d4af37] animate-pulse" />
-            Official Verified Leadership &amp; Ownership
+          <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-white/5 backdrop-blur-md border border-[#D4AF37]/40 text-[#EADBBE] text-xs sm:text-sm font-medium tracking-widest uppercase shadow-xl">
+            <Sparkles className="w-4 h-4 text-[#D4AF37] animate-pulse" />
+            <span>Official Leadership &amp; Ownership</span>
           </div>
 
-          <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-[1.15]">
-            Meet The <span className="text-[#dfc384] italic font-serif">Founders &amp; Owners</span>
-            <br />
-            of Nari Pehnawa
-          </h1>
+          {/* Main Hero Title */}
+          <div className="space-y-3">
+            <span className="text-xs sm:text-sm uppercase tracking-[0.3em] text-[#C5A880] font-semibold block">
+              The Visionaries &amp; Co-Founders
+            </span>
+            <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-[1.12]">
+              Pooja Verma &amp; Ritika Singh
+            </h1>
+            <p className="font-serif italic text-lg sm:text-2xl text-[#EADBBE]/90 font-light max-w-2xl mx-auto">
+              "Redefining Indian ethnic elegance with authentic artisan craftsmanship."
+            </p>
+          </div>
 
-          <p className="text-sm sm:text-lg md:text-xl text-[#F7ECE1]/90 font-light max-w-3xl mx-auto leading-relaxed">
-            The inspiring journey of two friends, <strong>Pooja Verma</strong> and <strong>Ritika Singh</strong>, building a trusted Indian ethnic wear brand celebrating self-reliance, elegance, and artisanal heritage.
+          <p className="text-xs sm:text-base text-[#FAF5ED]/80 font-light max-w-3xl mx-auto leading-relaxed">
+            The inspirational story of two women entrepreneurs from Uttar Pradesh (Prayagraj &amp; Deoria) uniting traditional weaver heritage with contemporary Indian silhouettes.
           </p>
 
-          {/* ═ DIRECT GOOGLE SNIPPET / QUICK ANSWER BOX ═ */}
-          <div className="max-w-3xl mx-auto mt-8 bg-white/10 backdrop-blur-md border border-[#d4af37]/40 rounded-3xl p-5 sm:p-7 text-left shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-[#d4af37]/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-2xl bg-[#d4af37] text-[#180407] flex items-center justify-center font-bold flex-shrink-0 shadow-md">
-                <ShieldCheck className="w-6 h-6" />
+          {/* ═ GOOGLE KNOWLEDGE SNIPPET CARD (High-End Parchment Style) ═ */}
+          <div className="max-w-3xl mx-auto mt-8 bg-white/10 backdrop-blur-xl border border-[#D4AF37]/40 rounded-3xl p-6 sm:p-8 text-left shadow-2xl relative overflow-hidden">
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#D4AF37]/15 rounded-full blur-3xl pointer-events-none" />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-[#D4AF37] to-[#AA822A] text-[#160307] flex items-center justify-center font-bold flex-shrink-0 shadow-lg">
+                <ShieldCheck className="w-7 h-7" />
               </div>
-              <div className="space-y-1.5">
-                <span className="text-[11px] font-bold tracking-wider text-[#dfc384] uppercase block">
-                  Quick Answer • Who is the owner of Nari Pehnawa?
-                </span>
-                <p className="text-xs sm:text-sm text-white/95 leading-relaxed">
-                  <strong>Nari Pehnawa</strong> is exclusively owned and co-founded by <strong>Pooja Verma</strong> and <strong>Ritika Singh</strong>. Headquartered with roots in Uttar Pradesh, the brand is dedicated to connecting authentic Indian weavers directly with women seeking graceful, affordable, and durable ethnic fashion.
-                </p>
-                <div className="flex flex-wrap items-center gap-3 pt-2 text-[11px] text-[#dfc384] font-medium">
-                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> Prayagraj &amp; Deoria Roots</span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1"><Award className="w-3 h-3" /> 100% Quality Inspected</span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1"><Users className="w-3 h-3" /> Women Led Enterprise</span>
+              <div className="space-y-1.5 flex-1">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-[11px] font-bold tracking-widest text-[#D4AF37] uppercase">
+                    Direct Search Verification
+                  </span>
+                  <span className="text-[10px] px-2.5 py-0.5 bg-[#D4AF37]/20 text-[#EADBBE] rounded-full border border-[#D4AF37]/30 font-semibold">
+                    100% Verified
+                  </span>
                 </div>
+                <h3 className="text-sm sm:text-base font-bold text-white font-serif">
+                  Who is the Owner of Nari Pehnawa? (नारी पहनावा का मालिक कौन है?)
+                </h3>
+                <p className="text-xs sm:text-sm text-[#FAF5ED]/90 leading-relaxed font-light">
+                  <strong>Nari Pehnawa</strong> is co-founded and exclusively owned by <strong>Pooja Verma</strong> and <strong>Ritika Singh</strong>. Headquartered in Uttar Pradesh, the brand is dedicated to bringing authentic Anarkalis, Chikankari Kurtis, and Sarees directly from weavers to homes across India.
+                </p>
               </div>
             </div>
           </div>
+
         </div>
       </section>
 
-      {/* ── SECTION: MEET THE FOUNDERS (DUAL SPOTLIGHT SHOWCASE) ── */}
-      <section id="founders" className="py-14 sm:py-20 max-w-[1240px] mx-auto px-4 sm:px-6">
-        <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 space-y-2">
-          <span className="text-xs font-bold text-[#c5a880] tracking-widest uppercase block">
-            Executive Leadership
-          </span>
-          <h2 className="font-serif text-2xl sm:text-4xl font-bold text-[#580C1F]">
-            The Driving Force Behind The Brand
+      {/* ── FOUNDER SPOTLIGHT: EDITORIAL MASTERPIECE CARDS ── */}
+      <section id="founders" className="py-16 sm:py-24 max-w-[1320px] mx-auto px-4 sm:px-8">
+        <div className="text-center max-w-2xl mx-auto mb-14 sm:mb-20 space-y-3">
+          <div className="inline-flex items-center gap-2 text-xs font-bold text-[#A67C52] tracking-[0.25em] uppercase">
+            <Feather className="w-3.5 h-3.5 text-[#D4AF37]" /> The Leadership Duo
+          </div>
+          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#4A0A16]">
+            Meet The Founders
           </h2>
-          <p className="text-xs sm:text-sm text-zinc-600 font-light">
-            Bringing together creative fashion sensibilities with honest, customer-centric business values.
+          <div className="w-16 h-[2px] bg-[#D4AF37] mx-auto" />
+          <p className="text-xs sm:text-sm text-stone-600 font-light">
+            Complementary expertise in artisanal design, fabric integrity, customer care, and operations.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-12">
           
           {/* ═ FOUNDER 1: POOJA VERMA ═ */}
-          <div className="bg-white rounded-3xl border border-[#c5a880]/30 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col group">
-            <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-6">
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-                <div className="relative flex-shrink-0">
-                  <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-[#d4af37] shadow-lg">
-                    <img
-                      src="/pooja-verma.jpg"
-                      alt="Pooja Verma - Founder of Nari Pehnawa"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => {
-                        e.target.src = "/logo_square.png";
-                      }}
-                    />
-                  </div>
-                  <span className="absolute -bottom-2 -right-2 px-2 py-0.5 bg-[#580C1F] text-[#dfc384] text-[10px] font-bold rounded-full border border-[#dfc384]/40 shadow-sm">
-                    Verified
-                  </span>
+          <div className="bg-white rounded-3xl border border-[#E8DFC8] shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col group">
+            {/* Top Image Banner */}
+            <div className="relative bg-[#FAF5ED] p-8 sm:p-10 flex flex-col sm:flex-row items-center gap-6 border-b border-[#E8DFC8]/60">
+              <div className="relative flex-shrink-0">
+                <div className="w-36 h-36 sm:w-40 sm:h-40 rounded-2xl overflow-hidden border-3 border-[#D4AF37] shadow-xl">
+                  <img
+                    src="/pooja-verma.jpg"
+                    alt="Pooja Verma - Founder & Creative Director of Nari Pehnawa"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    onError={(e) => { e.target.src = "/logo_square.png"; }}
+                  />
                 </div>
-
-                <div className="text-center sm:text-left space-y-1">
-                  <div className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase text-[#c5a880]">
-                    <Sparkle className="w-3 h-3 text-[#d4af37]" /> Co-Founder &amp; Creative Director
-                  </div>
-                  <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#580C1F]">
-                    Pooja Verma
-                  </h3>
-                  <p className="text-xs text-zinc-500 flex items-center justify-center sm:justify-start gap-1 font-medium">
-                    <MapPin className="w-3.5 h-3.5 text-[#d4af37]" /> Prayagraj, Uttar Pradesh
-                  </p>
-                  <p className="text-xs text-zinc-600 pt-1 leading-relaxed">
-                    Spearheading fabric innovation, artisan weaving networks, and traditional Chikankari craftsmanship.
-                  </p>
+                <div className="absolute -bottom-2.5 -right-2.5 px-3 py-0.5 bg-[#4A0A16] text-[#EADBBE] text-[10px] font-bold rounded-full border border-[#D4AF37]/50 shadow-md">
+                  Co-Owner
                 </div>
               </div>
 
-              {/* Quote Block */}
-              <div className="relative bg-[#FAF6F0] border-l-4 border-[#d4af37] p-4 sm:p-5 rounded-r-2xl text-xs sm:text-sm text-zinc-800 leading-relaxed font-serif italic shadow-inner">
-                <Quote className="w-6 h-6 text-[#d4af37]/30 absolute top-2 right-3 pointer-events-none" />
-                "As the Owner of Nari Pehnawa, I focus on delivering superior quality, innovative designs, and effortless comfort. From thoughtfully crafting each design to carefully sourcing fabrics, we prioritize excellence at every stage. Our aim is to make fashion accessible, special, and unique for every woman."
-              </div>
-
-              {/* Core Strengths */}
-              <div className="space-y-2 pt-2 border-t border-zinc-100">
-                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
-                  Key Responsibilities &amp; Focus
+              <div className="text-center sm:text-left space-y-1.5 flex-1">
+                <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#A67C52] block">
+                  Design &amp; Craftsmanship
                 </span>
-                <div className="grid grid-cols-2 gap-2 text-xs text-zinc-700 font-medium">
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#580C1F]" /> Handloom &amp; Weave Sourcing
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#580C1F]" /> Contemporary Cuts &amp; Fit
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#580C1F]" /> Artisan Fair-Trade
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#580C1F]" /> Trend Research
-                  </div>
+                <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#4A0A16]">
+                  Pooja Verma
+                </h3>
+                <p className="text-xs font-semibold text-[#580C1F] flex items-center justify-center sm:justify-start gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-[#D4AF37]" /> Prayagraj, Uttar Pradesh
+                </p>
+                <div className="pt-1 flex flex-wrap gap-1.5 justify-center sm:justify-start">
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#FAF0E6] text-[#4A0A16] font-semibold border border-[#E8DFC8]">
+                    Creative Director
+                  </span>
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#FAF0E6] text-[#4A0A16] font-semibold border border-[#E8DFC8]">
+                    Fabric Curation
+                  </span>
                 </div>
               </div>
             </div>
-            
-            <div className="bg-[#580C1F] text-[#F7ECE1] px-6 py-3 text-xs font-semibold flex items-center justify-between">
-              <span>Vision: Ethnic Luxury for Every Woman</span>
-              <span className="text-[#dfc384] font-serif italic">Craftsmanship First</span>
+
+            {/* Content & Personal Statement */}
+            <div className="p-8 sm:p-10 flex-1 flex flex-col justify-between space-y-6">
+              
+              {/* Quote Block */}
+              <div className="relative bg-[#FAF5ED] border-l-4 border-[#D4AF37] p-5 sm:p-6 rounded-r-2xl text-xs sm:text-sm text-stone-800 leading-relaxed font-serif italic shadow-inner">
+                <Quote className="w-8 h-8 text-[#D4AF37]/20 absolute top-3 right-4 pointer-events-none" />
+                "As the Owner of Nari Pehnawa, I focus on delivering superior quality, innovative designs, and effortless comfort. From thoughtfully crafting each design to carefully sourcing fabrics, we prioritize excellence at every stage. Our aim is to make fashion accessible, special, and unique for every woman."
+              </div>
+
+              {/* Leadership Pillars */}
+              <div className="space-y-3 pt-2">
+                <span className="text-[11px] font-bold text-stone-400 uppercase tracking-widest block">
+                  Key Portfolio Areas
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-stone-700 font-medium">
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#FAF6F0] border border-[#E8DFC8]/50">
+                    <Check className="w-4 h-4 text-[#4A0A16] flex-shrink-0" />
+                    <span>Pure Handloom Sourcing</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#FAF6F0] border border-[#E8DFC8]/50">
+                    <Check className="w-4 h-4 text-[#4A0A16] flex-shrink-0" />
+                    <span>Lucknowi Chikankari Art</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#FAF6F0] border border-[#E8DFC8]/50">
+                    <Check className="w-4 h-4 text-[#4A0A16] flex-shrink-0" />
+                    <span>Contemporary Sizing &amp; Cuts</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#FAF6F0] border border-[#E8DFC8]/50">
+                    <Check className="w-4 h-4 text-[#4A0A16] flex-shrink-0" />
+                    <span>Fair-Trade Artisan Support</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Bottom Accent Strip */}
+            <div className="bg-[#4A0A16] text-[#FAF5ED] px-8 py-3.5 text-xs font-semibold flex items-center justify-between">
+              <span className="text-[#D4AF37] font-serif italic text-sm">Craftsmanship First</span>
+              <span className="text-[11px] text-[#FAF5ED]/80">Nari Pehnawa Executive Board</span>
             </div>
           </div>
 
           {/* ═ FOUNDER 2: RITIKA SINGH ═ */}
-          <div className="bg-white rounded-3xl border border-[#c5a880]/30 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col group">
-            <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-6">
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-                <div className="relative flex-shrink-0">
-                  <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-[#d4af37] shadow-lg">
-                    <img
-                      src="/ritika-singh.png"
-                      alt="Ritika Singh - Founder of Nari Pehnawa"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => {
-                        e.target.src = "/ritika-singh.jpg";
-                      }}
-                    />
-                  </div>
-                  <span className="absolute -bottom-2 -right-2 px-2 py-0.5 bg-[#580C1F] text-[#dfc384] text-[10px] font-bold rounded-full border border-[#dfc384]/40 shadow-sm">
-                    Verified
-                  </span>
+          <div className="bg-white rounded-3xl border border-[#E8DFC8] shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col group">
+            {/* Top Image Banner */}
+            <div className="relative bg-[#FAF5ED] p-8 sm:p-10 flex flex-col sm:flex-row items-center gap-6 border-b border-[#E8DFC8]/60">
+              <div className="relative flex-shrink-0">
+                <div className="w-36 h-36 sm:w-40 sm:h-40 rounded-2xl overflow-hidden border-3 border-[#D4AF37] shadow-xl">
+                  <img
+                    src="/ritika-singh.png"
+                    alt="Ritika Singh - Founder & Managing Director of Nari Pehnawa"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    onError={(e) => { e.target.src = "/ritika-singh.jpg"; }}
+                  />
                 </div>
-
-                <div className="text-center sm:text-left space-y-1">
-                  <div className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase text-[#c5a880]">
-                    <Sparkle className="w-3 h-3 text-[#d4af37]" /> Co-Founder &amp; Managing Director
-                  </div>
-                  <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#580C1F]">
-                    Ritika Singh
-                  </h3>
-                  <p className="text-xs text-zinc-500 flex items-center justify-center sm:justify-start gap-1 font-medium">
-                    <MapPin className="w-3.5 h-3.5 text-[#d4af37]" /> Deoria, Uttar Pradesh
-                  </p>
-                  <p className="text-xs text-zinc-600 pt-1 leading-relaxed">
-                    Directing brand operations, customer trust systems, logistics networks, and honest pricing standards.
-                  </p>
+                <div className="absolute -bottom-2.5 -right-2.5 px-3 py-0.5 bg-[#4A0A16] text-[#EADBBE] text-[10px] font-bold rounded-full border border-[#D4AF37]/50 shadow-md">
+                  Co-Owner
                 </div>
               </div>
 
+              <div className="text-center sm:text-left space-y-1.5 flex-1">
+                <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#A67C52] block">
+                  Operations &amp; Customer Trust
+                </span>
+                <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#4A0A16]">
+                  Ritika Singh
+                </h3>
+                <p className="text-xs font-semibold text-[#580C1F] flex items-center justify-center sm:justify-start gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-[#D4AF37]" /> Deoria, Uttar Pradesh
+                </p>
+                <div className="pt-1 flex flex-wrap gap-1.5 justify-center sm:justify-start">
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#FAF0E6] text-[#4A0A16] font-semibold border border-[#E8DFC8]">
+                    Managing Director
+                  </span>
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#FAF0E6] text-[#4A0A16] font-semibold border border-[#E8DFC8]">
+                    Customer Experience
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Content & Personal Statement */}
+            <div className="p-8 sm:p-10 flex-1 flex flex-col justify-between space-y-6">
+              
               {/* Quote Block */}
-              <div className="relative bg-[#FAF6F0] border-l-4 border-[#d4af37] p-4 sm:p-5 rounded-r-2xl text-xs sm:text-sm text-zinc-800 leading-relaxed font-serif italic shadow-inner">
-                <Quote className="w-6 h-6 text-[#d4af37]/30 absolute top-2 right-3 pointer-events-none" />
+              <div className="relative bg-[#FAF5ED] border-l-4 border-[#D4AF37] p-5 sm:p-6 rounded-r-2xl text-xs sm:text-sm text-stone-800 leading-relaxed font-serif italic shadow-inner">
+                <Quote className="w-8 h-8 text-[#D4AF37]/20 absolute top-3 right-4 pointer-events-none" />
                 "Nari Pehnawa represents every woman who dares to dream big. Coming from Deoria, I envisioned an Indian brand where every customer receives genuine boutique quality without artificial markups, backed by trustworthy customer care and transparent delivery."
               </div>
 
-              {/* Core Strengths */}
-              <div className="space-y-2 pt-2 border-t border-zinc-100">
-                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
-                  Key Responsibilities &amp; Focus
+              {/* Leadership Pillars */}
+              <div className="space-y-3 pt-2">
+                <span className="text-[11px] font-bold text-stone-400 uppercase tracking-widest block">
+                  Key Portfolio Areas
                 </span>
-                <div className="grid grid-cols-2 gap-2 text-xs text-zinc-700 font-medium">
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#580C1F]" /> Express Pan-India Delivery
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-stone-700 font-medium">
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#FAF6F0] border border-[#E8DFC8]/50">
+                    <Check className="w-4 h-4 text-[#4A0A16] flex-shrink-0" />
+                    <span>Nationwide Express Logistics</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#580C1F]" /> Transparent Real Pricing
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#FAF6F0] border border-[#E8DFC8]/50">
+                    <Check className="w-4 h-4 text-[#4A0A16] flex-shrink-0" />
+                    <span>Transparent Honest Pricing</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#580C1F]" /> 24/7 Customer Satisfaction
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#FAF6F0] border border-[#E8DFC8]/50">
+                    <Check className="w-4 h-4 text-[#4A0A16] flex-shrink-0" />
+                    <span>Quality Inspection Protocols</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#580C1F]" /> Strict Quality Audit
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#FAF6F0] border border-[#E8DFC8]/50">
+                    <Check className="w-4 h-4 text-[#4A0A16] flex-shrink-0" />
+                    <span>24/7 Shopper Satisfaction</span>
                   </div>
                 </div>
               </div>
+
             </div>
 
-            <div className="bg-[#580C1F] text-[#F7ECE1] px-6 py-3 text-xs font-semibold flex items-center justify-between">
-              <span>Vision: Uncompromised Trust &amp; Integrity</span>
-              <span className="text-[#dfc384] font-serif italic">Customer First</span>
+            {/* Bottom Accent Strip */}
+            <div className="bg-[#4A0A16] text-[#FAF5ED] px-8 py-3.5 text-xs font-semibold flex items-center justify-between">
+              <span className="text-[#D4AF37] font-serif italic text-sm">Customer First</span>
+              <span className="text-[11px] text-[#FAF5ED]/80">Nari Pehnawa Executive Board</span>
             </div>
           </div>
 
         </div>
       </section>
 
-      {/* ── SECTION: OUR ORIGIN STORY (FROM PRAYAGRAJ & DEORIA TO PAN-INDIA) ── */}
-      <section id="story" className="py-14 sm:py-20 bg-white border-y border-[#c5a880]/20">
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-          <div className="max-w-3xl mx-auto text-center space-y-4 mb-12 sm:mb-16">
-            <span className="text-xs font-bold text-[#c5a880] tracking-widest uppercase block">
-              The Journey of Two Friends
+      {/* ── SECTION: OUR HERITAGE JOURNEY (THE STORY OF TWO FRIENDS) ── */}
+      <section id="heritage" className="py-16 sm:py-24 bg-white border-y border-[#E8DFC8]/60">
+        <div className="max-w-[1240px] mx-auto px-4 sm:px-8">
+          
+          <div className="max-w-3xl mx-auto text-center space-y-3 mb-14 sm:mb-20">
+            <span className="text-xs font-bold text-[#A67C52] tracking-[0.25em] uppercase block">
+              From Prayagraj &amp; Deoria to Pan-India
             </span>
-            <h2 className="font-serif text-2xl sm:text-4xl font-bold text-[#580C1F]">
-              How Nari Pehnawa Was Born
+            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#4A0A16]">
+              The Story Behind Nari Pehnawa
             </h2>
-            <p className="text-xs sm:text-sm text-zinc-600 font-light leading-relaxed">
-              What began as thoughtful conversations between two ambitious friends from small towns of Uttar Pradesh evolved into one of the most promising women's ethnic wear movements in India.
+            <div className="w-16 h-[2px] bg-[#D4AF37] mx-auto" />
+            <p className="text-xs sm:text-sm text-stone-600 font-light leading-relaxed">
+              How two friends from small towns of Uttar Pradesh turned their passion for handloom and self-reliance into a trusted Indian boutique brand.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-            <div className="bg-[#FAF6F0] p-6 sm:p-8 rounded-3xl border border-[#c5a880]/25 space-y-3 hover:shadow-lg transition">
-              <div className="w-12 h-12 rounded-2xl bg-[#580C1F] text-[#dfc384] flex items-center justify-center font-bold text-lg">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            {/* Step 1 */}
+            <div className="bg-[#FCFAF7] p-8 rounded-3xl border border-[#E8DFC8] shadow-sm hover:shadow-md transition space-y-4 relative">
+              <div className="w-12 h-12 rounded-2xl bg-[#4A0A16] text-[#D4AF37] flex items-center justify-center font-serif font-bold text-lg shadow-md">
                 01
               </div>
-              <h3 className="font-serif text-lg font-bold text-[#580C1F]">
-                The Cultural Spark
+              <h3 className="font-serif text-xl font-bold text-[#4A0A16]">
+                The Vision in Small-Town UP
               </h3>
-              <p className="text-xs sm:text-sm text-zinc-700 leading-relaxed font-light">
-                Growing up in Prayagraj and Deoria, Pooja and Ritika noticed a recurring problem: market ethnic wear was either overpriced designer fashion or low-quality fast garments that tore after two washes. They resolved to fix this.
+              <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-light">
+                Growing up in Prayagraj and Deoria, Pooja and Ritika witnessed firsthand that boutique ethnic fashion was either overpriced or compromised on quality. They set out with a simple pledge: genuine craft without exorbitant prices.
               </p>
             </div>
 
-            <div className="bg-[#FAF6F0] p-6 sm:p-8 rounded-3xl border border-[#c5a880]/25 space-y-3 hover:shadow-lg transition">
-              <div className="w-12 h-12 rounded-2xl bg-[#580C1F] text-[#dfc384] flex items-center justify-center font-bold text-lg">
+            {/* Step 2 */}
+            <div className="bg-[#FCFAF7] p-8 rounded-3xl border border-[#E8DFC8] shadow-sm hover:shadow-md transition space-y-4 relative">
+              <div className="w-12 h-12 rounded-2xl bg-[#4A0A16] text-[#D4AF37] flex items-center justify-center font-serif font-bold text-lg shadow-md">
                 02
               </div>
-              <h3 className="font-serif text-lg font-bold text-[#580C1F]">
-                Direct Weaver Alliances
+              <h3 className="font-serif text-xl font-bold text-[#4A0A16]">
+                Artisan Handloom Networks
               </h3>
-              <p className="text-xs sm:text-sm text-zinc-700 leading-relaxed font-light">
-                Instead of buying through wholesale layers, they traveled directly to master handloom weavers in Varanasi, Lucknow, and Rajasthan, ensuring fair wages to craftsmen and honest factory-direct pricing for consumers.
+              <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-light">
+                They established direct connections with master handloom weavers in Varanasi, Lucknow, and Jaipur. By removing intermediary layers, artisans receive fair compensation and customers receive genuine hand-embroidery.
               </p>
             </div>
 
-            <div className="bg-[#FAF6F0] p-6 sm:p-8 rounded-3xl border border-[#c5a880]/25 space-y-3 hover:shadow-lg transition">
-              <div className="w-12 h-12 rounded-2xl bg-[#580C1F] text-[#dfc384] flex items-center justify-center font-bold text-lg">
+            {/* Step 3 */}
+            <div className="bg-[#FCFAF7] p-8 rounded-3xl border border-[#E8DFC8] shadow-sm hover:shadow-md transition space-y-4 relative">
+              <div className="w-12 h-12 rounded-2xl bg-[#4A0A16] text-[#D4AF37] flex items-center justify-center font-serif font-bold text-lg shadow-md">
                 03
               </div>
-              <h3 className="font-serif text-lg font-bold text-[#580C1F]">
-                Women Self-Reliance
+              <h3 className="font-serif text-xl font-bold text-[#4A0A16]">
+                Empowering Indian Women
               </h3>
-              <p className="text-xs sm:text-sm text-zinc-700 leading-relaxed font-light">
-                Today, Nari Pehnawa stands as a symbol of independent women entrepreneurship. Every package shipped is a testament to perseverance, quality fabrics, and heartfelt Indian pride.
+              <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-light">
+                Today, Nari Pehnawa serves thousands of proud women across India. Every order placed supports independent female leadership and authentic Indian textile heritage.
               </p>
             </div>
+
           </div>
+
         </div>
       </section>
 
-      {/* ── SECTION: 4 BRAND PILLARS & TRUST COMMITMENTS ── */}
-      <section className="py-14 sm:py-20 max-w-[1240px] mx-auto px-4 sm:px-6">
-        <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
-          <span className="text-xs font-bold text-[#c5a880] tracking-widest uppercase block">
-            Our Promise to You
+      {/* ── SECTION: 4 BRAND COMMITMENTS & TRUST GUARANTEES ── */}
+      <section id="guarantee" className="py-16 sm:py-24 max-w-[1240px] mx-auto px-4 sm:px-8">
+        <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
+          <span className="text-xs font-bold text-[#A67C52] tracking-[0.25em] uppercase block">
+            Guaranteed Standards
           </span>
-          <h2 className="font-serif text-2xl sm:text-4xl font-bold text-[#580C1F]">
-            The 4 Nari Pehnawa Guarantees
+          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#4A0A16]">
+            The 4 Nari Pehnawa Promises
           </h2>
+          <div className="w-16 h-[2px] bg-[#D4AF37] mx-auto" />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <div className="bg-white p-6 rounded-2xl border border-[#c5a880]/25 shadow-sm space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-[#580C1F]/10 text-[#580C1F] flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          <div className="bg-white p-7 rounded-3xl border border-[#E8DFC8] shadow-sm hover:shadow-md transition space-y-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#4A0A16]/10 text-[#4A0A16] flex items-center justify-center">
+              <Gem className="w-6 h-6" />
             </div>
-            <h4 className="font-serif text-base font-bold text-[#580C1F]">100% Authentic Fabric</h4>
-            <p className="text-xs text-zinc-600 leading-relaxed">
-              Pure georgettes, breathable cottons, rich chanderis, and pure mulmul fabrics tested for longevity.
+            <h4 className="font-serif text-lg font-bold text-[#4A0A16]">100% Quality Fabric</h4>
+            <p className="text-xs text-stone-600 leading-relaxed font-light">
+              Pure georgettes, breathable mulmul, and rich chanderis tested rigorously for colorfastness and drape.
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-[#c5a880]/25 shadow-sm space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-[#580C1F]/10 text-[#580C1F] flex items-center justify-center">
-              <Award className="w-5 h-5" />
+          <div className="bg-white p-7 rounded-3xl border border-[#E8DFC8] shadow-sm hover:shadow-md transition space-y-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#4A0A16]/10 text-[#4A0A16] flex items-center justify-center">
+              <Scissors className="w-6 h-6" />
             </div>
-            <h4 className="font-serif text-base font-bold text-[#580C1F]">Zero Filter Real Photos</h4>
-            <p className="text-xs text-zinc-600 leading-relaxed">
-              We photograph actual production samples under natural lighting so what you see is exactly what arrives.
+            <h4 className="font-serif text-lg font-bold text-[#4A0A16]">Authentic Tailoring</h4>
+            <p className="text-xs text-stone-600 leading-relaxed font-light">
+              Precision stitching, reinforced seams, and inclusive standard Indian sizing designed for everyday grace.
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-[#c5a880]/25 shadow-sm space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-[#580C1F]/10 text-[#580C1F] flex items-center justify-center">
-              <Compass className="w-5 h-5" />
+          <div className="bg-white p-7 rounded-3xl border border-[#E8DFC8] shadow-sm hover:shadow-md transition space-y-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#4A0A16]/10 text-[#4A0A16] flex items-center justify-center">
+              <Award className="w-6 h-6" />
             </div>
-            <h4 className="font-serif text-base font-bold text-[#580C1F]">Direct Artisan Pricing</h4>
-            <p className="text-xs text-zinc-600 leading-relaxed">
-              By eliminating distributor markups, our customers save 40% to 60% compared to luxury boutique rates.
+            <h4 className="font-serif text-lg font-bold text-[#4A0A16]">Zero-Filter Photos</h4>
+            <p className="text-xs text-stone-600 leading-relaxed font-light">
+              We shoot all products under natural light without exaggerated filters so what you see is what you receive.
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-[#c5a880]/25 shadow-sm space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-[#580C1F]/10 text-[#580C1F] flex items-center justify-center">
-              <HeartHandshake className="w-5 h-5" />
+          <div className="bg-white p-7 rounded-3xl border border-[#E8DFC8] shadow-sm hover:shadow-md transition space-y-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#4A0A16]/10 text-[#4A0A16] flex items-center justify-center">
+              <HeartHandshake className="w-6 h-6" />
             </div>
-            <h4 className="font-serif text-base font-bold text-[#580C1F]">Founder-Backed Service</h4>
-            <p className="text-xs text-zinc-600 leading-relaxed">
-              Every complaint and query is overseen with a customer-first policy, easy exchange, and secure payments.
+            <h4 className="font-serif text-lg font-bold text-[#4A0A16]">Founder Backing</h4>
+            <p className="text-xs text-stone-600 leading-relaxed font-light">
+              Direct oversight on customer support, fast dispatch, real-time tracking, and simple return assistance.
             </p>
           </div>
+
         </div>
       </section>
 
-      {/* ── SECTION: FREQUENTLY ASKED QUESTIONS (SEO KNOWLEDGE ACCORDION) ── */}
-      <section id="faq" className="py-14 sm:py-20 bg-white border-t border-[#c5a880]/20">
-        <div className="max-w-[900px] mx-auto px-4 sm:px-6 space-y-8">
-          <div className="text-center space-y-2">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#c5a880] tracking-widest uppercase">
-              <HelpCircle className="w-4 h-4 text-[#d4af37]" /> Common Questions &amp; Answers
+      {/* ── SECTION: FREQUENTLY ASKED QUESTIONS (SEARCH ACCORDION) ── */}
+      <section id="faq" className="py-16 sm:py-24 bg-white border-t border-[#E8DFC8]/60">
+        <div className="max-w-[960px] mx-auto px-4 sm:px-8 space-y-10">
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#A67C52] tracking-[0.25em] uppercase">
+              <HelpCircle className="w-4 h-4 text-[#D4AF37]" /> Frequently Asked Questions
             </div>
-            <h2 className="font-serif text-2xl sm:text-4xl font-bold text-[#580C1F]">
-              Frequently Asked Questions About Nari Pehnawa &amp; Owners
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#4A0A16]">
+              Everything You Need to Know
             </h2>
-            <p className="text-xs sm:text-sm text-zinc-600">
-              Clear facts and details regarding ownership, authenticity, and our brand philosophy.
+            <div className="w-16 h-[2px] bg-[#D4AF37] mx-auto" />
+            <p className="text-xs sm:text-sm text-stone-600 font-light">
+              Verified answers to common queries about Nari Pehnawa, the founders, and our product heritage.
             </p>
           </div>
 
-          <div className="space-y-3.5">
+          <div className="space-y-4">
             {faqs.map((faq, idx) => {
               const isOpen = openFaq === idx;
               return (
                 <div
                   key={idx}
-                  className="rounded-2xl border border-[#c5a880]/30 bg-[#FAF6F0] overflow-hidden transition-all duration-200"
+                  className="rounded-2xl border border-[#E8DFC8] bg-[#FAF8F5] overflow-hidden transition-all duration-300 shadow-xs"
                 >
                   <button
                     onClick={() => setOpenFaq(isOpen ? -1 : idx)}
-                    className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 font-serif font-bold text-sm sm:text-base text-[#580C1F] hover:text-[#3e0815] transition"
+                    className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 font-serif font-bold text-sm sm:text-base text-[#4A0A16] hover:text-[#580C1F] transition"
                   >
                     <span>{faq.q}</span>
                     <ChevronDown
-                      className={`w-5 h-5 text-[#c5a880] flex-shrink-0 transition-transform duration-200 ${
-                        isOpen ? "rotate-180 text-[#580C1F]" : ""
+                      className={`w-5 h-5 text-[#A67C52] flex-shrink-0 transition-transform duration-300 ${
+                        isOpen ? "rotate-180 text-[#4A0A16]" : ""
                       }`}
                     />
                   </button>
                   {isOpen && (
-                    <div className="px-4 sm:px-5 pb-5 text-xs sm:text-sm text-zinc-700 leading-relaxed font-light border-t border-[#c5a880]/15 pt-3">
+                    <div className="px-5 sm:px-6 pb-6 text-xs sm:text-sm text-stone-700 leading-relaxed font-light border-t border-[#E8DFC8]/50 pt-4">
                       {faq.a}
                     </div>
                   )}
@@ -700,25 +761,25 @@ const OwnerPage = () => {
       </section>
 
       {/* ── SECTION: A PERSONAL LETTER TO OUR CUSTOMERS ── */}
-      <section className="py-16 sm:py-24 bg-[#180407] text-[#F7ECE1] relative overflow-hidden">
+      <section className="py-20 sm:py-28 bg-[#160307] text-[#FAF5ED] relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white via-[#580C1F] to-black" />
 
-        <div className="relative z-10 max-w-[850px] mx-auto px-4 sm:px-6 text-center space-y-6">
-          <Quote className="w-12 h-12 text-[#dfc384]/30 mx-auto" />
+        <div className="relative z-10 max-w-[880px] mx-auto px-4 sm:px-8 text-center space-y-7">
+          <Quote className="w-12 h-12 text-[#D4AF37]/30 mx-auto" />
           
-          <span className="text-xs font-bold text-[#dfc384] tracking-widest uppercase block">
-            A Letter from the Founders
+          <span className="text-xs font-bold text-[#D4AF37] tracking-[0.25em] uppercase block">
+            A Message From Our Founders
           </span>
 
-          <blockquote className="font-serif text-lg sm:text-2xl text-white/95 font-medium italic leading-relaxed">
-            "When you order from Nari Pehnawa, you aren't just purchasing a piece of clothing — you are becoming a valued part of our dream. We pour our hearts into every stitch, every design, and every package. We promise to always uphold your trust with honesty, grace, and exquisite ethnic craftsmanship."
+          <blockquote className="font-serif text-lg sm:text-2xl lg:text-3xl text-white/95 font-medium italic leading-relaxed">
+            "When you choose Nari Pehnawa, you aren't just wearing an outfit — you are supporting our vision of female self-reliance and Indian craftsmanship. We promise to uphold your faith with integrity, grace, and exquisite ethnic creations."
           </blockquote>
 
           <div className="pt-4 space-y-1">
-            <h4 className="font-bold text-[#dfc384] tracking-widest text-base sm:text-lg">
+            <h4 className="font-bold text-[#EADBBE] tracking-widest text-base sm:text-lg">
               — Pooja Verma &amp; Ritika Singh
             </h4>
-            <p className="text-xs text-[#F7ECE1]/70 tracking-wider uppercase font-light">
+            <p className="text-xs text-[#FAF5ED]/70 tracking-widest uppercase font-light">
               Founders &amp; Owners, Nari Pehnawa
             </p>
           </div>
@@ -726,35 +787,35 @@ const OwnerPage = () => {
           <div className="pt-6">
             <Link
               to="/"
-              className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#d4af37] hover:bg-[#c49d2f] text-[#180407] font-bold text-sm rounded-full shadow-lg transition duration-200"
+              className="inline-flex items-center gap-2.5 px-8 sm:px-10 py-3.5 sm:py-4 bg-gradient-to-r from-[#D4AF37] to-[#C5A880] text-[#160307] font-bold text-sm sm:text-base rounded-full shadow-xl hover:shadow-2xl hover:brightness-105 transition duration-300"
             >
-              <span>Explore The Latest Collection</span>
+              <span>Explore The Boutique Collection</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ── EXECUTIVE FOOTER ── */}
-      <footer className="bg-[#100204] text-[#F7ECE1]/75 border-t border-[#580C1F]/40 py-10 px-4 sm:px-6">
-        <div className="max-w-[1240px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left text-xs">
+      {/* ── LUXURY MINIMAL FOOTER ── */}
+      <footer className="bg-[#100204] text-[#FAF5ED]/75 border-t border-[#580C1F]/40 py-10 px-4 sm:px-8">
+        <div className="max-w-[1320px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left text-xs">
           <div className="space-y-1">
             <span className="font-serif text-base font-bold text-white tracking-widest block">
               NARI PEHNAWA
             </span>
-            <p className="text-[11px] text-zinc-400">
-              Official Founders &amp; Ownership Portal • Founded by Pooja Verma &amp; Ritika Singh
+            <p className="text-[11px] text-stone-400">
+              Official Founders &amp; Ownership Portal • Founded &amp; Owned by Pooja Verma &amp; Ritika Singh
             </p>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-5 font-semibold text-zinc-300">
-            <Link to="/" className="hover:text-[#dfc384] transition">Home</Link>
-            <Link to="/new-arrivals" className="hover:text-[#dfc384] transition">New Arrivals</Link>
-            <Link to="/category/sale" className="hover:text-[#dfc384] transition">Sale</Link>
-            <Link to="/support/contact-us" className="hover:text-[#dfc384] transition">Contact Us</Link>
+          <div className="flex flex-wrap justify-center gap-6 font-semibold text-stone-300">
+            <Link to="/" className="hover:text-[#D4AF37] transition">Home</Link>
+            <Link to="/new-arrivals" className="hover:text-[#D4AF37] transition">New Arrivals</Link>
+            <Link to="/category/sale" className="hover:text-[#D4AF37] transition">Sale</Link>
+            <Link to="/support/contact-us" className="hover:text-[#D4AF37] transition">Contact Us</Link>
           </div>
 
-          <div className="text-[11px] text-zinc-500">
+          <div className="text-[11px] text-stone-500">
             © 2026 Nari Pehnawa. All Rights Reserved.
           </div>
         </div>
