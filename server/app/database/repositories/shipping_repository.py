@@ -37,6 +37,57 @@ class ShippingRepository:
 
         return await asyncio.to_thread(_fetch)
 
+    async def find_order_by_any_identifier(self, identifier: str) -> Optional[dict]:
+        clean_id = str(identifier).strip()
+        def _fetch():
+            # 1. Try by ObjectId
+            try:
+                doc = self.orders.find_one({"_id": ObjectId(clean_id)})
+                if doc:
+                    return doc
+            except Exception:
+                pass
+
+            # 2. Try by order_number (e.g. NP-1002, 1002, #1002)
+            variations = [
+                clean_id,
+                clean_id.lstrip("#"),
+                f"NP-{clean_id}",
+                clean_id.replace("NP-", "")
+            ]
+            for v in variations:
+                doc = self.orders.find_one({"order_number": {"$regex": f"^{v}$", "$options": "i"}})
+                if doc:
+                    return doc
+
+            # 3. Try by AWB
+            doc = self.orders.find_one({"shipping.awb": clean_id})
+            if doc:
+                return doc
+
+            # 4. Try by shipment_id or shiprocket_order_id
+            try:
+                int_id = int(clean_id)
+            except Exception:
+                int_id = None
+
+            q = [
+                {"shipping.shipment_id": clean_id},
+                {"shipping.shiprocket_order_id": clean_id}
+            ]
+            if int_id is not None:
+                q.extend([
+                    {"shipping.shipment_id": int_id},
+                    {"shipping.shiprocket_order_id": int_id}
+                ])
+            doc = self.orders.find_one({"$or": q})
+            if doc:
+                return doc
+
+            return None
+
+        return await asyncio.to_thread(_fetch)
+
     async def find_order_by_awb(self, awb: str) -> Optional[dict]:
         def _fetch():
             return self.orders.find_one({"shipping.awb": awb})

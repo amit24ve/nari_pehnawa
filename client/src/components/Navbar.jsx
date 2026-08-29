@@ -260,7 +260,7 @@ const Navbar = () => {
         }`}
     >
       {/* ══════════════════════════════════════
-          1.  DYNAMIC & INTERACTIVE TOP BAR
+          1.  DYNAMIC & CLEAN TOP BAR
       ══════════════════════════════════════ */}
       <div 
         className="relative w-full z-50 select-none border-b border-white/10" 
@@ -269,9 +269,9 @@ const Navbar = () => {
         {/* Desktop Layout */}
         <div className="hidden lg:flex items-center justify-between max-w-7xl mx-auto h-[36px] px-6 text-white text-[11px] font-medium tracking-wide">
           
-          {/* Left: Dynamic Rotating Promos */}
+          {/* Left: Clean Brand & Shipping Announcements */}
           <div className="flex items-center gap-4">
-            <div className="relative overflow-hidden h-[24px] min-w-[340px] flex items-center">
+            <div className="relative overflow-hidden h-[24px] min-w-[380px] flex items-center">
               {/* Slide 1 */}
               <div className={`absolute inset-0 flex items-center gap-2 transition-all duration-700 ease-in-out ${
                 currentPromoIndex === 0 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
@@ -284,46 +284,26 @@ const Navbar = () => {
               <div className={`absolute inset-0 flex items-center gap-2 transition-all duration-700 ease-in-out ${
                 currentPromoIndex === 1 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
               }`}>
-                <Gift className="w-3.5 h-3.5 text-[#FFE066] flex-shrink-0" />
-                <span>FLAT 10% OFF on 1st Order • Use Code: <strong className="text-[#FFE066]">FIRST10</strong></span>
+                <Sparkles className="w-3.5 h-3.5 text-[#FFE066] flex-shrink-0" />
+                <span>Handcrafted in Uttar Pradesh (Prayagraj &amp; Deoria) • Direct Weaver Heritage</span>
               </div>
 
               {/* Slide 3 */}
               <div className={`absolute inset-0 flex items-center gap-2 transition-all duration-700 ease-in-out ${
                 currentPromoIndex === 2 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
               }`}>
-                <Sparkles className="w-3.5 h-3.5 text-[#FFE066] flex-shrink-0" />
-                <span>Direct From UP Artisans • <Link to="/owner" className="underline font-bold text-[#FFE066] hover:text-white transition">Meet Founders</Link></span>
-              </div>
-
-              {/* Slide 4 */}
-              <div className={`absolute inset-0 flex items-center gap-2 transition-all duration-700 ease-in-out ${
-                currentPromoIndex === 3 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
-              }`}>
                 <RotateCcw className="w-3.5 h-3.5 text-[#FFE066] flex-shrink-0" />
-                <span>7 Days Easy Exchange • <strong className="text-[#FFE066]">COD Available</strong></span>
+                <span>7 Days Hassle-Free Exchange • <strong className="text-[#FFE066]">COD Available</strong></span>
               </div>
             </div>
-
-            <span className="w-px h-3.5 bg-white/20" />
-
-            {/* Quick 1-Click Coupon Copy Pill */}
-            <button
-              onClick={(e) => handleCopyCoupon("FIRST10", e)}
-              className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/25 text-[#FFE066] font-bold text-[10px] transition shadow-xs"
-              title="Click to copy coupon code for 10% discount"
-            >
-              <Tag className="w-3 h-3 text-[#FFE066]" />
-              <span>{copiedCoupon ? "Copied! 🎉" : "Code: FIRST10"}</span>
-            </button>
           </div>
 
-          {/* Right: Useful Interactive Action Tools */}
+          {/* Right: Interactive Utilities */}
           <div className="flex items-center gap-4">
             {/* Live Order Tracking Lookup */}
             <button
               onClick={() => setIsTrackingModalOpen(true)}
-              className="flex items-center gap-1.5 hover:text-[#FFE066] transition-colors"
+              className="flex items-center gap-1.5 hover:text-[#FFE066] transition-colors cursor-pointer"
             >
               <Truck className="w-3.5 h-3.5 text-[#FFE066]" />
               <span>Track Order</span>
@@ -331,17 +311,11 @@ const Navbar = () => {
 
             <span className="w-px h-3.5 bg-white/20" />
 
-            {/* WhatsApp Stylist Help */}
-            <a
-              href="https://wa.me/919876543210?text=Hello%20Nari%20Pehnawa%2C%20I%20need%20assistance%20with%20sizing%20and%20orders."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 hover:text-[#4ade80] transition-colors text-white"
-              title="Chat with our fashion stylist on WhatsApp"
-            >
-              <MessageCircle className="w-3.5 h-3.5 text-[#4ade80]" />
-              <span>WhatsApp Stylist</span>
-            </a>
+            {/* Meet Founders Link */}
+            <Link to="/owner" className="flex items-center gap-1.5 hover:text-[#FFE066] transition-colors">
+              <Sparkles className="w-3.5 h-3.5 text-[#FFE066]" />
+              <span>Meet Founders</span>
+            </Link>
 
             <span className="w-px h-3.5 bg-white/20" />
 
@@ -353,7 +327,7 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile/Tablet Layout (Interactive Rotating Banner) */}
+        {/* Mobile/Tablet Layout */}
         <div className="lg:hidden flex items-center justify-between h-[36px] px-3 text-center">
           <div className="relative w-full overflow-hidden h-full flex items-center justify-center">
             {/* Slide 1 */}
@@ -368,21 +342,13 @@ const Navbar = () => {
             <div className={`absolute inset-0 flex items-center justify-center gap-1.5 text-white text-[10.5px] font-medium transition-all duration-700 ease-in-out ${
               currentPromoIndex === 1 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
             }`}>
-              <Gift className="w-3 h-3 text-[#FFE066] flex-shrink-0" />
-              <span>Flat 10% OFF • Code: <strong className="text-[#FFE066]">FIRST10</strong></span>
+              <Sparkles className="w-3 h-3 text-[#FFE066] flex-shrink-0" />
+              <span><Link to="/owner" className="underline text-[#FFE066]">Meet Founders: Pooja &amp; Ritika</Link></span>
             </div>
 
             {/* Slide 3 */}
             <div className={`absolute inset-0 flex items-center justify-center gap-1.5 text-white text-[10.5px] font-medium transition-all duration-700 ease-in-out ${
               currentPromoIndex === 2 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
-            }`}>
-              <Sparkles className="w-3 h-3 text-[#FFE066] flex-shrink-0" />
-              <span><Link to="/owner" className="underline text-[#FFE066]">Meet Founders: Pooja &amp; Ritika</Link></span>
-            </div>
-
-            {/* Slide 4 */}
-            <div className={`absolute inset-0 flex items-center justify-center gap-1.5 text-white text-[10.5px] font-medium transition-all duration-700 ease-in-out ${
-              currentPromoIndex === 3 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
             }`}>
               <RotateCcw className="w-3 h-3 text-[#FFE066] flex-shrink-0" />
               <span>7 Days Exchange • <strong className="text-[#FFE066]">COD Available</strong></span>
@@ -557,52 +523,108 @@ const Navbar = () => {
                     onClick={() =>
                       setIsProfileDropdownOpen(!isProfileDropdownOpen)
                     }
-                    className="flex flex-col items-center gap-1 px-3.5 py-2 text-gray-600 hover:text-[#8B0000] transition-colors group"
+                    className="flex flex-col items-center gap-1 px-3 py-1.5 text-gray-700 hover:text-[#580C1F] transition-colors group cursor-pointer"
                   >
-                    <div className="w-8 h-8 rounded-full bg-[#8B0000] flex items-center justify-center text-white font-bold text-sm">
-                      {user.name?.charAt(0).toUpperCase() || "U"}
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#580C1F] to-[#8B0000] p-0.5 shadow-sm">
+                      <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-[#580C1F] font-bold text-xs">
+                        {user.name?.charAt(0).toUpperCase() || "U"}
+                      </div>
                     </div>
-                    <span className="text-[11px] font-semibold tracking-wide leading-none">
+                    <span className="text-[11px] font-bold tracking-wide leading-none flex items-center gap-0.5">
                       {user.name?.split(" ")[0] || "Account"}
+                      <ChevronDown className="w-2.5 h-2.5 text-gray-400 group-hover:text-[#580C1F] transition-transform" />
                     </span>
                   </button>
 
                   {isProfileDropdownOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50">
-                      <div className="flex items-center gap-3 px-5 py-4 bg-gradient-to-br from-[#fff5f5] to-white border-b border-gray-100">
-                        <div className="w-11 h-11 rounded-full bg-[#8B0000] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                          {user.name?.charAt(0).toUpperCase() ||
-                            user.email?.charAt(0).toUpperCase()}
+                    <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-stone-200 rounded-2xl shadow-2xl overflow-hidden z-50 animate-fadeIn">
+                      {/* Profile Card Header */}
+                      <div className="flex items-center gap-3 px-5 py-4 bg-gradient-to-br from-[#FAF5ED] to-white border-b border-stone-100">
+                        <div className="w-12 h-12 rounded-2xl bg-[#580C1F] flex items-center justify-center text-[#D4AF37] font-serif font-bold text-xl flex-shrink-0 shadow-md">
+                          {user.name?.charAt(0).toUpperCase() || "U"}
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-gray-900 truncate">
-                            {user.name || "User"}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-bold text-stone-900 truncate">
+                            {user.name || "Customer"}
                           </p>
-                          <p className="text-xs text-gray-400 truncate">
-                            {user.email}
+                          <p className="text-xs text-stone-400 truncate">
+                            {user.email || user.phone || "Verified Shopper"}
                           </p>
+                          <span className="inline-block mt-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#580C1F]/10 text-[#580C1F] uppercase tracking-wider">
+                            {user.role === "admin" || user.is_admin ? "Administrator" : "Verified Member"}
+                          </span>
                         </div>
                       </div>
-                      <div className="py-1">
-                        {(user.role === "admin" || user.is_admin
-                          ? adminMenuItems
-                          : userMenuItems
-                        ).map(({ to, icon, label }) => (
+
+                      {/* Menu List */}
+                      <div className="py-2">
+                        <Link
+                          to="/user/profile"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                          className="flex items-center gap-3 px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors"
+                        >
+                          <UserCircle className="w-4 h-4 text-stone-400" />
+                          <span>My Profile &amp; Address</span>
+                        </Link>
+
+                        <Link
+                          to="/user/orders"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                          className="flex items-center justify-between px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Package className="w-4 h-4 text-stone-400" />
+                            <span>My Orders &amp; History</span>
+                          </div>
+                          <span className="text-[10px] text-[#580C1F] font-bold bg-[#FAF0E6] px-2 py-0.5 rounded-full">
+                            Track
+                          </span>
+                        </Link>
+
+                        <Link
+                          to="/wishlist"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                          className="flex items-center justify-between px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Heart className="w-4 h-4 text-stone-400" />
+                            <span>My Wishlist</span>
+                          </div>
+                          {wishlistCount > 0 && (
+                            <span className="text-[10px] bg-[#580C1F] text-white px-1.5 py-0.2 rounded-full font-bold">
+                              {wishlistCount}
+                            </span>
+                          )}
+                        </Link>
+
+                        <button
+                          onClick={() => {
+                            setIsProfileDropdownOpen(false);
+                            setIsTrackingModalOpen(true);
+                          }}
+                          className="w-full flex items-center gap-3 px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors text-left cursor-pointer"
+                        >
+                          <Truck className="w-4 h-4 text-stone-400" />
+                          <span>Track A Shipment (AWB / Order ID)</span>
+                        </button>
+
+                        {(user.role === "admin" || user.is_admin) && (
                           <Link
-                            key={to}
-                            to={to}
+                            to="/admin/dashboard"
                             onClick={() => setIsProfileDropdownOpen(false)}
-                            className="flex items-center gap-3 px-5 py-2.5 text-[13px] text-gray-600 hover:bg-[#fff5f5] hover:text-[#8B0000] transition-colors"
+                            className="flex items-center gap-3 px-5 py-2.5 text-xs font-bold text-[#580C1F] bg-[#FAF0E6]/50 hover:bg-[#FAF0E6] transition-colors border-y border-stone-100"
                           >
-                            <span className="text-gray-400">{icon}</span>
-                            {label}
+                            <LayoutDashboard className="w-4 h-4 text-[#580C1F]" />
+                            <span>Admin Portal Dashboard</span>
                           </Link>
-                        ))}
+                        )}
+
                         <button
                           onClick={handleLogout}
-                          className="w-full flex items-center gap-3 px-5 py-2.5 text-[13px] text-red-600 hover:bg-red-50 border-t border-gray-100 transition-colors"
+                          className="w-full flex items-center gap-3 px-5 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 border-t border-stone-100 transition-colors mt-1 cursor-pointer"
                         >
-                          <LogOut className="w-4 h-4" /> Logout
+                          <LogOut className="w-4 h-4 text-red-500" />
+                          <span>Logout</span>
                         </button>
                       </div>
                     </div>

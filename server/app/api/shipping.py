@@ -817,66 +817,93 @@ async def bulk_sync_shipments(
     return {"success": True, "processed_count": len(payload.shipment_ids), "synced_count": success_count}
 
 
-@router.get("/track-public/{order_id}")
+@router.get("/track-public/{query}")
 async def track_shipment_public(
-    order_id: str,
+    query: str,
     sr: ShiprocketService = Depends(get_shiprocket_service),
     repo: ShippingRepository = Depends(get_shipping_repository),
 ):
     """
-    Public order tracking endpoint. No authorization required.
-    Does not expose sensitive backend fields, only returns customer-safe normalized tracking data.
+    Unified public order & shipment tracking endpoint.
+    Supports MongoDB Order ID, Order Number (NP-1002), Shiprocket AWB, or Shipment ID.
+    No authorization required. Returns customer-safe normalized tracking details.
     """
-    try:
-        ObjectId(order_id)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid order_id")
+    clean_query = query.strip()
+    order = await repo.find_order_by_any_identifier(clean_query)
 
-    order = await repo.get_order(order_id)
-    if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
+    if order:
+        shipping = order.get("shipping", {}) or {}
+        awb = shipping.get("awb")
 
-    shipping = order.get("shipping", {}) or {}
-    awb = shipping.get("awb")
+        if not awb:
+            return {
+                "order_number": order.get("order_number") or str(order.get("_id")),
+                "current_status": "Order Placed / Processing",
+                "shipment_status": "new",
+                "courier_name": shipping.get("courier_name") or "Standard Courier",
+                "tracking_history": []
+            }
 
-    if not awb:
-        return {
-            "order_number": order.get("order_number") or str(order.get("_id")),
-            "current_status": "Processing",
-            "shipment_status": "new",
-            "tracking_history": []
-        }
-
-    try:
-        raw = await sr.track_by_awb(awb)
-        summary = build_tracking_summary(awb, raw)
-        mapped_status = map_shiprocket_status(summary["current_status"])
-        
-        # Sync latest status back to DB
-        await repo.update_shipping_info(
-            str(order["_id"]),
-            ShippingInfo(
-                current_status=summary["current_status"],
-                shipment_status=mapped_status,
-                estimated_delivery=summary.get("estimated_delivery") or None,
-                delivered_date=summary.get("delivered_date") or None,
-            )
-        )
-        
-        # Mirror order status
-        order_status_map = {
-            "delivered": "delivered",
-            "in_transit": "shipped",
-            "out_for_delivery": "shipped",
-            "picked_up": "shipped",
-            "cancelled": "cancelled",
-        }
-        if mapped_status in order_status_map:
-            await repo.update_order_status(str(order["_id"]), order_status_map[mapped_status])
+        try:
+            raw = await sr.track_by_awb(awb)
+            summary = build_tracking_summary(awb, raw)
+            mapped_status = map_shiprocket_status(summary["current_status"])
             
+            # Sync latest status back to DB
+            await repo.update_shipping_info(
+                str(order["_id"]),
+                ShippingInfo(
+                    current_status=summary["current_status"],
+                    shipment_status=mapped_status,
+                    estimated_delivery=summary.get("estimated_delivery") or None,
+                    delivered_date=summary.get("delivered_date") or None,
+                )
+            )
+            
+            # Mirror order status
+            order_status_map = {
+                "delivered": "delivered",
+                "in_transit": "shipped",
+                "out_for_delivery": "shipped",
+                "picked_up": "shipped",
+                "cancelled": "cancelled",
+            }
+            if mapped_status in order_status_map:
+                await repo.update_order_status(str(order["_id"]), order_status_map[mapped_status])
+                
+            return {
+                "order_number": order.get("order_number") or str(order.get("_id")),
+                "awb": awb,
+                "current_status": summary["current_status"],
+                "shipment_status": mapped_status,
+                "courier_name": summary.get("courier_name"),
+                "estimated_delivery": summary.get("estimated_delivery"),
+                "delivered_date": summary.get("delivered_date"),
+                "tracking_url": summary.get("tracking_url"),
+                "tracking_history": summary.get("tracking_history")
+            }
+        except Exception:
+            # Fallback to local stored info
+            return {
+                "order_number": order.get("order_number") or str(order.get("_id")),
+                "awb": awb,
+                "current_status": shipping.get("current_status", "In Transit"),
+                "shipment_status": shipping.get("shipment_status", "shipped"),
+                "courier_name": shipping.get("courier_name"),
+                "estimated_delivery": shipping.get("estimated_delivery"),
+                "delivered_date": shipping.get("delivered_date"),
+                "tracking_url": shipping.get("tracking_url"),
+                "tracking_history": []
+            }
+
+    # If order is not directly matched in DB, attempt direct Shiprocket lookup by AWB / Shipment ID
+    try:
+        raw = await sr.track_by_awb(clean_query)
+        summary = build_tracking_summary(clean_query, raw)
+        mapped_status = map_shiprocket_status(summary["current_status"])
         return {
-            "order_number": order.get("order_number") or str(order.get("_id")),
-            "awb": awb,
+            "order_number": clean_query,
+            "awb": clean_query,
             "current_status": summary["current_status"],
             "shipment_status": mapped_status,
             "courier_name": summary.get("courier_name"),
@@ -886,15 +913,6 @@ async def track_shipment_public(
             "tracking_history": summary.get("tracking_history")
         }
     except Exception:
-        # Fallback to local stored info
-        return {
-            "order_number": order.get("order_number") or str(order.get("_id")),
-            "awb": awb,
-            "current_status": shipping.get("current_status", "Unknown"),
-            "shipment_status": shipping.get("shipment_status", "new"),
-            "courier_name": shipping.get("courier_name"),
-            "estimated_delivery": shipping.get("estimated_delivery"),
-            "delivered_date": shipping.get("delivered_date"),
-            "tracking_url": shipping.get("tracking_url"),
-            "tracking_history": []
-        }
+        pass
+
+    raise HTTPException(status_code=404, detail=f"No order or shipment found for '{clean_query}'. Please check your Order ID or Shiprocket AWB.")
