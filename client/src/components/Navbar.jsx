@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Search,
   User,
@@ -26,6 +26,11 @@ import {
   Headphones,
   Globe,
   ChevronDown,
+  MessageCircle,
+  Sparkles,
+  Check,
+  ArrowRight,
+  Copy
 } from "lucide-react";
 import LoginModal from "./LoginModal";
 import { useAuth } from "../context/AuthProvider";
@@ -36,6 +41,7 @@ import { trackCustomEvent } from "./VisitorTracker";
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
 const Navbar = () => {
+  const navigate = useNavigate();
   const { user, logout, isLoginModalOpen, openLoginModal, closeLoginModal, loginModalMode } = useAuth();
   const { wishlistCount } = useWishlist();
   const { cartCount } = useCart();
@@ -46,6 +52,16 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [categories, setCategories] = useState([]);
   const [searchProducts, setSearchProducts] = useState([]);
+  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
+  const [trackingOrderId, setTrackingOrderId] = useState("");
+  const [copiedCoupon, setCopiedCoupon] = useState(false);
+
+  const handleCopyCoupon = (code, e) => {
+    if (e) e.stopPropagation();
+    navigator.clipboard.writeText(code);
+    setCopiedCoupon(true);
+    setTimeout(() => setCopiedCoupon(false), 2200);
+  };
   // Mobile drawer submenu navigation (3 levels deep):
   //   null                  → top-level menu
   //   "new-arrivals"        → New Arrivals submenu (level 1)
@@ -244,96 +260,143 @@ const Navbar = () => {
         }`}
     >
       {/* ══════════════════════════════════════
-          1.  REDESIGNED TOP BAR
+          1.  DYNAMIC & INTERACTIVE TOP BAR
       ══════════════════════════════════════ */}
       <div 
         className="relative w-full z-50 select-none border-b border-white/10" 
-        style={{ background: "linear-gradient(90deg, #5B0612 0%, #7A0C1E 50%, #5B0612 100%)" }}
+        style={{ background: "linear-gradient(90deg, #4A0A16 0%, #680E21 50%, #4A0A16 100%)" }}
       >
         {/* Desktop Layout */}
         <div className="hidden lg:flex items-center justify-between max-w-7xl mx-auto h-[36px] px-6 text-white text-[11px] font-medium tracking-wide">
-          {/* Left: Promos */}
+          
+          {/* Left: Dynamic Rotating Promos */}
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5">
-              <Truck className="w-3.5 h-3.5 text-white" />
-              <span><span className="font-bold text-[#FFE066]">FREE</span> Shipping on Orders ₹999+</span>
-            </div>
-            <span className="w-px h-3 bg-white/20" />
-            <div className="flex items-center gap-1.5">
-              <RotateCcw className="w-3.5 h-3.5 text-white" />
-              <span>7 Days Easy Returns</span>
-            </div>
-            <span className="w-px h-3 bg-white/20" />
-            <div className="flex items-center gap-1.5">
-              <Gift className="w-3.5 h-3.5 text-white" />
-              <span>FLAT 10% OFF | <span className="font-bold text-[#FFE066]">Code: WELCOME10</span></span>
-            </div>
-            <span className="w-px h-3 bg-white/20" />
-            <div className="flex items-center gap-1.5">
-              <Star className="w-3.5 h-3.5 text-white fill-white" />
-              <span>25,000+ Happy Customers</span>
-            </div>
-          </div>
+            <div className="relative overflow-hidden h-[24px] min-w-[340px] flex items-center">
+              {/* Slide 1 */}
+              <div className={`absolute inset-0 flex items-center gap-2 transition-all duration-700 ease-in-out ${
+                currentPromoIndex === 0 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
+              }`}>
+                <Truck className="w-3.5 h-3.5 text-[#FFE066] flex-shrink-0" />
+                <span><strong className="text-[#FFE066]">FREE Express Shipping</strong> on Orders ₹999+ Across India</span>
+              </div>
 
-          {/* Right: Utilities */}
-          <div className="flex items-center gap-4">
-            <Link to="/user/orders" className="flex items-center gap-1.5 hover:text-[#FFE066] transition-colors">
-              <MapPin className="w-3.5 h-3.5 text-white" />
-              <span>Track Order</span>
-            </Link>
-            <span className="w-px h-3 bg-white/20" />
-            <Link to="/support/faqs" className="flex items-center gap-1.5 hover:text-[#FFE066] transition-colors">
-              <Headphones className="w-3.5 h-3.5 text-white" />
-              <span>Help Center</span>
-            </Link>
-            <span className="w-px h-3 bg-white/20" />
-            <div className="relative group cursor-pointer flex items-center gap-1.5">
-              <Globe className="w-3.5 h-3.5 text-white" />
-              <span><span className="font-bold text-[#FFE066]">English</span></span>
-              <ChevronDown className="w-3 h-3 text-white ml-0.5 transition-transform group-hover:rotate-180" />
-              {/* Dropdown Menu */}
-              <div className="absolute right-0 top-full pt-1 hidden group-hover:block z-50">
-                <div className="w-28 bg-white border border-gray-100 rounded-lg shadow-xl py-1 text-gray-800 text-xs">
-                  <button className="w-full text-left px-3 py-1.5 hover:bg-[#fff5f5] hover:text-[#8B0000] font-bold text-[#8B0000]">English</button>
-                  <button className="w-full text-left px-3 py-1.5 hover:bg-[#fff5f5] hover:text-[#8B0000]">Hindi</button>
-                </div>
+              {/* Slide 2 */}
+              <div className={`absolute inset-0 flex items-center gap-2 transition-all duration-700 ease-in-out ${
+                currentPromoIndex === 1 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
+              }`}>
+                <Gift className="w-3.5 h-3.5 text-[#FFE066] flex-shrink-0" />
+                <span>FLAT 10% OFF on 1st Order • Use Code: <strong className="text-[#FFE066]">FIRST10</strong></span>
+              </div>
+
+              {/* Slide 3 */}
+              <div className={`absolute inset-0 flex items-center gap-2 transition-all duration-700 ease-in-out ${
+                currentPromoIndex === 2 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
+              }`}>
+                <Sparkles className="w-3.5 h-3.5 text-[#FFE066] flex-shrink-0" />
+                <span>Direct From UP Artisans • <Link to="/owner" className="underline font-bold text-[#FFE066] hover:text-white transition">Meet Founders</Link></span>
+              </div>
+
+              {/* Slide 4 */}
+              <div className={`absolute inset-0 flex items-center gap-2 transition-all duration-700 ease-in-out ${
+                currentPromoIndex === 3 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
+              }`}>
+                <RotateCcw className="w-3.5 h-3.5 text-[#FFE066] flex-shrink-0" />
+                <span>7 Days Easy Exchange • <strong className="text-[#FFE066]">COD Available</strong></span>
               </div>
             </div>
+
+            <span className="w-px h-3.5 bg-white/20" />
+
+            {/* Quick 1-Click Coupon Copy Pill */}
+            <button
+              onClick={(e) => handleCopyCoupon("FIRST10", e)}
+              className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/25 text-[#FFE066] font-bold text-[10px] transition shadow-xs"
+              title="Click to copy coupon code for 10% discount"
+            >
+              <Tag className="w-3 h-3 text-[#FFE066]" />
+              <span>{copiedCoupon ? "Copied! 🎉" : "Code: FIRST10"}</span>
+            </button>
+          </div>
+
+          {/* Right: Useful Interactive Action Tools */}
+          <div className="flex items-center gap-4">
+            {/* Live Order Tracking Lookup */}
+            <button
+              onClick={() => setIsTrackingModalOpen(true)}
+              className="flex items-center gap-1.5 hover:text-[#FFE066] transition-colors"
+            >
+              <Truck className="w-3.5 h-3.5 text-[#FFE066]" />
+              <span>Track Order</span>
+            </button>
+
+            <span className="w-px h-3.5 bg-white/20" />
+
+            {/* WhatsApp Stylist Help */}
+            <a
+              href="https://wa.me/919876543210?text=Hello%20Nari%20Pehnawa%2C%20I%20need%20assistance%20with%20sizing%20and%20orders."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 hover:text-[#4ade80] transition-colors text-white"
+              title="Chat with our fashion stylist on WhatsApp"
+            >
+              <MessageCircle className="w-3.5 h-3.5 text-[#4ade80]" />
+              <span>WhatsApp Stylist</span>
+            </a>
+
+            <span className="w-px h-3.5 bg-white/20" />
+
+            {/* Helpline & Support */}
+            <Link to="/support/contact-us" className="flex items-center gap-1.5 hover:text-[#FFE066] transition-colors">
+              <Headphones className="w-3.5 h-3.5 text-[#FFE066]" />
+              <span>Help &amp; Support</span>
+            </Link>
           </div>
         </div>
 
-        {/* Mobile/Tablet Layout (Single Message Carousel) */}
-        <div className="lg:hidden flex items-center justify-center h-[34px] px-4 text-center">
+        {/* Mobile/Tablet Layout (Interactive Rotating Banner) */}
+        <div className="lg:hidden flex items-center justify-between h-[36px] px-3 text-center">
           <div className="relative w-full overflow-hidden h-full flex items-center justify-center">
             {/* Slide 1 */}
-            <div className={`absolute inset-0 flex items-center justify-center gap-2 text-white text-[10.5px] font-medium transition-all duration-700 ease-in-out ${
+            <div className={`absolute inset-0 flex items-center justify-center gap-1.5 text-white text-[10.5px] font-medium transition-all duration-700 ease-in-out ${
               currentPromoIndex === 0 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
             }`}>
-              <Truck className="w-3.5 h-3.5 text-white flex-shrink-0" />
-              <span><span className="font-bold text-[#FFE066]">FREE</span> Shipping on Orders ₹999+</span>
+              <Truck className="w-3 h-3 text-[#FFE066] flex-shrink-0" />
+              <span><strong className="text-[#FFE066]">FREE Shipping</strong> on Orders ₹999+</span>
             </div>
+
             {/* Slide 2 */}
-            <div className={`absolute inset-0 flex items-center justify-center gap-2 text-white text-[10.5px] font-medium transition-all duration-700 ease-in-out ${
+            <div className={`absolute inset-0 flex items-center justify-center gap-1.5 text-white text-[10.5px] font-medium transition-all duration-700 ease-in-out ${
               currentPromoIndex === 1 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
             }`}>
-              <RotateCcw className="w-3.5 h-3.5 text-white flex-shrink-0" />
-              <span>7 Days Easy Returns</span>
+              <Gift className="w-3 h-3 text-[#FFE066] flex-shrink-0" />
+              <span>Flat 10% OFF • Code: <strong className="text-[#FFE066]">FIRST10</strong></span>
             </div>
+
             {/* Slide 3 */}
-            <div className={`absolute inset-0 flex items-center justify-center gap-2 text-white text-[10.5px] font-medium transition-all duration-700 ease-in-out ${
+            <div className={`absolute inset-0 flex items-center justify-center gap-1.5 text-white text-[10.5px] font-medium transition-all duration-700 ease-in-out ${
               currentPromoIndex === 2 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
             }`}>
-              <Gift className="w-3.5 h-3.5 text-white flex-shrink-0" />
-              <span>FLAT 10% OFF | <span className="font-bold text-[#FFE066]">Code: WELCOME10</span></span>
+              <Sparkles className="w-3 h-3 text-[#FFE066] flex-shrink-0" />
+              <span><Link to="/owner" className="underline text-[#FFE066]">Meet Founders: Pooja &amp; Ritika</Link></span>
             </div>
+
             {/* Slide 4 */}
-            <div className={`absolute inset-0 flex items-center justify-center gap-2 text-white text-[10.5px] font-medium transition-all duration-700 ease-in-out ${
+            <div className={`absolute inset-0 flex items-center justify-center gap-1.5 text-white text-[10.5px] font-medium transition-all duration-700 ease-in-out ${
               currentPromoIndex === 3 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
             }`}>
-              <Star className="w-3.5 h-3.5 text-white fill-white flex-shrink-0" />
-              <span>25,000+ Happy Customers</span>
+              <RotateCcw className="w-3 h-3 text-[#FFE066] flex-shrink-0" />
+              <span>7 Days Exchange • <strong className="text-[#FFE066]">COD Available</strong></span>
             </div>
           </div>
+
+          {/* Mobile Track Order Quick Button */}
+          <button
+            onClick={() => setIsTrackingModalOpen(true)}
+            className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/10 text-[9.5px] text-[#FFE066] font-bold border border-white/20 ml-2"
+          >
+            <Truck className="w-2.5 h-2.5" />
+            Track
+          </button>
         </div>
       </div>
 
@@ -1106,6 +1169,79 @@ const Navbar = () => {
         isOpen={isLoginModalOpen}
         onClose={closeLoginModal}
       />
+
+      {/* ══════════════════════════════════════
+          INTERACTIVE ORDER TRACKING LOOKUP MODAL
+      ══════════════════════════════════════ */}
+      {isTrackingModalOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl max-w-md w-full p-6 space-y-4 animate-fadeIn text-stone-800">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-[#580C1F]/10 text-[#580C1F] flex items-center justify-center font-bold">
+                  <Truck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-serif text-lg font-bold text-[#580C1F]">Track Your Shipment</h3>
+                  <p className="text-[11px] text-stone-500">Enter your Order ID for real-time tracking</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsTrackingModalOpen(false)}
+                className="text-stone-400 hover:text-stone-700 p-1.5 hover:bg-stone-100 rounded-full transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (trackingOrderId.trim()) {
+                  setIsTrackingModalOpen(false);
+                  navigate(`/order-tracking/${encodeURIComponent(trackingOrderId.trim())}`);
+                }
+              }}
+              className="space-y-3.5"
+            >
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                  Order ID or Tracking Number
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. 1002 or NP-1002"
+                  value={trackingOrderId}
+                  onChange={(e) => setTrackingOrderId(e.target.value)}
+                  className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-sm text-stone-800 placeholder-stone-400 focus:outline-none focus:border-[#580C1F] focus:bg-white transition"
+                  autoFocus
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full py-3 bg-gradient-to-r from-[#580C1F] to-[#3D0814] hover:brightness-110 text-[#FDFBF7] font-bold text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2"
+              >
+                <span>Track Order Live</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+
+            {user && (
+              <div className="pt-2 border-t border-stone-100 text-center">
+                <Link
+                  to="/user/orders"
+                  onClick={() => setIsTrackingModalOpen(false)}
+                  className="text-xs text-[#580C1F] font-semibold hover:underline inline-flex items-center gap-1.5"
+                >
+                  <Package className="w-3.5 h-3.5" />
+                  <span>View Full Order History in My Account →</span>
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 };
