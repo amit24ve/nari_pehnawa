@@ -375,7 +375,34 @@ const Navbar = () => {
 
               {/* Desktop Search Dropdown */}
               {isSearchOpen && searchQuery.trim() && (
-                <div className="absolute top-[calc(100%+8px)] right-0 w-full min-w-[400px] bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-80 overflow-y-auto">
+                <div className="absolute top-[calc(100%+8px)] right-0 w-full min-w-[400px] bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-96 overflow-y-auto">
+                  {/* Founder / Owner Direct Search Match */}
+                  {["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) && (
+                    <Link
+                      to="/owner"
+                      onMouseDown={() => {
+                        setIsSearchOpen(false);
+                        setSearchQuery("");
+                      }}
+                      className="flex items-center gap-3 p-3.5 m-2 bg-gradient-to-r from-[#580C1F] to-[#2E0F15] text-[#F7ECE1] rounded-xl border border-[#d4af37]/40 shadow-md hover:brightness-110 transition"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-[#d4af37] text-[#580C1F] flex items-center justify-center font-bold text-base flex-shrink-0 shadow">
+                        👑
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[10px] font-bold text-[#dfc384] uppercase tracking-wider">
+                          Official Founders &amp; Owners
+                        </div>
+                        <div className="text-sm font-bold text-white truncate">
+                          Pooja Verma &amp; Ritika Singh
+                        </div>
+                      </div>
+                      <span className="text-xs text-[#dfc384] font-bold underline whitespace-nowrap">
+                        Meet Founders →
+                      </span>
+                    </Link>
+                  )}
+
                   {filteredProducts.length > 0 ? (
                     filteredProducts.map((p) => (
                       <button
@@ -402,7 +429,7 @@ const Navbar = () => {
                         </p>
                       </button>
                     ))
-                  ) : (
+                  ) : !["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) ? (
                     <div className="px-5 py-6 text-center text-sm text-gray-400">
                       No results for "
                       <span className="text-gray-700 font-medium">
@@ -410,7 +437,7 @@ const Navbar = () => {
                       </span>
                       "
                     </div>
-                  )}
+                  ) : null}
                 </div>
               )}
             </div>
@@ -671,7 +698,37 @@ const Navbar = () => {
               <X className="w-5 h-5" />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto p-2">
+            {/* Founder / Owner Direct Match for Mobile */}
+            {searchQuery.trim() && ["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) && (
+              <Link
+                to="/owner"
+                onClick={() => {
+                  setIsSearchOpen(false);
+                  setSearchQuery("");
+                }}
+                className="flex items-center gap-3 p-3 mb-2 bg-gradient-to-r from-[#580C1F] to-[#2E0F15] text-[#F7ECE1] rounded-2xl border border-[#d4af37]/40 shadow-md"
+              >
+                <div className="w-10 h-10 rounded-full bg-[#d4af37] text-[#580C1F] flex items-center justify-center font-bold text-base flex-shrink-0 shadow">
+                  👑
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] font-bold text-[#dfc384] uppercase tracking-wider">
+                    Official Founders &amp; Owners
+                  </div>
+                  <div className="text-sm font-bold text-white truncate">
+                    Pooja Verma &amp; Ritika Singh
+                  </div>
+                  <div className="text-[10px] text-[#dfc384]/80">
+                    Roots: Prayagraj &amp; Deoria, UP
+                  </div>
+                </div>
+                <span className="text-xs text-[#dfc384] font-bold underline whitespace-nowrap">
+                  View →
+                </span>
+              </Link>
+            )}
+
             {searchQuery.trim() && filteredProducts.length > 0 ? (
               filteredProducts.map((p) => (
                 <button
@@ -680,7 +737,7 @@ const Navbar = () => {
                     setIsSearchOpen(false);
                     setSearchQuery("");
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#fff5f5] border-b border-gray-100"
+                  className="w-full flex items-center gap-3 px-3 py-3 hover:bg-[#fff5f5] border-b border-gray-100 rounded-xl"
                 >
                   <img
                     src={p.image}
@@ -698,15 +755,15 @@ const Navbar = () => {
                   </p>
                 </button>
               ))
-            ) : searchQuery.trim() ? (
+            ) : searchQuery.trim() && !["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) ? (
               <div className="px-4 py-10 text-center text-gray-400 text-sm">
                 No results for "{searchQuery}"
               </div>
-            ) : (
-              <div className="px-4 py-6 text-sm text-gray-400">
+            ) : !searchQuery.trim() ? (
+              <div className="px-4 py-6 text-sm text-gray-400 text-center">
                 Start typing to search…
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       )}

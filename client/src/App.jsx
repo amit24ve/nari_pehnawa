@@ -301,10 +301,16 @@ function App() {
                                     element={<GoogleAuthCallback />}
                                 />
 
-                                {/* Standalone Owner & About pages - No Navbar/Footer */}
+                                {/* Standalone Owner, Founders, & About pages */}
                                 <Route path="/owner" element={<OwnerPage />} />
                                 <Route path="/about" element={<OwnerPage />} />
                                 <Route path="/about-us" element={<OwnerPage />} />
+                                <Route path="/founders" element={<OwnerPage />} />
+                                <Route path="/founder" element={<OwnerPage />} />
+                                <Route path="/who-is-the-owner-of-nari-pehnawa" element={<OwnerPage />} />
+                                <Route path="/nari-pehnawa-owner" element={<OwnerPage />} />
+                                <Route path="/nari-pehnawa-founder" element={<OwnerPage />} />
+                                <Route path="/malik" element={<OwnerPage />} />
 
                                 {/* All other routes with Navbar and Footer
                                     (this includes /user/* — the account
