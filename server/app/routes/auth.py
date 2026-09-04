@@ -44,6 +44,18 @@ class ForgotPasswordResetRequest(BaseModel):
     new_password: str
 
 
+@router.get("/check-email")
+def check_email(email: str):
+    """Check if an email already exists in the database"""
+    if not email or "@" not in email:
+        return {"exists": False}
+    db = get_database()
+    users = db["users"]
+    normalized_email = email.strip().lower()
+    user = users.find_one({"email": {"$regex": f"^{normalized_email}$", "$options": "i"}})
+    return {"exists": user is not None}
+
+
 @router.post("/send-otp")
 def send_otp(request: SendOTPRequest):
     """Send verification OTP to email during registration"""
