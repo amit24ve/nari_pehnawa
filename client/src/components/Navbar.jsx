@@ -42,7 +42,15 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:71
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { user, logout, isLoginModalOpen, openLoginModal, closeLoginModal, loginModalMode } = useAuth();
+  const {
+    user,
+    logout,
+    isLoginModalOpen,
+    openLoginModal,
+    closeLoginModal,
+    loginModalMode,
+    openAccountModal,
+  } = useAuth();
   const { wishlistCount } = useWishlist();
   const { cartCount } = useCart();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -558,19 +566,23 @@ const Navbar = () => {
 
                       {/* Menu List */}
                       <div className="py-2">
-                        <Link
-                          to="/user/profile"
-                          onClick={() => setIsProfileDropdownOpen(false)}
-                          className="flex items-center gap-3 px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors"
+                        <button
+                          onClick={() => {
+                            setIsProfileDropdownOpen(false);
+                            openAccountModal("profile");
+                          }}
+                          className="w-full flex items-center gap-3 px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors text-left cursor-pointer"
                         >
                           <UserCircle className="w-4 h-4 text-stone-400" />
                           <span>My Profile &amp; Address</span>
-                        </Link>
+                        </button>
 
-                        <Link
-                          to="/user/orders"
-                          onClick={() => setIsProfileDropdownOpen(false)}
-                          className="flex items-center justify-between px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors"
+                        <button
+                          onClick={() => {
+                            setIsProfileDropdownOpen(false);
+                            openAccountModal("orders");
+                          }}
+                          className="w-full flex items-center justify-between px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors text-left cursor-pointer"
                         >
                           <div className="flex items-center gap-3">
                             <Package className="w-4 h-4 text-stone-400" />
@@ -579,12 +591,14 @@ const Navbar = () => {
                           <span className="text-[10px] text-[#580C1F] font-bold bg-[#FAF0E6] px-2 py-0.5 rounded-full">
                             Track
                           </span>
-                        </Link>
+                        </button>
 
-                        <Link
-                          to="/wishlist"
-                          onClick={() => setIsProfileDropdownOpen(false)}
-                          className="flex items-center justify-between px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors"
+                        <button
+                          onClick={() => {
+                            setIsProfileDropdownOpen(false);
+                            openAccountModal("wishlist");
+                          }}
+                          className="w-full flex items-center justify-between px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors text-left cursor-pointer"
                         >
                           <div className="flex items-center gap-3">
                             <Heart className="w-4 h-4 text-stone-400" />
@@ -595,12 +609,12 @@ const Navbar = () => {
                               {wishlistCount}
                             </span>
                           )}
-                        </Link>
+                        </button>
 
                         <button
                           onClick={() => {
                             setIsProfileDropdownOpen(false);
-                            setIsTrackingModalOpen(true);
+                            openAccountModal("track");
                           }}
                           className="w-full flex items-center gap-3 px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors text-left cursor-pointer"
                         >
@@ -990,14 +1004,17 @@ const Navbar = () => {
                     </Link>
 
                     {/* TRACK ORDER */}
-                    <Link
-                      to="/user/orders"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center gap-2.5 px-5 py-3.5 text-sm font-bold uppercase tracking-wide text-[#8B0000] border-b border-gray-100 hover:bg-[#fff5f5] transition-colors"
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        if (user) openAccountModal("track");
+                        else setIsTrackingModalOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-5 py-3.5 text-sm font-bold uppercase tracking-wide text-[#8B0000] border-b border-gray-100 hover:bg-[#fff5f5] transition-colors text-left cursor-pointer"
                     >
                       <MapPin className="w-4 h-4 text-gray-500" />
-                      Track Order
-                    </Link>
+                      <span>Track Order</span>
+                    </button>
 
                     {/* HELP CENTER */}
                     <Link
@@ -1017,7 +1034,7 @@ const Navbar = () => {
                           setIsMobileMenuOpen(false);
                           openLoginModal("🔐 Please sign in or create an account to start shopping");
                         }}
-                        className="flex items-center gap-3 py-3.5 text-sm font-semibold text-gray-700 hover:text-[#8B0000] w-full border-b border-gray-100 text-left"
+                        className="flex items-center gap-3 py-3.5 text-sm font-semibold text-gray-700 hover:text-[#8B0000] w-full border-b border-gray-100 text-left cursor-pointer"
                       >
                         <UserCircle className="w-5 h-5 text-gray-400" /> Sign In / Register
                       </button>
@@ -1057,26 +1074,65 @@ const Navbar = () => {
                           </Link>
                         </>
                       ) : (
-                        <>
-                          {userMenuItems.map(({ to, icon, label }) => (
-                            <Link
-                              key={to}
-                              to={to}
-                              onClick={() => setIsMobileMenuOpen(false)}
-                              className="flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100"
-                            >
-                              <span className="text-gray-400">{icon}</span>
-                              {label}
-                            </Link>
-                          ))}
-                        </>
+                        <div className="space-y-1">
+                          <button
+                            onClick={() => {
+                              setIsMobileMenuOpen(false);
+                              openAccountModal("profile");
+                            }}
+                            className="w-full flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100 text-left cursor-pointer"
+                          >
+                            <User className="w-4 h-4 text-gray-400" />
+                            <span>My Profile &amp; Address</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsMobileMenuOpen(false);
+                              openAccountModal("orders");
+                            }}
+                            className="w-full flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100 text-left cursor-pointer"
+                          >
+                            <ShoppingBag className="w-4 h-4 text-gray-400" />
+                            <span>My Orders &amp; History</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsMobileMenuOpen(false);
+                              openAccountModal("addresses");
+                            }}
+                            className="w-full flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100 text-left cursor-pointer"
+                          >
+                            <MapPin className="w-4 h-4 text-gray-400" />
+                            <span>Delivery Addresses</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsMobileMenuOpen(false);
+                              openAccountModal("wishlist");
+                            }}
+                            className="w-full flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100 text-left cursor-pointer"
+                          >
+                            <Heart className="w-4 h-4 text-gray-400" />
+                            <span>My Wishlist</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsMobileMenuOpen(false);
+                              openAccountModal("security");
+                            }}
+                            className="w-full flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100 text-left cursor-pointer"
+                          >
+                            <Lock className="w-4 h-4 text-gray-400" />
+                            <span>Password &amp; Security</span>
+                          </button>
+                        </div>
                       )}
                       <button
                         onClick={() => {
                           handleLogout();
                           setIsMobileMenuOpen(false);
                         }}
-                        className="flex items-center gap-3 py-3 text-sm text-red-600 hover:text-red-700 w-full"
+                        className="flex items-center gap-3 py-3 text-sm text-red-600 hover:text-red-700 w-full cursor-pointer mt-2"
                       >
                         <LogOut className="w-4 h-4" /> Logout
                       </button>

@@ -8,6 +8,20 @@ export const AuthProvider = ({ children }) => {
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     const [loginNotice, setLoginNotice] = useState("");
     const [loginModalMode, setLoginModalMode] = useState("login"); // "login" | "signup" | "forgot"
+    
+    // Customer Account Modal (Flipkart/Amazon style unified popup)
+    const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+    const [accountModalTab, setAccountModalTab] = useState("profile"); // "profile" | "orders" | "addresses" | "track" | "wishlist" | "security"
+
+    const openAccountModal = (tab = "profile") => {
+        setAccountModalTab(tab);
+        setIsAccountModalOpen(true);
+    };
+
+    const closeAccountModal = () => {
+        setIsAccountModalOpen(false);
+    };
+
     const [pendingCheckout, setPendingCheckoutState] = useState(() => {
         try {
             const saved = localStorage.getItem("np_pending_checkout");
@@ -204,6 +218,10 @@ export const AuthProvider = ({ children }) => {
                 loginModalMode,
                 openLoginModal,
                 closeLoginModal,
+                isAccountModalOpen,
+                accountModalTab,
+                openAccountModal,
+                closeAccountModal,
                 setPendingCheckout,
                 clearPendingCheckout,
             }}

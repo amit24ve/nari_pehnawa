@@ -28,6 +28,7 @@ import GoogleAuthCallback from "./components/GoogleAuthCallback";
 import OwnerPage from "./components/OwnerPage";
 import SupportPages from "./components/SupportPages";
 import PublicOrderTracking from "./components/PublicOrderTracking";
+import CustomerAccountModal from "./components/CustomerAccountModal";
 import "./App.css";
 import AIChatbot from "./components/AIChatbot";
 import AdminLayout from "./admin/AdminLayout";
@@ -78,6 +79,7 @@ function MainLayout() {
     return (
         <div className="min-h-screen" style={{ backgroundColor: "#ffffff" }}>
             <Navbar />
+            <CustomerAccountModal />
             <VisitorTracker />
             <CookieConsent />
             {/* pt: mobile = promo(30)+bar(80) = 110px; md = +category strip(44) = 154px */}
