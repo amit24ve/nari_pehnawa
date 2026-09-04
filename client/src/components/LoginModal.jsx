@@ -150,33 +150,33 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
       ></div>
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 my-auto max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg sm:max-w-xl border border-gray-200 my-auto flex flex-col overflow-hidden animate-fadeIn">
         {/* Top accent bar */}
-        <div className="h-1 w-full bg-gradient-to-r from-[#8B0000] to-[#a52a2a] rounded-t-2xl"></div>
+        <div className="h-1.5 w-full bg-gradient-to-r from-[#8B0000] via-[#d4af37] to-[#8B0000] rounded-t-3xl"></div>
 
         {/* Close Button */}
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-all duration-300 z-20 bg-white"
+          className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-all duration-300 z-20 bg-white/90 backdrop-blur-sm border border-gray-100 shadow-sm"
           aria-label="Close"
         >
-          <X className="w-5 h-5 text-gray-500 hover:text-gray-800" />
+          <X className="w-4 h-4 text-gray-500 hover:text-gray-800" />
         </button>
 
         {/* Content */}
-        <div className="p-5 sm:p-6 overflow-y-auto flex-1">
+        <div className="p-5 sm:p-7 overflow-y-auto max-h-[92vh] flex-1">
           {/* Header */}
-          <div className="text-center mb-4 sm:mb-5">
+          <div className="text-center mb-3.5 sm:mb-4">
             {/* Logo */}
-            <div className="flex justify-center mb-2 sm:mb-3">
+            <div className="flex justify-center mb-2">
               <img
                 src="/logo.png"
                 alt="Nari Pehnawa"
-                className="h-10 sm:h-12 w-auto object-contain"
+                className="h-9 sm:h-10 w-auto object-contain"
               />
             </div>
             <h2
-              className="text-xl sm:text-2xl font-serif font-bold mb-1"
+              className="text-lg sm:text-2xl font-serif font-bold tracking-tight mb-0.5"
               style={{ color: "#8B0000" }}
             >
               {isForgotPassword
@@ -195,7 +195,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
           </div>
 
           {loginNotice && (
-            <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs font-semibold text-amber-950 flex items-start gap-2 shadow-sm">
+            <div className="mb-3 p-2.5 bg-amber-50 border border-amber-300 rounded-xl text-xs font-semibold text-amber-950 flex items-start gap-2 shadow-sm">
               <span className="text-base leading-none">🔐</span>
               <span className="leading-tight">{loginNotice}</span>
             </div>
@@ -454,7 +454,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
             <button
               type="submit"
               disabled={loading || sendingOtp}
-              className="w-full bg-[#8B0000] hover:bg-[#6B0000] text-white font-bold py-2.5 sm:py-3 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-md text-sm sm:text-base disabled:opacity-60"
+              className="w-full bg-[#8B0000] hover:bg-[#6B0000] text-white font-bold py-2.5 rounded-xl transition-all duration-300 shadow-md text-sm sm:text-base disabled:opacity-60"
             >
               {sendingOtp
                 ? "Sending OTP to Email..."
@@ -468,7 +468,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
             </button>
             {error && (
               <div
-                className={`text-sm mt-2 font-medium ${
+                className={`text-xs sm:text-sm mt-1 font-medium ${
                   error.includes("successfully") || error.includes("sent") || error.includes("successful")
                     ? "text-green-600"
                     : "text-red-600"
@@ -480,7 +480,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
           </form>
 
           {isForgotPassword ? (
-            <div className="text-center mt-4 sm:mt-5">
+            <div className="text-center mt-3 sm:mt-4">
               <button
                 type="button"
                 onClick={() => handleToggleForgotPassword(false)}
@@ -492,14 +492,14 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
           ) : (
             <>
               {/* Divider */}
-              <div className="flex items-center my-4 sm:my-5">
+              <div className="flex items-center my-3 sm:my-3.5">
                 <div className="flex-1 border-t border-gray-200"></div>
-                <span className="px-3 text-gray-400 text-xs sm:text-sm">OR</span>
+                <span className="px-3 text-gray-400 text-xs">OR</span>
                 <div className="flex-1 border-t border-gray-200"></div>
               </div>
 
               {/* Social Login */}
-              <div className="mt-4">
+              <div>
                 <button
                   type="button"
                   onClick={() => {
@@ -507,10 +507,10 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                       import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
                     window.location.href = `${API_URL}/auth/google/login`;
                   }}
-                  className="w-full flex items-center justify-center gap-2.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 py-2.5 px-4 rounded-xl transition-all duration-300 hover:scale-[1.02] shadow-sm font-semibold"
+                  className="w-full flex items-center justify-center gap-2.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 py-2.5 px-4 rounded-xl transition-all duration-300 shadow-sm font-semibold text-xs sm:text-sm"
                 >
                   <svg
-                    className="w-5 h-5 flex-shrink-0"
+                    className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
@@ -531,12 +531,12 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                       fill="#EA4335"
                     />
                   </svg>
-                  <span className="text-xs sm:text-sm">Sign in with Google</span>
+                  <span>Sign in with Google</span>
                 </button>
               </div>
 
               {/* Toggle Sign Up/Sign In */}
-              <div className="text-center mt-4 sm:mt-5">
+              <div className="text-center mt-3 sm:mt-3.5">
                 <p className="text-gray-500 text-xs sm:text-sm">
                   {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
                   <button
