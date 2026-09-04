@@ -16,13 +16,17 @@ import {
     Loader2,
     Download,
     Eye,
+    EyeOff,
     Phone,
     MapPin,
     Package,
     Truck,
     IndianRupee,
     ShoppingBag,
-    CheckCircle
+    CheckCircle,
+    Lock,
+    Key,
+    RefreshCw
 } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
@@ -31,6 +35,10 @@ const Users = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [showViewModal, setShowViewModal] = useState(false);
+    const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+    const [newPassword, setNewPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [resetSubmitting, setResetSubmitting] = useState(false);
     const [viewLoading, setViewLoading] = useState(false);
     const [viewDetails, setViewDetails] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
@@ -191,8 +199,64 @@ const Users = () => {
             email: user.email || "",
             role: user.role || "customer",
             status: user.is_active !== false ? "active" : "inactive",
+            password: "",
         });
+        setShowPassword(false);
         setShowEditModal(true);
+    };
+
+    const handleOpenResetPassword = (user) => {
+        setSelectedUser(user);
+        setNewPassword("");
+        setShowPassword(false);
+        setShowResetPasswordModal(true);
+    };
+
+    const handleGenerateRandomPassword = () => {
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
+        let pwd = "";
+        for (let i = 0; i < 10; i++) {
+            pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        setNewPassword(pwd);
+        setShowPassword(true);
+    };
+
+    const handleResetPasswordSubmit = async (e) => {
+        e.preventDefault();
+        if (!newPassword || newPassword.trim().length < 6) {
+            alert("Password must be at least 6 characters long");
+            return;
+        }
+
+        try {
+            setResetSubmitting(true);
+            const token = localStorage.getItem("neel_token") || localStorage.getItem("token");
+            const userId = selectedUser.id || selectedUser._id;
+
+            const response = await fetch(`${API_BASE_URL}/users/${userId}/reset-password`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ password: newPassword.trim() }),
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.detail || "Failed to reset password");
+            }
+
+            alert(`Password for ${selectedUser.name || selectedUser.email} has been reset successfully!`);
+            setShowResetPasswordModal(false);
+            setNewPassword("");
+        } catch (err) {
+            console.error("Error resetting password:", err);
+            alert("Failed to reset password: " + err.message);
+        } finally {
+            setResetSubmitting(false);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -200,26 +264,34 @@ const Users = () => {
         try {
             setSubmitting(true);
             const token = localStorage.getItem("neel_token") || localStorage.getItem("token");
+            const userId = selectedUser.id || selectedUser._id;
+
+            const payload = {
+                name: formData.name,
+                email: formData.email,
+                role: formData.role,
+                is_active: formData.status === "active",
+            };
+
+            if (formData.password && formData.password.trim().length >= 6) {
+                payload.password = formData.password.trim();
+            }
 
             const response = await fetch(
-                `${API_BASE_URL}/users/${selectedUser.id}`,
+                `${API_BASE_URL}/users/${userId}`,
                 {
                     method: "PUT",
                     headers: {
                         Authorization: `Bearer ${token}`,
                         "Content-Type": "application/json",
                     },
-                    body: JSON.stringify({
-                        name: formData.name,
-                        email: formData.email,
-                        role: formData.role,
-                        is_active: formData.status === "active",
-                    }),
+                    body: JSON.stringify(payload),
                 },
             );
 
             if (!response.ok) {
-                throw new Error("Failed to update user");
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.detail || "Failed to update user");
             }
 
             setShowEditModal(false);
@@ -584,6 +656,14 @@ const Users = () => {
                                                         <Edit className="w-3.5 h-3.5" />
                                                         Edit
                                                     </button>
+                                                    <button
+                                                        onClick={() => handleOpenResetPassword(user)}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl hover:bg-amber-600 hover:text-white transition text-xs font-bold shadow-xs"
+                                                        title="Set or Reset User Password"
+                                                    >
+                                                        <Key className="w-3.5 h-3.5" />
+                                                        Password
+                                                    </button>
                                                     {user.role !== "admin" && !user.is_admin && user.email !== "admin@naripehnawa.com" && (
                                                         <button
                                                             onClick={() => handleDelete(user.id)}
@@ -640,25 +720,32 @@ const Users = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex gap-2 pt-1">
+                                <div className="flex flex-wrap gap-2 pt-1">
                                     <button
                                         onClick={() => handleViewUser(user.id)}
-                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-cyan-50 text-[#0891b2] border border-cyan-200 rounded-xl hover:bg-[#0891b2] hover:text-white transition text-xs font-bold shadow-sm"
+                                        className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 px-3 py-2 bg-cyan-50 text-[#0891b2] border border-cyan-200 rounded-xl hover:bg-[#0891b2] hover:text-white transition text-xs font-bold shadow-sm"
                                     >
                                         <Eye className="w-4 h-4" />
                                         View
                                     </button>
                                     <button
                                         onClick={() => handleEdit(user)}
-                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-200 transition text-xs font-bold"
+                                        className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-200 transition text-xs font-bold"
                                     >
                                         <Edit className="w-4 h-4" />
                                         Edit
                                     </button>
+                                    <button
+                                        onClick={() => handleOpenResetPassword(user)}
+                                        className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl hover:bg-amber-600 hover:text-white transition text-xs font-bold"
+                                    >
+                                        <Key className="w-4 h-4" />
+                                        Password
+                                    </button>
                                     {user.role !== "admin" && !user.is_admin && user.email !== "admin@naripehnawa.com" && (
                                         <button
                                             onClick={() => handleDelete(user.id)}
-                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-xl hover:bg-red-600 hover:text-white transition text-xs font-bold"
+                                            className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-xl hover:bg-red-600 hover:text-white transition text-xs font-bold"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                             Delete
@@ -783,6 +870,30 @@ const Users = () => {
                                     <option value="active">Active</option>
                                     <option value="inactive">Inactive</option>
                                 </select>
+                            </div>
+
+                            {/* Optional Password Update Field */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex justify-between items-center">
+                                    <span>Set New Password (Optional)</span>
+                                    <span className="text-[11px] text-slate-400 font-normal">Leave blank to keep current</span>
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        value={formData.password || ""}
+                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-10 py-2.5 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-[#0891b2] focus:bg-white transition"
+                                        placeholder="Enter new password (min 6 chars)"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                    >
+                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Action Buttons */}
@@ -1045,6 +1156,101 @@ const Users = () => {
                                 Close
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Direct Reset Password Modal */}
+            {showResetPasswordModal && selectedUser && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full mx-4 shadow-2xl overflow-hidden animate-fadeIn">
+                        {/* Modal Header */}
+                        <div className="bg-gradient-to-r from-amber-500 to-amber-600 p-5 text-white flex justify-between items-center shadow-sm">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-white/20 rounded-xl">
+                                    <Key className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold">Reset Password</h3>
+                                    <p className="text-xs text-amber-100 mt-0.5">
+                                        For {selectedUser.full_name || selectedUser.name || selectedUser.email}
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowResetPasswordModal(false)}
+                                className="text-white/80 hover:text-white transition p-2 hover:bg-white/10 rounded-xl"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Form */}
+                        <form onSubmit={handleResetPasswordSubmit} className="p-5 space-y-4">
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-start gap-2">
+                                <Lock className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                                <span>
+                                    Enter a new password or generate a secure temporary password. Once saved, the user will be able to log in with this password immediately.
+                                </span>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                    New Password *
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        required
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-10 py-2.5 text-xs sm:text-sm text-slate-800 font-mono focus:outline-none focus:border-amber-500 focus:bg-white transition"
+                                        placeholder="Min 6 characters"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                    >
+                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={handleGenerateRandomPassword}
+                                className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 border border-slate-200"
+                            >
+                                <RefreshCw className="w-3.5 h-3.5" /> Generate Random Password
+                            </button>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowResetPasswordModal(false)}
+                                    disabled={resetSubmitting}
+                                    className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={resetSubmitting}
+                                    className="flex-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                                >
+                                    {resetSubmitting ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Resetting...
+                                        </>
+                                    ) : (
+                                        "Update Password"
+                                    )}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

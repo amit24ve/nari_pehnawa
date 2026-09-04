@@ -5,7 +5,7 @@ from datetime import datetime
 
 class ProductBase(BaseModel):
     name: str
-    brand: str = "Bunaai"
+    brand: str = "Nari Pehnawa"
     price: float
     original_price: Optional[float] = None
     discount: Optional[int] = None

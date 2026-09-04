@@ -355,6 +355,17 @@ def update_user(user_id: str, user_update: UserUpdate, current_user: dict = Depe
         # Prepare update data (exclude None values)
         update_data = {k: v for k, v in user_update.model_dump().items() if v is not None}
         
+        # Handle password update if passed
+        if "password" in update_data:
+            pwd = str(update_data.pop("password", "")).strip()
+            if pwd:
+                if len(pwd) < 6:
+                    raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
+                update_data["password_hash"] = get_password_hash(pwd)
+
+        if "role" in update_data:
+            update_data["is_admin"] = (update_data["role"] == "admin")
+
         if not update_data:
             raise HTTPException(status_code=400, detail="No fields to update")
         
@@ -373,6 +384,32 @@ def update_user(user_id: str, user_update: UserUpdate, current_user: dict = Depe
         updated_user.pop("password_hash", None)
         
         return updated_user
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{user_id}/reset-password")
+def admin_reset_user_password(user_id: str, payload: dict, current_user: dict = Depends(require_admin)):
+    """Admin endpoint to reset any user's password directly"""
+    db = get_database()
+    users_collection = db["users"]
+    try:
+        new_password = payload.get("password") or payload.get("new_password")
+        if not new_password or len(str(new_password).strip()) < 6:
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
+
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        users_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"password_hash": get_password_hash(str(new_password).strip())}}
+        )
+
+        return {"success": True, "message": "Password updated successfully"}
     except HTTPException:
         raise
     except Exception as e:

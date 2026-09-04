@@ -54,13 +54,9 @@ const Products = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
 
-    // Brands states
-    const [brands, setBrands] = useState([
-        { id: "b-1", name: "Nari Pehnawa", slug: "nari-pehnawa", count: 12, country: "India", status: "Active" },
-        { id: "b-2", name: "Bunaai", slug: "bunaai", count: 18, country: "India", status: "Active" },
-        { id: "b-3", name: "House of Chikankari", slug: "house-of-chikankari", count: 5, country: "India", status: "Active" },
-        { id: "b-4", name: "Sabyasachi", slug: "sabyasachi", count: 2, country: "India", status: "Inactive" }
-    ]);
+    // Brands states (Dynamic from Backend API)
+    const [brands, setBrands] = useState([]);
+    const [brandsLoading, setBrandsLoading] = useState(false);
     const [showAddBrandModal, setShowAddBrandModal] = useState(false);
     const [showEditBrandModal, setShowEditBrandModal] = useState(false);
     const [editingBrand, setEditingBrand] = useState(null);
@@ -148,8 +144,30 @@ const Products = () => {
         }
     };
 
+    const fetchBrands = async () => {
+        try {
+            setBrandsLoading(true);
+            const token = getAuthToken();
+            const res = await fetch(`${API_BASE_URL}/brands/admin/all`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setBrands(Array.isArray(data) ? data : []);
+            }
+        } catch (err) {
+            console.error("Error fetching brands:", err);
+        } finally {
+            setBrandsLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchProducts();
+        fetchBrands();
     }, []);
 
     // Inline stock editing
@@ -305,21 +323,37 @@ const Products = () => {
         }
     };
 
-    // Brand form submissions
-    const handleAddBrand = (e) => {
+    // Brand form submissions (Live CRUD with Backend API)
+    const handleAddBrand = async (e) => {
         e.preventDefault();
         if (!newBrand.name.trim()) return;
-        const brandObj = {
-            id: `b-${Date.now()}`,
-            name: newBrand.name,
-            slug: newBrand.name.toLowerCase().replace(/\s+/g, '-'),
-            count: 0,
-            country: newBrand.country || "India",
-            status: newBrand.status
-        };
-        setBrands(prev => [...prev, brandObj]);
-        setNewBrand({ name: "", country: "", status: "Active" });
-        setShowAddBrandModal(false);
+        try {
+            const token = getAuthToken();
+            const res = await fetch(`${API_BASE_URL}/brands/`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    name: newBrand.name.trim(),
+                    country: newBrand.country || "India",
+                    status: newBrand.status || "Active"
+                }),
+            });
+            if (res.ok) {
+                const createdBrand = await res.json();
+                setBrands(prev => [...prev, createdBrand]);
+                setNewBrand({ name: "", country: "", status: "Active" });
+                setShowAddBrandModal(false);
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                alert(errData.detail || "Failed to create brand");
+            }
+        } catch (err) {
+            console.error("Error adding brand:", err);
+            alert("Network error creating brand");
+        }
     };
 
     const handleEditBrand = (b) => {
@@ -328,32 +362,70 @@ const Products = () => {
         setShowEditBrandModal(true);
     };
 
-    const handleUpdateBrandSubmit = (e) => {
+    const handleUpdateBrandSubmit = async (e) => {
         e.preventDefault();
         if (!newBrand.name.trim() || !editingBrand) return;
+        const brandId = editingBrand.id || editingBrand._id;
         const oldName = editingBrand.name;
         const newName = newBrand.name.trim();
 
-        setBrands(prev => prev.map(b => b.id === editingBrand.id ? {
-            ...b,
-            name: newName,
-            slug: newName.toLowerCase().replace(/\s+/g, '-'),
-            country: newBrand.country || "India",
-            status: newBrand.status
-        } : b));
-
-        if (oldName !== newName) {
-            setProducts(prev => prev.map(p => p.brand === oldName ? { ...p, brand: newName } : p));
+        try {
+            const token = getAuthToken();
+            const res = await fetch(`${API_BASE_URL}/brands/${brandId}`, {
+                method: "PUT",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    name: newName,
+                    country: newBrand.country || "India",
+                    status: newBrand.status || "Active"
+                }),
+            });
+            if (res.ok) {
+                const updated = await res.json();
+                setBrands(prev => prev.map(b => (b.id === brandId || b._id === brandId) ? updated : b));
+                if (oldName !== newName) {
+                    setProducts(prev => prev.map(p => p.brand === oldName ? { ...p, brand: newName } : p));
+                }
+                setShowEditBrandModal(false);
+                setEditingBrand(null);
+                setNewBrand({ name: "", country: "", status: "Active" });
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                alert(errData.detail || "Failed to update brand");
+            }
+        } catch (err) {
+            console.error("Error updating brand:", err);
+            alert("Network error updating brand");
         }
-
-        setShowEditBrandModal(false);
-        setEditingBrand(null);
-        setNewBrand({ name: "", country: "", status: "Active" });
     };
 
-    const handleDeleteBrand = (id) => {
-        if (!window.confirm("Delete this brand?")) return;
-        setBrands(prev => prev.filter(b => b.id !== id));
+    const handleDeleteBrand = async (brandItem) => {
+        const brandId = typeof brandItem === "object" ? (brandItem.id || brandItem._id) : brandItem;
+        const brandName = typeof brandItem === "object" ? brandItem.name : "this brand";
+        if (!window.confirm(`Are you sure you want to delete brand "${brandName}"?`)) return;
+
+        try {
+            const token = getAuthToken();
+            const res = await fetch(`${API_BASE_URL}/brands/${brandId}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
+            if (res.ok) {
+                setBrands(prev => prev.filter(b => (b.id !== brandId && b._id !== brandId)));
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                alert(errData.detail || "Failed to delete brand");
+            }
+        } catch (err) {
+            console.error("Error deleting brand:", err);
+            alert("Network error deleting brand");
+        }
     };
 
     // Filter, Sort, Pagination computation
@@ -973,44 +1045,59 @@ const Products = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-800/40 text-gray-200">
-                                    {brands.map((b, idx) => {
-                                        const liveCount = products.filter(p => (p.brand || "").toLowerCase() === (b.name || "").toLowerCase()).length;
-                                        return (
-                                            <tr key={idx} className="hover:bg-gray-800/20 transition">
-                                                <td className="py-3.5 px-6 font-semibold text-white flex items-center gap-2">
-                                                    <Tag className="w-4 h-4 text-[#d4af37]" /> {b.name}
-                                                </td>
-                                                <td className="py-3.5 px-6 font-mono text-gray-400">{b.slug}</td>
-                                                <td className="py-3.5 px-6 font-mono text-gray-300">{liveCount || b.count || 0} listings</td>
-                                                <td className="py-3.5 px-6 text-gray-400">{b.country}</td>
-                                                <td className="py-3.5 px-6">
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                                        b.status === "Active" ? "bg-green-500/10 text-green-400 border border-green-500/20" : "bg-gray-500/10 text-gray-400 border border-gray-500/20"
-                                                    }`}>
-                                                        {b.status}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3.5 px-6 text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <button
-                                                            onClick={() => handleEditBrand(b)}
-                                                            className="p-2 bg-blue-600/10 text-blue-400 border border-blue-600/20 rounded-xl hover:bg-blue-600/20 transition"
-                                                            title="Edit Brand"
-                                                        >
-                                                            <Edit2 className="w-4 h-4" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDeleteBrand(b.id)}
-                                                            className="p-2 bg-red-600/10 text-red-400 border border-red-600/20 rounded-xl hover:bg-red-600/20 transition"
-                                                            title="Delete Brand"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
+                                    {brandsLoading && brands.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="6" className="py-8 text-center text-gray-400">
+                                                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-cyan-400" />
+                                                Loading brands...
+                                            </td>
+                                        </tr>
+                                    ) : brands.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="6" className="py-8 text-center text-gray-400">
+                                                No brands found. Click "Add Brand" above to register your brand.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        brands.map((b, idx) => {
+                                            const liveCount = products.filter(p => (p.brand || "").toLowerCase() === (b.name || "").toLowerCase()).length;
+                                            return (
+                                                <tr key={b.id || b._id || idx} className="hover:bg-gray-800/20 transition">
+                                                    <td className="py-3.5 px-6 font-semibold text-white flex items-center gap-2">
+                                                        <Tag className="w-4 h-4 text-[#d4af37]" /> {b.name}
+                                                    </td>
+                                                    <td className="py-3.5 px-6 font-mono text-gray-400">{b.slug}</td>
+                                                    <td className="py-3.5 px-6 font-mono text-gray-300">{liveCount || b.count || 0} listings</td>
+                                                    <td className="py-3.5 px-6 text-gray-400">{b.country}</td>
+                                                    <td className="py-3.5 px-6">
+                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                                            b.status === "Active" ? "bg-green-500/10 text-green-400 border border-green-500/20" : "bg-gray-500/10 text-gray-400 border border-gray-500/20"
+                                                        }`}>
+                                                            {b.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3.5 px-6 text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <button
+                                                                onClick={() => handleEditBrand(b)}
+                                                                className="p-2 bg-blue-600/10 text-blue-400 border border-blue-600/20 rounded-xl hover:bg-blue-600/20 transition"
+                                                                title="Edit Brand"
+                                                            >
+                                                                <Edit2 className="w-4 h-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeleteBrand(b)}
+                                                                className="p-2 bg-red-600/10 text-red-400 border border-red-600/20 rounded-xl hover:bg-red-600/20 transition"
+                                                                title="Delete Brand"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
                                 </tbody>
                             </table>
                         </div>

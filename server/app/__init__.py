@@ -28,6 +28,7 @@ from app.routes.wishlist import router as wishlist_router
 from app.routes.reels import router as reels_router
 from app.routes.celeb_looks import router as celeb_looks_router
 from app.routes.inquiries import router as inquiries_router
+from app.routes.brand import router as brand_router
 
 app = FastAPI(
     title="Nari Pehnawa API",
@@ -109,6 +110,7 @@ app.include_router(coupon_router)
 app.include_router(invoice_router)
 app.include_router(returns_router)
 app.include_router(exchange_router)
+app.include_router(brand_router)
 
 # Serve uploaded images as static files
 Path("uploads").mkdir(exist_ok=True)
