@@ -359,15 +359,45 @@ const AIChatbot = () => {
     ]);
   };
 
+  // Helper to render clean formatted message text without raw markdown
+  const renderCleanMessage = (text) => {
+    if (!text) return null;
+    const lines = text.split("\n");
+    return (
+      <div className="space-y-1">
+        {lines.map((line, lIdx) => {
+          if (!line.trim()) return <div key={lIdx} className="h-1.5" />;
+          const parts = line.split(/(\*\*.*?\*\*)/g);
+          return (
+            <div key={lIdx} className={line.trim().startsWith("•") ? "pl-2.5 flex items-start gap-1.5" : ""}>
+              <div className="flex-1">
+                {parts.map((part, pIdx) => {
+                  if (part.startsWith("**") && part.endsWith("**")) {
+                    return (
+                      <strong key={pIdx} className="font-bold text-[#580C1F]">
+                        {part.slice(2, -2)}
+                      </strong>
+                    );
+                  }
+                  return <span key={pIdx}>{part}</span>;
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="fixed bottom-4 sm:bottom-6 right-4 sm:right-6 z-50 flex flex-col items-end pointer-events-auto">
       {/* ══════════════════════════════════════
-          CHAT WINDOW MODAL (Responsive Mobile + Desktop)
+          CHAT WINDOW MODAL (100% Responsive Mobile + Desktop)
       ══════════════════════════════════════ */}
       {isOpen && (
         <div 
           ref={chatContainerRef}
-          className="w-[calc(100vw-32px)] sm:w-[390px] h-[540px] max-h-[85vh] bg-white rounded-3xl shadow-2xl border border-stone-200/80 flex flex-col overflow-hidden mb-3.5 transition-all duration-300 animate-fadeIn"
+          className="fixed inset-x-3 bottom-3 sm:static sm:inset-auto w-auto sm:w-[390px] h-[520px] max-h-[82vh] sm:max-h-[85vh] bg-white rounded-3xl shadow-2xl border border-stone-200/90 flex flex-col overflow-hidden mb-3.5 transition-all duration-300 animate-fadeIn z-50"
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-[#580C1F] via-[#8B0000] to-[#580C1F] px-4 py-3.5 flex items-center justify-between text-white shadow-md flex-shrink-0">
@@ -414,7 +444,7 @@ const AIChatbot = () => {
           </div>
 
           {/* Messages Body */}
-          <div className="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-3.5 bg-gradient-to-b from-stone-50/60 to-white scrollbar-thin">
+          <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 bg-gradient-to-b from-stone-50/60 to-white scrollbar-thin">
             {messages.map((msg) => (
               <div key={msg.id} className="space-y-2">
                 <div
@@ -441,10 +471,10 @@ const AIChatbot = () => {
                       className={`p-3 rounded-2xl text-xs leading-relaxed shadow-xs ${
                         msg.sender === "user"
                           ? "bg-[#8B0000] text-white rounded-tr-none font-medium"
-                          : "bg-white text-stone-800 border border-stone-200/80 rounded-tl-none whitespace-pre-line"
+                          : "bg-white text-stone-800 border border-stone-200/80 rounded-tl-none"
                       }`}
                     >
-                      {msg.text}
+                      {renderCleanMessage(msg.text)}
                     </div>
 
                     {/* Product Recommendation Cards (if any) */}

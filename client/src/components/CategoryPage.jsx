@@ -164,6 +164,8 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState(null);
   const [categoryInfo, setCategoryInfo] = useState(null);
+  const [flashSale, setFlashSale] = useState(null);
+  const [countdown, setCountdown] = useState({ hours: 0, minutes: 0, seconds: 0, isLive: false });
 
   // UI & Filter states
   const [sortBy, setSortBy] = useState("featured");
@@ -173,6 +175,42 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
   const [activeFilters, setActiveFilters] = useState({});
 
   const filterBarRef = useRef(null);
+
+  // ── Fetch Flash Sale details from Backend ──
+  useEffect(() => {
+    if (slug === "sale") {
+      fetch(`${API_BASE_URL}/admin/flash-sale`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data && data.key === "active_sale") {
+            setFlashSale(data);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [slug]);
+
+  // ── Live Countdown Interval ──
+  useEffect(() => {
+    if (slug === "sale" && flashSale && flashSale.end_time) {
+      const updateTimer = () => {
+        const now = new Date().getTime();
+        const end = new Date(flashSale.end_time).getTime();
+        const diff = end - now;
+        if (diff > 0) {
+          const hours = Math.floor((diff / (1000 * 60 * 60)));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+          setCountdown({ hours, minutes, seconds, isLive: true });
+        } else {
+          setCountdown({ hours: 0, minutes: 0, seconds: 0, isLive: false });
+        }
+      };
+      updateTimer();
+      const interval = setInterval(updateTimer, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [slug, flashSale]);
 
   // Close floating dropdowns when clicking outside
   useEffect(() => {
@@ -471,12 +509,40 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
             style={{ fontSize: "clamp(1.8rem, 5vw, 3.5rem)", lineHeight: 1.15 }}
           >
             <NariHeadingDecoration className="w-10 h-10 md:w-14 md:h-14" />
-            <span>{categoryInfo?.name || displayName}</span>
+            <span>{slug === "sale" ? (flashSale?.title || "Festive Flash Sale") : (categoryInfo?.name || displayName)}</span>
             <NariHeadingDecoration flip={true} className="w-10 h-10 md:w-14 md:h-14" />
           </h1>
 
-          {/* Tagline */}
-          {categoryInfo?.tagline ? (
+          {/* Tagline / Subtitle */}
+          {slug === "sale" ? (
+            <div className="space-y-3 max-w-xl mx-auto">
+              <p className="text-amber-200 text-sm md:text-base font-medium">
+                {flashSale?.subtitle || "Exclusive Limited-Time Discounts on Authentic Handcrafted Styles"}
+              </p>
+
+              {/* Live Countdown Timer (if active sale has end time) */}
+              {countdown.isLive && (
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-black/40 backdrop-blur-md border border-amber-300/40 shadow-lg text-white">
+                  <span className="text-amber-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                    <span>⏳</span> Sale Ends In:
+                  </span>
+                  <div className="flex items-center gap-1.5 font-mono font-bold text-sm md:text-base text-amber-300">
+                    <span className="bg-[#8B0000] px-2 py-0.5 rounded-lg border border-amber-300/30">
+                      {String(countdown.hours).padStart(2, "0")}h
+                    </span>
+                    <span>:</span>
+                    <span className="bg-[#8B0000] px-2 py-0.5 rounded-lg border border-amber-300/30">
+                      {String(countdown.minutes).padStart(2, "0")}m
+                    </span>
+                    <span>:</span>
+                    <span className="bg-[#8B0000] px-2 py-0.5 rounded-lg border border-amber-300/30 text-white animate-pulse">
+                      {String(countdown.seconds).padStart(2, "0")}s
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : categoryInfo?.tagline ? (
             <p className="text-white/75 text-sm md:text-base max-w-lg font-light">
               {categoryInfo.tagline}
             </p>
@@ -489,7 +555,7 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
           {/* CTA button */}
           <div className="mt-5 flex gap-3">
             <span className="inline-block bg-white text-[#8B0000] text-xs font-bold px-5 py-2.5 rounded-full shadow-lg tracking-wide">
-              Explore Collection
+              {slug === "sale" ? "Shop All Sale Deals ↓" : "Explore Collection"}
             </span>
           </div>
         </div>

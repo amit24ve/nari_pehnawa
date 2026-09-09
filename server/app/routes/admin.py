@@ -148,3 +148,148 @@ def update_delivery_settings(data: dict, current_user: dict = Depends(require_ad
         "free_delivery_order_count": free_count,
         "default_delivery_charge": default_charge
     }
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  FLASH SALE & FESTIVE EVENT MANAGER
+# ══════════════════════════════════════════════════════════════════════════
+
+@router.get("/flash-sale")
+def get_flash_sale_settings():
+    """Get active Flash Sale & Festive Event configuration (Public & Admin)"""
+    from datetime import datetime
+    db = get_database()
+    col = db["flash_sale"]
+    sale = col.find_one({"key": "active_sale"})
+    
+    now = datetime.now()
+    if not sale:
+        return {
+            "key": "active_sale",
+            "is_active": True,
+            "title": "Grand Festive Flash Sale",
+            "subtitle": "Exclusive Handcrafted Luxury Ethnic Wear",
+            "discount_percentage": 30,
+            "target_type": "all",  # "all" | "category" | "custom_products"
+            "target_category": "",
+            "target_product_ids": [],
+            "start_time": now.isoformat(),
+            "end_time": None,
+            "is_currently_live": True,
+            "seconds_remaining": 0
+        }
+    
+    # Calculate if currently live based on time window
+    is_active = bool(sale.get("is_active", False))
+    start_time_str = sale.get("start_time")
+    end_time_str = sale.get("end_time")
+    
+    is_currently_live = is_active
+    seconds_remaining = 0
+    
+    if end_time_str:
+        try:
+            end_dt = datetime.fromisoformat(end_time_str)
+            if now > end_dt:
+                is_currently_live = False
+            else:
+                seconds_remaining = max(0, int((end_dt - now).total_seconds()))
+        except Exception:
+            pass
+
+    if start_time_str:
+        try:
+            start_dt = datetime.fromisoformat(start_time_str)
+            if now < start_dt:
+                is_currently_live = False
+        except Exception:
+            pass
+
+    return {
+        "key": "active_sale",
+        "is_active": is_active,
+        "title": sale.get("title", "Grand Festive Flash Sale"),
+        "subtitle": sale.get("subtitle", "Exclusive Handcrafted Luxury Ethnic Wear"),
+        "discount_percentage": sale.get("discount_percentage", 30),
+        "target_type": sale.get("target_type", "all"),
+        "target_category": sale.get("target_category", ""),
+        "target_product_ids": sale.get("target_product_ids", []),
+        "start_time": start_time_str,
+        "end_time": end_time_str,
+        "is_currently_live": is_currently_live,
+        "seconds_remaining": seconds_remaining
+    }
+
+
+@router.put("/flash-sale")
+def update_flash_sale_settings(data: dict, current_user: dict = Depends(require_admin)):
+    """Configure & Activate Flash Sale / Event on Products or Categories (Admin only)"""
+    from datetime import datetime
+    from app.utils.cache import clear_api_cache
+    
+    db = get_database()
+    col = db["flash_sale"]
+    products_col = db["products"]
+    
+    is_active = bool(data.get("is_active", True))
+    title = str(data.get("title", "Grand Festive Flash Sale")).strip()
+    subtitle = str(data.get("subtitle", "Exclusive Handcrafted Luxury Ethnic Wear")).strip()
+    discount_percentage = int(data.get("discount_percentage", 30))
+    target_type = str(data.get("target_type", "all")) # "all" | "category" | "custom_products"
+    target_category = str(data.get("target_category", "")).strip()
+    target_product_ids = data.get("target_product_ids", [])
+    start_time = data.get("start_time")
+    end_time = data.get("end_time")
+    
+    sale_doc = {
+        "key": "active_sale",
+        "is_active": is_active,
+        "title": title,
+        "subtitle": subtitle,
+        "discount_percentage": discount_percentage,
+        "target_type": target_type,
+        "target_category": target_category,
+        "target_product_ids": target_product_ids,
+        "start_time": start_time,
+        "end_time": end_time,
+        "updated_at": datetime.now(),
+        "updated_by": current_user.get("email", "admin")
+    }
+    
+    col.update_one({"key": "active_sale"}, {"$set": sale_doc}, upsert=True)
+    
+    # Synchronize on_sale flag in products collection
+    affected_count = 0
+    if is_active:
+        if target_type == "all":
+            res = products_col.update_many({}, {"$set": {"on_sale": True}})
+            affected_count = res.modified_count
+        elif target_type == "category" and target_category:
+            # Reset non-matching first or mark matching
+            products_col.update_many({"category": {"$not": {"$regex": f"^{target_category}$", "$options": "i"}}}, {"$set": {"on_sale": False}})
+            res = products_col.update_many({"category": {"$regex": f"^{target_category}$", "$options": "i"}}, {"$set": {"on_sale": True}})
+            affected_count = res.modified_count
+        elif target_type == "custom_products" and target_product_ids:
+            obj_ids = []
+            for pid in target_product_ids:
+                try:
+                    obj_ids.append(ObjectId(pid))
+                except Exception:
+                    pass
+            products_col.update_many({"_id": {"$nin": obj_ids}}, {"$set": {"on_sale": False}})
+            res = products_col.update_many({"_id": {"$in": obj_ids}}, {"$set": {"on_sale": True}})
+            affected_count = res.modified_count
+    else:
+        # Sale deactivated - reset on_sale on products if desired, or keep as is
+        res = products_col.update_many({}, {"$set": {"on_sale": False}})
+        affected_count = res.modified_count
+        
+    clear_api_cache()
+    
+    return {
+        "success": True,
+        "message": f"Flash Sale '{title}' successfully updated! {affected_count} products updated.",
+        "sale": sale_doc,
+        "affected_products": affected_count
+    }
+

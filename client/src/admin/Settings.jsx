@@ -3,14 +3,31 @@ import {
   Store, IndianRupee, Bell, Save, Check, Mail, Phone, MapPin, Globe,
   CreditCard, Truck, AlertCircle, Image, Plus, Trash2, Edit3, Eye,
   EyeOff, GripVertical, Loader2, Link as LinkIcon, Tag, Gift, HelpCircle,
-  Megaphone, CheckCircle, XCircle, Download, FileText
+  Megaphone, CheckCircle, XCircle, Download, FileText, Flame, Clock, Sparkles,
+  Percent, Zap
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://naripehnawa.com:7100';
 
 const Settings = () => {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  const [activeTab, setActiveTab] = useState('store');
+  const [activeTab, setActiveTab] = useState('flash_sale');
+
+  /* ── Flash Sale & Event Manager state ── */
+  const [flashSaleConfig, setFlashSaleConfig] = useState({
+    is_active: true,
+    title: 'Grand Festive Flash Sale',
+    subtitle: 'Exclusive Handcrafted Luxury Ethnic Wear',
+    discount_percentage: 30,
+    target_type: 'all', // 'all' | 'category' | 'custom_products'
+    target_category: '',
+    target_product_ids: [],
+    start_time: '',
+    end_time: ''
+  });
+  const [flashSaleLoading, setFlashSaleLoading] = useState(false);
+  const [availableCategories, setAvailableCategories] = useState([]);
+  const [availableProducts, setAvailableProducts] = useState([]);
 
   /* ── Hero Slider state ──────────────────────────────────────── */
   const [slides, setSlides] = useState([]);
@@ -326,7 +343,79 @@ const Settings = () => {
     document.body.removeChild(link);
   };
 
+  /* ── Flash Sale & Event Manager Handlers ── */
+  const fetchFlashSaleConfig = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/flash-sale`, { headers: authHeaders() });
+      if (res.ok) {
+        const data = await res.json();
+        setFlashSaleConfig(data);
+      }
+    } catch (e) {
+      console.warn("Could not load flash sale config:", e);
+    }
+  };
+
+  const fetchCategoriesAndProducts = async () => {
+    try {
+      const [cRes, pRes] = await Promise.all([
+        fetch(`${API_BASE}/categories/?is_active=true`),
+        fetch(`${API_BASE}/products/?limit=100`)
+      ]);
+      if (cRes.ok) {
+        const cData = await cRes.json();
+        if (Array.isArray(cData)) setAvailableCategories(cData);
+      }
+      if (pRes.ok) {
+        const pData = await pRes.json();
+        if (Array.isArray(pData)) setAvailableProducts(pData);
+      }
+    } catch (e) {
+      console.warn("Could not load categories/products:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'flash_sale') {
+      fetchFlashSaleConfig();
+      fetchCategoriesAndProducts();
+    }
+    if (activeTab === 'slider') fetchSlides();
+  }, [activeTab]);
+
+  const applyDurationPreset = (hours) => {
+    const now = new Date();
+    const end = new Date(now.getTime() + hours * 60 * 60 * 1000);
+    setFlashSaleConfig(prev => ({
+      ...prev,
+      start_time: now.toISOString().slice(0, 16),
+      end_time: end.toISOString().slice(0, 16)
+    }));
+  };
+
+  const handleSaveFlashSale = async (e) => {
+    e.preventDefault();
+    setFlashSaleLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/admin/flash-sale`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify(flashSaleConfig)
+      });
+      if (!res.ok) throw new Error('Failed to save flash sale');
+      const data = await res.json();
+      showSuccess();
+      alert(`Flash Sale configuration saved successfully! ${data.affected_products || 0} products updated.`);
+      await fetchFlashSaleConfig();
+    } catch (e) {
+      alert(e.message || 'Error saving flash sale');
+    } finally {
+      setFlashSaleLoading(false);
+    }
+  };
+
   const tabs = [
+    { id: 'flash_sale', label: '⚡ Flash Sale & Events', icon: Flame },
     { id: 'store', label: 'Store Info', icon: Store },
     { id: 'pricing', label: 'Pricing', icon: IndianRupee },
     { id: 'notifications', label: 'Notifications', icon: Bell },
@@ -345,7 +434,7 @@ const Settings = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-800/40 pb-5">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">System Configuration</h1>
-          <p className="text-sm text-gray-400 mt-1">Configure catalogs, coupons, meta scripts, and help desks.</p>
+          <p className="text-sm text-gray-400 mt-1">Configure catalogs, flash sales, coupons, meta scripts, and help desks.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -387,6 +476,251 @@ const Settings = () => {
           })}
         </div>
       </div>
+
+      {/* TAB: FLASH SALE & FESTIVE EVENT MANAGER */}
+      {activeTab === 'flash_sale' && (
+        <form onSubmit={handleSaveFlashSale} className="space-y-6 text-xs text-left">
+          <div className="bg-gradient-to-br from-[#111827] to-[#1c1318] border-2 border-amber-500/30 rounded-2xl p-5 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-gray-800 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#8B0000] to-amber-500 flex items-center justify-center text-white shadow-md">
+                  <Flame className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                    Flash Sale &amp; Festive Event Manager
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      flashSaleConfig.is_active ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-gray-800 text-gray-400'
+                    }`}>
+                      {flashSaleConfig.is_active ? '● LIVE / ACTIVE' : 'INACTIVE'}
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-gray-400">Control timed flash sales, discounts, and target products/categories across the website.</p>
+                </div>
+              </div>
+
+              {/* Status Toggle */}
+              <label className="flex items-center gap-2 cursor-pointer bg-[#0b1220] px-4 py-2 rounded-xl border border-gray-800">
+                <input
+                  type="checkbox"
+                  checked={flashSaleConfig.is_active}
+                  onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, is_active: e.target.checked })}
+                  className="w-4 h-4 accent-amber-400 rounded cursor-pointer"
+                />
+                <span className="text-xs font-bold text-white">Enable Flash Sale</span>
+              </label>
+            </div>
+
+            {/* Live Store Preview Card */}
+            <div className="p-4 rounded-xl bg-gradient-to-r from-[#580C1F] via-[#8B0000] to-[#580C1F] border border-amber-300/40 text-white shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="space-y-1 text-center md:text-left">
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-400 text-[#8B0000] px-2 py-0.5 rounded-full uppercase">
+                  📢 Live Storefront Preview
+                </span>
+                <h4 className="text-lg font-serif font-bold text-white">
+                  {flashSaleConfig.title || "Festive Flash Sale"}
+                </h4>
+                <p className="text-xs text-amber-200">
+                  {flashSaleConfig.subtitle || "Limited-Time Exclusive Deals"}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 bg-black/40 px-4 py-2.5 rounded-xl border border-white/20">
+                <span className="text-xs font-bold text-amber-300">Discount:</span>
+                <span className="text-xl font-black text-white font-mono">{flashSaleConfig.discount_percentage}% OFF</span>
+              </div>
+            </div>
+
+            {/* Form Fields Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-400 mb-1 font-bold">Sale / Event Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Diwali Festive Flash Sale, Midnight Clearance"
+                  value={flashSaleConfig.title}
+                  onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, title: e.target.value })}
+                  className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-amber-400 font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-400 mb-1 font-bold">Promo Subtitle / Tagline</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Up to 50% Off on Handcrafted Kurtis"
+                  value={flashSaleConfig.subtitle}
+                  onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, subtitle: e.target.value })}
+                  className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+            </div>
+
+            {/* Quick Duration Presets & Timing */}
+            <div className="p-4 rounded-xl bg-[#0b1220] border border-gray-800 space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <Clock className="w-4 h-4" /> Quick Timer Presets:
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { label: "1 Hour", hours: 1 },
+                    { label: "2 Hours", hours: 2 },
+                    { label: "3 Hours", hours: 3 },
+                    { label: "6 Hours", hours: 6 },
+                    { label: "Today (24h)", hours: 24 },
+                    { label: "Weekend (48h)", hours: 48 },
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => applyDurationPreset(preset.hours)}
+                      className="px-2.5 py-1 bg-[#111827] hover:bg-amber-500 hover:text-black border border-gray-700 text-gray-200 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-gray-400 mb-1 font-semibold text-[11px]">Start Date &amp; Time</label>
+                  <input
+                    type="datetime-local"
+                    value={flashSaleConfig.start_time ? flashSaleConfig.start_time.slice(0, 16) : ""}
+                    onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, start_time: e.target.value })}
+                    className="w-full bg-[#111827] border border-gray-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-400 mb-1 font-semibold text-[11px]">End Date &amp; Time (Countdown Timer Target)</label>
+                  <input
+                    type="datetime-local"
+                    value={flashSaleConfig.end_time ? flashSaleConfig.end_time.slice(0, 16) : ""}
+                    onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, end_time: e.target.value })}
+                    className="w-full bg-[#111827] border border-gray-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Discount & Target Scope */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Discount % */}
+              <div className="bg-[#0b1220] p-4 rounded-xl border border-gray-800 space-y-2">
+                <label className="block text-gray-300 font-bold">Discount Percentage</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="5"
+                    max="80"
+                    step="5"
+                    value={flashSaleConfig.discount_percentage}
+                    onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, discount_percentage: Number(e.target.value) })}
+                    className="flex-1 accent-amber-400 cursor-pointer"
+                  />
+                  <span className="text-base font-extrabold text-amber-300 font-mono w-14 text-right">
+                    {flashSaleConfig.discount_percentage}%
+                  </span>
+                </div>
+                <p className="text-[10px] text-gray-500">Displayed on sale product badges &amp; banner.</p>
+              </div>
+
+              {/* Target Scope */}
+              <div className="md:col-span-2 bg-[#0b1220] p-4 rounded-xl border border-gray-800 space-y-3">
+                <label className="block text-gray-300 font-bold">Which Products To Put On Sale?</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: "all", label: "🌟 All Store Products" },
+                    { id: "category", label: "👗 Specific Category" },
+                    { id: "custom_products", label: "🏷️ Selected Products" }
+                  ].map((scope) => (
+                    <button
+                      key={scope.id}
+                      type="button"
+                      onClick={() => setFlashSaleConfig({ ...flashSaleConfig, target_type: scope.id })}
+                      className={`p-2.5 rounded-xl border text-center font-bold text-[11px] transition-all cursor-pointer ${
+                        flashSaleConfig.target_type === scope.id
+                          ? "bg-amber-500/20 border-amber-400 text-amber-300 shadow-sm"
+                          : "bg-[#111827] border-gray-850 text-gray-400 hover:text-gray-200"
+                      }`}
+                    >
+                      {scope.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Category Dropdown if target_type === category */}
+                {flashSaleConfig.target_type === "category" && (
+                  <div className="pt-2 animate-fadeIn">
+                    <label className="block text-gray-400 mb-1 font-semibold">Choose Category:</label>
+                    <select
+                      value={flashSaleConfig.target_category}
+                      onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, target_category: e.target.value })}
+                      className="w-full bg-[#111827] border border-gray-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400"
+                    >
+                      <option value="">-- Select a Category --</option>
+                      {availableCategories.map((cat) => (
+                        <option key={cat._id || cat.id} value={cat.name}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Custom Products Multi-Select if target_type === custom_products */}
+                {flashSaleConfig.target_type === "custom_products" && (
+                  <div className="pt-2 space-y-2 animate-fadeIn">
+                    <label className="block text-gray-400 font-semibold">
+                      Select Products ({flashSaleConfig.target_product_ids?.length || 0} selected):
+                    </label>
+                    <div className="max-h-48 overflow-y-auto bg-[#111827] border border-gray-700 rounded-xl p-2 space-y-1 scrollbar-thin">
+                      {availableProducts.map((p) => {
+                        const pid = p._id || p.id;
+                        const isChecked = flashSaleConfig.target_product_ids?.includes(pid);
+                        return (
+                          <label key={pid} className="flex items-center gap-2 p-1.5 hover:bg-gray-800 rounded-lg cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                const currentIds = flashSaleConfig.target_product_ids || [];
+                                const updated = e.target.checked
+                                  ? [...currentIds, pid]
+                                  : currentIds.filter(id => id !== pid);
+                                setFlashSaleConfig({ ...flashSaleConfig, target_product_ids: updated });
+                              }}
+                              className="w-3.5 h-3.5 accent-amber-400 rounded"
+                            />
+                            <span className="text-white truncate flex-1">{p.name}</span>
+                            <span className="text-amber-400 font-mono">₹{p.price}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <div className="pt-2 flex justify-end">
+              <button
+                type="submit"
+                disabled={flashSaleLoading}
+                className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold rounded-xl flex items-center gap-2 shadow-lg transition-all cursor-pointer disabled:opacity-50"
+              >
+                {flashSaleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flame className="w-4 h-4 fill-black" />}
+                <span>Save &amp; Launch Flash Sale</span>
+              </button>
+            </div>
+          </div>
+        </form>
+      )}
 
       {/* TAB: STORE INFO */}
       {activeTab === 'store' && (

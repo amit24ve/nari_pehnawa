@@ -362,37 +362,21 @@ const Navbar = () => {
               )}
             </div>
 
-            {/* ═ LIVE ANIMATED 3-STAGE SALE ANNOUNCEMENT BADGE ═ */}
+            {/* ═ LIVE SALE ANNOUNCEMENT BUTTON ═ */}
             <Link
               to="/category/sale"
-              className="relative hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#8B0000] via-[#c01525] to-[#8B0000] text-white shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 group border-2 border-amber-300/60 overflow-hidden flex-shrink-0 animate-pulse"
-              title="Click to explore Festive Mega Sale"
+              className="relative hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#8B0000] via-[#A01020] to-[#8B0000] text-white shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 group border border-amber-300/40 flex-shrink-0"
+              title="Explore Live Festive Sale"
             >
-              {/* Shimmer light sweep */}
-              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none" />
-
-              {/* Speaker / Megaphone icon with ringing motion */}
-              <div className="w-6 h-6 rounded-full bg-amber-400 text-[#8B0000] flex items-center justify-center font-black text-xs shadow-inner flex-shrink-0">
+              {/* Speaker / Announcement Icon */}
+              <div className="w-5 h-5 rounded-full bg-amber-400 text-[#8B0000] flex items-center justify-center font-bold text-xs shadow-inner flex-shrink-0 animate-pulse">
                 📢
               </div>
 
-              {/* 3 Animated SALE Announcement Tags */}
-              <div className="flex items-center gap-1 font-black text-xs tracking-wider">
-                <span className="bg-white text-[#8B0000] px-1.5 py-0.5 rounded text-[10px] font-black shadow-xs">
-                  SALE
-                </span>
-                <span className="bg-amber-300 text-[#8B0000] px-1.5 py-0.5 rounded text-[10px] font-black shadow-xs">
-                  SALE
-                </span>
-                <span className="bg-amber-100 text-[#8B0000] px-1.5 py-0.5 rounded text-[10px] font-black shadow-xs hidden lg:inline">
-                  SALE
-                </span>
-              </div>
-
-              <div className="hidden xl:flex items-center gap-1 text-[10px] font-bold text-amber-200 pl-1 border-l border-white/20 whitespace-nowrap">
-                <span>UP TO 70% OFF</span>
-                <span className="text-amber-300">🔥</span>
-              </div>
+              {/* Clean SALE Text */}
+              <span className="font-extrabold text-xs tracking-wider uppercase text-amber-200 group-hover:text-white transition-colors">
+                SALE
+              </span>
             </Link>
 
             {/* Thin separator — desktop */}
@@ -400,13 +384,13 @@ const Navbar = () => {
 
             {/* ═ Icon Group ═ */}
             <div className="flex items-center gap-1 sm:gap-2">
-              {/* Mobile: Compact Animated SALE Button */}
+              {/* Mobile: Clean SALE Button */}
               <Link
                 to="/category/sale"
-                className="md:hidden flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#8B0000] to-[#dc2626] text-white text-[10px] font-bold shadow-xs border border-amber-300/50 animate-pulse"
+                className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#8B0000] to-[#dc2626] text-white text-[11px] font-bold shadow-xs border border-amber-300/40"
               >
                 <span>📢</span>
-                <span className="font-extrabold text-[9.5px] tracking-wide">SALE</span>
+                <span className="font-bold tracking-wide text-amber-200">SALE</span>
               </Link>
 
               {/* Mobile: Search Icon */}
