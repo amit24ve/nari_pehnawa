@@ -28,7 +28,6 @@ import GoogleAuthCallback from "./components/GoogleAuthCallback";
 import OwnerPage from "./components/OwnerPage";
 import SupportPages from "./components/SupportPages";
 import PublicOrderTracking from "./components/PublicOrderTracking";
-import CustomerAccountModal from "./components/CustomerAccountModal";
 import "./App.css";
 import AIChatbot from "./components/AIChatbot";
 import AdminLayout from "./admin/AdminLayout";
@@ -69,7 +68,6 @@ function HomePage() {
             <WatchAndBuy />
             <CelebApprovedLooks />
             <AsFeaturedOn />
-            <AIChatbot />
         </>
     );
 }
@@ -79,11 +77,10 @@ function MainLayout() {
     return (
         <div className="min-h-screen" style={{ backgroundColor: "#ffffff" }}>
             <Navbar />
-            <CustomerAccountModal />
             <VisitorTracker />
             <CookieConsent />
-            {/* pt: mobile = promo(30)+bar(80) = 110px; md = +category strip(44) = 154px */}
-            <div className="pt-[110px] md:pt-[154px]">
+            {/* pt: mobile = header(80px); md = header(80px) + category strip(38px) = 118px */}
+            <div className="pt-[80px] md:pt-[118px]">
                 <Routes>
                     {/* Home Page */}
                     <Route path="/" element={<HomePage />} />
@@ -229,6 +226,7 @@ function MainLayout() {
                 </Routes>
             </div>
             <Footer />
+            <AIChatbot />
         </div>
     );
 }

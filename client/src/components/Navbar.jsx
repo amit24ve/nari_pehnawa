@@ -42,15 +42,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:71
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const {
-    user,
-    logout,
-    isLoginModalOpen,
-    openLoginModal,
-    closeLoginModal,
-    loginModalMode,
-    openAccountModal,
-  } = useAuth();
+  const { user, logout, isLoginModalOpen, openLoginModal, closeLoginModal, loginModalMode } = useAuth();
   const { wishlistCount } = useWishlist();
   const { cartCount } = useCart();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -168,8 +160,6 @@ const Navbar = () => {
       name: cat.name,
       path: buildCategoryPath(cat),
     })),
-    { divider: true },
-    { name: "SALE", path: "/category/sale", isSale: true },
   ];
 
   /* ── Search products fetched from API ── */
@@ -268,134 +258,27 @@ const Navbar = () => {
         }`}
     >
       {/* ══════════════════════════════════════
-          1.  DYNAMIC & CLEAN TOP BAR
-      ══════════════════════════════════════ */}
-      <div 
-        className="relative w-full z-50 select-none border-b border-white/10" 
-        style={{ background: "linear-gradient(90deg, #4A0A16 0%, #680E21 50%, #4A0A16 100%)" }}
-      >
-        {/* Desktop Layout */}
-        <div className="hidden lg:flex items-center justify-between max-w-7xl mx-auto h-[36px] px-6 text-white text-[11px] font-medium tracking-wide">
-          
-          {/* Left: Clean Brand & Shipping Announcements */}
-          <div className="flex items-center gap-4">
-            <div className="relative overflow-hidden h-[24px] min-w-[380px] flex items-center">
-              {/* Slide 1 */}
-              <div className={`absolute inset-0 flex items-center gap-2 transition-all duration-700 ease-in-out ${
-                currentPromoIndex === 0 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
-              }`}>
-                <Truck className="w-3.5 h-3.5 text-[#FFE066] flex-shrink-0" />
-                <span><strong className="text-[#FFE066]">FREE Express Shipping</strong> on Orders ₹999+ Across India</span>
-              </div>
-
-              {/* Slide 2 */}
-              <div className={`absolute inset-0 flex items-center gap-2 transition-all duration-700 ease-in-out ${
-                currentPromoIndex === 1 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
-              }`}>
-                <Sparkles className="w-3.5 h-3.5 text-[#FFE066] flex-shrink-0" />
-                <span>Handcrafted in Uttar Pradesh (Prayagraj &amp; Deoria) • Direct Weaver Heritage</span>
-              </div>
-
-              {/* Slide 3 */}
-              <div className={`absolute inset-0 flex items-center gap-2 transition-all duration-700 ease-in-out ${
-                currentPromoIndex === 2 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
-              }`}>
-                <RotateCcw className="w-3.5 h-3.5 text-[#FFE066] flex-shrink-0" />
-                <span>7 Days Hassle-Free Exchange • <strong className="text-[#FFE066]">COD Available</strong></span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Interactive Utilities */}
-          <div className="flex items-center gap-4">
-            {/* Live Order Tracking Lookup */}
-            <button
-              onClick={() => setIsTrackingModalOpen(true)}
-              className="flex items-center gap-1.5 hover:text-[#FFE066] transition-colors cursor-pointer"
-            >
-              <Truck className="w-3.5 h-3.5 text-[#FFE066]" />
-              <span>Track Order</span>
-            </button>
-
-            <span className="w-px h-3.5 bg-white/20" />
-
-            {/* Meet Founders Link */}
-            <Link to="/owner" className="flex items-center gap-1.5 hover:text-[#FFE066] transition-colors">
-              <Sparkles className="w-3.5 h-3.5 text-[#FFE066]" />
-              <span>Meet Founders</span>
-            </Link>
-
-            <span className="w-px h-3.5 bg-white/20" />
-
-            {/* Helpline & Support */}
-            <Link to="/support/contact-us" className="flex items-center gap-1.5 hover:text-[#FFE066] transition-colors">
-              <Headphones className="w-3.5 h-3.5 text-[#FFE066]" />
-              <span>Help &amp; Support</span>
-            </Link>
-          </div>
-        </div>
-
-        {/* Mobile/Tablet Layout */}
-        <div className="lg:hidden flex items-center justify-between h-[36px] px-3 text-center">
-          <div className="relative w-full overflow-hidden h-full flex items-center justify-center">
-            {/* Slide 1 */}
-            <div className={`absolute inset-0 flex items-center justify-center gap-1.5 text-white text-[10.5px] font-medium transition-all duration-700 ease-in-out ${
-              currentPromoIndex === 0 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
-            }`}>
-              <Truck className="w-3 h-3 text-[#FFE066] flex-shrink-0" />
-              <span><strong className="text-[#FFE066]">FREE Shipping</strong> on Orders ₹999+</span>
-            </div>
-
-            {/* Slide 2 */}
-            <div className={`absolute inset-0 flex items-center justify-center gap-1.5 text-white text-[10.5px] font-medium transition-all duration-700 ease-in-out ${
-              currentPromoIndex === 1 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
-            }`}>
-              <Sparkles className="w-3 h-3 text-[#FFE066] flex-shrink-0" />
-              <span><Link to="/owner" className="underline text-[#FFE066]">Meet Founders: Pooja &amp; Ritika</Link></span>
-            </div>
-
-            {/* Slide 3 */}
-            <div className={`absolute inset-0 flex items-center justify-center gap-1.5 text-white text-[10.5px] font-medium transition-all duration-700 ease-in-out ${
-              currentPromoIndex === 2 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
-            }`}>
-              <RotateCcw className="w-3 h-3 text-[#FFE066] flex-shrink-0" />
-              <span>7 Days Exchange • <strong className="text-[#FFE066]">COD Available</strong></span>
-            </div>
-          </div>
-
-          {/* Mobile Track Order Quick Button */}
-          <button
-            onClick={() => setIsTrackingModalOpen(true)}
-            className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/10 text-[9.5px] text-[#FFE066] font-bold border border-white/20 ml-2"
-          >
-            <Truck className="w-2.5 h-2.5" />
-            Track
-          </button>
-        </div>
-      </div>
-
-      {/* ══════════════════════════════════════
-          2.  MAIN BAR — Logo (left) | Search + Icons (right)
+          MAIN BAR — Logo (left) | Search + SALE Announcement (center) | Icons (right)
       ══════════════════════════════════════ */}
       <div className="bg-white border-b border-gray-100">
-        <div className="w-full pl-[30px] pr-4 xl:pr-8">
-          <div className="flex items-center justify-between h-[80px] gap-4">
+        <div className="w-full pl-3 sm:pl-[24px] pr-3 xl:pr-8">
+          <div className="flex items-center justify-between h-[80px] gap-3 md:gap-4">
             {/* ═ Logo — left ═ */}
             <Link to="/" className="flex-shrink-0">
               <img
                 src="/logo.png"
                 alt="Nari Pehnawa"
-                className="h-[66px] w-auto object-contain"
+                className="h-[56px] sm:h-[66px] w-auto object-contain"
               />
             </Link>
 
             {/* ═ Search Bar — flex-1 fills space between logo and icons ═ */}
-            <div className="relative hidden lg:flex flex-1 justify-center">
-              <div className="flex items-center border-2 border-gray-200 hover:border-[#8B0000] focus-within:border-[#8B0000] rounded-full overflow-hidden transition-all duration-200 bg-gray-50 focus-within:bg-white w-full max-w-[850px] mx-auto">
+            <div className="relative hidden lg:flex flex-1 justify-center max-w-[700px] mx-auto">
+              <div className="flex items-center border-2 border-gray-200 hover:border-[#8B0000] focus-within:border-[#8B0000] rounded-full overflow-hidden transition-all duration-200 bg-gray-50 focus-within:bg-white w-full">
                 <Search className="w-4 h-5 text-gray-400 ml-4 flex-shrink-0" />
                 <input
                   type="text"
-                  placeholder="Search Kurtis, Home Decor…"
+                  placeholder="Search Kurtis, Home Decor, Sarees…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchOpen(true)}
@@ -404,7 +287,7 @@ const Navbar = () => {
                 />
                 <button
                   onClick={() => setIsSearchOpen(true)}
-                  className="px-5 py-2.5 bg-[#8B0000] hover:bg-[#6B0000] text-white text-sm font-semibold transition-colors whitespace-nowrap"
+                  className="px-5 py-2.5 bg-[#8B0000] hover:bg-[#6B0000] text-white text-sm font-semibold transition-colors whitespace-nowrap cursor-pointer"
                 >
                   SEARCH
                 </button>
@@ -412,7 +295,7 @@ const Navbar = () => {
 
               {/* Desktop Search Dropdown */}
               {isSearchOpen && searchQuery.trim() && (
-                <div className="absolute top-[calc(100%+8px)] right-0 w-full min-w-[400px] bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-96 overflow-y-auto">
+                <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-96 overflow-y-auto">
                   {/* Founder / Owner Direct Search Match */}
                   {["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) && (
                     <Link
@@ -479,18 +362,60 @@ const Navbar = () => {
               )}
             </div>
 
+            {/* ═ LIVE ANIMATED 3-STAGE SALE ANNOUNCEMENT BADGE ═ */}
+            <Link
+              to="/category/sale"
+              className="relative hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#8B0000] via-[#c01525] to-[#8B0000] text-white shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 group border-2 border-amber-300/60 overflow-hidden flex-shrink-0 animate-pulse"
+              title="Click to explore Festive Mega Sale"
+            >
+              {/* Shimmer light sweep */}
+              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none" />
+
+              {/* Speaker / Megaphone icon with ringing motion */}
+              <div className="w-6 h-6 rounded-full bg-amber-400 text-[#8B0000] flex items-center justify-center font-black text-xs shadow-inner flex-shrink-0">
+                📢
+              </div>
+
+              {/* 3 Animated SALE Announcement Tags */}
+              <div className="flex items-center gap-1 font-black text-xs tracking-wider">
+                <span className="bg-white text-[#8B0000] px-1.5 py-0.5 rounded text-[10px] font-black shadow-xs">
+                  SALE
+                </span>
+                <span className="bg-amber-300 text-[#8B0000] px-1.5 py-0.5 rounded text-[10px] font-black shadow-xs">
+                  SALE
+                </span>
+                <span className="bg-amber-100 text-[#8B0000] px-1.5 py-0.5 rounded text-[10px] font-black shadow-xs hidden lg:inline">
+                  SALE
+                </span>
+              </div>
+
+              <div className="hidden xl:flex items-center gap-1 text-[10px] font-bold text-amber-200 pl-1 border-l border-white/20 whitespace-nowrap">
+                <span>UP TO 70% OFF</span>
+                <span className="text-amber-300">🔥</span>
+              </div>
+            </Link>
+
             {/* Thin separator — desktop */}
             <div className="hidden lg:block w-px h-9 bg-gray-200" />
 
             {/* ═ Icon Group ═ */}
-            <div className="flex items-center">
+            <div className="flex items-center gap-1 sm:gap-2">
+              {/* Mobile: Compact Animated SALE Button */}
+              <Link
+                to="/category/sale"
+                className="md:hidden flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#8B0000] to-[#dc2626] text-white text-[10px] font-bold shadow-xs border border-amber-300/50 animate-pulse"
+              >
+                <span>📢</span>
+                <span className="font-extrabold text-[9.5px] tracking-wide">SALE</span>
+              </Link>
+
               {/* Mobile: Search Icon */}
               <button
-                className="lg:hidden p-2.5 text-gray-600 hover:text-[#8B0000] transition-colors"
+                className="lg:hidden p-2 text-gray-600 hover:text-[#8B0000] transition-colors"
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
                 aria-label="Search"
               >
-                <Search className="w-7 h-7" />
+                <Search className="w-6 h-6 sm:w-7 sm:h-7" />
               </button>
 
               {/* Mobile: Wishlist Icon */}
@@ -566,23 +491,19 @@ const Navbar = () => {
 
                       {/* Menu List */}
                       <div className="py-2">
-                        <button
-                          onClick={() => {
-                            setIsProfileDropdownOpen(false);
-                            openAccountModal("profile");
-                          }}
-                          className="w-full flex items-center gap-3 px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors text-left cursor-pointer"
+                        <Link
+                          to="/user/profile"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                          className="flex items-center gap-3 px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors"
                         >
                           <UserCircle className="w-4 h-4 text-stone-400" />
                           <span>My Profile &amp; Address</span>
-                        </button>
+                        </Link>
 
-                        <button
-                          onClick={() => {
-                            setIsProfileDropdownOpen(false);
-                            openAccountModal("orders");
-                          }}
-                          className="w-full flex items-center justify-between px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors text-left cursor-pointer"
+                        <Link
+                          to="/user/orders"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                          className="flex items-center justify-between px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors"
                         >
                           <div className="flex items-center gap-3">
                             <Package className="w-4 h-4 text-stone-400" />
@@ -591,14 +512,12 @@ const Navbar = () => {
                           <span className="text-[10px] text-[#580C1F] font-bold bg-[#FAF0E6] px-2 py-0.5 rounded-full">
                             Track
                           </span>
-                        </button>
+                        </Link>
 
-                        <button
-                          onClick={() => {
-                            setIsProfileDropdownOpen(false);
-                            openAccountModal("wishlist");
-                          }}
-                          className="w-full flex items-center justify-between px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors text-left cursor-pointer"
+                        <Link
+                          to="/wishlist"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                          className="flex items-center justify-between px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors"
                         >
                           <div className="flex items-center gap-3">
                             <Heart className="w-4 h-4 text-stone-400" />
@@ -609,12 +528,12 @@ const Navbar = () => {
                               {wishlistCount}
                             </span>
                           )}
-                        </button>
+                        </Link>
 
                         <button
                           onClick={() => {
                             setIsProfileDropdownOpen(false);
-                            openAccountModal("track");
+                            setIsTrackingModalOpen(true);
                           }}
                           className="w-full flex items-center gap-3 px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors text-left cursor-pointer"
                         >
@@ -743,13 +662,6 @@ const Navbar = () => {
               {cat.name.toUpperCase()}
             </Link>
           ))}
-
-          <Link
-            to="/category/sale"
-            className="flex-shrink-0 flex items-center px-3 h-full text-[11px] font-black tracking-[0.08em] whitespace-nowrap text-[#dc2626] hover:bg-red-50 transition-all"
-          >
-            SALE
-          </Link>
 
           {/* ── Home Decor group ── */}
           {homeDecorCats.length > 0 && (
@@ -1004,17 +916,14 @@ const Navbar = () => {
                     </Link>
 
                     {/* TRACK ORDER */}
-                    <button
-                      onClick={() => {
-                        setIsMobileMenuOpen(false);
-                        if (user) openAccountModal("track");
-                        else setIsTrackingModalOpen(true);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-5 py-3.5 text-sm font-bold uppercase tracking-wide text-[#8B0000] border-b border-gray-100 hover:bg-[#fff5f5] transition-colors text-left cursor-pointer"
+                    <Link
+                      to="/user/orders"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-5 py-3.5 text-sm font-bold uppercase tracking-wide text-[#8B0000] border-b border-gray-100 hover:bg-[#fff5f5] transition-colors"
                     >
                       <MapPin className="w-4 h-4 text-gray-500" />
-                      <span>Track Order</span>
-                    </button>
+                      Track Order
+                    </Link>
 
                     {/* HELP CENTER */}
                     <Link
@@ -1034,7 +943,7 @@ const Navbar = () => {
                           setIsMobileMenuOpen(false);
                           openLoginModal("🔐 Please sign in or create an account to start shopping");
                         }}
-                        className="flex items-center gap-3 py-3.5 text-sm font-semibold text-gray-700 hover:text-[#8B0000] w-full border-b border-gray-100 text-left cursor-pointer"
+                        className="flex items-center gap-3 py-3.5 text-sm font-semibold text-gray-700 hover:text-[#8B0000] w-full border-b border-gray-100 text-left"
                       >
                         <UserCircle className="w-5 h-5 text-gray-400" /> Sign In / Register
                       </button>
@@ -1074,65 +983,26 @@ const Navbar = () => {
                           </Link>
                         </>
                       ) : (
-                        <div className="space-y-1">
-                          <button
-                            onClick={() => {
-                              setIsMobileMenuOpen(false);
-                              openAccountModal("profile");
-                            }}
-                            className="w-full flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100 text-left cursor-pointer"
-                          >
-                            <User className="w-4 h-4 text-gray-400" />
-                            <span>My Profile &amp; Address</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              setIsMobileMenuOpen(false);
-                              openAccountModal("orders");
-                            }}
-                            className="w-full flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100 text-left cursor-pointer"
-                          >
-                            <ShoppingBag className="w-4 h-4 text-gray-400" />
-                            <span>My Orders &amp; History</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              setIsMobileMenuOpen(false);
-                              openAccountModal("addresses");
-                            }}
-                            className="w-full flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100 text-left cursor-pointer"
-                          >
-                            <MapPin className="w-4 h-4 text-gray-400" />
-                            <span>Delivery Addresses</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              setIsMobileMenuOpen(false);
-                              openAccountModal("wishlist");
-                            }}
-                            className="w-full flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100 text-left cursor-pointer"
-                          >
-                            <Heart className="w-4 h-4 text-gray-400" />
-                            <span>My Wishlist</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              setIsMobileMenuOpen(false);
-                              openAccountModal("security");
-                            }}
-                            className="w-full flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100 text-left cursor-pointer"
-                          >
-                            <Lock className="w-4 h-4 text-gray-400" />
-                            <span>Password &amp; Security</span>
-                          </button>
-                        </div>
+                        <>
+                          {userMenuItems.map(({ to, icon, label }) => (
+                            <Link
+                              key={to}
+                              to={to}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className="flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100"
+                            >
+                              <span className="text-gray-400">{icon}</span>
+                              {label}
+                            </Link>
+                          ))}
+                        </>
                       )}
                       <button
                         onClick={() => {
                           handleLogout();
                           setIsMobileMenuOpen(false);
                         }}
-                        className="flex items-center gap-3 py-3 text-sm text-red-600 hover:text-red-700 w-full cursor-pointer mt-2"
+                        className="flex items-center gap-3 py-3 text-sm text-red-600 hover:text-red-700 w-full"
                       >
                         <LogOut className="w-4 h-4" /> Logout
                       </button>
