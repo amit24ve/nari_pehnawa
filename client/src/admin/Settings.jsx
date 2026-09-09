@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Store, IndianRupee, Save, Truck, Plus, Trash2,
-  Tag, Gift, Flame, Clock, Loader2, X, Download
+  Tag, Flame, Clock, Loader2, X, Download, Info
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://naripehnawa.com:7100';
@@ -31,7 +31,7 @@ const Settings = () => {
     Authorization: `Bearer ${localStorage.getItem('neel_token') || localStorage.getItem('token') || ''}`,
   });
 
-  // Base state fields
+  // Base store settings state
   const [storeSettings, setStoreSettings] = useState({
     storeName: 'Nari Pehnawa',
     tagline: 'Comfort Meets Everyday Elegance',
@@ -103,14 +103,6 @@ const Settings = () => {
   const [showCouponModal, setShowCouponModal] = useState(false);
   const [newCoupon, setNewCoupon] = useState({ code: "", type: "Percentage", discount: "", minCart: "", expiry: "", status: "Active" });
 
-  // Offers state
-  const [offers, setOffers] = useState([
-    { id: "o-1", name: "Monsoon Clearance Sale", banner: "https://picsum.photos/seed/offer1/800/300", discount: "Up to 50% OFF", status: "Active" },
-    { id: "o-2", name: "Festival Decor Discount", banner: "https://picsum.photos/seed/offer2/800/300", discount: "Flat 20% OFF", status: "Active" }
-  ]);
-  const [showOfferModal, setShowOfferModal] = useState(false);
-  const [newOffer, setNewOffer] = useState({ name: "", banner: "", discount: "", status: "Active" });
-
   const handleStoreSubmit = (e) => {
     e.preventDefault();
     showSuccess();
@@ -149,28 +141,6 @@ const Settings = () => {
   const handleDeleteCoupon = (id) => {
     if (!window.confirm("Delete this coupon?")) return;
     setCoupons(prev => prev.filter(c => c.id !== id));
-  };
-
-  // Offers triggers
-  const handleAddOffer = (e) => {
-    e.preventDefault();
-    if (!newOffer.name.trim()) return;
-    const offerObj = {
-      id: `o-${Date.now()}`,
-      name: newOffer.name,
-      banner: newOffer.banner || "https://picsum.photos/seed/offer/800/300",
-      discount: newOffer.discount,
-      status: newOffer.status
-    };
-    setOffers(prev => [...prev, offerObj]);
-    setNewOffer({ name: "", banner: "", discount: "", status: "Active" });
-    setShowOfferModal(false);
-    showSuccess();
-  };
-
-  const handleDeleteOffer = (id) => {
-    if (!window.confirm("Remove this offer campaign?")) return;
-    setOffers(prev => prev.filter(o => o.id !== id));
   };
 
   // Export CSV
@@ -260,11 +230,10 @@ const Settings = () => {
   };
 
   const tabs = [
-    { id: 'flash_sale', label: '⚡ Flash Sale & Events', icon: Flame },
-    { id: 'store', label: 'Store Info', icon: Store },
-    { id: 'pricing', label: 'Pricing & Delivery', icon: IndianRupee },
-    { id: 'coupons', label: 'Coupons', icon: Tag },
-    { id: 'offers', label: 'Offers & Campaigns', icon: Gift },
+    { id: 'flash_sale', label: '⚡ Flash Sale & Events', icon: Flame, description: 'Live Flash sale, timer, discount % & product targeting' },
+    { id: 'store', label: 'Store Info', icon: Store, description: 'Branding, contact info & store address' },
+    { id: 'pricing', label: 'Pricing & Delivery', icon: IndianRupee, description: 'Currency, tax & automated free delivery rules' },
+    { id: 'coupons', label: 'Coupons & Promo Codes', icon: Tag, description: 'Discount codes, usage tracking & cart thresholds' },
   ];
 
   return (
@@ -274,7 +243,7 @@ const Settings = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-800/40 pb-5">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">System Configuration</h1>
-          <p className="text-sm text-gray-400 mt-1">Configure catalogs, flash sales &amp; events, store details, delivery charges, coupons, and offers.</p>
+          <p className="text-sm text-gray-400 mt-1">Manage global website settings: Flash Sales, Store Branding, Free Delivery Rules, and Promo Coupons.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -317,10 +286,12 @@ const Settings = () => {
         </div>
       </div>
 
-      {/* TAB: FLASH SALE & FESTIVE EVENT MANAGER */}
+      {/* TAB 1: FLASH SALE & FESTIVE EVENT MANAGER */}
       {activeTab === 'flash_sale' && (
         <form onSubmit={handleSaveFlashSale} className="space-y-6 text-xs text-left">
           <div className="bg-gradient-to-br from-[#111827] to-[#1c1318] border-2 border-amber-500/30 rounded-2xl p-5 shadow-2xl space-y-5">
+            
+            {/* Header & Purpose info */}
             <div className="flex items-center justify-between border-b border-gray-800 pb-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#8B0000] to-amber-500 flex items-center justify-center text-white shadow-md">
@@ -335,7 +306,9 @@ const Settings = () => {
                       {flashSaleConfig.is_active ? '● LIVE / ACTIVE' : 'INACTIVE'}
                     </span>
                   </h3>
-                  <p className="text-[11px] text-gray-400">Control timed flash sales, discounts, and target products/categories across the website.</p>
+                  <p className="text-[11px] text-gray-400">
+                    <strong className="text-amber-300">Purpose:</strong> Set live timed flash sales, countdown timers, custom discounts, and select which products/categories to put on sale.
+                  </p>
                 </div>
               </div>
 
@@ -355,7 +328,7 @@ const Settings = () => {
             <div className="p-4 rounded-xl bg-gradient-to-r from-[#580C1F] via-[#8B0000] to-[#580C1F] border border-amber-300/40 text-white shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="space-y-1 text-center md:text-left">
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-400 text-[#8B0000] px-2 py-0.5 rounded-full uppercase">
-                  📢 Live Storefront Preview
+                  📢 Live Storefront Preview (Shown on /category/sale)
                 </span>
                 <h4 className="text-lg font-serif font-bold text-white">
                   {flashSaleConfig.title || "Festive Flash Sale"}
@@ -466,7 +439,7 @@ const Settings = () => {
                     {flashSaleConfig.discount_percentage}%
                   </span>
                 </div>
-                <p className="text-[10px] text-gray-500">Displayed on sale product badges &amp; banner.</p>
+                <p className="text-[10px] text-gray-500">Applied across all selected sale products.</p>
               </div>
 
               {/* Target Scope */}
@@ -562,13 +535,18 @@ const Settings = () => {
         </form>
       )}
 
-      {/* TAB: STORE INFO */}
+      {/* TAB 2: STORE INFO */}
       {activeTab === 'store' && (
         <form onSubmit={handleStoreSubmit} className="space-y-6 text-xs text-left">
           <div className="bg-gradient-to-br from-[#111827] to-[#1a2332] border border-gray-800/50 rounded-2xl p-5 shadow-lg space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-gray-800 pb-3">
-              <Store className="w-4 h-4 text-[#d4af37]" /> Store General Information
-            </h3>
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-gray-800 pb-3">
+                <Store className="w-4 h-4 text-[#d4af37]" /> Store General Information
+              </h3>
+              <p className="text-[11px] text-gray-400 mt-2">
+                <strong className="text-amber-300">Purpose:</strong> Configure official store branding, customer support hotline, email, and registered address shown on invoices and footer.
+              </p>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -631,13 +609,18 @@ const Settings = () => {
         </form>
       )}
 
-      {/* TAB: PRICING & DELIVERY */}
+      {/* TAB 3: PRICING & DELIVERY */}
       {activeTab === 'pricing' && (
         <form onSubmit={handlePricingSubmit} className="space-y-6 text-xs text-left">
           <div className="bg-gradient-to-br from-[#111827] to-[#1a2332] border border-gray-800/50 rounded-2xl p-5 shadow-lg space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-gray-800 pb-3">
-              <IndianRupee className="w-4 h-4 text-[#d4af37]" /> Currency &amp; Pricing Rules
-            </h3>
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-gray-800 pb-3">
+                <IndianRupee className="w-4 h-4 text-[#d4af37]" /> Currency &amp; Pricing Rules
+              </h3>
+              <p className="text-[11px] text-gray-400 mt-2">
+                <strong className="text-amber-300">Purpose:</strong> Set store currency symbols, GST tax percentages, standard flat shipping charges, and the cart value threshold for free shipping.
+              </p>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -687,9 +670,14 @@ const Settings = () => {
           </div>
 
           <div className="bg-gradient-to-br from-[#111827] to-[#1a2332] border border-gray-800/50 rounded-2xl p-5 shadow-lg space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-gray-800 pb-3">
-              <Truck className="w-4 h-4 text-[#d4af37]" /> Free Delivery Rules for Customers (1st, 2nd, 3rd Orders)
-            </h3>
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-gray-800 pb-3">
+                <Truck className="w-4 h-4 text-[#d4af37]" /> Free Delivery Rules for Customers (1st, 2nd, 3rd Orders)
+              </h3>
+              <p className="text-[11px] text-gray-400 mt-2">
+                <strong className="text-amber-300">Purpose:</strong> Automate marketing incentive by giving first-time customers free shipping on their first 1, 2, or 3 orders.
+              </p>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -740,11 +728,16 @@ const Settings = () => {
         </form>
       )}
 
-      {/* TAB: COUPONS */}
+      {/* TAB 4: COUPONS */}
       {activeTab === 'coupons' && (
         <div className="space-y-6 text-xs text-left">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white">Active Promotional Coupon Codes</h3>
+            <div>
+              <h3 className="text-sm font-bold text-white">Active Promotional Coupon Codes</h3>
+              <p className="text-[11px] text-gray-400 mt-1">
+                <strong className="text-amber-300">Purpose:</strong> Create coupon codes that customers can enter at cart/checkout for flat or percentage discounts.
+              </p>
+            </div>
             <button onClick={() => setShowCouponModal(true)} className="px-3.5 py-2 bg-gradient-to-r from-[#d4af37] to-[#c49f2f] text-black font-bold rounded-xl flex items-center gap-1.5 shadow-lg">
               <Plus className="w-4 h-4" /> Add Code
             </button>
@@ -856,93 +849,6 @@ const Settings = () => {
                 <div className="flex gap-3 pt-2">
                   <button type="submit" className="flex-1 py-2 bg-[#d4af37] text-black font-bold rounded-xl">Save Coupon</button>
                   <button type="button" onClick={() => setShowCouponModal(false)} className="flex-1 py-2 bg-gray-800 text-white rounded-xl">Cancel</button>
-                </div>
-              </form>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB: OFFERS & CAMPAIGNS */}
-      {activeTab === 'offers' && (
-        <div className="space-y-6 text-xs text-left">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white">Active Promotional Offer Campaigns</h3>
-            <button onClick={() => setShowOfferModal(true)} className="px-3.5 py-2 bg-gradient-to-r from-[#d4af37] to-[#c49f2f] text-black font-bold rounded-xl flex items-center gap-1.5 shadow-lg">
-              <Plus className="w-4 h-4" /> Add Offer
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {offers.map((o, idx) => (
-              <div key={idx} className="bg-[#111827] border border-gray-800 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between">
-                <div className="w-full h-32 bg-[#0b1220] border-b border-gray-800 flex items-center justify-center overflow-hidden">
-                  {o.banner ? <img src={o.banner} alt={o.name} className="w-full h-full object-cover" /> : <Gift className="w-8 h-8 text-gray-700" />}
-                </div>
-                <div className="p-4 space-y-2">
-                  <div className="flex justify-between items-start">
-                    <h4 className="font-bold text-white truncate max-w-[200px]">{o.name}</h4>
-                    <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold rounded">{o.discount}</span>
-                  </div>
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-800/40">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      o.status === "Active" ? "bg-green-500/10 text-green-400 border border-green-500/20" : "bg-gray-500/10 text-gray-400 border border-gray-500/20"
-                    }`}>{o.status}</span>
-                    <button onClick={() => handleDeleteOffer(o.id)} className="p-1.5 bg-red-600/10 text-red-400 border border-red-600/20 rounded-xl hover:bg-red-600/20">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Add Offer Modal */}
-          {showOfferModal && (
-            <div className="fixed inset-0 bg-black/60 z-[99] flex items-center justify-center p-4">
-              <form onSubmit={handleAddOffer} className="bg-[#0f1724] border border-gray-850 rounded-2xl w-full max-w-md shadow-2xl p-5 space-y-4">
-                <div className="flex items-center justify-between border-b border-gray-800 pb-3">
-                  <h4 className="font-bold text-white">Create New Offer Campaign</h4>
-                  <button type="button" onClick={() => setShowOfferModal(false)} className="p-1 text-gray-400"><X className="w-5 h-5" /></button>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-gray-400 mb-1">Campaign Title *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newOffer.name}
-                      onChange={(e) => setNewOffer({ ...newOffer, name: e.target.value })}
-                      className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none"
-                      placeholder="e.g. End of Season Sale"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-400 mb-1">Banner Image URL</label>
-                    <input
-                      type="url"
-                      value={newOffer.banner}
-                      onChange={(e) => setNewOffer({ ...newOffer, banner: e.target.value })}
-                      className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-400 mb-1">Discount Tag *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newOffer.discount}
-                      onChange={(e) => setNewOffer({ ...newOffer, discount: e.target.value })}
-                      className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none"
-                      placeholder="e.g. Flat 30% OFF"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button type="submit" className="flex-1 py-2 bg-[#d4af37] text-black font-bold rounded-xl">Save Offer</button>
-                  <button type="button" onClick={() => setShowOfferModal(false)} className="flex-1 py-2 bg-gray-800 text-white rounded-xl">Cancel</button>
                 </div>
               </form>
             </div>
