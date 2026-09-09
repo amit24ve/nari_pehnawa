@@ -362,21 +362,24 @@ const Navbar = () => {
               )}
             </div>
 
-            {/* ═ LIVE SALE ANNOUNCEMENT BUTTON ═ */}
+            {/* ═ LIVE SALE ANNOUNCEMENT WITH MEGAPHONE ═ */}
             <Link
               to="/category/sale"
-              className="relative hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#8B0000] via-[#A01020] to-[#8B0000] text-white shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 group border border-amber-300/40 flex-shrink-0"
+              className="relative hidden md:flex items-center group transition-all duration-300 hover:scale-105 select-none flex-shrink-0"
               title="Explore Live Festive Sale"
             >
-              {/* Speaker / Announcement Icon */}
-              <div className="w-5 h-5 rounded-full bg-amber-400 text-[#8B0000] flex items-center justify-center font-bold text-xs shadow-inner flex-shrink-0 animate-pulse">
-                📢
+              <div className="relative flex items-center justify-center p-1">
+                {/* 3D Megaphone Graphic */}
+                <img
+                  src="/sale-megaphone.png"
+                  alt="Festive Sale"
+                  className="w-9 h-9 sm:w-10 sm:h-10 object-contain drop-shadow-[0_4px_8px_rgba(220,38,38,0.25)] group-hover:rotate-[-6deg] transition-transform duration-300"
+                />
+                {/* Clean Red SALE Tag floating at top */}
+                <span className="absolute -top-1 -right-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-[9px] tracking-widest px-1.5 py-0.5 rounded-full shadow-md border border-white uppercase flex items-center gap-0.5 animate-pulse">
+                  SALE
+                </span>
               </div>
-
-              {/* Clean SALE Text */}
-              <span className="font-extrabold text-xs tracking-wider uppercase text-amber-200 group-hover:text-white transition-colors">
-                SALE
-              </span>
             </Link>
 
             {/* Thin separator — desktop */}
@@ -384,13 +387,22 @@ const Navbar = () => {
 
             {/* ═ Icon Group ═ */}
             <div className="flex items-center gap-1 sm:gap-2">
-              {/* Mobile: Clean SALE Button */}
+              {/* Mobile: Megaphone SALE Button */}
               <Link
                 to="/category/sale"
-                className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#8B0000] to-[#dc2626] text-white text-[11px] font-bold shadow-xs border border-amber-300/40"
+                className="md:hidden relative flex items-center group transition-transform active:scale-95 flex-shrink-0"
+                title="Explore Live Festive Sale"
               >
-                <span>📢</span>
-                <span className="font-bold tracking-wide text-amber-200">SALE</span>
+                <div className="relative flex items-center justify-center p-0.5">
+                  <img
+                    src="/sale-megaphone.png"
+                    alt="Sale"
+                    className="w-8 h-8 object-contain drop-shadow-[0_2px_4px_rgba(220,38,38,0.25)]"
+                  />
+                  <span className="absolute -top-1 -right-1.5 bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-[8px] tracking-wider px-1 py-0.2 rounded-full shadow border border-white uppercase animate-pulse">
+                    SALE
+                  </span>
+                </div>
               </Link>
 
               {/* Mobile: Search Icon */}
