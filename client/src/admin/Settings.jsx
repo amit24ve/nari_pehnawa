@@ -230,42 +230,42 @@ const Settings = () => {
   };
 
   const tabs = [
-    { id: 'flash_sale', label: '⚡ Flash Sale & Events', icon: Flame, description: 'Live Flash sale, timer, discount % & product targeting' },
-    { id: 'store', label: 'Store Info', icon: Store, description: 'Branding, contact info & store address' },
-    { id: 'pricing', label: 'Pricing & Delivery', icon: IndianRupee, description: 'Currency, tax & automated free delivery rules' },
-    { id: 'coupons', label: 'Coupons & Promo Codes', icon: Tag, description: 'Discount codes, usage tracking & cart thresholds' },
+    { id: 'flash_sale', label: '⚡ Flash Sale & Events', icon: Flame },
+    { id: 'store', label: 'Store Info', icon: Store },
+    { id: 'pricing', label: 'Pricing & Delivery', icon: IndianRupee },
+    { id: 'coupons', label: 'Coupons & Promo Codes', icon: Tag },
   ];
 
   return (
-    <div className="space-y-6 text-white text-left">
+    <div className="space-y-6 text-slate-800 text-left">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-800/80 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">System Configuration</h1>
-          <p className="text-sm text-gray-300 mt-1">Manage global website settings: Flash Sales, Store Branding, Free Delivery Rules, and Promo Coupons.</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">System Configuration</h1>
+          <p className="text-sm text-slate-500 mt-1">Manage global website settings: Flash Sales, Store Branding, Free Delivery Rules, and Promo Coupons.</p>
         </div>
 
         <div className="flex items-center gap-3">
           {showSuccessMessage && (
-            <span className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3.5 py-1.5 rounded-xl font-bold">
+            <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-3.5 py-1.5 rounded-xl font-bold shadow-xs">
               ✓ Saved Changes
             </span>
           )}
           {activeTab === "coupons" && (
             <button
               onClick={handleExportCSV}
-              className="p-2.5 bg-[#111827] border border-gray-700 rounded-xl hover:bg-[#0891b2] transition text-xs font-semibold text-white flex items-center gap-2 cursor-pointer shadow-md"
+              className="p-2.5 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition text-xs font-semibold text-slate-700 flex items-center gap-2 cursor-pointer shadow-xs"
             >
-              <Download className="w-4 h-4 text-cyan-400" /> Export CSV
+              <Download className="w-4 h-4 text-[#0891b2]" /> Export CSV
             </button>
           )}
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bg-[#111827] border border-gray-800 rounded-2xl overflow-hidden shadow-lg">
-        <div className="flex overflow-x-auto divide-x divide-gray-800">
+      <div className="bg-white border border-slate-200 rounded-2xl p-1.5 shadow-xs">
+        <div className="flex overflow-x-auto gap-1.5">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isSelected = activeTab === tab.id;
@@ -273,13 +273,13 @@ const Settings = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2.5 px-6 py-4.5 text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl transition-all whitespace-nowrap cursor-pointer ${
                   isSelected
-                    ? 'bg-[#0891b2] text-white shadow-md'
-                    : 'text-gray-300 hover:text-white hover:bg-gray-800/60'
+                    ? 'bg-[#0891b2] text-white shadow-sm shadow-[#0891b2]/20'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-cyan-400'}`} />
+                <Icon className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-[#0891b2]'}`} />
                 {tab.label}
               </button>
             );
@@ -289,93 +289,97 @@ const Settings = () => {
 
       {/* TAB 1: FLASH SALE & FESTIVE EVENT MANAGER */}
       {activeTab === 'flash_sale' && (
-        <form onSubmit={handleSaveFlashSale} className="space-y-6 text-xs">
-          <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-xl space-y-5">
+        <form onSubmit={handleSaveFlashSale} className="space-y-6">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
             
             {/* Header & Purpose info */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800/80 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-[#0891b2] flex items-center justify-center text-white shadow-md shadow-[#0891b2]/20">
                   <Flame className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-white flex items-center gap-2.5">
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2.5">
                     Flash Sale &amp; Festive Event Manager
                     <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                      flashSaleConfig.is_active ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-gray-800 text-gray-400'
+                      flashSaleConfig.is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600'
                     }`}>
                       {flashSaleConfig.is_active ? '● LIVE / ACTIVE' : 'INACTIVE'}
                     </span>
                   </h3>
-                  <p className="text-[12px] text-gray-300 mt-0.5">
-                    <strong className="text-cyan-400">Purpose:</strong> Set live timed flash sales, countdown timers, custom discounts, and select which products/categories to put on sale.
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    <strong className="text-[#0891b2]">Purpose:</strong> Set live timed flash sales, countdown timers, custom discounts, and select which products/categories to put on sale.
                   </p>
                 </div>
               </div>
 
               {/* Status Toggle */}
-              <label className="flex items-center gap-2.5 cursor-pointer bg-[#0b1220] px-4 py-2.5 rounded-xl border border-gray-700 hover:border-cyan-500 transition">
+              <label className="flex items-center gap-2.5 cursor-pointer bg-slate-50 px-4 py-2 rounded-xl border border-slate-300 hover:border-[#0891b2] transition">
                 <input
                   type="checkbox"
                   checked={flashSaleConfig.is_active}
                   onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, is_active: e.target.checked })}
                   className="w-4 h-4 accent-[#0891b2] rounded cursor-pointer"
                 />
-                <span className="text-xs font-bold text-white">Enable Flash Sale</span>
+                <span className="text-xs font-bold text-slate-800">Enable Flash Sale</span>
               </label>
             </div>
 
-            {/* Live Store Preview Card */}
-            <div className="p-4 rounded-xl bg-gradient-to-r from-[#0f172a] via-[#1e293b] to-[#0f172a] border border-cyan-500/40 text-white shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="space-y-1 text-center md:text-left">
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-[#0891b2] text-white px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-xs">
-                  📢 Storefront Preview (Shown on /category/sale)
+            {/* Live Store Preview Card — High Contrast Clean Banner */}
+            <div className="p-5 rounded-xl bg-gradient-to-r from-[#0891b2] via-[#0e7490] to-[#0891b2] text-white shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="space-y-1.5 text-center md:text-left">
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-white/20 text-white px-2.5 py-0.5 rounded-full uppercase tracking-wider backdrop-blur-xs">
+                  📢 Live Storefront Banner (On /category/sale)
                 </span>
-                <h4 className="text-lg font-bold text-white">
-                  {flashSaleConfig.title || "Festive Flash Sale"}
+                <h4 className="text-xl font-bold text-white tracking-wide">
+                  {flashSaleConfig.title || "Grand Festive Flash Sale"}
                 </h4>
-                <p className="text-xs text-cyan-200">
-                  {flashSaleConfig.subtitle || "Limited-Time Exclusive Deals"}
+                <p className="text-xs text-cyan-100 font-medium">
+                  {flashSaleConfig.subtitle || "Exclusive Handcrafted Luxury Ethnic Wear"}
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 bg-[#0b1220] px-4 py-2.5 rounded-xl border border-cyan-500/30">
-                <span className="text-xs font-bold text-cyan-300">Discount:</span>
-                <span className="text-xl font-black text-cyan-400 font-mono">{flashSaleConfig.discount_percentage}% OFF</span>
+              <div className="flex items-center gap-3 bg-white text-[#0891b2] px-5 py-3 rounded-xl shadow-md border border-white/40">
+                <span className="text-xs font-bold text-slate-700">Discount:</span>
+                <span className="text-2xl font-black text-[#0891b2] font-mono">{flashSaleConfig.discount_percentage}% OFF</span>
               </div>
             </div>
 
             {/* Form Fields Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-gray-200 mb-1.5 font-bold">Sale / Event Title *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
+                  Sale / Event Title *
+                </label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Diwali Festive Flash Sale, Midnight Clearance"
                   value={flashSaleConfig.title}
                   onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, title: e.target.value })}
-                  className="w-full bg-[#0b1220] border border-gray-700 rounded-xl px-3.5 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400 font-semibold"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] focus:ring-1 focus:ring-[#0891b2] text-sm font-semibold transition"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-200 mb-1.5 font-bold">Promo Subtitle / Tagline</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
+                  Promo Subtitle / Tagline
+                </label>
                 <input
                   type="text"
                   placeholder="e.g. Up to 50% Off on Handcrafted Kurtis"
                   value={flashSaleConfig.subtitle}
                   onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, subtitle: e.target.value })}
-                  className="w-full bg-[#0b1220] border border-gray-700 rounded-xl px-3.5 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] focus:ring-1 focus:ring-[#0891b2] text-sm transition"
                 />
               </div>
             </div>
 
             {/* Quick Duration Presets & Timing */}
-            <div className="p-4 rounded-xl bg-[#0b1220] border border-gray-800 space-y-3">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <label className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-cyan-400" /> Quick Timer Presets:
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-[#0891b2]" /> Quick Timer Presets:
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {[
@@ -390,7 +394,7 @@ const Settings = () => {
                       key={preset.label}
                       type="button"
                       onClick={() => applyDurationPreset(preset.hours)}
-                      className="px-3 py-1.5 bg-[#111827] hover:bg-[#0891b2] hover:text-white border border-gray-700 text-gray-200 rounded-lg text-[11px] font-bold transition-all cursor-pointer"
+                      className="px-3 py-1.5 bg-white hover:bg-[#0891b2] hover:text-white border border-slate-300 text-slate-700 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
                     >
                       {preset.label}
                     </button>
@@ -398,34 +402,36 @@ const Settings = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                 <div>
-                  <label className="block text-gray-300 mb-1 font-semibold text-[11px]">Start Date &amp; Time</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Start Date &amp; Time</label>
                   <input
                     type="datetime-local"
                     value={flashSaleConfig.start_time ? flashSaleConfig.start_time.slice(0, 16) : ""}
                     onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, start_time: e.target.value })}
-                    className="w-full bg-[#111827] border border-gray-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-[#0891b2] text-xs font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-gray-300 mb-1 font-semibold text-[11px]">End Date &amp; Time (Countdown Timer Target)</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">End Date &amp; Time (Countdown Timer Target)</label>
                   <input
                     type="datetime-local"
                     value={flashSaleConfig.end_time ? flashSaleConfig.end_time.slice(0, 16) : ""}
                     onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, end_time: e.target.value })}
-                    className="w-full bg-[#111827] border border-gray-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-[#0891b2] text-xs font-medium"
                   />
                 </div>
               </div>
             </div>
 
             {/* Discount & Target Scope */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {/* Discount % */}
-              <div className="bg-[#0b1220] p-4 rounded-xl border border-gray-800 space-y-2">
-                <label className="block text-gray-200 font-bold">Discount Percentage</label>
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide">
+                  Discount Percentage
+                </label>
                 <div className="flex items-center gap-3">
                   <input
                     type="range"
@@ -436,16 +442,18 @@ const Settings = () => {
                     onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, discount_percentage: Number(e.target.value) })}
                     className="flex-1 accent-[#0891b2] cursor-pointer"
                   />
-                  <span className="text-base font-extrabold text-cyan-300 font-mono w-14 text-right">
+                  <span className="text-base font-black text-[#0891b2] font-mono w-14 text-right">
                     {flashSaleConfig.discount_percentage}%
                   </span>
                 </div>
-                <p className="text-[11px] text-gray-400">Applied across all selected sale products.</p>
+                <p className="text-[11px] text-slate-500">Applied across all selected sale products.</p>
               </div>
 
               {/* Target Scope */}
-              <div className="md:col-span-2 bg-[#0b1220] p-4 rounded-xl border border-gray-800 space-y-3">
-                <label className="block text-gray-200 font-bold">Which Products To Put On Sale?</label>
+              <div className="md:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide">
+                  Which Products To Put On Sale?
+                </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: "all", label: "🌟 All Store Products" },
@@ -456,10 +464,10 @@ const Settings = () => {
                       key={scope.id}
                       type="button"
                       onClick={() => setFlashSaleConfig({ ...flashSaleConfig, target_type: scope.id })}
-                      className={`p-2.5 rounded-xl border text-center font-bold text-[11px] transition-all cursor-pointer ${
+                      className={`p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer ${
                         flashSaleConfig.target_type === scope.id
-                          ? "bg-[#0891b2] border-cyan-400 text-white shadow-md"
-                          : "bg-[#111827] border-gray-750 text-gray-300 hover:text-white hover:border-gray-600"
+                          ? "bg-[#0891b2] border-[#0891b2] text-white shadow-sm"
+                          : "bg-white border-slate-300 text-slate-700 hover:bg-slate-100"
                       }`}
                     >
                       {scope.label}
@@ -470,11 +478,11 @@ const Settings = () => {
                 {/* Category Dropdown if target_type === category */}
                 {flashSaleConfig.target_type === "category" && (
                   <div className="pt-2">
-                    <label className="block text-gray-300 mb-1 font-semibold">Choose Category:</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Choose Category:</label>
                     <select
                       value={flashSaleConfig.target_category}
                       onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, target_category: e.target.value })}
-                      className="w-full bg-[#111827] border border-gray-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400"
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-[#0891b2] text-xs font-medium"
                     >
                       <option value="">-- Select a Category --</option>
                       {availableCategories.map((cat) => (
@@ -489,15 +497,15 @@ const Settings = () => {
                 {/* Custom Products Multi-Select if target_type === custom_products */}
                 {flashSaleConfig.target_type === "custom_products" && (
                   <div className="pt-2 space-y-2">
-                    <label className="block text-gray-300 font-semibold">
+                    <label className="block text-xs font-semibold text-slate-700">
                       Select Products ({flashSaleConfig.target_product_ids?.length || 0} selected):
                     </label>
-                    <div className="max-h-48 overflow-y-auto bg-[#111827] border border-gray-700 rounded-xl p-2 space-y-1">
+                    <div className="max-h-48 overflow-y-auto bg-white border border-slate-300 rounded-xl p-2 space-y-1">
                       {availableProducts.map((p) => {
                         const pid = p._id || p.id;
                         const isChecked = flashSaleConfig.target_product_ids?.includes(pid);
                         return (
-                          <label key={pid} className="flex items-center gap-2 p-1.5 hover:bg-gray-800 rounded-lg cursor-pointer">
+                          <label key={pid} className="flex items-center gap-2.5 p-2 hover:bg-slate-50 rounded-lg cursor-pointer border-b border-slate-100 last:border-0">
                             <input
                               type="checkbox"
                               checked={isChecked}
@@ -508,10 +516,10 @@ const Settings = () => {
                                   : currentIds.filter(id => id !== pid);
                                 setFlashSaleConfig({ ...flashSaleConfig, target_product_ids: updated });
                               }}
-                              className="w-3.5 h-3.5 accent-[#0891b2] rounded"
+                              className="w-4 h-4 accent-[#0891b2] rounded cursor-pointer"
                             />
-                            <span className="text-white truncate flex-1">{p.name}</span>
-                            <span className="text-cyan-400 font-mono font-bold">₹{p.price}</span>
+                            <span className="text-slate-800 text-xs font-medium truncate flex-1">{p.name}</span>
+                            <span className="text-[#0891b2] font-mono font-bold text-xs">₹{p.price}</span>
                           </label>
                         );
                       })}
@@ -522,11 +530,11 @@ const Settings = () => {
             </div>
 
             {/* Save Button */}
-            <div className="pt-2 flex justify-end">
+            <div className="pt-3 flex justify-end border-t border-slate-100">
               <button
                 type="submit"
                 disabled={flashSaleLoading}
-                className="px-6 py-3 bg-[#0891b2] hover:bg-cyan-600 text-white font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-[#0891b2]/20 transition-all cursor-pointer disabled:opacity-50"
+                className="px-6 py-2.5 bg-[#0891b2] hover:bg-cyan-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-md shadow-[#0891b2]/20 transition cursor-pointer disabled:opacity-50 text-xs"
               >
                 {flashSaleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flame className="w-4 h-4 text-white" />}
                 <span>Save &amp; Launch Flash Sale</span>
@@ -538,73 +546,73 @@ const Settings = () => {
 
       {/* TAB 2: STORE INFO */}
       {activeTab === 'store' && (
-        <form onSubmit={handleStoreSubmit} className="space-y-6 text-xs">
-          <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-xl space-y-5">
+        <form onSubmit={handleStoreSubmit} className="space-y-6">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
             <div>
-              <h3 className="text-base font-extrabold text-white flex items-center gap-2.5 border-b border-gray-800 pb-3">
-                <Store className="w-5 h-5 text-cyan-400" /> Store General Information
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                <Store className="w-5 h-5 text-[#0891b2]" /> Store General Information
               </h3>
-              <p className="text-[12px] text-gray-300 mt-2">
-                <strong className="text-cyan-400">Purpose:</strong> Configure official store branding, customer support hotline, email, and registered address shown on invoices and footer.
+              <p className="text-xs text-slate-500 mt-1">
+                <strong className="text-[#0891b2]">Purpose:</strong> Configure official store branding, customer support hotline, email, and registered address shown on invoices and footer.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-gray-200 mb-1.5 font-bold">Store Name *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Store Name *</label>
                 <input
                   type="text"
                   required
                   value={storeSettings.storeName}
                   onChange={(e) => setStoreSettings({ ...storeSettings, storeName: e.target.value })}
-                  className="w-full bg-[#0b1220] border border-gray-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-200 mb-1.5 font-bold">Tagline</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Tagline</label>
                 <input
                   type="text"
                   value={storeSettings.tagline}
                   onChange={(e) => setStoreSettings({ ...storeSettings, tagline: e.target.value })}
-                  className="w-full bg-[#0b1220] border border-gray-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-200 mb-1.5 font-bold">Support Email Address *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Support Email Address *</label>
                 <input
                   type="email"
                   required
                   value={storeSettings.email}
                   onChange={(e) => setStoreSettings({ ...storeSettings, email: e.target.value })}
-                  className="w-full bg-[#0b1220] border border-gray-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-200 mb-1.5 font-bold">Support Hotline</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Support Hotline</label>
                 <input
                   type="text"
                   value={storeSettings.phone}
                   onChange={(e) => setStoreSettings({ ...storeSettings, phone: e.target.value })}
-                  className="w-full bg-[#0b1220] border border-gray-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-sm"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-gray-200 mb-1.5 font-bold">Corporate Address</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Corporate Address</label>
                 <input
                   type="text"
                   value={storeSettings.address}
                   onChange={(e) => setStoreSettings({ ...storeSettings, address: e.target.value })}
-                  className="w-full bg-[#0b1220] border border-gray-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-sm"
                 />
               </div>
             </div>
 
-            <div className="pt-2 flex justify-end">
-              <button type="submit" className="px-6 py-3 bg-[#0891b2] hover:bg-cyan-600 text-white font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-[#0891b2]/20 transition cursor-pointer">
+            <div className="pt-3 flex justify-end border-t border-slate-100">
+              <button type="submit" className="px-6 py-2.5 bg-[#0891b2] hover:bg-cyan-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-md shadow-[#0891b2]/20 transition cursor-pointer text-xs">
                 <Save className="w-4 h-4 text-white" /> Save Store Settings
               </button>
             </div>
@@ -614,85 +622,85 @@ const Settings = () => {
 
       {/* TAB 3: PRICING & DELIVERY */}
       {activeTab === 'pricing' && (
-        <form onSubmit={handlePricingSubmit} className="space-y-6 text-xs">
-          <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-xl space-y-5">
+        <form onSubmit={handlePricingSubmit} className="space-y-6">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
             <div>
-              <h3 className="text-base font-extrabold text-white flex items-center gap-2.5 border-b border-gray-800 pb-3">
-                <IndianRupee className="w-5 h-5 text-cyan-400" /> Currency &amp; Pricing Rules
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                <IndianRupee className="w-5 h-5 text-[#0891b2]" /> Currency &amp; Pricing Rules
               </h3>
-              <p className="text-[12px] text-gray-300 mt-2">
-                <strong className="text-cyan-400">Purpose:</strong> Set store currency symbols, GST tax percentages, standard flat shipping charges, and the cart value threshold for free shipping.
+              <p className="text-xs text-slate-500 mt-1">
+                <strong className="text-[#0891b2]">Purpose:</strong> Set store currency symbols, GST tax percentages, standard flat shipping charges, and the cart value threshold for free shipping.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-gray-200 mb-1.5 font-bold">Currency Code</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Currency Code</label>
                 <input
                   type="text"
                   value={pricingSettings.currency}
                   onChange={(e) => setPricingSettings({ ...pricingSettings, currency: e.target.value })}
-                  className="w-full bg-[#0b1220] border border-gray-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-200 mb-1.5 font-bold">Tax Rate %</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Tax Rate %</label>
                 <input
                   type="number"
                   value={pricingSettings.taxRate}
                   onChange={(e) => setPricingSettings({ ...pricingSettings, taxRate: e.target.value })}
-                  className="w-full bg-[#0b1220] border border-gray-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-200 mb-1.5 font-bold">Flat Shipping Fee (INR)</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Flat Shipping Fee (INR)</label>
                 <input
                   type="number"
                   value={pricingSettings.shippingFee}
                   onChange={(e) => setPricingSettings({ ...pricingSettings, shippingFee: e.target.value })}
-                  className="w-full bg-[#0b1220] border border-gray-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-200 mb-1.5 font-bold">Free Shipping Threshold (INR)</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Free Shipping Threshold (INR)</label>
                 <input
                   type="number"
                   value={pricingSettings.freeShippingThreshold}
                   onChange={(e) => setPricingSettings({ ...pricingSettings, freeShippingThreshold: e.target.value })}
-                  className="w-full bg-[#0b1220] border border-gray-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-sm"
                 />
               </div>
             </div>
 
-            <div className="pt-2 flex justify-end">
-              <button type="submit" className="px-6 py-3 bg-[#0891b2] hover:bg-cyan-600 text-white font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-[#0891b2]/20 transition cursor-pointer">
+            <div className="pt-3 flex justify-end border-t border-slate-100">
+              <button type="submit" className="px-6 py-2.5 bg-[#0891b2] hover:bg-cyan-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-md shadow-[#0891b2]/20 transition cursor-pointer text-xs">
                 <Save className="w-4 h-4 text-white" /> Save Pricing Config
               </button>
             </div>
           </div>
 
-          <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-xl space-y-5">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
             <div>
-              <h3 className="text-base font-extrabold text-white flex items-center gap-2.5 border-b border-gray-800 pb-3">
-                <Truck className="w-5 h-5 text-cyan-400" /> Free Delivery Rules for Customers (1st, 2nd, 3rd Orders)
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                <Truck className="w-5 h-5 text-[#0891b2]" /> Free Delivery Rules for Customers (1st, 2nd, 3rd Orders)
               </h3>
-              <p className="text-[12px] text-gray-300 mt-2">
-                <strong className="text-cyan-400">Purpose:</strong> Automate marketing incentive by giving first-time customers free shipping on their first 1, 2, or 3 orders.
+              <p className="text-xs text-slate-500 mt-1">
+                <strong className="text-[#0891b2]">Purpose:</strong> Automate marketing incentive by giving first-time customers free shipping on their first 1, 2, or 3 orders.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-gray-200 mb-1.5 font-bold">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
                   Free Delivery on Initial N Orders
                 </label>
                 <select
                   value={deliveryRules.free_delivery_order_count}
                   onChange={(e) => setDeliveryRules({ ...deliveryRules, free_delivery_order_count: parseInt(e.target.value) })}
-                  className="w-full bg-[#0b1220] border border-gray-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-sm font-medium"
                 >
                   <option value={0}>0 (No Free Orders - Standard Delivery Fees Apply)</option>
                   <option value={1}>1st Order Free (Recommended)</option>
@@ -700,33 +708,33 @@ const Settings = () => {
                   <option value={3}>First 3 Orders Free</option>
                   <option value={5}>First 5 Orders Free</option>
                 </select>
-                <p className="text-gray-400 text-[11px] mt-1">
+                <p className="text-slate-500 text-xs mt-1">
                   New users will automatically get Free Delivery on their first {deliveryRules.free_delivery_order_count} order(s).
                 </p>
               </div>
 
               <div>
-                <label className="block text-gray-200 mb-1.5 font-bold">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
                   Default Store Shipping Fee (INR)
                 </label>
                 <input
                   type="number"
                   value={deliveryRules.default_delivery_charge}
                   onChange={(e) => setDeliveryRules({ ...deliveryRules, default_delivery_charge: parseFloat(e.target.value) || 0 })}
-                  className="w-full bg-[#0b1220] border border-gray-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-sm font-medium"
                   placeholder="50"
                 />
-                <p className="text-gray-400 text-[11px] mt-1">
+                <p className="text-slate-500 text-xs mt-1">
                   Used when product has no custom delivery fee.
                 </p>
               </div>
             </div>
 
-            <div className="pt-2 flex justify-end">
+            <div className="pt-3 flex justify-end border-t border-slate-100">
               <button
                 type="button"
                 onClick={handleSaveDeliveryRules}
-                className="px-6 py-3 bg-[#0891b2] hover:bg-cyan-600 text-white font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-[#0891b2]/20 transition cursor-pointer"
+                className="px-6 py-2.5 bg-[#0891b2] hover:bg-cyan-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-md shadow-[#0891b2]/20 transition cursor-pointer text-xs"
               >
                 <Save className="w-4 h-4 text-white" /> Save Delivery Rules
               </button>
@@ -737,49 +745,49 @@ const Settings = () => {
 
       {/* TAB 4: COUPONS */}
       {activeTab === 'coupons' && (
-        <div className="space-y-6 text-xs">
+        <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-extrabold text-white">Active Promotional Coupon Codes</h3>
-              <p className="text-[12px] text-gray-300 mt-0.5">
-                <strong className="text-cyan-400">Purpose:</strong> Create coupon codes that customers can enter at cart/checkout for flat or percentage discounts.
+              <h3 className="text-base font-bold text-slate-900">Active Promotional Coupon Codes</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                <strong className="text-[#0891b2]">Purpose:</strong> Create coupon codes that customers can enter at cart/checkout for flat or percentage discounts.
               </p>
             </div>
-            <button onClick={() => setShowCouponModal(true)} className="px-4 py-2.5 bg-[#0891b2] hover:bg-cyan-600 text-white font-bold rounded-xl flex items-center gap-2 shadow-md shadow-[#0891b2]/20 transition cursor-pointer">
+            <button onClick={() => setShowCouponModal(true)} className="px-4 py-2 bg-[#0891b2] hover:bg-cyan-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-[#0891b2]/20 transition cursor-pointer text-xs">
               <Plus className="w-4 h-4 text-white" /> Add Code
             </button>
           </div>
 
-          <div className="bg-[#111827] border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
             <table className="w-full border-collapse text-left">
-              <thead className="bg-[#0b1220] text-gray-300 font-bold border-b border-gray-800">
+              <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 text-xs">
                 <tr>
-                  <th className="py-4 px-6">Code</th>
-                  <th className="py-4 px-6">Type</th>
-                  <th className="py-4 px-6">Discount Value</th>
-                  <th className="py-4 px-6">Min Order (INR)</th>
-                  <th className="py-4 px-6">Expiry Date</th>
-                  <th className="py-4 px-6">Usage Count</th>
-                  <th className="py-4 px-6">Status</th>
-                  <th className="py-4 px-6 text-right">Action</th>
+                  <th className="py-3.5 px-5">Code</th>
+                  <th className="py-3.5 px-5">Type</th>
+                  <th className="py-3.5 px-5">Discount Value</th>
+                  <th className="py-3.5 px-5">Min Order (INR)</th>
+                  <th className="py-3.5 px-5">Expiry Date</th>
+                  <th className="py-3.5 px-5">Usage Count</th>
+                  <th className="py-3.5 px-5">Status</th>
+                  <th className="py-3.5 px-5 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800 text-gray-200">
+              <tbody className="divide-y divide-slate-100 text-slate-800 text-xs">
                 {coupons.map((c, idx) => (
-                  <tr key={idx} className="hover:bg-gray-800/30 transition">
-                    <td className="py-3.5 px-6 font-mono font-bold text-cyan-400">{c.code}</td>
-                    <td className="py-3.5 px-6 text-gray-300">{c.type}</td>
-                    <td className="py-3.5 px-6 font-bold text-emerald-400">{c.type === 'Percentage' ? `${c.discount}%` : `₹${c.discount}`}</td>
-                    <td className="py-3.5 px-6 font-mono text-white">₹{c.minCart}</td>
-                    <td className="py-3.5 px-6 text-gray-300">{c.expiry}</td>
-                    <td className="py-3.5 px-6 font-mono text-white">{c.usage} times</td>
-                    <td className="py-3.5 px-6">
-                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
-                        c.status === "Active" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-gray-800 text-gray-400 border border-gray-700"
+                  <tr key={idx} className="hover:bg-slate-50 transition">
+                    <td className="py-3 px-5 font-mono font-bold text-[#0891b2]">{c.code}</td>
+                    <td className="py-3 px-5 text-slate-600">{c.type}</td>
+                    <td className="py-3 px-5 font-bold text-emerald-600">{c.type === 'Percentage' ? `${c.discount}%` : `₹${c.discount}`}</td>
+                    <td className="py-3 px-5 font-mono">₹{c.minCart}</td>
+                    <td className="py-3 px-5 text-slate-500">{c.expiry}</td>
+                    <td className="py-3 px-5 font-mono">{c.usage} times</td>
+                    <td className="py-3 px-5">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                        c.status === "Active" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-100 text-slate-600 border border-slate-200"
                       }`}>{c.status}</span>
                     </td>
-                    <td className="py-3.5 px-6 text-right">
-                      <button onClick={() => handleDeleteCoupon(c.id)} className="p-2 bg-red-600/20 text-red-400 border border-red-600/30 rounded-xl hover:bg-red-600/40 transition cursor-pointer">
+                    <td className="py-3 px-5 text-right">
+                      <button onClick={() => handleDeleteCoupon(c.id)} className="p-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-100 transition cursor-pointer">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
@@ -791,71 +799,71 @@ const Settings = () => {
 
           {/* Add Coupon Modal */}
           {showCouponModal && (
-            <div className="fixed inset-0 bg-black/70 z-[99] flex items-center justify-center p-4">
-              <form onSubmit={handleAddCoupon} className="bg-[#0f1724] border border-gray-800 rounded-2xl w-full max-w-md shadow-2xl p-6 space-y-4 text-white">
-                <div className="flex items-center justify-between border-b border-gray-800 pb-3">
-                  <h4 className="font-bold text-base text-white">Create New Coupon Code</h4>
-                  <button type="button" onClick={() => setShowCouponModal(false)} className="p-1 text-gray-400 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-[99] flex items-center justify-center p-4">
+              <form onSubmit={handleAddCoupon} className="bg-white border border-slate-200 rounded-2xl w-full max-w-md shadow-2xl p-6 space-y-4 text-slate-800">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h4 className="font-bold text-base text-slate-900">Create New Coupon Code</h4>
+                  <button type="button" onClick={() => setShowCouponModal(false)} className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"><X className="w-5 h-5" /></button>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3 text-left">
                   <div>
-                    <label className="block text-gray-200 mb-1 font-semibold">Coupon Code *</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Coupon Code *</label>
                     <input
                       type="text"
                       required
                       value={newCoupon.code}
                       onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value })}
-                      className="w-full bg-[#0b1220] border border-gray-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-400"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-xs"
                       placeholder="e.g. MONSOON20"
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-200 mb-1 font-semibold">Discount Type</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Discount Type</label>
                     <select
                       value={newCoupon.type}
                       onChange={(e) => setNewCoupon({ ...newCoupon, type: e.target.value })}
-                      className="w-full bg-[#0b1220] border border-gray-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-400"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-xs"
                     >
                       <option value="Percentage">Percentage</option>
                       <option value="Fixed Amount">Fixed Amount</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-gray-200 mb-1 font-semibold">Discount Value *</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Discount Value *</label>
                     <input
                       type="number"
                       required
                       value={newCoupon.discount}
                       onChange={(e) => setNewCoupon({ ...newCoupon, discount: e.target.value })}
-                      className="w-full bg-[#0b1220] border border-gray-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-400"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-xs"
                       placeholder="e.g. 15"
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-200 mb-1 font-semibold">Min Cart Value (INR)</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Min Cart Value (INR)</label>
                     <input
                       type="number"
                       value={newCoupon.minCart}
                       onChange={(e) => setNewCoupon({ ...newCoupon, minCart: e.target.value })}
-                      className="w-full bg-[#0b1220] border border-gray-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-400"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-xs"
                       placeholder="e.g. 999"
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-200 mb-1 font-semibold">Expiry Date</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Expiry Date</label>
                     <input
                       type="date"
                       value={newCoupon.expiry}
                       onChange={(e) => setNewCoupon({ ...newCoupon, expiry: e.target.value })}
-                      className="w-full bg-[#0b1220] border border-gray-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-400"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-xs"
                     />
                   </div>
                 </div>
 
                 <div className="flex gap-3 pt-3">
-                  <button type="submit" className="flex-1 py-2.5 bg-[#0891b2] hover:bg-cyan-600 text-white font-bold rounded-xl transition cursor-pointer">Save Coupon</button>
-                  <button type="button" onClick={() => setShowCouponModal(false)} className="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl transition cursor-pointer">Cancel</button>
+                  <button type="submit" className="flex-1 py-2.5 bg-[#0891b2] hover:bg-cyan-700 text-white font-bold rounded-xl transition cursor-pointer text-xs">Save Coupon</button>
+                  <button type="button" onClick={() => setShowCouponModal(false)} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition cursor-pointer text-xs">Cancel</button>
                 </div>
               </form>
             </div>

@@ -536,27 +536,22 @@ const AIChatbot = () => {
       )}
 
       {/* ══════════════════════════════════════
-          FLOATING CHATBOT TOGGLE BUTTON
+          FLOATING CHATBOT TOGGLE BUTTON (Pure Message Icon)
       ══════════════════════════════════════ */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`group relative flex items-center gap-2 px-4 py-3 rounded-full bg-gradient-to-r from-[#8B0000] via-[#A01020] to-[#8B0000] text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer border border-amber-300/30 select-none ${
-          isOpen ? "ring-4 ring-red-300/30" : ""
+        className={`group relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-[#8B0000] via-[#A01020] to-[#8B0000] text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer border-2 border-white/40 select-none ${
+          isOpen ? "ring-4 ring-red-400/30" : ""
         }`}
         aria-label="Open AI Assistant"
       >
         {isOpen ? (
-          <X className="w-5 h-5 text-white animate-spin-fast" />
+          <X className="w-6 h-6 text-white" />
         ) : (
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <MessageSquare className="w-5 h-5 text-amber-200 group-hover:rotate-6 transition-transform" />
-              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400" />
-            </div>
-            <span className="font-bold text-xs tracking-wide text-white">
-              AI Stylist
-            </span>
+          <div className="relative flex items-center justify-center">
+            <MessageSquare className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border border-[#8B0000]" />
           </div>
         )}
       </button>
