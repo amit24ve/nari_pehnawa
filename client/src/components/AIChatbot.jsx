@@ -7,20 +7,12 @@ import {
   User,
   Bot,
   Loader2,
-  ShoppingBag,
-  Tag,
-  Truck,
-  RotateCcw,
-  Headphones,
-  Search,
-  ExternalLink,
   ChevronRight,
   Flame,
-  ArrowRight,
-  HeartHandshake
+  ArrowRight
 } from "lucide-react";
 import { useAuth } from "../context/AuthProvider";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
@@ -35,20 +27,22 @@ const AIChatbot = () => {
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
 
+  // Standard shopping suggestions
+  const defaultSuggestions = [
+    { label: "👗 Browse Live Categories", key: "show_categories" },
+    { label: "🔥 Today's Mega Sale Offers", link: "/category/sale" },
+    { label: "✨ Best Sellers", key: "best_sellers" },
+    { label: "📦 Track My Order", link: "/user/orders" },
+    { label: "💬 Help & Support", link: "/support/contact-us" }
+  ];
+
   // Initial welcome message
   const getInitialMessage = () => ({
     id: "welcome",
     sender: "bot",
-    text: `Namaste! 🙏 How may I help you today? I am your Nari Pehnawa AI Fashion & Decor Assistant.\n\nExplore our latest festive collections, live discount codes, track your orders, or ask for any style advice!`,
+    text: `Namaste! 🙏 How may I help you?\n\nI am your Nari Pehnawa AI Assistant. You can explore our handcrafted collections, track your orders, check live offers, or ask for any style advice!`,
     time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    suggestions: [
-      { label: "👗 Browse Live Categories", key: "show_categories", icon: "👗" },
-      { label: "🔥 Today's Mega Sale Offers", key: "offers", icon: "🔥" },
-      { label: "✨ Best Seller Kurtis", key: "best_sellers", icon: "✨" },
-      { label: "📦 Track My Order", key: "track_order", icon: "📦" },
-      { label: "👑 Meet Founders (Pooja & Ritika)", key: "meet_founders", icon: "👑" },
-      { label: "📞 Help & Support", key: "help_support", icon: "📞" }
-    ]
+    suggestions: defaultSuggestions
   });
 
   const [messages, setMessages] = useState([getInitialMessage()]);
@@ -60,7 +54,6 @@ const AIChatbot = () => {
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          // Filter out special categories like Sale or New Arrivals if duplicate
           const valid = data.filter((c) => c.display_order !== 0 && c.display_order !== 99);
           setCategories(valid.length > 0 ? valid : data);
         }
@@ -78,7 +71,7 @@ const AIChatbot = () => {
       .catch((err) => console.warn("Could not load products for chatbot:", err));
   }, []);
 
-  // Update greeting when user logs in/out
+  // Update greeting when user logs in
   useEffect(() => {
     if (user && user.name) {
       setMessages((prev) => {
@@ -87,9 +80,9 @@ const AIChatbot = () => {
             {
               id: "welcome",
               sender: "bot",
-              text: `Namaste, ${user.name.split(" ")[0]}! 🙏 How may I help you today?\n\nI am your Nari Pehnawa AI Stylist. You can explore our handcrafted ethnic wear, live discounts, or track your orders anytime.`,
+              text: `Namaste, ${user.name.split(" ")[0]}! 🙏 How may I help you?\n\nI am your Nari Pehnawa AI Assistant. You can explore our handcrafted ethnic wear, live discounts, or track your orders anytime.`,
               time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-              suggestions: prev[0].suggestions
+              suggestions: defaultSuggestions
             }
           ];
         }
@@ -115,7 +108,7 @@ const AIChatbot = () => {
   const generateDynamicReply = async (userInput) => {
     const input = userInput.toLowerCase().trim();
 
-    // 1. Check if user asked for categories
+    // 1. Categories Query
     if (input.includes("category") || input.includes("categories") || input.includes("collection") || input.includes("types")) {
       const catList = categories.slice(0, 8);
       return {
@@ -127,57 +120,57 @@ const AIChatbot = () => {
       };
     }
 
-    // 2. Check for Offers / Coupons / Sale
+    // 2. Offers / Coupons / Sale
     if (input.includes("offer") || input.includes("coupon") || input.includes("discount") || input.includes("sale") || input.includes("promo") || input.includes("code")) {
       return {
-        text: `🎉 **Current Live Offers & Coupons:**\n\n• **WELCOME200**: Flat ₹200 OFF on your first purchase above ₹1,499.\n• **NARI10**: Instant 10% OFF on all order values above ₹999.\n• **FREE SHIPPING**: Automatically applied on orders above ₹999!\n\nCheck out our clearance & festival mega sale for up to 70% discounts.`,
+        text: `🎉 **Current Live Offers & Coupons:**\n\n• **WELCOME200**: Flat ₹200 OFF on your first purchase above ₹1,499.\n• **NARI10**: Instant 10% OFF on all orders above ₹999.\n• **FREE DELIVERY**: Free shipping automatically applied on your order!\n\nExplore our live Flash Sale for limited-time discounts.`,
         suggestions: [
-          { label: "🔥 Shop Mega Sale", link: "/category/sale" },
-          { label: "✨ New Arrivals", link: "/new-arrivals" },
-          { label: "👗 View All Categories", key: "show_categories" }
+          { label: "🔥 Today's Mega Sale Offers", link: "/category/sale" },
+          { label: "✨ Best Sellers", key: "best_sellers" },
+          { label: "👗 Browse Categories", key: "show_categories" }
         ]
       };
     }
 
-    // 3. Check for Track Order / Shipping / Delivery
+    // 3. Track Order / Shipping / Delivery
     if (input.includes("track") || input.includes("order") || input.includes("shipping") || input.includes("delivery") || input.includes("status") || input.includes("awb")) {
       return {
-        text: `📦 **Order Tracking & Shipping:**\n\n• Orders are dispatched within 24-48 hours via premium express couriers.\n• Standard delivery time is 3-5 business days across India.\n• COD and online payments are fully supported.\n\nYou can track your shipment anytime with your Order ID or AWB number!`,
+        text: `📦 **Order Tracking & Shipping:**\n\n• Orders are dispatched within 24-48 hours via express courier partners.\n• Standard delivery time is 3-5 business days across India.\n• Both Cash on Delivery (COD) and Online Payments are supported.\n\nYou can track your order status live in your account!`,
         suggestions: [
-          { label: "🚚 Track My Shipment", link: "/user/orders" },
-          { label: "💬 Contact Support", link: "/support/contact-us" }
+          { label: "📦 Track My Order", link: "/user/orders" },
+          { label: "💬 Help & Support", link: "/support/contact-us" }
         ]
       };
     }
 
-    // 4. Check for Return / Exchange Policy
+    // 4. Return / Exchange Policy
     if (input.includes("return") || input.includes("exchange") || input.includes("refund")) {
       return {
-        text: `🔄 **7-Day Hassle-Free Exchange Policy:**\n\n• We offer easy 7-day exchanges on unused, unwashed garments with tags intact.\n• For doorstep pickup or size replacement, contact our customer support team.\n• 100% genuine craftsmanship guarantee.`,
+        text: `🔄 **7-Day Easy Exchange Policy:**\n\n• We offer easy 7-day exchanges on unused, unwashed garments with original tags intact.\n• Need a different size or doorstep pickup? You can request it directly from your Orders page.\n• 100% authentic artisan quality guaranteed.`,
         suggestions: [
           { label: "📜 Return & Refund Policy", link: "/support/refund-policy" },
-          { label: "📞 Contact Support", link: "/support/contact-us" }
+          { label: "💬 Help & Support", link: "/support/contact-us" }
         ]
       };
     }
 
-    // 5. Check for Founders / Owner Info
+    // 5. Founders / Owner Info (Only triggered if user explicitly asks)
     if (input.includes("owner") || input.includes("founder") || input.includes("malik") || input.includes("pooja") || input.includes("ritika") || input.includes("about") || input.includes("who is")) {
       return {
         text: `👑 **Nari Pehnawa Founders:**\n\nNari Pehnawa was founded with love by **Pooja Verma & Ritika Singh**, dedicated to bringing direct weaver handcrafted ethnic wear from Uttar Pradesh (Prayagraj & Deoria) to women across India!`,
         suggestions: [
-          { label: "✨ Meet The Founders", link: "/owner" },
-          { label: "🛍️ Shop Collection", link: "/new-arrivals" }
+          { label: "✨ Read Our Story", link: "/owner" },
+          { label: "👗 Browse Live Categories", key: "show_categories" }
         ]
       };
     }
 
-    // 6. Check for Help / Support / Contact
+    // 6. Help / Support / Contact
     if (input.includes("help") || input.includes("support") || input.includes("call") || input.includes("phone") || input.includes("contact") || input.includes("whatsapp")) {
       return {
-        text: `📞 **Customer Support:**\n\nOur team is available Monday to Saturday (10:00 AM - 7:00 PM IST).\n\n• **Email**: support@naripehnawa.com\n• **Direct Helpline**: Available via Contact Us page.\n• **Location**: Prayagraj & Deoria, Uttar Pradesh.`,
+        text: `💬 **Customer Support:**\n\nOur support team is available Monday to Saturday (10:00 AM - 7:00 PM IST).\n\n• **Email**: support@naripehnawa.com\n• **Direct Helpline**: Available on Contact Us page.\n• **Location**: Prayagraj & Deoria, Uttar Pradesh.`,
         suggestions: [
-          { label: "📩 Contact Us Page", link: "/support/contact-us" },
+          { label: "💬 Help & Support", link: "/support/contact-us" },
           { label: "❓ FAQs", link: "/support/faqs" }
         ]
       };
@@ -190,33 +183,32 @@ const AIChatbot = () => {
     );
 
     if (matchedCategory) {
-      // Find products in this category
       const matchedProducts = featuredProducts.filter(
         (p) => p.category && p.category.toLowerCase().includes(matchedCategory.name.toLowerCase())
       ).slice(0, 3);
 
       return {
-        text: `✨ We have lovely designs in **${matchedCategory.name}**! Here are recommended styles:`,
+        text: `✨ Here are recommended styles in **${matchedCategory.name}**:`,
         products: matchedProducts,
         suggestions: [
           { label: `👗 View All ${matchedCategory.name}`, link: buildCategoryPath(matchedCategory) },
-          { label: "🔥 Check Offers", key: "offers" }
+          { label: "🔥 Today's Mega Sale Offers", link: "/category/sale" }
         ]
       };
     }
 
-    // 8. Live API Search for products matching the user's text
+    // 8. Live API Search for products
     try {
       const searchRes = await fetch(`${API_BASE_URL}/products/?search=${encodeURIComponent(input)}&limit=3`);
       if (searchRes.ok) {
         const results = await searchRes.json();
         if (Array.isArray(results) && results.length > 0) {
           return {
-            text: `I found ${results.length} matching products for "${userInput}":`,
+            text: `I found matching products for "${userInput}":`,
             products: results,
             suggestions: [
-              { label: "🛍️ View New Arrivals", link: "/new-arrivals" },
-              { label: "👗 Browse All Categories", key: "show_categories" }
+              { label: "👗 Browse Live Categories", key: "show_categories" },
+              { label: "🔥 Today's Mega Sale Offers", link: "/category/sale" }
             ]
           };
         }
@@ -225,15 +217,10 @@ const AIChatbot = () => {
       console.warn("Chatbot search error:", e);
     }
 
-    // 9. Default Fallback with live categories
+    // 9. Default Fallback
     return {
-      text: `I'd love to help you find the best outfit or home decor! You can explore our live collections below, search for any product name, or ask me about discounts and delivery.`,
-      suggestions: [
-        { label: "👗 View Categories", key: "show_categories" },
-        { label: "✨ New Arrivals", link: "/new-arrivals" },
-        { label: "🔥 Mega Sale", link: "/category/sale" },
-        { label: "📦 Track Order", link: "/user/orders" }
-      ]
+      text: `I'd love to help you find the perfect outfit! You can explore our live collections below, check today's offers, or track your orders anytime.`,
+      suggestions: defaultSuggestions
     };
   };
 
@@ -249,14 +236,13 @@ const AIChatbot = () => {
           text: replyObj.text,
           products: replyObj.products || [],
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          suggestions: replyObj.suggestions || []
+          suggestions: replyObj.suggestions || defaultSuggestions
         }
       ]);
-    }, 600);
+    }, 500);
   };
 
   const handleSuggestionClick = async (sug) => {
-    // Add user message
     setMessages((prev) => [
       ...prev,
       {
@@ -268,24 +254,20 @@ const AIChatbot = () => {
     ]);
 
     if (sug.link) {
-      // Direct navigation
       triggerBotReply({
         text: `Opening "${sug.label}" for you! Happy shopping! 🛍️`,
-        suggestions: [
-          { label: "👗 Main Menu", key: "welcome_back" },
-          { label: "🔥 Mega Sale", link: "/category/sale" }
-        ]
+        suggestions: defaultSuggestions
       });
       setTimeout(() => {
         setIsOpen(false);
         navigate(sug.link);
-      }, 500);
+      }, 400);
       return;
     }
 
     if (sug.key === "show_categories") {
       const catSuggestions = categories.slice(0, 8).map((c) => ({
-        label: c.name,
+        label: `👗 ${c.name}`,
         link: buildCategoryPath(c)
       })).concat([{ label: "🔥 All Sale Items", link: "/category/sale" }]);
 
@@ -302,20 +284,8 @@ const AIChatbot = () => {
         text: `Here are some of our customer-favourite bestsellers:`,
         products: bests,
         suggestions: [
-          { label: "✨ Explore New Arrivals", link: "/new-arrivals" },
-          { label: "🔥 Shop Sale", link: "/category/sale" }
-        ]
-      });
-      return;
-    }
-
-    if (sug.key === "welcome_back") {
-      triggerBotReply({
-        text: `How else may I help you? Choose an option below or type your question!`,
-        suggestions: [
-          { label: "👗 Browse Categories", key: "show_categories" },
-          { label: "🔥 Today's Offers", key: "offers" },
-          { label: "📦 Track Order", key: "track_order" }
+          { label: "👗 Browse Live Categories", key: "show_categories" },
+          { label: "🔥 Today's Mega Sale Offers", link: "/category/sale" }
         ]
       });
       return;
@@ -354,7 +324,7 @@ const AIChatbot = () => {
         text: replyObj.text,
         products: replyObj.products || [],
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        suggestions: replyObj.suggestions || []
+        suggestions: replyObj.suggestions || defaultSuggestions
       }
     ]);
   };
@@ -369,12 +339,12 @@ const AIChatbot = () => {
           if (!line.trim()) return <div key={lIdx} className="h-1.5" />;
           const parts = line.split(/(\*\*.*?\*\*)/g);
           return (
-            <div key={lIdx} className={line.trim().startsWith("•") ? "pl-2.5 flex items-start gap-1.5" : ""}>
+            <div key={lIdx} className={line.trim().startsWith("•") ? "pl-2 flex items-start gap-1.5" : ""}>
               <div className="flex-1">
                 {parts.map((part, pIdx) => {
                   if (part.startsWith("**") && part.endsWith("**")) {
                     return (
-                      <strong key={pIdx} className="font-bold text-[#580C1F]">
+                      <strong key={pIdx} className="font-bold text-[#8B0000]">
                         {part.slice(2, -2)}
                       </strong>
                     );
@@ -397,58 +367,43 @@ const AIChatbot = () => {
       {isOpen && (
         <div 
           ref={chatContainerRef}
-          className="fixed inset-x-3 bottom-3 sm:static sm:inset-auto w-auto sm:w-[390px] h-[520px] max-h-[82vh] sm:max-h-[85vh] bg-white rounded-3xl shadow-2xl border border-stone-200/90 flex flex-col overflow-hidden mb-3.5 transition-all duration-300 animate-fadeIn z-50"
+          className="fixed inset-x-3 bottom-3 sm:static sm:inset-auto w-auto sm:w-[380px] h-[510px] max-h-[82vh] sm:max-h-[85vh] bg-white rounded-3xl shadow-2xl border border-stone-200 flex flex-col overflow-hidden mb-3 transition-all duration-300 animate-fadeIn z-50"
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-[#580C1F] via-[#8B0000] to-[#580C1F] px-4 py-3.5 flex items-center justify-between text-white shadow-md flex-shrink-0">
-            <div className="flex items-center gap-3">
+          <div className="bg-gradient-to-r from-[#8B0000] via-[#A01020] to-[#8B0000] px-4 py-3.5 flex items-center justify-between text-white shadow-md flex-shrink-0">
+            <div className="flex items-center gap-2.5">
               <div className="relative">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-400 to-amber-200 flex items-center justify-center text-[#580C1F] font-bold shadow-md border-2 border-white/40">
-                  <Sparkles className="w-5 h-5 text-[#580C1F]" />
+                <div className="w-9 h-9 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center text-amber-300 font-bold border border-white/25">
+                  <Sparkles className="w-4.5 h-4.5" />
                 </div>
-                <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-400 border-2 border-white animate-pulse" />
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#8B0000]" />
               </div>
 
               <div>
-                <h3 className="font-serif font-bold text-sm leading-tight flex items-center gap-1.5 text-white">
+                <h3 className="font-serif font-bold text-sm leading-tight text-white">
                   Nari Pehnawa Assistant
                 </h3>
-                <p className="text-[10px] text-amber-200/90 font-medium">
-                  How may I help you? • Online
+                <p className="text-[11px] text-amber-200/90 font-medium">
+                  Always here to help you • Online
                 </p>
               </div>
             </div>
 
             <button
               onClick={() => setIsOpen(false)}
-              className="p-1.5 hover:bg-white/20 rounded-full transition-colors text-white/90 hover:text-white cursor-pointer"
+              className="p-1.5 hover:bg-white/15 rounded-full transition-colors text-white/90 hover:text-white cursor-pointer"
               aria-label="Close Assistant"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Quick Info Bar */}
-          <div className="bg-amber-50/80 px-4 py-1.5 border-b border-amber-200/60 flex items-center justify-between text-[10px] text-amber-900 font-semibold flex-shrink-0">
-            <span className="flex items-center gap-1">
-              <Flame className="w-3 h-3 text-[#8B0000]" />
-              <span>Flat 10% OFF with code: <strong>NARI10</strong></span>
-            </span>
-            <Link
-              to="/category/sale"
-              onClick={() => setIsOpen(false)}
-              className="text-[#8B0000] underline font-bold hover:text-red-700"
-            >
-              Sale →
-            </Link>
-          </div>
-
           {/* Messages Body */}
-          <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 bg-gradient-to-b from-stone-50/60 to-white scrollbar-thin">
+          <div className="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-3 bg-[#fafaf9] scrollbar-thin">
             {messages.map((msg) => (
               <div key={msg.id} className="space-y-2">
                 <div
-                  className={`flex gap-2 max-w-[88%] ${
+                  className={`flex gap-2 max-w-[90%] ${
                     msg.sender === "user" ? "ml-auto flex-row-reverse" : "mr-auto"
                   }`}
                 >
@@ -456,7 +411,7 @@ const AIChatbot = () => {
                     className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs shadow-xs ${
                       msg.sender === "user"
                         ? "bg-[#8B0000] text-white"
-                        : "bg-[#FAF5ED] border border-amber-200 text-[#8B0000]"
+                        : "bg-white border border-stone-200 text-[#8B0000]"
                     }`}
                   >
                     {msg.sender === "user" ? (
@@ -471,7 +426,7 @@ const AIChatbot = () => {
                       className={`p-3 rounded-2xl text-xs leading-relaxed shadow-xs ${
                         msg.sender === "user"
                           ? "bg-[#8B0000] text-white rounded-tr-none font-medium"
-                          : "bg-white text-stone-800 border border-stone-200/80 rounded-tl-none"
+                          : "bg-white text-stone-800 border border-stone-200 rounded-tl-none"
                       }`}
                     >
                       {renderCleanMessage(msg.text)}
@@ -523,31 +478,18 @@ const AIChatbot = () => {
                   </div>
                 </div>
 
-                {/* Suggestions / Interactive Action Chips */}
-                {msg.sender === "bot" && msg.suggestions && msg.suggestions.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pl-9 pt-0.5">
-                    {msg.suggestions.map((sug, sIdx) =>
-                      sug.link ? (
-                        <Link
-                          key={sIdx}
-                          to={sug.link}
-                          onClick={() => setIsOpen(false)}
-                          className="px-2.5 py-1 bg-white border border-stone-200 hover:border-[#8B0000] text-[#8B0000] hover:bg-[#FAF5ED] rounded-full text-[10.5px] font-semibold transition-all shadow-xs flex items-center gap-1 group cursor-pointer"
-                        >
-                          <span>{sug.label}</span>
-                          <ChevronRight className="w-3 h-3 text-stone-400 group-hover:text-[#8B0000] transition-transform group-hover:translate-x-0.5" />
-                        </Link>
-                      ) : (
-                        <button
-                          key={sIdx}
-                          onClick={() => handleSuggestionClick(sug)}
-                          className="px-2.5 py-1 bg-white border border-stone-200 hover:border-[#8B0000] text-stone-700 hover:text-[#8B0000] hover:bg-[#FAF5ED] rounded-full text-[10.5px] font-medium transition-all shadow-xs flex items-center gap-1 cursor-pointer"
-                        >
-                          {sug.icon && <span>{sug.icon}</span>}
-                          <span>{sug.label}</span>
-                        </button>
-                      )
-                    )}
+                {/* Quick Action Suggestion Chips */}
+                {msg.suggestions && msg.suggestions.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pl-9 pt-1 animate-fadeIn">
+                    {msg.suggestions.map((sug, sIdx) => (
+                      <button
+                        key={sIdx}
+                        onClick={() => handleSuggestionClick(sug)}
+                        className="text-[11px] font-medium bg-white hover:bg-stone-50 border border-stone-300 hover:border-[#8B0000] text-stone-700 hover:text-[#8B0000] px-3 py-1.5 rounded-full shadow-2xs transition-all cursor-pointer text-left"
+                      >
+                        {sug.label}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
@@ -555,65 +497,67 @@ const AIChatbot = () => {
 
             {/* Typing indicator */}
             {isTyping && (
-              <div className="flex gap-2 max-w-[80%] mr-auto items-center">
-                <div className="w-7 h-7 rounded-full bg-[#FAF5ED] border border-amber-200 text-[#8B0000] flex items-center justify-center">
+              <div className="flex items-center gap-2 mr-auto pl-1">
+                <div className="w-7 h-7 rounded-full bg-white border border-stone-200 flex items-center justify-center text-[#8B0000] shadow-xs">
                   <Bot className="w-3.5 h-3.5" />
                 </div>
-                <div className="bg-white border border-stone-200/80 p-3 rounded-2xl rounded-tl-none shadow-xs flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#8B0000] animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#8B0000] animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#8B0000] animate-bounce" style={{ animationDelay: "300ms" }} />
+                <div className="bg-white border border-stone-200 px-3.5 py-2.5 rounded-2xl rounded-tl-none shadow-xs flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#8B0000] animate-bounce" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#8B0000] animate-bounce [animation-delay:0.2s]" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#8B0000] animate-bounce [animation-delay:0.4s]" />
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Footer Input Form */}
+          {/* Chat Input */}
           <form
             onSubmit={handleSend}
-            className="p-2.5 sm:p-3 border-t border-stone-200 bg-white flex gap-2 items-center flex-shrink-0"
+            className="p-2.5 bg-white border-t border-stone-200 flex items-center gap-2 flex-shrink-0"
           >
             <input
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Ask anything or search styles..."
-              className="flex-1 bg-stone-50 border border-stone-200 rounded-xl px-3.5 py-2 text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:border-[#8B0000] focus:bg-white transition-all"
+              placeholder="Ask about kurtis, offers, orders..."
+              className="flex-1 bg-stone-50 border border-stone-200 focus:border-[#8B0000] rounded-full px-3.5 py-2 text-xs text-stone-800 focus:outline-none transition-colors"
             />
             <button
               type="submit"
-              disabled={!inputValue.trim()}
-              className="p-2 bg-[#8B0000] hover:bg-[#6B0000] text-white rounded-xl transition-all disabled:opacity-40 shadow-sm cursor-pointer"
-              aria-label="Send message"
+              disabled={!inputValue.trim() || isTyping}
+              className="w-8 h-8 rounded-full bg-[#8B0000] hover:bg-[#a01020] text-white flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs cursor-pointer flex-shrink-0"
+              aria-label="Send Message"
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-3.5 h-3.5" />
             </button>
           </form>
         </div>
       )}
 
       {/* ══════════════════════════════════════
-          FLOATING TRIGGER BUBBLE (HOW MAY I HELP YOU?)
+          FLOATING CHATBOT TOGGLE BUTTON
       ══════════════════════════════════════ */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-[#580C1F] via-[#8B0000] to-[#580C1F] text-white flex items-center justify-center shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 group relative border-2 border-amber-300/40 cursor-pointer"
-        aria-label="Toggle AI Assistant"
+        className={`group relative flex items-center gap-2 px-4 py-3 rounded-full bg-gradient-to-r from-[#8B0000] via-[#A01020] to-[#8B0000] text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer border border-amber-300/30 select-none ${
+          isOpen ? "ring-4 ring-red-300/30" : ""
+        }`}
+        aria-label="Open AI Assistant"
       >
-        <span className="absolute inset-0 rounded-full bg-[#8B0000]/30 animate-ping opacity-60 pointer-events-none group-hover:hidden" />
         {isOpen ? (
-          <X className="w-6 h-6 transition-transform duration-300" />
+          <X className="w-5 h-5 text-white animate-spin-fast" />
         ) : (
-          <MessageSquare className="w-6 h-6 transition-transform duration-300" />
-        )}
-
-        {/* High Converting Stylist Badge Tooltip */}
-        {!isOpen && (
-          <span className="absolute -top-9 sm:-top-10 right-0 bg-white text-stone-900 text-[10.5px] sm:text-xs font-bold px-3 py-1.5 rounded-full shadow-xl border border-stone-200 whitespace-nowrap pointer-events-none flex items-center gap-1.5 animate-bounce">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>How may I help you?</span>
-          </span>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <MessageSquare className="w-5 h-5 text-amber-200 group-hover:rotate-6 transition-transform" />
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400" />
+            </div>
+            <span className="font-bold text-xs tracking-wide text-white">
+              AI Stylist
+            </span>
+          </div>
         )}
       </button>
     </div>

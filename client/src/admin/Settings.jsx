@@ -289,58 +289,58 @@ const Settings = () => {
       {/* TAB 1: FLASH SALE & FESTIVE EVENT MANAGER */}
       {activeTab === 'flash_sale' && (
         <form onSubmit={handleSaveFlashSale} className="space-y-6 text-xs text-left">
-          <div className="bg-gradient-to-br from-[#111827] to-[#1c1318] border-2 border-amber-500/30 rounded-2xl p-5 shadow-2xl space-y-5">
+          <div className="bg-[#111827] border border-gray-800 rounded-2xl p-5 shadow-lg space-y-5">
             
             {/* Header & Purpose info */}
-            <div className="flex items-center justify-between border-b border-gray-800 pb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#8B0000] to-amber-500 flex items-center justify-center text-white shadow-md">
+            <div className="flex items-center justify-between border-b border-gray-800/80 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0891b2] to-cyan-400 flex items-center justify-center text-white shadow-md shadow-[#0891b2]/20">
                   <Flame className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="text-base font-extrabold text-white flex items-center gap-2">
                     Flash Sale &amp; Festive Event Manager
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      flashSaleConfig.is_active ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-gray-800 text-gray-400'
+                      flashSaleConfig.is_active ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-gray-800 text-gray-400'
                     }`}>
                       {flashSaleConfig.is_active ? '● LIVE / ACTIVE' : 'INACTIVE'}
                     </span>
                   </h3>
-                  <p className="text-[11px] text-gray-400">
-                    <strong className="text-amber-300">Purpose:</strong> Set live timed flash sales, countdown timers, custom discounts, and select which products/categories to put on sale.
+                  <p className="text-[11px] text-gray-400 mt-0.5">
+                    <strong className="text-cyan-400">Purpose:</strong> Set live timed flash sales, countdown timers, custom discounts, and select which products/categories to put on sale.
                   </p>
                 </div>
               </div>
 
               {/* Status Toggle */}
-              <label className="flex items-center gap-2 cursor-pointer bg-[#0b1220] px-4 py-2 rounded-xl border border-gray-800">
+              <label className="flex items-center gap-2 cursor-pointer bg-[#0b1220] px-4 py-2 rounded-xl border border-gray-800 hover:border-gray-700 transition">
                 <input
                   type="checkbox"
                   checked={flashSaleConfig.is_active}
                   onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, is_active: e.target.checked })}
-                  className="w-4 h-4 accent-amber-400 rounded cursor-pointer"
+                  className="w-4 h-4 accent-[#0891b2] rounded cursor-pointer"
                 />
                 <span className="text-xs font-bold text-white">Enable Flash Sale</span>
               </label>
             </div>
 
-            {/* Live Store Preview Card */}
-            <div className="p-4 rounded-xl bg-gradient-to-r from-[#580C1F] via-[#8B0000] to-[#580C1F] border border-amber-300/40 text-white shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Live Store Preview Card — Sleek Admin Theme */}
+            <div className="p-4 rounded-xl bg-gradient-to-r from-[#0f172a] via-[#1e293b] to-[#0f172a] border border-cyan-500/30 text-white shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="space-y-1 text-center md:text-left">
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-400 text-[#8B0000] px-2 py-0.5 rounded-full uppercase">
-                  📢 Live Storefront Preview (Shown on /category/sale)
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-[#0891b2] text-white px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-xs">
+                  📢 Storefront Preview (Shown on /category/sale)
                 </span>
-                <h4 className="text-lg font-serif font-bold text-white">
+                <h4 className="text-lg font-bold text-white">
                   {flashSaleConfig.title || "Festive Flash Sale"}
                 </h4>
-                <p className="text-xs text-amber-200">
+                <p className="text-xs text-cyan-200/80">
                   {flashSaleConfig.subtitle || "Limited-Time Exclusive Deals"}
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 bg-black/40 px-4 py-2.5 rounded-xl border border-white/20">
-                <span className="text-xs font-bold text-amber-300">Discount:</span>
-                <span className="text-xl font-black text-white font-mono">{flashSaleConfig.discount_percentage}% OFF</span>
+              <div className="flex items-center gap-3 bg-[#0b1220]/80 px-4 py-2.5 rounded-xl border border-cyan-500/20">
+                <span className="text-xs font-bold text-cyan-300">Discount:</span>
+                <span className="text-xl font-black text-cyan-400 font-mono">{flashSaleConfig.discount_percentage}% OFF</span>
               </div>
             </div>
 
@@ -354,7 +354,7 @@ const Settings = () => {
                   placeholder="e.g. Diwali Festive Flash Sale, Midnight Clearance"
                   value={flashSaleConfig.title}
                   onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, title: e.target.value })}
-                  className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-amber-400 font-semibold"
+                  className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-cyan-400 font-semibold"
                 />
               </div>
 
@@ -365,7 +365,7 @@ const Settings = () => {
                   placeholder="e.g. Up to 50% Off on Handcrafted Kurtis"
                   value={flashSaleConfig.subtitle}
                   onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, subtitle: e.target.value })}
-                  className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-amber-400"
+                  className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-cyan-400"
                 />
               </div>
             </div>
@@ -373,7 +373,7 @@ const Settings = () => {
             {/* Quick Duration Presets & Timing */}
             <div className="p-4 rounded-xl bg-[#0b1220] border border-gray-800 space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                <label className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
                   <Clock className="w-4 h-4" /> Quick Timer Presets:
                 </label>
                 <div className="flex flex-wrap gap-1.5">
@@ -389,7 +389,7 @@ const Settings = () => {
                       key={preset.label}
                       type="button"
                       onClick={() => applyDurationPreset(preset.hours)}
-                      className="px-2.5 py-1 bg-[#111827] hover:bg-amber-500 hover:text-black border border-gray-700 text-gray-200 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
+                      className="px-2.5 py-1 bg-[#111827] hover:bg-[#0891b2] hover:text-white border border-gray-700 text-gray-200 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
                     >
                       {preset.label}
                     </button>
@@ -404,7 +404,7 @@ const Settings = () => {
                     type="datetime-local"
                     value={flashSaleConfig.start_time ? flashSaleConfig.start_time.slice(0, 16) : ""}
                     onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, start_time: e.target.value })}
-                    className="w-full bg-[#111827] border border-gray-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400"
+                    className="w-full bg-[#111827] border border-gray-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400"
                   />
                 </div>
 
@@ -414,7 +414,7 @@ const Settings = () => {
                     type="datetime-local"
                     value={flashSaleConfig.end_time ? flashSaleConfig.end_time.slice(0, 16) : ""}
                     onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, end_time: e.target.value })}
-                    className="w-full bg-[#111827] border border-gray-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400"
+                    className="w-full bg-[#111827] border border-gray-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400"
                   />
                 </div>
               </div>
@@ -433,9 +433,9 @@ const Settings = () => {
                     step="5"
                     value={flashSaleConfig.discount_percentage}
                     onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, discount_percentage: Number(e.target.value) })}
-                    className="flex-1 accent-amber-400 cursor-pointer"
+                    className="flex-1 accent-[#0891b2] cursor-pointer"
                   />
-                  <span className="text-base font-extrabold text-amber-300 font-mono w-14 text-right">
+                  <span className="text-base font-extrabold text-cyan-300 font-mono w-14 text-right">
                     {flashSaleConfig.discount_percentage}%
                   </span>
                 </div>
@@ -457,7 +457,7 @@ const Settings = () => {
                       onClick={() => setFlashSaleConfig({ ...flashSaleConfig, target_type: scope.id })}
                       className={`p-2.5 rounded-xl border text-center font-bold text-[11px] transition-all cursor-pointer ${
                         flashSaleConfig.target_type === scope.id
-                          ? "bg-amber-500/20 border-amber-400 text-amber-300 shadow-sm"
+                          ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-sm"
                           : "bg-[#111827] border-gray-850 text-gray-400 hover:text-gray-200"
                       }`}
                     >
@@ -473,7 +473,7 @@ const Settings = () => {
                     <select
                       value={flashSaleConfig.target_category}
                       onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, target_category: e.target.value })}
-                      className="w-full bg-[#111827] border border-gray-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400"
+                      className="w-full bg-[#111827] border border-gray-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400"
                     >
                       <option value="">-- Select a Category --</option>
                       {availableCategories.map((cat) => (
@@ -507,10 +507,10 @@ const Settings = () => {
                                   : currentIds.filter(id => id !== pid);
                                 setFlashSaleConfig({ ...flashSaleConfig, target_product_ids: updated });
                               }}
-                              className="w-3.5 h-3.5 accent-amber-400 rounded"
+                              className="w-3.5 h-3.5 accent-[#0891b2] rounded"
                             />
                             <span className="text-white truncate flex-1">{p.name}</span>
-                            <span className="text-amber-400 font-mono">₹{p.price}</span>
+                            <span className="text-cyan-400 font-mono">₹{p.price}</span>
                           </label>
                         );
                       })}
@@ -525,9 +525,9 @@ const Settings = () => {
               <button
                 type="submit"
                 disabled={flashSaleLoading}
-                className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold rounded-xl flex items-center gap-2 shadow-lg transition-all cursor-pointer disabled:opacity-50"
+                className="px-6 py-3 bg-[#0891b2] hover:bg-cyan-600 text-white font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-[#0891b2]/20 transition-all cursor-pointer disabled:opacity-50"
               >
-                {flashSaleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flame className="w-4 h-4 fill-black" />}
+                {flashSaleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flame className="w-4 h-4 text-white" />}
                 <span>Save &amp; Launch Flash Sale</span>
               </button>
             </div>
