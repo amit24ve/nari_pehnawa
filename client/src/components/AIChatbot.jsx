@@ -40,7 +40,7 @@ const AIChatbot = () => {
   const getInitialMessage = () => ({
     id: "welcome",
     sender: "bot",
-    text: `Namaste! 🙏 How may I help you?\n\nI am your Nari Pehnawa AI Assistant. You can explore our handcrafted collections, track your orders, check live offers, or ask for any style advice!`,
+    text: `Hello! How may I help you?\n\nI am your Nari Pehnawa AI Assistant. You can explore our handcrafted collections, track your orders, check live offers, or ask for any style advice!`,
     time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     suggestions: defaultSuggestions
   });
@@ -80,7 +80,7 @@ const AIChatbot = () => {
             {
               id: "welcome",
               sender: "bot",
-              text: `Namaste, ${user.name.split(" ")[0]}! 🙏 How may I help you?\n\nI am your Nari Pehnawa AI Assistant. You can explore our handcrafted ethnic wear, live discounts, or track your orders anytime.`,
+              text: `Hello! How may I help you?\n\nI am your Nari Pehnawa AI Assistant. You can explore our handcrafted ethnic wear, live discounts, or track your orders anytime.`,
               time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
               suggestions: defaultSuggestions
             }
@@ -365,7 +365,7 @@ const AIChatbot = () => {
           CHAT WINDOW MODAL (100% Responsive Mobile + Desktop)
       ══════════════════════════════════════ */}
       {isOpen && (
-        <div 
+        <div
           ref={chatContainerRef}
           className="fixed inset-x-3 bottom-3 sm:static sm:inset-auto w-auto sm:w-[380px] h-[510px] max-h-[82vh] sm:max-h-[85vh] bg-white rounded-3xl shadow-2xl border border-stone-200 flex flex-col overflow-hidden mb-3 transition-all duration-300 animate-fadeIn z-50"
         >
@@ -403,16 +403,14 @@ const AIChatbot = () => {
             {messages.map((msg) => (
               <div key={msg.id} className="space-y-2">
                 <div
-                  className={`flex gap-2 max-w-[90%] ${
-                    msg.sender === "user" ? "ml-auto flex-row-reverse" : "mr-auto"
-                  }`}
+                  className={`flex gap-2 max-w-[90%] ${msg.sender === "user" ? "ml-auto flex-row-reverse" : "mr-auto"
+                    }`}
                 >
                   <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs shadow-xs ${
-                      msg.sender === "user"
+                    className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs shadow-xs ${msg.sender === "user"
                         ? "bg-[#8B0000] text-white"
                         : "bg-white border border-stone-200 text-[#8B0000]"
-                    }`}
+                      }`}
                   >
                     {msg.sender === "user" ? (
                       <User className="w-3.5 h-3.5" />
@@ -423,11 +421,10 @@ const AIChatbot = () => {
 
                   <div className="min-w-0">
                     <div
-                      className={`p-3 rounded-2xl text-xs leading-relaxed shadow-xs ${
-                        msg.sender === "user"
+                      className={`p-3 rounded-2xl text-xs leading-relaxed shadow-xs ${msg.sender === "user"
                           ? "bg-[#8B0000] text-white rounded-tr-none font-medium"
                           : "bg-white text-stone-800 border border-stone-200 rounded-tl-none"
-                      }`}
+                        }`}
                     >
                       {renderCleanMessage(msg.text)}
                     </div>
@@ -540,9 +537,8 @@ const AIChatbot = () => {
       ══════════════════════════════════════ */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`group relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-[#8B0000] via-[#A01020] to-[#8B0000] text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer border-2 border-white/40 select-none ${
-          isOpen ? "ring-4 ring-red-400/30" : ""
-        }`}
+        className={`group relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-[#8B0000] via-[#A01020] to-[#8B0000] text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer border-2 border-white/40 select-none ${isOpen ? "ring-4 ring-red-400/30" : ""
+          }`}
         aria-label="Open AI Assistant"
       >
         {isOpen ? (
