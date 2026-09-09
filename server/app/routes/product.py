@@ -187,6 +187,13 @@ def get_product_count(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def _build_product_query(product_id: str) -> dict:
+    conditions = [{"_id": product_id}, {"id": product_id}]
+    if ObjectId.is_valid(product_id):
+        conditions.insert(0, {"_id": ObjectId(product_id)})
+    return {"$or": conditions}
+
+
 @router.get("/{product_id}", response_model=Product)
 @cache_response(expire_seconds=300)
 def get_product(product_id: str, request: Request):
@@ -195,7 +202,7 @@ def get_product(product_id: str, request: Request):
     products_collection = db["products"]
 
     try:
-        product = products_collection.find_one({"_id": ObjectId(product_id)})
+        product = products_collection.find_one(_build_product_query(product_id))
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
         product["_id"] = str(product["_id"])
@@ -218,7 +225,7 @@ def update_product(product_id: str, product: ProductUpdate, current_user: dict =
             raise HTTPException(status_code=400, detail="No fields to update")
 
         result = products_collection.find_one_and_update(
-            {"_id": ObjectId(product_id)},
+            _build_product_query(product_id),
             {"$set": update_data},
             return_document=True
         )
@@ -240,11 +247,11 @@ def delete_product(product_id: str, current_user: dict = Depends(require_admin))
     products_collection = db["products"]
 
     try:
-        result = products_collection.delete_one({"_id": ObjectId(product_id)})
-        if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="Product not found")
+        result = products_collection.delete_one(_build_product_query(product_id))
         clear_api_cache()
-        return {"message": "Product deleted successfully"}
+        if result.deleted_count == 0:
+            return {"message": "Product not found or already deleted", "deleted": False}
+        return {"message": "Product deleted successfully", "deleted": True}
     except HTTPException:
         raise
     except Exception as e:
@@ -265,7 +272,7 @@ def share_product_email(
     """Send product link email to customer (Admin only)."""
     db = get_database()
     try:
-        prod = db["products"].find_one({"_id": ObjectId(product_id)})
+        prod = db["products"].find_one(_build_product_query(product_id))
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid product ID")
 

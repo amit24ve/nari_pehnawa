@@ -317,7 +317,12 @@ const Products = () => {
                 method: "DELETE",
                 headers: { Authorization: `Bearer ${token}` }
             });
-            if (!res.ok) throw new Error("Failed to delete product");
+            if (!res.ok && res.status !== 404) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.detail || "Failed to delete product");
+            }
+            // Remove from state immediately and refresh product list
+            setProducts(prev => prev.filter(p => p.id !== productId && p._id !== productId));
             fetchProducts();
         } catch (err) {
             alert(`Error: ${err.message}`);
