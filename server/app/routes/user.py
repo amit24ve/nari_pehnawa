@@ -56,6 +56,10 @@ def get_user_detailed_view(user_id: str, current_user: dict = Depends(require_ad
             "joined_date": user.get("joined_date") or created_ist[:11],
             "created_at_ist": created_ist,
             "last_login": user.get("last_login") or "",
+            "coins_balance": user.get("coins_balance", 0) or 0,
+            "coins_earned_total": user.get("coins_earned_total", 0) or 0,
+            "coins_spent_total": user.get("coins_spent_total", 0) or 0,
+            "coins_rupee_value": round((user.get("coins_balance", 0) or 0) / 10, 2),
         }
 
         # Fetch saved addresses
@@ -214,6 +218,10 @@ def get_users(
             user["orders_count"] = orders_collection.count_documents({
                 "$or": [{"user_id": user["id"]}, {"email": user.get("email")}]
             })
+            user["coins_balance"] = user.get("coins_balance", 0) or 0
+            user["coins_earned_total"] = user.get("coins_earned_total", 0) or 0
+            user["coins_spent_total"] = user.get("coins_spent_total", 0) or 0
+            user["coins_rupee_value"] = round(user["coins_balance"] / 10, 2)
             user.pop("_id", None)
             user.pop("password_hash", None)
         return users

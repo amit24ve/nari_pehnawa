@@ -1719,6 +1719,41 @@ const Orders = () => {
                     </div>
                   </div>
 
+                  {/* 🪙 Reward Coins & Discounts Audit */}
+                  {(selectedOrder.coins_used > 0 || selectedOrder.coins_earned > 0 || selectedOrder.coin_discount > 0 || selectedOrder.coupon_code) && (
+                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 shadow-sm text-xs space-y-2">
+                      <h5 className="font-bold text-amber-900 flex items-center gap-1.5">
+                        🪙 Reward Coins & Discounts Audit
+                      </h5>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-slate-700">
+                        <div>
+                          <span className="text-slate-400 block mb-0.5 text-[10px]">Coins Redeemed</span>
+                          <span className="font-bold text-rose-600">
+                            {selectedOrder.coins_used ? `${selectedOrder.coins_used} Coins` : "0 Coins"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block mb-0.5 text-[10px]">Coin Discount</span>
+                          <span className="font-bold text-rose-600">
+                            {selectedOrder.coin_discount ? `-₹${Number(selectedOrder.coin_discount).toFixed(2)}` : "₹0.00"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block mb-0.5 text-[10px]">Coins Earned</span>
+                          <span className="font-bold text-emerald-600">
+                            {selectedOrder.coins_earned ? `+${selectedOrder.coins_earned} Coins` : "0 Coins"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block mb-0.5 text-[10px]">Coupon Applied</span>
+                          <span className="font-bold font-mono text-slate-800">
+                            {selectedOrder.coupon_code || "None"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Shiprocket Delivery Status */}
                   <div className="bg-gradient-to-br from-slate-50 to-slate-100/30 border border-slate-200 rounded-2xl p-5 shadow-sm space-y-5">
                     <div className="flex items-center justify-between border-b border-slate-200 pb-3.5">

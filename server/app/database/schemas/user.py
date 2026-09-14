@@ -18,6 +18,9 @@ class User(BaseModel):
     bio: Optional[str] = None
     auth_provider: Optional[str] = None
     avatar: Optional[str] = None
+    coins_balance: Optional[int] = 0
+    coins_earned_total: Optional[int] = 0
+    coins_spent_total: Optional[int] = 0
 
 
 class UserCreate(BaseModel):

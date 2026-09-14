@@ -6,6 +6,8 @@ import {
   Smartphone,
   CheckCircle,
   Loader2,
+  Coins,
+  Sparkles,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
@@ -60,6 +62,8 @@ const CheckoutModal = ({
   const [loading, setLoading] = useState(false);
   const [orderResult, setOrderResult] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState("razorpay");
+  const [userCoins, setUserCoins] = useState(0);
+  const [useCoins, setUseCoins] = useState(false);
   const [address, setAddress] = useState({
     full_name: user?.name || "",
     phone: user?.phone || "",
@@ -72,10 +76,44 @@ const CheckoutModal = ({
   });
   const [addressErrors, setAddressErrors] = useState({});
 
-  if (!isOpen) return null;
-
   const getToken = () =>
     localStorage.getItem("neel_token") || localStorage.getItem("token");
+
+  React.useEffect(() => {
+    if (isOpen && user) {
+      const token = getToken();
+      if (token) {
+        fetch(`${API_URL}/coins/wallet`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (data && typeof data.coins_balance === "number") {
+              setUserCoins(data.coins_balance);
+            }
+          })
+          .catch(() => {});
+      }
+    }
+  }, [isOpen, user]);
+
+  if (!isOpen) return null;
+
+  // Max 50% discount from coins (10 Coins = ₹1)
+  const maxCoinsAllowed = Math.min(
+    userCoins,
+    Math.floor(subtotal * 0.5 * 10)
+  );
+  const coinsToRedeem = useCoins ? maxCoinsAllowed : 0;
+  const coinDiscount = Number((coinsToRedeem / 10).toFixed(2));
+  const finalPayable = Math.max(0, Number((total - coinDiscount).toFixed(2)));
+
+  // Potential coins to earn (100 for regular, 50 for sale/offer items)
+  const potentialCoinsToEarn = items.reduce((sum, it) => {
+    const qty = it.quantity || 1;
+    const isSale = it.on_sale || (it.discount && it.discount > 0);
+    return sum + (isSale ? 50 : 100) * qty;
+  }, 0);
 
   const validateAddress = () => {
     const errs = {};
@@ -102,15 +140,19 @@ const CheckoutModal = ({
       color: item.color || "",
       price: item.price,
       total: item.price * item.quantity,
+      on_sale: Boolean(item.on_sale || (item.discount && item.discount > 0)),
     })),
     shipping_address: address,
     subtotal,
     discount,
     shipping_cost: shipping,
     tax: 0,
-    total_amount: total,
+    total_amount: finalPayable,
     payment_method: paymentMethod === "razorpay" ? "Razorpay" : "COD",
     coupon_code: couponCode,
+    coins_used: coinsToRedeem,
+    coin_discount: coinDiscount,
+    coins_earned: potentialCoinsToEarn,
     customer_email: user?.email || "",
   });
 
@@ -126,7 +168,7 @@ const CheckoutModal = ({
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ amount: total, currency: "INR" }),
+          body: JSON.stringify({ amount: finalPayable, currency: "INR" }),
         },
       );
       if (!createRes.ok) throw new Error("Could not create payment order");
@@ -134,7 +176,7 @@ const CheckoutModal = ({
 
       const options = {
         key: key_id,
-        amount: Math.round(total * 100),
+        amount: Math.round(finalPayable * 100),
         currency: "INR",
         name: "Nari Pehnawa",
         description: `Order of ${items.length} item(s)`,
@@ -390,8 +432,14 @@ const CheckoutModal = ({
               </div>
               {discount > 0 && (
                 <div className="flex justify-between text-green-600">
-                  <span>Discount</span>
+                  <span>Coupon Discount</span>
                   <span>- ₹{discount.toLocaleString("en-IN")}</span>
+                </div>
+              )}
+              {coinDiscount > 0 && (
+                <div className="flex justify-between text-amber-600 font-semibold">
+                  <span>🪙 Coins Discount ({coinsToRedeem} coins)</span>
+                  <span>- ₹{coinDiscount.toLocaleString("en-IN")}</span>
                 </div>
               )}
               <div className="flex justify-between text-gray-600">
@@ -399,8 +447,8 @@ const CheckoutModal = ({
                 <span>{shipping === 0 ? "FREE" : `₹${shipping}`}</span>
               </div>
               <div className="flex justify-between font-bold text-gray-900 mt-2 pt-2 border-t border-gray-200">
-                <span>Total</span>
-                <span>₹{total.toLocaleString("en-IN")}</span>
+                <span>Total Payable</span>
+                <span>₹{finalPayable.toLocaleString("en-IN")}</span>
               </div>
             </div>
 
@@ -434,6 +482,61 @@ const CheckoutModal = ({
                   Change
                 </button>
               </div>
+            </div>
+
+            {/* 🪙 REWARD COINS BOX */}
+            <div className="bg-amber-50/80 border border-amber-200/90 rounded-2xl p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-700 flex items-center justify-center font-bold text-sm">
+                    🪙
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                      Nari Pehnawa Reward Coins
+                      {userCoins > 0 && (
+                        <span className="text-[10px] px-2 py-0.5 bg-amber-200 text-amber-900 rounded-full font-semibold">
+                          {userCoins} Coins
+                        </span>
+                      )}
+                    </h4>
+                    <p className="text-[11px] text-gray-600">
+                      10 Coins = ₹1 • Max 50% order discount
+                    </p>
+                  </div>
+                </div>
+
+                {userCoins >= 10 && maxCoinsAllowed >= 10 && (
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={useCoins}
+                      onChange={(e) => setUseCoins(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                  </label>
+                )}
+              </div>
+
+              {userCoins >= 10 && maxCoinsAllowed >= 10 ? (
+                <div className="text-xs pt-2 border-t border-amber-200 flex justify-between items-center text-amber-900">
+                  <span>
+                    {useCoins
+                      ? `Redeeming ${coinsToRedeem} coins for discount`
+                      : `Redeem up to ${maxCoinsAllowed} coins (₹${(maxCoinsAllowed / 10).toFixed(2)} off)`}
+                  </span>
+                  {useCoins && (
+                    <span className="font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                      -₹{coinDiscount}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div className="text-xs text-amber-800 pt-1.5 border-t border-amber-200 flex items-center justify-between">
+                  <span>🎉 You will earn <strong>+{potentialCoinsToEarn} Reward Coins</strong> on this order!</span>
+                </div>
+              )}
             </div>
 
             <div>
@@ -484,11 +587,30 @@ const CheckoutModal = ({
               </div>
             </div>
 
-            <div className="bg-[#8B0000]/5 rounded-xl p-4 flex justify-between items-center">
-              <span className="text-sm font-semibold text-gray-700">Amount to Pay</span>
-              <span className="text-xl font-bold text-[#8B0000]">
-                ₹{total.toLocaleString("en-IN")}
-              </span>
+            {/* Price breakdown in Step 2 */}
+            <div className="bg-[#8B0000]/5 rounded-xl p-4 space-y-1.5 text-sm">
+              <div className="flex justify-between text-gray-600">
+                <span>Subtotal</span>
+                <span>₹{subtotal.toLocaleString("en-IN")}</span>
+              </div>
+              {discount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Coupon Discount</span>
+                  <span>-₹{discount.toLocaleString("en-IN")}</span>
+                </div>
+              )}
+              {coinDiscount > 0 && (
+                <div className="flex justify-between text-amber-600 font-semibold">
+                  <span>🪙 Coins Discount ({coinsToRedeem} coins)</span>
+                  <span>-₹{coinDiscount.toLocaleString("en-IN")}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center pt-2 border-t border-[#8B0000]/10">
+                <span className="text-sm font-semibold text-gray-700">Final Amount to Pay</span>
+                <span className="text-xl font-bold text-[#8B0000]">
+                  ₹{finalPayable.toLocaleString("en-IN")}
+                </span>
+              </div>
             </div>
 
             <div className="flex gap-3">
@@ -508,9 +630,9 @@ const CheckoutModal = ({
                     <Loader2 className="w-4 h-4 animate-spin" /> Processing…
                   </>
                 ) : paymentMethod === "razorpay" ? (
-                  "Pay Now →"
+                  `Pay ₹${finalPayable.toLocaleString("en-IN")} →`
                 ) : (
-                  "Place Order →"
+                  `Place Order (₹${finalPayable.toLocaleString("en-IN")}) →`
                 )}
               </button>
             </div>
@@ -527,10 +649,19 @@ const CheckoutModal = ({
             <p className="text-gray-500 text-sm mb-4">
               Thank you for shopping with Nari Pehnawa. Your order has been confirmed.
             </p>
+
+            {/* Coins Earned Notification Banner */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-center justify-center gap-2 text-amber-900 text-sm font-medium">
+              <span>🪙</span>
+              <span>
+                You earned <strong>+{potentialCoinsToEarn} Reward Coins</strong> on this purchase!
+              </span>
+            </div>
+
             <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Order Number</span>
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-gray-900 font-mono">
                   {orderResult.order_number}
                 </span>
               </div>
@@ -540,6 +671,14 @@ const CheckoutModal = ({
                   {paymentMethod === "razorpay" ? "Paid Online" : "COD – Pay on Delivery"}
                 </span>
               </div>
+              {coinDiscount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Coins Redeemed</span>
+                  <span className="font-semibold text-amber-600">
+                    {coinsToRedeem} Coins (Saved ₹{coinDiscount})
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Delivery</span>
                 <span className="font-semibold text-gray-900">

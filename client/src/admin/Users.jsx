@@ -26,7 +26,9 @@ import {
     CheckCircle,
     Lock,
     Key,
-    RefreshCw
+    RefreshCw,
+    Coins,
+    Sparkles
 } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
@@ -45,6 +47,55 @@ const Users = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+
+    // Coins Adjustment State
+    const [showAdjustCoinsModal, setShowAdjustCoinsModal] = useState(false);
+    const [adjustUser, setAdjustUser] = useState(null);
+    const [adjustAmount, setAdjustAmount] = useState("");
+    const [adjustReason, setAdjustReason] = useState("");
+    const [adjustLoading, setAdjustLoading] = useState(false);
+
+    const handleOpenAdjustCoins = (user) => {
+        setAdjustUser(user);
+        setAdjustAmount("");
+        setAdjustReason("");
+        setShowAdjustCoinsModal(true);
+    };
+
+    const handleAdjustCoinsSubmit = async (e) => {
+        e.preventDefault();
+        if (!adjustUser || !adjustAmount) return;
+        try {
+            setAdjustLoading(true);
+            const token = localStorage.getItem("neel_token") || localStorage.getItem("token");
+            const res = await fetch(`${API_BASE_URL}/coins/admin/adjust`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    user_id: adjustUser.id,
+                    amount: parseInt(adjustAmount),
+                    reason: adjustReason || "Admin manual adjustment"
+                })
+            });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.detail || "Failed to adjust coins");
+            }
+            alert("User coins updated successfully!");
+            setShowAdjustCoinsModal(false);
+            fetchUsers();
+            if (viewDetails?.user?.id === adjustUser.id) {
+                handleViewUser(adjustUser.id);
+            }
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            setAdjustLoading(false);
+        }
+    };
 
     const handleViewUser = async (userId) => {
         try {
@@ -552,6 +603,9 @@ const Users = () => {
                                             Orders Count
                                         </th>
                                         <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                            🪙 Coins
+                                        </th>
+                                        <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                                             Actions
                                         </th>
                                     </tr>
@@ -599,6 +653,16 @@ const Users = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex flex-col">
+                                                    <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200 w-fit">
+                                                        🪙 {(user.coins_balance || 0).toLocaleString()}
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400 mt-0.5">
+                                                        ≈ ₹{((user.coins_balance || 0) / 10).toFixed(2)}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={() => handleViewUser(user.id)}
@@ -606,6 +670,13 @@ const Users = () => {
                                                     >
                                                         <Eye className="w-3.5 h-3.5" />
                                                         View
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleOpenAdjustCoins(user)}
+                                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl hover:bg-amber-100 transition text-xs font-bold"
+                                                        title="Adjust Coins"
+                                                    >
+                                                        🪙 Coins
                                                     </button>
                                                     <button
                                                         onClick={() => handleEdit(user)}
@@ -958,6 +1029,33 @@ const Users = () => {
                                         </div>
                                     </div>
 
+                                    {/* 🪙 Reward Coins Card */}
+                                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-700 flex items-center justify-center font-bold text-xl flex-shrink-0">
+                                                🪙
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                                    Nari Pehnawa Reward Coins
+                                                    <span className="text-xs px-2.5 py-0.5 bg-amber-200 text-amber-900 font-bold rounded-full">
+                                                        {(viewDetails.user?.coins_balance || 0).toLocaleString()} Coins
+                                                    </span>
+                                                </h4>
+                                                <p className="text-xs text-slate-600 mt-0.5">
+                                                    Worth <strong className="text-emerald-700 font-bold">₹{((viewDetails.user?.coins_balance || 0) / 10).toFixed(2)}</strong> (10 Coins = ₹1) • Earned: +{(viewDetails.user?.coins_earned_total || 0).toLocaleString()} • Spent: -{(viewDetails.user?.coins_spent_total || 0).toLocaleString()}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={() => handleOpenAdjustCoins(viewDetails.user)}
+                                            className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs shadow-sm transition flex items-center justify-center gap-1.5 self-start sm:self-auto cursor-pointer"
+                                        >
+                                            <Coins className="w-3.5 h-3.5" /> Adjust Coins
+                                        </button>
+                                    </div>
+
                                     {/* Customer Overview */}
                                     <div className="bg-white border border-slate-200 rounded-2xl p-4.5 space-y-2.5 shadow-sm">
                                         <h4 className="font-bold text-slate-700 uppercase tracking-wider text-xs flex items-center gap-2">
@@ -1112,6 +1210,88 @@ const Users = () => {
                                 Close
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Adjust Coins Modal */}
+            {showAdjustCoinsModal && adjustUser && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200 animate-fadeIn">
+                        <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 p-5 flex justify-between items-center">
+                            <div className="flex items-center gap-2.5">
+                                <span className="p-2 bg-white/20 rounded-xl text-lg">🪙</span>
+                                <div>
+                                    <h3 className="font-bold text-base">Adjust User Coins</h3>
+                                    <p className="text-xs text-amber-950/80">{adjustUser.name || adjustUser.email}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowAdjustCoinsModal(false)}
+                                className="p-1.5 hover:bg-white/20 rounded-xl transition text-slate-950 cursor-pointer"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleAdjustCoinsSubmit} className="p-6 space-y-4">
+                            <div className="bg-amber-50 p-3.5 rounded-2xl text-xs text-amber-900 flex justify-between border border-amber-200">
+                                <span>Current Balance:</span>
+                                <span className="font-bold font-mono">
+                                    {(adjustUser.coins_balance || 0).toLocaleString()} Coins (₹{((adjustUser.coins_balance || 0) / 10).toFixed(2)})
+                                </span>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                    Coin Amount * (+ to add, - to deduct)
+                                </label>
+                                <input
+                                    type="number"
+                                    required
+                                    value={adjustAmount}
+                                    onChange={(e) => setAdjustAmount(e.target.value)}
+                                    placeholder="e.g. 100 or -50"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500 font-mono text-slate-800"
+                                />
+                                {adjustAmount && !isNaN(adjustAmount) && (
+                                    <span className="text-[11px] text-slate-500 mt-1 block">
+                                        Equivalent Value: <strong>₹{(Math.abs(parseInt(adjustAmount)) / 10).toFixed(2)}</strong> (10 Coins = ₹1)
+                                    </span>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                    Reason / Note *
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={adjustReason}
+                                    onChange={(e) => setAdjustReason(e.target.value)}
+                                    placeholder="e.g. Welcome bonus, Customer loyalty reward, Correction"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500 text-slate-800"
+                                />
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAdjustCoinsModal(false)}
+                                    className="flex-1 py-2.5 border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 text-xs cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={adjustLoading || !adjustAmount}
+                                    className="flex-1 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-slate-950 font-bold py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                                >
+                                    {adjustLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply Adjustment"}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

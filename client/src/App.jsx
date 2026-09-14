@@ -51,6 +51,7 @@ import { CartProvider } from "./context/CartProvider";
 // navbar's profile dropdown, rendered inside the normal site layout)
 import AccountLayout from "./user/AccountLayout";
 import UserProfile from "./user/Profile";
+import UserCoins from "./user/CoinsWallet";
 import UserOrders from "./user/Orders";
 import UserSettings from "./user/Settings";
 
@@ -220,6 +221,7 @@ function MainLayout() {
                             element={<Navigate to="/user/profile" replace />}
                         />
                         <Route path="profile" element={<UserProfile />} />
+                        <Route path="coins" element={<UserCoins />} />
                         <Route path="orders" element={<UserOrders />} />
                         <Route path="settings" element={<UserSettings />} />
                     </Route>

@@ -477,6 +477,35 @@ def verify_razorpay_payment(data: dict, current_user: dict = Depends(get_current
         except Exception as exc:
             print(f"[User] Failed to increment orders_count: {exc}")
 
+    # ── Process Reward Coins (Debit redeemed + Credit earned) ─────────────
+    coins_res = {"coins_used": 0, "coin_discount": 0.0, "coins_earned": 0}
+    try:
+        from app.services.reward_coin_service import RewardCoinService
+        coin_service = RewardCoinService(db)
+        coins_to_redeem = int(order_data.get("coins_used") or 0)
+        subtotal = float(order_data.get("subtotal") or order_data.get("total_amount") or 0)
+        coins_res = coin_service.process_order_placement(
+            user_id=current_user.get("id"),
+            order_id=order_id,
+            order_number=order_num,
+            items=order_data.get("items", []),
+            coins_to_redeem=coins_to_redeem,
+            subtotal=subtotal
+        )
+        order_data["coins_used"] = coins_res["coins_used"]
+        order_data["coin_discount"] = coins_res["coin_discount"]
+        order_data["coins_earned"] = coins_res["coins_earned"]
+        db["orders"].update_one(
+            {"_id": result.inserted_id},
+            {"$set": {
+                "coins_used": coins_res["coins_used"],
+                "coin_discount": coins_res["coin_discount"],
+                "coins_earned": coins_res["coins_earned"]
+            }}
+        )
+    except Exception as coin_err:
+        print(f"[Coins] Error processing coins for order {order_id}: {coin_err}")
+
     # ── Notifications (order confirmed + payment success) ────────────────
     notify_ctx = {**order_data, "_order_id_for_notify": order_id}
     _send_order_notifications(db, NotificationEvent.ORDER_CONFIRMED, notify_ctx, order_num, current_user.get("id"))
@@ -710,6 +739,35 @@ def create_cod_order(order_data: dict, current_user: dict = Depends(get_current_
             )
         except Exception as exc:
             print(f"[User] Failed to increment orders_count: {exc}")
+
+    # ── Process Reward Coins (Debit redeemed + Credit earned) ─────────────
+    coins_res = {"coins_used": 0, "coin_discount": 0.0, "coins_earned": 0}
+    try:
+        from app.services.reward_coin_service import RewardCoinService
+        coin_service = RewardCoinService(db)
+        coins_to_redeem = int(order_data.get("coins_used") or 0)
+        subtotal = float(order_data.get("subtotal") or order_data.get("total_amount") or 0)
+        coins_res = coin_service.process_order_placement(
+            user_id=current_user.get("id"),
+            order_id=order_id,
+            order_number=order_num,
+            items=order_data.get("items", []),
+            coins_to_redeem=coins_to_redeem,
+            subtotal=subtotal
+        )
+        order_data["coins_used"] = coins_res["coins_used"]
+        order_data["coin_discount"] = coins_res["coin_discount"]
+        order_data["coins_earned"] = coins_res["coins_earned"]
+        db["orders"].update_one(
+            {"_id": result.inserted_id},
+            {"$set": {
+                "coins_used": coins_res["coins_used"],
+                "coin_discount": coins_res["coin_discount"],
+                "coins_earned": coins_res["coins_earned"]
+            }}
+        )
+    except Exception as coin_err:
+        print(f"[Coins] Error processing coins for order {order_id}: {coin_err}")
 
     notify_ctx = {**order_data, "_order_id_for_notify": order_id}
     _send_order_notifications(db, NotificationEvent.ORDER_CONFIRMED, notify_ctx, order_num, current_user.get("id"))

@@ -103,6 +103,10 @@ class OrderBase(BaseModel):
     total_amount: float
     payment_method: str = "COD"
     notes: Optional[str] = None
+    coupon_code: Optional[str] = None
+    coins_used: Optional[int] = 0
+    coin_discount: Optional[float] = 0.0
+    coins_earned: Optional[int] = 0
 
 
 class OrderCreate(OrderBase):

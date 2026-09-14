@@ -111,6 +111,31 @@ def create_order(order: OrderCreate, current_user: dict = Depends(get_current_us
         result = orders_collection.insert_one(order_data)
         order_data["_id"] = str(result.inserted_id)
 
+        # Process reward coins
+        try:
+            from app.services.reward_coin_service import RewardCoinService
+            coin_res = RewardCoinService(db).process_order_placement(
+                user_id=current_user.get("id"),
+                order_id=order_data["_id"],
+                order_number=order_data["order_number"],
+                items=order_data.get("items", []),
+                coins_to_redeem=int(order_data.get("coins_used") or 0),
+                subtotal=float(order_data.get("subtotal") or order_data.get("total_amount") or 0)
+            )
+            order_data["coins_used"] = coin_res["coins_used"]
+            order_data["coin_discount"] = coin_res["coin_discount"]
+            order_data["coins_earned"] = coin_res["coins_earned"]
+            orders_collection.update_one(
+                {"_id": result.inserted_id},
+                {"$set": {
+                    "coins_used": coin_res["coins_used"],
+                    "coin_discount": coin_res["coin_discount"],
+                    "coins_earned": coin_res["coins_earned"]
+                }}
+            )
+        except Exception as coin_err:
+            print(f"[Coins] Error in create_order: {coin_err}")
+
         # Atomically reduce inventory & size stock in MongoDB
         try:
             stock_items = _stock_items_from_order(order_data)
@@ -157,6 +182,12 @@ def get_orders(
                 "order_number": order.get("order_number") or order.get("order_id") or f"ORD-{str(order['_id'])[-6:]}",
                 "user_id": order.get("user_id"),
                 "total_amount": order.get("total_amount", 0),
+                "subtotal": order.get("subtotal", 0),
+                "discount": order.get("discount", 0),
+                "coupon_code": order.get("coupon_code"),
+                "coins_used": order.get("coins_used", 0) or 0,
+                "coin_discount": order.get("coin_discount", 0.0) or 0.0,
+                "coins_earned": order.get("coins_earned", 0) or 0,
                 "status": order.get("status", "pending"),
                 "payment_status": order.get("payment_status", "pending"),
                 "payment_method": order.get("payment_method", "N/A"),
@@ -280,6 +311,12 @@ def get_my_orders(
                 "order_number": order.get("order_number", "N/A"),
                 "user_id": order.get("user_id"),
                 "total_amount": order.get("total_amount", 0),
+                "subtotal": order.get("subtotal", 0),
+                "discount": order.get("discount", 0),
+                "coupon_code": order.get("coupon_code"),
+                "coins_used": order.get("coins_used", 0) or 0,
+                "coin_discount": order.get("coin_discount", 0.0) or 0.0,
+                "coins_earned": order.get("coins_earned", 0) or 0,
                 "status": order.get("status", "pending"),
                 "payment_status": order.get("payment_status", "pending"),
                 "payment_method": order.get("payment_method", "N/A"),
@@ -360,6 +397,12 @@ def get_order(order_id: str, current_user: dict = Depends(get_current_user)):
             "order_number": order.get("order_number") or order.get("order_id") or f"ORD-{str(order['_id'])[-6:]}",
             "user_id": order.get("user_id"),
             "total_amount": order.get("total_amount", 0),
+            "subtotal": order.get("subtotal", 0),
+            "discount": order.get("discount", 0),
+            "coupon_code": order.get("coupon_code"),
+            "coins_used": order.get("coins_used", 0) or 0,
+            "coin_discount": order.get("coin_discount", 0.0) or 0.0,
+            "coins_earned": order.get("coins_earned", 0) or 0,
             "status": order.get("status", "pending"),
             "payment_status": order.get("payment_status", "pending"),
             "payment_method": order.get("payment_method", "N/A"),

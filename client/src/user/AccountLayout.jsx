@@ -1,10 +1,11 @@
 import React from 'react';
 import { Navigate, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthProvider';
-import { User, ShoppingBag, Heart, MapPin, Settings } from 'lucide-react';
+import { User, ShoppingBag, Heart, MapPin, Settings, Coins } from 'lucide-react';
 
 const tabs = [
     { path: '/user/profile', icon: User, label: 'My Profile' },
+    { path: '/user/coins', icon: Coins, label: 'Reward Coins' },
     { path: '/user/orders', icon: ShoppingBag, label: 'My Orders' },
     { path: '/user/wishlist', icon: Heart, label: 'Wishlist' },
     { path: '/user/addresses', icon: MapPin, label: 'Addresses' },

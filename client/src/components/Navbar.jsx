@@ -30,7 +30,8 @@ import {
   Sparkles,
   Check,
   ArrowRight,
-  Copy
+  Copy,
+  Coins
 } from "lucide-react";
 import LoginModal from "./LoginModal";
 import { useAuth } from "../context/AuthProvider";
@@ -210,6 +211,11 @@ const Navbar = () => {
       to: "/user/profile",
       icon: <User className="w-4 h-4" />,
       label: "My Profile",
+    },
+    {
+      to: "/user/coins",
+      icon: <Coins className="w-4 h-4 text-amber-500" />,
+      label: "Reward Coins",
     },
     {
       to: "/user/orders",
