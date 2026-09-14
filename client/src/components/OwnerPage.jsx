@@ -405,7 +405,17 @@ const OwnerPage = () => {
             {/* Card 1: Pooja Verma */}
             <div className="w-full md:w-1/2 flex flex-col items-center bg-white dark:bg-[#1B0606] rounded-3xl border border-[#c5a880]/20 shadow-lg overflow-hidden transition-transform duration-300 hover:-translate-y-1">
               <div className="w-full h-[320px] sm:h-[400px] relative overflow-hidden group">
-                <img src="/pooja-verma.jpg" alt="Pooja Verma" className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105" />
+                <img
+                  src="/pooja-verma.jpg"
+                  onError={(e) => {
+                    if (!e.currentTarget.dataset.triedJpeg) {
+                      e.currentTarget.dataset.triedJpeg = "true";
+                      e.currentTarget.src = "/pooja-verma.jpeg";
+                    }
+                  }}
+                  alt="Pooja Verma"
+                  className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#120202] via-transparent to-transparent" />
                 <div className="absolute bottom-4 left-6 text-white">
                   <h3 className="text-xl sm:text-2xl font-serif font-bold">Pooja Verma</h3>
@@ -440,7 +450,17 @@ const OwnerPage = () => {
             {/* Card 2: Ritika Singh */}
             <div className="w-full md:w-1/2 flex flex-col items-center bg-white dark:bg-[#1B0606] rounded-3xl border border-[#c5a880]/20 shadow-lg overflow-hidden transition-transform duration-300 hover:-translate-y-1">
               <div className="w-full h-[320px] sm:h-[400px] relative overflow-hidden group">
-                <img src="/ritika-singh.jpg" alt="Ritika Singh" className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105" />
+                <img
+                  src="/ritika-singh.jpg"
+                  onError={(e) => {
+                    if (!e.currentTarget.dataset.triedJpeg) {
+                      e.currentTarget.dataset.triedJpeg = "true";
+                      e.currentTarget.src = "/ritika-singh.jpeg";
+                    }
+                  }}
+                  alt="Ritika Singh"
+                  className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#120202] via-transparent to-transparent" />
                 <div className="absolute bottom-4 left-6 text-white">
                   <h3 className="text-xl sm:text-2xl font-serif font-bold">Ritika Singh</h3>
