@@ -68,7 +68,7 @@ const LoadingScreen = ({ onComplete }) => {
           NARI PEHNAWA
         </h1>
         <p className="text-xs tracking-[0.3em] text-gray-400 uppercase mb-8">
-          Fashion &amp; Home Decor
+          Women's Ethnic &amp; Festive Wear
         </p>
 
         {/* Progress bar */}

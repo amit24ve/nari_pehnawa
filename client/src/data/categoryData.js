@@ -260,15 +260,7 @@ export const CATEGORY_ALIAS = {
   'chikankari-kurtis':  'kurta-sets',
   'palazzo-set-kurtis': 'kurta-sets',
   'angrakha-kurtis':    'kurta-sets',
-  // ── Nari Pehnawa home decoration ─────────────────────────────────────────
-  'vases-planters':       'home-living',
-  'wall-decor':           'home-living',
-  'lighting-lamps':       'home-living',
-  'cushions-covers':      'home-living',
-  'rugs-carpets':         'home-living',
-  'pooja-essentials':     'home-living',
-  'candles-fragrances':   'home-living',
-  'photo-frames-art':     'home-living',
+
   // ── women ─────────────────────────────────────────────────────────────────
   'womens-fashion': 'kurta-sets',
   'salwar-suits': 'suit-sets',
@@ -393,15 +385,7 @@ export const CATEGORY_BANNERS = {
   'chikankari-kurtis':  { bg: 'from-rose-900 via-pink-800 to-fuchsia-900',   label: '🪡 Chikankari Kurtis' },
   'palazzo-set-kurtis': { bg: 'from-emerald-900 via-teal-900 to-cyan-900',   label: '✨ Palazzo Set Kurtis' },
   'angrakha-kurtis':    { bg: 'from-[#8B0000] via-amber-900 to-orange-900',  label: '🏺 Angrakha Kurtis' },
-  // Home Decoration
-  'vases-planters':     { bg: 'from-lime-900 via-green-900 to-emerald-900',  label: '🌿 Vases & Planters' },
-  'wall-decor':         { bg: 'from-stone-900 via-amber-900 to-yellow-900',  label: '🖼️ Wall Decor' },
-  'lighting-lamps':     { bg: 'from-yellow-800 via-amber-800 to-orange-900', label: '💡 Lighting & Lamps' },
-  'cushions-covers':    { bg: 'from-sky-900 via-blue-900 to-indigo-900',     label: '🛋️ Cushions & Covers' },
-  'rugs-carpets':       { bg: 'from-rose-900 via-red-900 to-pink-900',       label: '🪴 Rugs & Carpets' },
-  'pooja-essentials':   { bg: 'from-amber-900 via-orange-900 to-yellow-900', label: '🪔 Pooja Essentials' },
-  'candles-fragrances': { bg: 'from-purple-900 via-violet-900 to-indigo-900',label: '🕯️ Candles & Fragrances' },
-  'photo-frames-art':   { bg: 'from-slate-900 via-gray-900 to-zinc-900',     label: '🖼️ Photo Frames & Art' },
+
   // Legacy / fallback
   anarkali:             { bg: 'from-[#8B0000] via-[#6B0000] to-[#3d0000]',  label: '👗 Anarkali' },
   'kurta-sets':         { bg: 'from-teal-900 via-cyan-900 to-blue-900',      label: '✨ Kurta Sets' },

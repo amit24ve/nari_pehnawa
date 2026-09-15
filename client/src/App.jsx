@@ -156,45 +156,7 @@ function MainLayout() {
                         element={<CategoryPage categoryName="Angrakha Kurtis" />}
                     />
 
-                    {/* Home Decor categories */}
-                    <Route
-                        path="/category/vases-planters"
-                        element={<CategoryPage categoryName="Vases & Planters" />}
-                    />
-                    <Route
-                        path="/category/wall-decor"
-                        element={<CategoryPage categoryName="Wall Decor" />}
-                    />
-                    <Route
-                        path="/category/lighting-lamps"
-                        element={<CategoryPage categoryName="Lighting & Lamps" />}
-                    />
-                    <Route
-                        path="/category/cushions-covers"
-                        element={
-                            <CategoryPage categoryName="Cushions & Covers" />
-                        }
-                    />
-                    <Route
-                        path="/category/rugs-carpets"
-                        element={<CategoryPage categoryName="Rugs & Carpets" />}
-                    />
-                    <Route
-                        path="/category/pooja-essentials"
-                        element={<CategoryPage categoryName="Pooja Essentials" />}
-                    />
-                    <Route
-                        path="/category/candles-fragrances"
-                        element={
-                            <CategoryPage categoryName="Candles & Fragrances" />
-                        }
-                    />
-                    <Route
-                        path="/category/photo-frames-art"
-                        element={
-                            <CategoryPage categoryName="Photo Frames & Art" />
-                        }
-                    />
+
 
                     {/* Dynamic catch-all — handles any category not listed
                         above by fetching its real name/image/tagline from

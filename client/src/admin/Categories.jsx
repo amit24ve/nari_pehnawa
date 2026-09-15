@@ -96,7 +96,7 @@ const Categories = () => {
                     { id: "cat-1", name: "Anarkali Kurtis", link: "/category/anarkali-kurtis", tagline: "Timeless flare for classic elegance", image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=500", is_active: true },
                     { id: "cat-2", name: "Chikankari Kurtis", link: "/category/chikankari-kurtis", tagline: "Traditional lucknowi handcrafted details", image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=500", is_active: true },
                     { id: "cat-3", name: "Palazzo Set Kurtis", link: "/category/palazzo-set-kurtis", tagline: "Modern sets for casual and festive comfort", image: "https://images.unsplash.com/photo-1609357605129-26f69add5d6e?w=500", is_active: true },
-                    { id: "cat-4", name: "Home Decor", link: "/category/vases-planters", tagline: "Chic design pieces to brighten your home", image: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=500", is_active: true }
+                    { id: "cat-4", name: "Straight Kurtis", link: "/category/straight-kurtis", tagline: "Effortless elegance for everyday & festive charm", image: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=500", is_active: true }
                 ]);
             }
         } catch (e) {

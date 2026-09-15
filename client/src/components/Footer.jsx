@@ -175,15 +175,31 @@ const Footer = () => {
                   to="/new-arrivals"
                   className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]"
                 >
-                  Fashion
+                  New Arrivals
                 </Link>
               </li>
               <li>
                 <Link
-                  to="/category/home-decor"
+                  to="/category/anarkali-kurtis"
                   className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]"
                 >
-                  Home Decor
+                  Anarkali Kurtis
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/category/chikankari-kurtis"
+                  className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]"
+                >
+                  Chikankari Kurtis
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/category/sale"
+                  className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]"
+                >
+                  Mega Sale Offers
                 </Link>
               </li>
             </ul>

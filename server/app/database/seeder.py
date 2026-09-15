@@ -178,9 +178,9 @@ def seed_dummy_data():
                     "is_active": True
                 },
                 {
-                    "name": "Home Decor",
-                    "link": "/category/vases-planters",
-                    "tagline": "Chic design pieces to brighten your home",
+                    "name": "Straight Kurtis",
+                    "link": "/category/straight-kurtis",
+                    "tagline": "Effortless elegance for everyday & festive charm",
                     "image": "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=500",
                     "is_active": True
                 }

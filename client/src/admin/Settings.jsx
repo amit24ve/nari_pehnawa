@@ -39,7 +39,7 @@ const Settings = () => {
     phone: '+91 98765 43210',
     address: '45, Fashion Avenue, Sector 5, HSR Layout, Bangalore, KA, 560102',
     website: 'https://naripehnawa.com',
-    description: 'Premium Indian ethnic wear, designer Kurtis, and home decoration items.'
+    description: 'Premium Indian ethnic wear, designer Kurtis, and women fashion collections.'
   });
 
   const [pricingSettings, setPricingSettings] = useState({

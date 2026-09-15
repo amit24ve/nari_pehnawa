@@ -808,16 +808,6 @@ const Products = () => {
                                         <option value="Palazzo Set Kurtis">Palazzo Set Kurtis</option>
                                         <option value="Angrakha Kurtis">Angrakha Kurtis</option>
                                     </optgroup>
-                                    <optgroup label="── Home Decor ──">
-                                        <option value="Vases &amp; Planters">Vases &amp; Planters</option>
-                                        <option value="Wall Decor">Wall Decor</option>
-                                        <option value="Lighting &amp; Lamps">Lighting &amp; Lamps</option>
-                                        <option value="Cushions &amp; Covers">Cushions &amp; Covers</option>
-                                        <option value="Rugs &amp; Carpets">Rugs &amp; Carpets</option>
-                                        <option value="Pooja Essentials">Pooja Essentials</option>
-                                        <option value="Candles &amp; Fragrances">Candles &amp; Fragrances</option>
-                                        <option value="Photo Frames &amp; Art">Photo Frames &amp; Art</option>
-                                    </optgroup>
                                 </select>
                             </div>
 
@@ -1283,16 +1273,6 @@ const Products = () => {
                                             <option value="Chikankari Kurtis">Chikankari Kurtis</option>
                                             <option value="Palazzo Set Kurtis">Palazzo Set Kurtis</option>
                                             <option value="Angrakha Kurtis">Angrakha Kurtis</option>
-                                        </optgroup>
-                                        <optgroup label="── Home Decoration ──">
-                                            <option value="Vases &amp; Planters">Vases &amp; Planters</option>
-                                            <option value="Wall Decor">Wall Decor</option>
-                                            <option value="Lighting &amp; Lamps">Lighting &amp; Lamps</option>
-                                            <option value="Cushions &amp; Covers">Cushions &amp; Covers</option>
-                                            <option value="Rugs &amp; Carpets">Rugs &amp; Carpets</option>
-                                            <option value="Pooja Essentials">Pooja Essentials</option>
-                                            <option value="Candles &amp; Fragrances">Candles &amp; Fragrances</option>
-                                            <option value="Photo Frames &amp; Art">Photo Frames &amp; Art</option>
                                         </optgroup>
                                     </select>
                                 </div>

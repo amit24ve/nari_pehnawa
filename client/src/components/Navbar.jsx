@@ -63,26 +63,18 @@ const Navbar = () => {
     setCopiedCoupon(true);
     setTimeout(() => setCopiedCoupon(false), 2200);
   };
-  // Mobile drawer submenu navigation (3 levels deep):
+  // Mobile drawer submenu navigation:
   //   null                  → top-level menu
-  //   "new-arrivals"        → New Arrivals submenu (level 1)
-  //   "category"            → Category submenu: choose Women Fashion / Home Decor (level 1)
-  //   "category-fashion"    → actual Fashion categories list (level 2)
-  //   "category-home"       → actual Home Decor categories list (level 2)
+  //   "new-arrivals"        → New Arrivals submenu
+  //   "category"            → Women Fashion Categories list
   const [mobileSubmenu, setMobileSubmenu] = useState(null);
 
-  // Which sliding panel (0, 1, 2) should be visible right now.
-  const submenuStep =
-    mobileSubmenu === "category-fashion" || mobileSubmenu === "category-home"
-      ? 2
-      : mobileSubmenu
-        ? 1
-        : 0;
+  // Which sliding panel (0, 1) should be visible right now.
+  const submenuStep = mobileSubmenu ? 1 : 0;
 
-  // Going "back" one level from wherever we currently are.
+  // Going "back" one level
   const goBackSubmenu = () => {
-    if (submenuStep === 2) setMobileSubmenu("category");
-    else setMobileSubmenu(null);
+    setMobileSubmenu(null);
   };
 
   const headerRef = useRef(null);
@@ -229,7 +221,7 @@ const Navbar = () => {
     },
   ];
 
-  /* ── Separate categories into Fashion & Home Decor for 2-row nav ── */
+  /* ── Pure Women Ethnic Fashion categories ── */
   const HOME_DECOR_KEYWORDS = [
     "wall",
     "vase",
@@ -242,6 +234,10 @@ const Navbar = () => {
     "gifting",
     "hamper",
     "pot",
+    "bedsheet",
+    "curtain",
+    "lamp",
+    "rug",
   ];
   const isHomeDecor = (cat) =>
     HOME_DECOR_KEYWORDS.some(
@@ -250,12 +246,11 @@ const Navbar = () => {
         (cat.name || "").toLowerCase().includes(kw),
     );
 
-  // Filter out the special display_order=0 (New Arrivals) and display_order=99 (Sale)
+  // Filter out display_order=0 (New Arrivals), display_order=99 (Sale), and any Home Decor
   const regularCats = categories.filter(
-    (c) => c.display_order !== 0 && c.display_order !== 99,
+    (c) => c.display_order !== 0 && c.display_order !== 99 && !isHomeDecor(c),
   );
-  const fashionCats = regularCats.filter((c) => !isHomeDecor(c));
-  const homeDecorCats = regularCats.filter((c) => isHomeDecor(c));
+  const fashionCats = regularCats;
 
   return (
     <header
@@ -284,7 +279,7 @@ const Navbar = () => {
                 <Search className="w-4 h-5 text-gray-400 ml-4 flex-shrink-0" />
                 <input
                   type="text"
-                  placeholder="Search Kurtis, Home Decor, Sarees…"
+                  placeholder="Search Kurtis, Sarees, Ethnic Wear…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchOpen(true)}
@@ -665,24 +660,13 @@ const Navbar = () => {
             </Link>
           ))}
 
-          {/* ── Home Decor group ── */}
-          {homeDecorCats.length > 0 && (
-            <>
-              <span className="flex-shrink-0 w-px h-4 bg-gray-200 mx-1" />
-              <span className="flex-shrink-0 px-3 h-full flex items-center text-[9px] font-black text-amber-800 uppercase tracking-[0.15em] whitespace-nowrap bg-amber-50">
-                Home Decor
-              </span>
-              {homeDecorCats.map((cat) => (
-                <Link
-                  key={cat._id || cat.id}
-                  to={buildCategoryPath(cat)}
-                  className="flex-shrink-0 flex items-center px-3 h-full text-[11px] font-bold tracking-[0.08em] whitespace-nowrap text-amber-800 hover:text-amber-900 hover:bg-amber-50 transition-all"
-                >
-                  {cat.name.toUpperCase()}
-                </Link>
-              ))}
-            </>
-          )}
+          <Link
+            to="/category/sale"
+            className="flex-shrink-0 flex items-center gap-1.5 px-3 h-full text-[11px] font-bold tracking-[0.08em] whitespace-nowrap text-amber-700 hover:text-red-700 hover:bg-red-50 transition-all"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-red-600 flex-shrink-0 animate-pulse" />
+            MEGA SALE
+          </Link>
         </div>
       </div>
 
@@ -695,7 +679,7 @@ const Navbar = () => {
             <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
             <input
               type="text"
-              placeholder="Search Kurtis, Home Decor…"
+              placeholder="Search Kurtis, Sarees, Ethnic Wear…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 bg-transparent text-gray-800 placeholder-gray-400 text-sm focus:outline-none"
@@ -801,9 +785,7 @@ const Navbar = () => {
                 >
                   <ChevronRight className="w-4 h-4 rotate-180" />
                   {mobileSubmenu === "new-arrivals" && "New Arrivals"}
-                  {mobileSubmenu === "category" && "Category"}
-                  {mobileSubmenu === "category-fashion" && "Women Fashion"}
-                  {mobileSubmenu === "category-home" && "Home Decor"}
+                  {mobileSubmenu === "category" && "Women's Fashion"}
                 </button>
               ) : (
                 <img
@@ -1039,30 +1021,8 @@ const Navbar = () => {
                     </nav>
                   )}
 
-                  {/* Category → 2 sub-categories: Women Fashion & Home Decor */}
+                  {/* Category → Direct list of Women's Fashion Categories */}
                   {mobileSubmenu === "category" && (
-                    <nav>
-                      <button
-                        onClick={() => setMobileSubmenu("category-fashion")}
-                        className="w-full flex items-center justify-between px-5 py-3.5 text-sm font-bold uppercase tracking-wide text-[#8B0000] border-b border-gray-100 hover:bg-[#fff5f5] transition-colors"
-                      >
-                        Women Fashion
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
-                      </button>
-                      <button
-                        onClick={() => setMobileSubmenu("category-home")}
-                        className="w-full flex items-center justify-between px-5 py-3.5 text-sm font-bold uppercase tracking-wide text-amber-800 border-b border-gray-100 hover:bg-amber-50 transition-colors"
-                      >
-                        Home Decor
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
-                      </button>
-                    </nav>
-                  )}
-                </div>
-
-                {/* ── PANEL 3: Actual category list for the chosen sub-category ── */}
-                <div className="w-1/3 flex-shrink-0">
-                  {mobileSubmenu === "category-fashion" && (
                     <nav>
                       {fashionCats.map((cat) => (
                         <Link
@@ -1072,9 +1032,10 @@ const Navbar = () => {
                             setIsMobileMenuOpen(false);
                             setMobileSubmenu(null);
                           }}
-                          className="flex items-center justify-between px-5 py-3 text-sm font-semibold text-gray-700 border-b border-gray-100 hover:bg-[#fff5f5] hover:text-[#8B0000] transition-colors"
+                          className="flex items-center justify-between px-5 py-3.5 text-sm font-semibold text-gray-700 border-b border-gray-100 hover:bg-[#fff5f5] hover:text-[#8B0000] transition-colors"
                         >
                           {cat.name}
+                          <ChevronRight className="w-4 h-4 text-gray-400" />
                         </Link>
                       ))}
                       {fashionCats.length === 0 && (
@@ -1084,30 +1045,10 @@ const Navbar = () => {
                       )}
                     </nav>
                   )}
-
-                  {mobileSubmenu === "category-home" && (
-                    <nav>
-                      {homeDecorCats.map((cat) => (
-                        <Link
-                          key={cat._id || cat.id}
-                          to={buildCategoryPath(cat)}
-                          onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            setMobileSubmenu(null);
-                          }}
-                          className="flex items-center justify-between px-5 py-3 text-sm font-semibold text-gray-700 border-b border-gray-100 hover:bg-amber-50 hover:text-amber-800 transition-colors"
-                        >
-                          {cat.name}
-                        </Link>
-                      ))}
-                      {homeDecorCats.length === 0 && (
-                        <p className="px-5 py-6 text-sm text-gray-400 text-center">
-                          No categories available
-                        </p>
-                      )}
-                    </nav>
-                  )}
                 </div>
+
+                {/* ── PANEL 3 (Empty / Reserved) ── */}
+                <div className="w-1/3 flex-shrink-0" />
               </div>
             </div>
           </div>
