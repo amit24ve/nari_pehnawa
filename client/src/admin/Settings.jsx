@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   Store, IndianRupee, Save, Truck, Plus, Trash2,
-  Tag, Flame, Clock, Loader2, X, Download, Info
+  Tag, Flame, Clock, Loader2, X, Download, Info,
+  Calendar, CheckCircle, RefreshCw, Zap, Eye, Play, Pause
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://naripehnawa.com:7100';
@@ -26,6 +27,9 @@ const Settings = () => {
     start_time: '',
     end_time: ''
   });
+  const [allCampaigns, setAllCampaigns] = useState([]);
+  const [currentIstTime, setCurrentIstTime] = useState('');
+  const [editingCampaignId, setEditingCampaignId] = useState(null); // null = active_sale, "new" = create new, or id
   const [flashSaleLoading, setFlashSaleLoading] = useState(false);
   const [availableCategories, setAvailableCategories] = useState([]);
   const [availableProducts, setAvailableProducts] = useState([]);
@@ -185,6 +189,19 @@ const Settings = () => {
     }
   };
 
+  const fetchAllCampaigns = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/flash-sales`, { headers: authHeaders() });
+      if (res.ok) {
+        const data = await res.json();
+        setAllCampaigns(data.sales || []);
+        if (data.current_ist_time) setCurrentIstTime(data.current_ist_time);
+      }
+    } catch (e) {
+      console.warn("Could not load campaigns:", e);
+    }
+  };
+
   const fetchCategoriesAndProducts = async () => {
     try {
       const [cRes, pRes] = await Promise.all([
@@ -207,34 +224,175 @@ const Settings = () => {
   useEffect(() => {
     if (activeTab === 'flash_sale') {
       fetchFlashSaleConfig();
+      fetchAllCampaigns();
       fetchCategoriesAndProducts();
     }
   }, [activeTab]);
 
+  // Auto-sync deal text and quantities (Buy X Get Y Free)
+  const handleDealTextChange = (text) => {
+    const next = { ...flashSaleConfig, deal_text: text };
+    const bogoMatch = text.match(/buy\s*(\d+)\s*(?:get)?\s*(\d+)/i);
+    if (bogoMatch) {
+      const buy = parseInt(bogoMatch[1], 10);
+      const free = parseInt(bogoMatch[2], 10);
+      if (!isNaN(buy) && buy > 0) next.buy_qty = buy;
+      if (!isNaN(free) && free > 0) next.get_free_qty = free;
+      next.deal_type = "bogo";
+    } else {
+      const pctMatch = text.match(/(\d+)\s*%/);
+      if (pctMatch) {
+        const pct = parseInt(pctMatch[1], 10);
+        if (!isNaN(pct) && pct > 0) next.discount_percentage = pct;
+        next.deal_type = "percentage";
+      }
+    }
+    setFlashSaleConfig(next);
+  };
+
+  const handleBuyQtyChange = (val) => {
+    const buy = Math.max(1, Number(val) || 1);
+    const free = flashSaleConfig.get_free_qty || 1;
+    const next = { ...flashSaleConfig, buy_qty: buy };
+    if (/buy\s*\d+\s*(?:get)?\s*\d+/i.test(flashSaleConfig.deal_text || '')) {
+      next.deal_text = `Buy ${buy} Get ${free} Free`;
+    }
+    setFlashSaleConfig(next);
+  };
+
+  const handleFreeQtyChange = (val) => {
+    const free = Math.max(1, Number(val) || 1);
+    const buy = flashSaleConfig.buy_qty || 1;
+    const next = { ...flashSaleConfig, get_free_qty: free };
+    if (/buy\s*\d+\s*(?:get)?\s*\d+/i.test(flashSaleConfig.deal_text || '')) {
+      next.deal_text = `Buy ${buy} Get ${free} Free`;
+    }
+    setFlashSaleConfig(next);
+  };
+
   const applyDurationPreset = (hours) => {
     const now = new Date();
     const end = new Date(now.getTime() + hours * 60 * 60 * 1000);
+    const pad = (n) => String(n).padStart(2, '0');
+    const toLocal = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     setFlashSaleConfig(prev => ({
       ...prev,
-      start_time: now.toISOString().slice(0, 16),
-      end_time: end.toISOString().slice(0, 16)
+      start_time: toLocal(now),
+      end_time: toLocal(end)
     }));
+  };
+
+  const handleCreateNewCampaign = () => {
+    setEditingCampaignId("new");
+    const now = new Date();
+    const end = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const pad = (n) => String(n).padStart(2, '0');
+    const toLocal = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    setFlashSaleConfig({
+      title: "Festive Flash Sale",
+      subtitle: "Limited Time Exclusive Ethnic Deals",
+      deal_type: "bogo",
+      deal_text: "Buy 1 Get 1 Free",
+      buy_qty: 1,
+      get_free_qty: 1,
+      discount_percentage: 30,
+      target_type: "all",
+      target_category: "",
+      target_product_ids: [],
+      start_time: toLocal(now),
+      end_time: toLocal(end),
+      is_active: true
+    });
+    setCategorySpecificSelection(false);
+  };
+
+  const handleSelectCampaign = (c) => {
+    const cId = c.id || c._id;
+    setEditingCampaignId(cId);
+    setFlashSaleConfig({
+      id: cId,
+      _id: cId,
+      key: c.key,
+      title: c.title || "",
+      subtitle: c.subtitle || "",
+      deal_type: c.deal_type || "bogo",
+      deal_text: c.deal_text || "",
+      buy_qty: c.buy_qty || 1,
+      get_free_qty: c.get_free_qty || 1,
+      discount_percentage: c.discount_percentage || 30,
+      target_type: c.target_type || "all",
+      target_category: c.target_category || "",
+      target_product_ids: c.target_product_ids || [],
+      start_time: c.start_time ? c.start_time.slice(0, 16) : "",
+      end_time: c.end_time ? c.end_time.slice(0, 16) : "",
+      is_active: c.is_active !== false
+    });
+    if (c.target_type === 'category' && Array.isArray(c.target_product_ids) && c.target_product_ids.length > 0) {
+      setCategorySpecificSelection(true);
+    } else {
+      setCategorySpecificSelection(false);
+    }
+  };
+
+  const handleDeleteCampaign = async (cId) => {
+    if (!window.confirm("Are you sure you want to delete this promotional campaign?")) return;
+    try {
+      const res = await fetch(`${API_BASE}/admin/flash-sales/${cId}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to delete campaign");
+      alert("Campaign deleted successfully!");
+      await Promise.all([fetchAllCampaigns(), fetchFlashSaleConfig()]);
+      setEditingCampaignId(null);
+    } catch (e) {
+      alert(e.message || "Error deleting campaign");
+    }
+  };
+
+  const handleToggleCampaignActive = async (camp) => {
+    try {
+      const cId = camp.id || camp._id;
+      const nextActive = !camp.is_active;
+      const res = await fetch(`${API_BASE}/admin/flash-sales/${cId}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({ ...camp, is_active: nextActive })
+      });
+      if (!res.ok) throw new Error("Failed to update campaign status");
+      await Promise.all([fetchAllCampaigns(), fetchFlashSaleConfig()]);
+    } catch (e) {
+      alert(e.message || "Error updating campaign status");
+    }
   };
 
   const handleSaveFlashSale = async (e) => {
     e.preventDefault();
     setFlashSaleLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/admin/flash-sale`, {
-        method: 'PUT',
+      let endpoint = `${API_BASE}/admin/flash-sale`;
+      let method = 'PUT';
+      if (editingCampaignId === "new") {
+        endpoint = `${API_BASE}/admin/flash-sales`;
+        method = 'POST';
+      } else if (editingCampaignId) {
+        endpoint = `${API_BASE}/admin/flash-sales/${editingCampaignId}`;
+        method = 'PUT';
+      }
+
+      const res = await fetch(endpoint, {
+        method: method,
         headers: authHeaders(),
         body: JSON.stringify(flashSaleConfig)
       });
-      if (!res.ok) throw new Error('Failed to save flash sale');
+      if (!res.ok) throw new Error('Failed to save promotional campaign');
       const data = await res.json();
       showSuccess();
-      alert(`Flash Sale configuration saved successfully! ${data.affected_products || 0} products updated.`);
-      await fetchFlashSaleConfig();
+      alert(`Promotional Campaign saved successfully! ${data.affected_products || 0} products synchronized.`);
+      await Promise.all([fetchAllCampaigns(), fetchFlashSaleConfig()]);
+      if (data.sale && (data.sale.id || data.sale._id)) {
+        setEditingCampaignId(data.sale.id || data.sale._id);
+      }
     } catch (e) {
       alert(e.message || 'Error saving flash sale');
     } finally {
@@ -302,7 +460,132 @@ const Settings = () => {
 
       {/* TAB 1: FLASH SALE & FESTIVE EVENT MANAGER */}
       {activeTab === 'flash_sale' && (
-        <form onSubmit={handleSaveFlashSale} className="space-y-6">
+        <div className="space-y-6">
+          {/* Active & Scheduled Promotional Campaigns Manager */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Flame className="w-5 h-5 text-[#0891b2]" />
+                  Active &amp; Scheduled Promotional Campaigns
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Schedule multiple concurrent offers (e.g. 2-Hour Flash Deal, 24-Hour Festive Sale) in <strong>Indian Standard Time (IST)</strong>.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleCreateNewCampaign}
+                  className="px-3.5 py-2 bg-[#0891b2] hover:bg-[#0e7490] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm shadow-[#0891b2]/20 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" /> Create New Offer
+                </button>
+              </div>
+            </div>
+
+            {/* Campaigns Grid */}
+            {allCampaigns && allCampaigns.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {allCampaigns.map((camp) => {
+                  const cId = camp.id || camp._id;
+                  const isSelected = editingCampaignId === cId;
+                  const isLive = camp.is_currently_live;
+                  const status = camp.status || (isLive ? "live" : "inactive");
+                  return (
+                    <div
+                      key={cId}
+                      className={`p-4 rounded-xl border text-left transition relative flex flex-col justify-between space-y-3 ${
+                        isSelected
+                          ? 'border-[#0891b2] bg-cyan-50/40 ring-2 ring-[#0891b2]/20 shadow-xs'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 ${
+                            status === 'live'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : status === 'upcoming'
+                              ? 'bg-amber-100 text-amber-800'
+                              : status === 'expired'
+                              ? 'bg-rose-100 text-rose-800'
+                              : 'bg-slate-100 text-slate-600'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              status === 'live' ? 'bg-emerald-600 animate-ping' : status === 'upcoming' ? 'bg-amber-500' : 'bg-slate-400'
+                            }`} />
+                            {status === 'live' ? '● Live Now (IST)' : status === 'upcoming' ? 'Upcoming' : status === 'expired' ? 'Expired' : 'Paused'}
+                          </span>
+
+                          <span className="text-[11px] font-bold text-[#0891b2] font-mono bg-cyan-50 px-2 py-0.5 rounded border border-cyan-100">
+                            {camp.deal_text || `${camp.discount_percentage}% OFF`}
+                          </span>
+                        </div>
+
+                        <h4 className="font-bold text-slate-900 text-sm line-clamp-1">{camp.title}</h4>
+                        <p className="text-[11px] text-slate-500 line-clamp-1">{camp.subtitle || "Exclusive Handcrafted Luxury Ethnic Wear"}</p>
+                        
+                        <div className="text-[11px] text-slate-600 pt-1 space-y-0.5">
+                          <div>
+                            <strong className="text-slate-700">Target:</strong>{" "}
+                            {camp.target_type === 'all'
+                              ? 'All Products'
+                              : camp.target_type === 'category'
+                              ? `Category: ${camp.target_category || 'All'}`
+                              : `${camp.target_product_ids?.length || 0} Selected Items`}
+                          </div>
+                          {camp.end_time && (
+                            <div className="text-slate-500 text-[10px]">
+                              Ends: {new Date(camp.end_time).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Campaign Card Action Buttons */}
+                      <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100">
+                        <button
+                          type="button"
+                          onClick={() => handleSelectCampaign(camp)}
+                          className="flex-1 py-1.5 bg-slate-100 hover:bg-[#0891b2] hover:text-white rounded-lg text-xs font-bold text-slate-700 transition cursor-pointer text-center"
+                        >
+                          {isSelected ? '✓ Editing' : 'Edit Campaign'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleCampaignActive(camp)}
+                          className={`p-1.5 rounded-lg border text-xs font-bold transition cursor-pointer ${
+                            camp.is_active
+                              ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                              : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                          }`}
+                          title={camp.is_active ? "Pause Campaign" : "Activate Campaign"}
+                        >
+                          {camp.is_active ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCampaign(cId)}
+                          className="p-1.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 transition cursor-pointer"
+                          title="Delete Campaign"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-6 bg-slate-50 rounded-xl text-center text-xs text-slate-500">
+                No active or scheduled campaigns found. Click "+ Create New Offer" to start one!
+              </div>
+            )}
+          </div>
+
+          <form onSubmit={handleSaveFlashSale} className="space-y-6">
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
             
             {/* Header & Purpose info */}
@@ -406,12 +689,13 @@ const Settings = () => {
               </div>
 
               {/* Preset Buttons */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 {[
                   { id: 'percentage', label: 'Flat % Discount', text: 'FLAT 30% OFF', desc: 'Flat % off qualifying items', buy: 1, get: 0 },
-                  { id: 'bogo', label: 'Buy 1 Get 1 FREE', text: 'BUY 1 GET 1 FREE (BOGO)', desc: 'Add 2, get 1 cheapest FREE', buy: 1, get: 1 },
+                  { id: 'bogo', label: 'Buy 1 Get 1 FREE', text: 'BUY 1 GET 1 FREE', desc: 'Add 2, get 1 cheapest FREE', buy: 1, get: 1 },
                   { id: 'buy2get1', label: 'Buy 2 Get 1 FREE', text: 'BUY 2 GET 1 FREE', desc: 'Add 3, get 1 cheapest FREE', buy: 2, get: 1 },
                   { id: 'buy3get1', label: 'Buy 3 Get 1 FREE', text: 'BUY 3 GET 1 FREE', desc: 'Add 4, get 1 cheapest FREE', buy: 3, get: 1 },
+                  { id: 'custom_deal', label: 'Buy 5 Get 2 FREE', text: 'Buy 5 Get 2 Free', desc: 'Add 7, get 2 cheapest FREE', buy: 5, get: 2 },
                 ].map((dt) => (
                   <button
                     key={dt.id}
@@ -446,12 +730,12 @@ const Settings = () => {
                   <input
                     type="text"
                     value={flashSaleConfig.deal_text || ''}
-                    onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, deal_text: e.target.value })}
-                    placeholder="e.g. BUY 1 GET 1 FREE, BUY 2 GET 1 FREE, FLAT 40% OFF"
+                    onChange={(e) => handleDealTextChange(e.target.value)}
+                    placeholder="e.g. Buy 5 Get 2 Free, Buy 2 Get 1 Free, Flat 40% OFF"
                     className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-bold text-xs focus:outline-none focus:border-[#0891b2] shadow-2xs"
                   />
                   <p className="text-[10px] text-slate-500 mt-1">
-                    Whatever you type here instantly updates the live storefront banner and promo badge!
+                    Typing "Buy 5 Get 2 Free" automatically updates the Buy Qty and Free Qty inputs below!
                   </p>
                 </div>
 
@@ -462,9 +746,9 @@ const Settings = () => {
                       <input
                         type="number"
                         min="1"
-                        max="10"
+                        max="20"
                         value={flashSaleConfig.buy_qty || 1}
-                        onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, buy_qty: Number(e.target.value) })}
+                        onChange={(e) => handleBuyQtyChange(e.target.value)}
                         className="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-2 text-center text-xs font-bold"
                       />
                     </div>
@@ -473,9 +757,9 @@ const Settings = () => {
                       <input
                         type="number"
                         min="1"
-                        max="10"
+                        max="20"
                         value={flashSaleConfig.get_free_qty || 1}
-                        onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, get_free_qty: Number(e.target.value) })}
+                        onChange={(e) => handleFreeQtyChange(e.target.value)}
                         className="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-2 text-center text-xs font-bold"
                       />
                     </div>
@@ -492,11 +776,13 @@ const Settings = () => {
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {[
+                    { label: "2 Hours (Lightning)", hours: 2 },
+                    { label: "6 Hours (Flash)", hours: 6 },
                     { label: "12 Hours", hours: 12 },
                     { label: "24 Hours (1 Day)", hours: 24 },
                     { label: "48 Hours (Weekend)", hours: 48 },
-                    { label: "3 Days", hours: 72 },
-                    { label: "7 Days (1 Week)", hours: 168 },
+                    { label: "3 Days (Festive)", hours: 72 },
+                    { label: "7 Days (Mega Sale)", hours: 168 },
                   ].map((preset) => (
                     <button
                       key={preset.label}
@@ -819,6 +1105,7 @@ const Settings = () => {
             </div>
           </div>
         </form>
+        </div>
       )}
 
       {/* TAB 2: STORE INFO */}

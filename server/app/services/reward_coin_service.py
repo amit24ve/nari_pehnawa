@@ -66,15 +66,28 @@ class RewardCoinService:
         }
 
     def calculate_item_coins(self, item: Dict[str, Any]) -> int:
-        """Calculate coins to award for a single cart/order item."""
+        """
+        Calculate coins to award for a single cart/order item:
+        - Buy X Get Y Free / BOGO offers: 50 coins per item
+        - Standard or regular discount: 100 coins per item
+        """
         qty = int(item.get("quantity", 1) or 1)
-        is_on_sale = (
-            bool(item.get("on_sale")) or
-            bool(item.get("discount") and int(item.get("discount")) > 0) or
-            bool(item.get("is_sale"))
+        deal_txt = str(item.get("deal_text") or item.get("deal_badge") or "").lower()
+        deal_typ = str(item.get("deal_type") or "").lower()
+
+        is_bogo_or_free_deal = (
+            bool(item.get("is_bogo")) or
+            deal_typ in ["bogo", "buy2get1", "buy3get1"] or
+            "get" in deal_txt or
+            "bogo" in deal_txt or
+            bool(item.get("free_items_count")) or
+            bool(item.get("is_free_item"))
         )
-        coins_per_unit = COINS_SALE_ITEM if is_on_sale else COINS_STANDARD_ITEM
-        return coins_per_unit * qty
+        if is_bogo_or_free_deal:
+            return 50 * qty
+
+        # Regular or discount items: 100 coins
+        return 100 * qty
 
     def calculate_order_potential_coins(self, items: List[Dict[str, Any]]) -> int:
         """Calculate total coins an order will grant upon completion."""

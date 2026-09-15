@@ -548,6 +548,29 @@ const ProductPage = () => {
               </div>
             </div>
 
+            {/* Live Flash Sale Event Banner */}
+            {(product.sale_title || product.deal_text) && (
+              <div className="bg-gradient-to-r from-[#8B0000] via-rose-800 to-amber-700 text-white p-3 sm:p-3.5 rounded-2xl shadow-sm flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                    <Flame className="w-5 h-5 fill-white text-white animate-pulse" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-extrabold tracking-wider bg-white/20 px-2 py-0.5 rounded text-amber-200">
+                      {product.sale_title || "Special Festive Offer"}
+                    </span>
+                    <h3 className="font-extrabold text-sm sm:text-base leading-tight mt-0.5">
+                      {product.deal_text || "Special Promotional Deal"}
+                    </h3>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-semibold text-rose-100 block">⚡ Limited Period Offer</span>
+                  <span className="text-xs font-bold text-amber-300">IST Live</span>
+                </div>
+              </div>
+            )}
+
             {/* Dynamic Price & Coupon Badges */}
             <div className="p-4 bg-gray-50/80 rounded-2xl border border-gray-100 space-y-2.5">
               <div className="flex items-baseline gap-3 flex-wrap">

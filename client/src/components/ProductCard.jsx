@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, Star } from "lucide-react";
+import { Heart, Star, Flame, Zap } from "lucide-react";
 
 // Organic Pebble fluid curve shapes inspired by Image 2
 const pebbleShapes = [
@@ -63,10 +63,15 @@ const ProductCard = ({
                     ? "rounded-2xl border-[#8B0000]"
                     : `${pebbleClass} border-[#8B0000]/15`
             } group-hover:rounded-2xl group-active:rounded-2xl shadow-md border-2 group-hover:border-[#8B0000] group-active:border-[#8B0000] transition-all duration-500 ease-in-out`}>
-                {/* Sale / New Badge - Always 100% visible on top left */}
-                {discount > 0 ? (
+                {/* Sale / Deal Badge - Always 100% visible on top left */}
+                {product.deal_text ? (
+                    <span className="absolute top-3 left-3 z-30 bg-gradient-to-r from-[#8B0000] via-rose-700 to-amber-600 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md border border-white/30 flex items-center gap-1">
+                        <Flame className="w-3 h-3 fill-white text-white" />
+                        {product.deal_text}
+                    </span>
+                ) : discount > 0 ? (
                     <span className="absolute top-3 left-3 z-30 bg-[#8B0000] text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md border border-white/20">
-                        Sale
+                        Sale {discount}%
                     </span>
                 ) : (product.isNew || product.is_new) ? (
                     <span className="absolute top-3 left-3 z-30 bg-emerald-700 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md border border-white/20">
@@ -106,11 +111,19 @@ const ProductCard = ({
 
             {/* Product Details - Always 100% Front & Visible */}
             <div className="p-3 text-center z-10">
-                <h3 className={`text-xs sm:text-sm font-serif font-bold text-gray-900 line-clamp-1 leading-snug mb-1.5 group-hover:text-[#8B0000] transition-colors ${
+                <h3 className={`text-xs sm:text-sm font-serif font-bold text-gray-900 line-clamp-1 leading-snug mb-1 group-hover:text-[#8B0000] transition-colors ${
                     isHovered ? "text-[#8B0000]" : ""
                 }`}>
                     {product.name}
                 </h3>
+
+                {/* Event / Flash Sale Campaign Tag */}
+                {product.sale_title && (
+                    <div className="text-[10px] font-bold text-[#8B0000] truncate flex items-center justify-center gap-1 mb-1 bg-rose-50/70 py-0.5 px-2 rounded-full border border-rose-100/80">
+                        <Zap className="w-2.5 h-2.5 fill-[#8B0000] text-[#8B0000]" />
+                        <span>{product.sale_title}</span>
+                    </div>
+                )}
                 <div className="flex items-center justify-center gap-1.5 mb-2">
                     <div className="flex items-center gap-0.5 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
                         <Star className="w-3 h-3 fill-[#d4af37] text-[#d4af37]" />

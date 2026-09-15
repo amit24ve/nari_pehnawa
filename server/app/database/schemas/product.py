@@ -37,6 +37,11 @@ class ProductBase(BaseModel):
     hsn_code: Optional[str] = None  # GST HSN/SAC code, used on invoices
     delivery_charge: float = 0.0
     pickup_location: Optional[str] = None  # Shiprocket pickup warehouse nickname
+    sale_title: Optional[str] = None
+    deal_text: Optional[str] = None
+    deal_type: Optional[str] = None
+    buy_qty: Optional[int] = None
+    get_free_qty: Optional[int] = None
 
 
 class ProductCreate(ProductBase):
@@ -75,6 +80,11 @@ class ProductUpdate(BaseModel):
     hsn_code: Optional[str] = None
     delivery_charge: Optional[float] = None
     pickup_location: Optional[str] = None
+    sale_title: Optional[str] = None
+    deal_text: Optional[str] = None
+    deal_type: Optional[str] = None
+    buy_qty: Optional[int] = None
+    get_free_qty: Optional[int] = None
 
 
 class Product(ProductBase):
