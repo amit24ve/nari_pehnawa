@@ -201,10 +201,18 @@ class RewardCoinService:
 
     def process_order_cancellation(
         self, user_id: Optional[str], order_id: str, order_number: str,
-        coins_used: int, coins_earned: int
+        coins_used: int, coins_earned: int, action_type: str = "cancelled"
     ) -> None:
-        """Reverse coin transactions when an order is cancelled/refunded."""
+        """Reverse coin transactions when an order is cancelled or returned."""
         if not user_id:
+            return
+
+        # Idempotency guard: avoid double reversing coins for the same order
+        already_reversed = self.transactions.find_one({
+            "order_id": str(order_id),
+            "type": {"$in": ["reversal", "refund"]}
+        })
+        if already_reversed:
             return
 
         user_query = {"_id": ObjectId(user_id)} if ObjectId.is_valid(user_id) else {"_id": user_id}
@@ -215,7 +223,7 @@ class RewardCoinService:
         user_actual_id = str(user["_id"])
         current_balance = int(user.get("coins_balance", 0))
 
-        # Refund spent coins
+        # Refund spent coins if any were used
         if coins_used > 0:
             new_balance = current_balance + coins_used
             self.users.update_one(
@@ -233,12 +241,12 @@ class RewardCoinService:
                 "coins": coins_used,
                 "rupee_value": round(coins_used / COINS_PER_RUPEE, 2),
                 "balance_after": new_balance,
-                "description": f"Refunded {coins_used} Coins from cancelled Order #{order_number}",
+                "description": f"Refunded {coins_used} Coins from {action_type} Order #{order_number}",
                 "created_at": datetime.now()
             })
             current_balance = new_balance
 
-        # Reverse earned coins
+        # Reverse earned coins (deduct 100/50 coins per item awarded on purchase)
         if coins_earned > 0:
             new_balance = max(0, current_balance - coins_earned)
             self.users.update_one(
@@ -256,7 +264,7 @@ class RewardCoinService:
                 "coins": -coins_earned,
                 "rupee_value": round(coins_earned / COINS_PER_RUPEE, 2),
                 "balance_after": new_balance,
-                "description": f"Reversed {coins_earned} Coins from cancelled Order #{order_number}",
+                "description": f"Deducted {coins_earned} Coins from {action_type} Order #{order_number}",
                 "created_at": datetime.now()
             })
 

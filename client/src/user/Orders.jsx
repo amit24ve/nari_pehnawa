@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Search, Filter, Eye, Truck, CheckCircle, XCircle, Clock, ChevronUp, ChevronDown as ChevronDownIcon } from 'lucide-react';
+import { Package, Search, Filter, Eye, Truck, CheckCircle, XCircle, Clock, ChevronUp, ChevronDown as ChevronDownIcon, Star, MessageSquare, X } from 'lucide-react';
 import OrderTracking from '../components/OrderTracking';
 
 const Orders = () => {
@@ -8,6 +8,16 @@ const Orders = () => {
     const [filter, setFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [expandedOrderId, setExpandedOrderId] = useState(null);
+
+    // Review Modal States
+    const [reviewModalItem, setReviewModalItem] = useState(null);
+    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewHoverRating, setReviewHoverRating] = useState(0);
+    const [reviewTitle, setReviewTitle] = useState('');
+    const [reviewComment, setReviewComment] = useState('');
+    const [submittingReview, setSubmittingReview] = useState(false);
+    const [reviewFeedback, setReviewFeedback] = useState(null);
+    const [reviewedProducts, setReviewedProducts] = useState({});
 
     useEffect(() => {
         fetchOrders();
@@ -71,6 +81,77 @@ const Orders = () => {
         { value: 'delivered', label: 'Delivered' },
         { value: 'cancelled', label: 'Cancelled' }
     ];
+
+    const openReviewModal = (item, order) => {
+        setReviewModalItem({
+            ...item,
+            order_id: order.id || order.order_number || order._id
+        });
+        setReviewRating(5);
+        setReviewHoverRating(0);
+        setReviewTitle('');
+        setReviewComment('');
+        setReviewFeedback(null);
+    };
+
+    const submitReview = async (e) => {
+        e.preventDefault();
+        if (!reviewModalItem) return;
+        if (!reviewComment.trim()) {
+            setReviewFeedback({ type: 'error', message: 'Please write a review comment.' });
+            return;
+        }
+
+        setSubmittingReview(true);
+        setReviewFeedback(null);
+
+        const API_URL = import.meta.env.VITE_API_URL || 'https://naripehnawa.com:7100';
+        const token = localStorage.getItem('neel_token') || localStorage.getItem('token');
+
+        try {
+            const payload = {
+                product_id: String(reviewModalItem.product_id || reviewModalItem.id || 'unknown'),
+                product_name: reviewModalItem.product_name || reviewModalItem.name || 'Ethnic Wear Product',
+                rating: Number(reviewRating),
+                title: reviewTitle.trim() || undefined,
+                comment: reviewComment.trim(),
+                verified_purchase: true,
+                size_purchased: reviewModalItem.size || undefined,
+                color_purchased: reviewModalItem.color || undefined
+            };
+
+            const res = await fetch(`${API_URL}/reviews/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.detail || 'Failed to submit review');
+            }
+
+            const prodKey = String(reviewModalItem.product_id || reviewModalItem.id);
+            setReviewedProducts(prev => ({ ...prev, [prodKey]: true }));
+            setReviewFeedback({
+                type: 'success',
+                message: 'Thank you! Your review has been submitted for admin approval and will appear on the product page once approved.'
+            });
+
+            setTimeout(() => {
+                setReviewModalItem(null);
+                setReviewFeedback(null);
+            }, 2500);
+        } catch (err) {
+            console.error('Review submit error:', err);
+            setReviewFeedback({ type: 'error', message: err.message || 'Error submitting review. Please try again.' });
+        } finally {
+            setSubmittingReview(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -188,21 +269,54 @@ const Orders = () => {
                                     {/* Order Items */}
                                     {order.items && order.items.length > 0 && (
                                         <div className="mt-4 border-t border-gray-200 pt-4">
-                                            <p className="text-sm font-semibold text-gray-700 mb-2">Items ({order.items.length})</p>
-                                            <div className="space-y-2">
-                                                {order.items.slice(0, 2).map((item, idx) => (
-                                                    <div key={idx} className="flex items-center gap-3 text-sm">
-                                                        <div className="w-12 h-12 bg-gray-100 rounded"></div>
-                                                        <div className="flex-1">
-                                                            <p className="font-medium text-gray-800">{item.product_name || 'Product'}</p>
-                                                            <p className="text-gray-600">Qty: {item.quantity}</p>
+                                            <p className="text-sm font-semibold text-gray-700 mb-3">Items ({order.items.length})</p>
+                                            <div className="space-y-3">
+                                                {order.items.map((item, idx) => {
+                                                    const prodKey = String(item.product_id || item.id || idx);
+                                                    const isDelivered = (order.status || '').toLowerCase() === 'delivered';
+                                                    const hasReviewed = !!reviewedProducts[prodKey];
+
+                                                    return (
+                                                        <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm">
+                                                            <div className="flex items-center gap-3">
+                                                                {item.image ? (
+                                                                    <img src={item.image} alt={item.product_name || 'Product'} className="w-12 h-12 rounded object-cover border border-gray-200" />
+                                                                ) : (
+                                                                    <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-gray-400">
+                                                                        <Package className="w-6 h-6" />
+                                                                    </div>
+                                                                )}
+                                                                <div>
+                                                                    <p className="font-semibold text-gray-800 line-clamp-1">{item.product_name || item.name || 'Product'}</p>
+                                                                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                                                                        <span>Qty: {item.quantity}</span>
+                                                                        {item.size && <span>• Size: {item.size}</span>}
+                                                                        {item.color && <span>• Color: {item.color}</span>}
+                                                                        <span>• ₹{Number(item.price || 0).toFixed(2)}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Rate & Review Button (Delivered Orders) */}
+                                                            {isDelivered && (
+                                                                <div className="flex sm:justify-end">
+                                                                    {hasReviewed ? (
+                                                                        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+                                                                            <CheckCircle className="w-3.5 h-3.5" /> Review Submitted
+                                                                        </span>
+                                                                    ) : (
+                                                                        <button
+                                                                            onClick={() => openReviewModal(item, order)}
+                                                                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all"
+                                                                        >
+                                                                            <Star className="w-3.5 h-3.5 fill-current" /> Rate & Review
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                        <p className="font-semibold text-gray-800">₹{Number(item.price || 0).toFixed(2)}</p>
-                                                    </div>
-                                                ))}
-                                                {order.items.length > 2 && (
-                                                    <p className="text-sm text-[#0891b2] font-semibold">+{order.items.length - 2} more items</p>
-                                                )}
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}
@@ -233,6 +347,122 @@ const Orders = () => {
                     >
                         Start Shopping
                     </button>
+                </div>
+            )}
+
+            {/* Review Submission Modal */}
+            {reviewModalItem && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border border-gray-100">
+                        {/* Modal Header */}
+                        <div className="bg-gradient-to-r from-[#2c3e50] to-[#1a1f2e] text-white p-5 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-serif font-bold">Rate & Review Product</h3>
+                                <p className="text-xs text-gray-300 mt-0.5">Your review will be verified and displayed on the product page</p>
+                            </div>
+                            <button
+                                onClick={() => setReviewModalItem(null)}
+                                className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <form onSubmit={submitReview} className="p-6 space-y-4">
+                            {/* Product Info */}
+                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                                {reviewModalItem.image ? (
+                                    <img src={reviewModalItem.image} alt={reviewModalItem.product_name} className="w-14 h-14 rounded-lg object-cover border" />
+                                ) : (
+                                    <div className="w-14 h-14 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">
+                                        <Package className="w-6 h-6" />
+                                    </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-semibold text-gray-900 text-sm truncate">{reviewModalItem.product_name || reviewModalItem.name}</h4>
+                                    <p className="text-xs text-gray-500 mt-0.5">Order #{reviewModalItem.order_id}</p>
+                                </div>
+                            </div>
+
+                            {/* Star Rating */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Overall Rating *</label>
+                                <div className="flex items-center gap-2">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                            type="button"
+                                            key={star}
+                                            onClick={() => setReviewRating(star)}
+                                            onMouseEnter={() => setReviewHoverRating(star)}
+                                            onMouseLeave={() => setReviewHoverRating(0)}
+                                            className="p-1 text-gray-300 hover:scale-110 transition-transform"
+                                        >
+                                            <Star
+                                                className={`w-7 h-7 ${(reviewHoverRating || reviewRating) >= star
+                                                    ? 'text-amber-400 fill-amber-400'
+                                                    : 'text-gray-300'
+                                                    }`}
+                                            />
+                                        </button>
+                                    ))}
+                                    <span className="text-xs font-semibold text-gray-600 ml-2">
+                                        {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][reviewHoverRating || reviewRating]}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Review Title */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Review Title (Optional)</label>
+                                <input
+                                    type="text"
+                                    value={reviewTitle}
+                                    onChange={(e) => setReviewTitle(e.target.value)}
+                                    placeholder="e.g. Gorgeous fabric, perfect festive fit!"
+                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0891b2] focus:border-transparent outline-none"
+                                />
+                            </div>
+
+                            {/* Review Comment */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Your Review *</label>
+                                <textarea
+                                    rows={4}
+                                    required
+                                    value={reviewComment}
+                                    onChange={(e) => setReviewComment(e.target.value)}
+                                    placeholder="Share details about the fitting, material, color, and your shopping experience..."
+                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0891b2] focus:border-transparent outline-none resize-none"
+                                />
+                            </div>
+
+                            {/* Feedback Alert */}
+                            {reviewFeedback && (
+                                <div className={`p-3 rounded-xl text-xs font-medium ${reviewFeedback.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>
+                                    {reviewFeedback.message}
+                                </div>
+                            )}
+
+                            {/* Action Buttons */}
+                            <div className="flex items-center justify-end gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setReviewModalItem(null)}
+                                    className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 rounded-xl hover:bg-gray-100 transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={submittingReview}
+                                    className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0891b2] hover:bg-[#0e7490] rounded-xl shadow-md disabled:opacity-50 transition flex items-center gap-2"
+                                >
+                                    {submittingReview ? 'Submitting...' : 'Submit Review'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             )}
         </div>

@@ -15,6 +15,7 @@ const Settings = () => {
     is_active: true,
     title: 'Grand Festive Flash Sale',
     subtitle: 'Exclusive Handcrafted Luxury Ethnic Wear',
+    deal_type: 'percentage', // 'percentage' | 'bogo' | 'buy2get1' | 'buy3get1'
     discount_percentage: 30,
     target_type: 'all', // 'all' | 'category' | 'custom_products'
     target_category: '',
@@ -340,8 +341,13 @@ const Settings = () => {
               </div>
 
               <div className="flex items-center gap-3 bg-white text-[#0891b2] px-5 py-3 rounded-xl shadow-md border border-white/40">
-                <span className="text-xs font-bold text-slate-700">Discount:</span>
-                <span className="text-2xl font-black text-[#0891b2] font-mono">{flashSaleConfig.discount_percentage}% OFF</span>
+                <span className="text-xs font-bold text-slate-700">Promo Deal:</span>
+                <span className="text-xl font-black text-[#0891b2] font-mono">
+                  {flashSaleConfig.deal_type === 'bogo' ? '🎁 BUY 1 GET 1 FREE' :
+                   flashSaleConfig.deal_type === 'buy2get1' ? '🎁 BUY 2 GET 1 FREE' :
+                   flashSaleConfig.deal_type === 'buy3get1' ? '🎁 BUY 3 GET 1 FREE' :
+                   `${flashSaleConfig.discount_percentage}% OFF`}
+                </span>
               </div>
             </div>
 
@@ -375,20 +381,50 @@ const Settings = () => {
               </div>
             </div>
 
+            {/* Deal Type Selection (BOGO / Buy 2 Get 1 / Buy 3 Get 1 / Percentage) */}
+            <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-50/70 to-sky-50/70 border border-cyan-200 space-y-3">
+              <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                <Tag className="w-4 h-4 text-[#0891b2]" /> Promotional Offer Type &amp; Deal Mechanism *
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { id: 'percentage', label: 'Flat % Discount', desc: 'Flat % off qualifying items' },
+                  { id: 'bogo', label: 'Buy 1 Get 1 FREE', desc: 'Add 2, get 1 cheapest FREE' },
+                  { id: 'buy2get1', label: 'Buy 2 Get 1 FREE', desc: 'Add 3, get 1 cheapest FREE' },
+                  { id: 'buy3get1', label: 'Buy 3 Get 1 FREE', desc: 'Add 4, get 1 cheapest FREE' },
+                ].map((dt) => (
+                  <button
+                    key={dt.id}
+                    type="button"
+                    onClick={() => setFlashSaleConfig({ ...flashSaleConfig, deal_type: dt.id })}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      (flashSaleConfig.deal_type || 'percentage') === dt.id
+                        ? 'bg-[#0891b2] border-[#0891b2] text-white shadow-md'
+                        : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <p className="font-bold text-xs">{dt.label}</p>
+                    <p className={`text-[11px] mt-0.5 ${(flashSaleConfig.deal_type || 'percentage') === dt.id ? 'text-cyan-100' : 'text-slate-500'}`}>
+                      {dt.desc}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Quick Duration Presets & Timing */}
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-[#0891b2]" /> Quick Timer Presets:
+                  <Clock className="w-4 h-4 text-[#0891b2]" /> Quick Timer &amp; Duration Presets:
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {[
-                    { label: "1 Hour", hours: 1 },
-                    { label: "2 Hours", hours: 2 },
-                    { label: "3 Hours", hours: 3 },
-                    { label: "6 Hours", hours: 6 },
-                    { label: "Today (24h)", hours: 24 },
-                    { label: "Weekend (48h)", hours: 48 },
+                    { label: "12 Hours", hours: 12 },
+                    { label: "24 Hours (1 Day)", hours: 24 },
+                    { label: "48 Hours (Weekend)", hours: 48 },
+                    { label: "3 Days", hours: 72 },
+                    { label: "7 Days (1 Week)", hours: 168 },
                   ].map((preset) => (
                     <button
                       key={preset.label}
@@ -427,10 +463,10 @@ const Settings = () => {
 
             {/* Discount & Target Scope */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {/* Discount % */}
+              {/* Discount % (shown primarily if percentage deal or as secondary base) */}
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide">
-                  Discount Percentage
+                  {flashSaleConfig.deal_type === 'percentage' ? 'Discount Percentage *' : 'Base Badge % (Display)'}
                 </label>
                 <div className="flex items-center gap-3">
                   <input
@@ -446,7 +482,11 @@ const Settings = () => {
                     {flashSaleConfig.discount_percentage}%
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500">Applied across all selected sale products.</p>
+                <p className="text-[11px] text-slate-500">
+                  {flashSaleConfig.deal_type === 'percentage'
+                    ? 'Applied across all selected sale products.'
+                    : 'Display discount percentage badge for products in this collection.'}
+                </p>
               </div>
 
               {/* Target Scope */}

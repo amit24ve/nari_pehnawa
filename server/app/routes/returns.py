@@ -233,6 +233,19 @@ def perform_return_action(
                 stock_items, ret["order_id"], reason="Return QC passed"
             )
 
+        try:
+            from app.services.reward_coin_service import RewardCoinService
+            RewardCoinService(db).process_order_cancellation(
+                user_id=str(order.get("user_id") or ""),
+                order_id=str(ret.get("order_id")),
+                order_number=str(order.get("order_number") or ""),
+                coins_used=int(order.get("coins_used") or 0),
+                coins_earned=int(order.get("coins_earned") or 0),
+                action_type="returned"
+            )
+        except Exception as coin_err:
+            print(f"[Coins] Error reversing coins for return {return_id}: {coin_err}")
+
         # Refund only the returned items' proportional value, not the
         # whole order (partial returns are supported).
         returned_qty_map = {i["product_id"]: i["quantity"] for i in ret.get("items", [])}

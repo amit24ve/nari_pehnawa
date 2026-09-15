@@ -643,14 +643,26 @@ def update_order_status(order_id: str, status_data: dict, current_user: dict = D
             except Exception as e:
                 print(f"[Shiprocket] auto-trigger on status change failed: {e}")
 
-        # Restore inventory if this transition cancels the order (and it
-        # wasn't already cancelled before — avoid double-restoring stock).
-        if status == "cancelled" and previous_status != "cancelled":
+        # Restore inventory and reverse reward coins if this transition cancels/returns the order
+        if status in ("cancelled", "returned", "refunded") and previous_status not in ("cancelled", "returned", "refunded"):
             stock_items = _stock_items_from_order(result)
             if stock_items:
                 InventoryService(db).restore_stock_for_order(
-                    stock_items, order_id, reason="Order cancelled by admin"
+                    stock_items, order_id, reason=f"Order {status}"
                 )
+            try:
+                from app.services.reward_coin_service import RewardCoinService
+                coin_service = RewardCoinService(db)
+                coin_service.process_order_cancellation(
+                    user_id=str(result.get("user_id") or ""),
+                    order_id=str(order_id),
+                    order_number=str(result.get("order_number") or ""),
+                    coins_used=int(result.get("coins_used") or 0),
+                    coins_earned=int(result.get("coins_earned") or 0),
+                    action_type=status
+                )
+            except Exception as coin_err:
+                print(f"[Coins] Error reversing coins for order {order_id}: {coin_err}")
 
         _notify_status_change(db, result, status)
 
@@ -757,6 +769,19 @@ def _finalise_cancellation(db, order: dict, order_id: str, cancellation_id: str,
         InventoryService(db).restore_stock_for_order(
             stock_items, order_id, reason="Order cancelled"
         )
+
+    try:
+        from app.services.reward_coin_service import RewardCoinService
+        RewardCoinService(db).process_order_cancellation(
+            user_id=str(order.get("user_id") or ""),
+            order_id=str(order_id),
+            order_number=str(order.get("order_number") or ""),
+            coins_used=int(order.get("coins_used") or 0),
+            coins_earned=int(order.get("coins_earned") or 0),
+            action_type="cancelled"
+        )
+    except Exception as coin_err:
+        print(f"[Coins] Error reversing coins in _finalise_cancellation for order {order_id}: {coin_err}")
 
     refund_id = None
     if order.get("payment_status") == "captured":

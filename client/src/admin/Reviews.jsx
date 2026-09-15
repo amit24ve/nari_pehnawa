@@ -119,11 +119,11 @@ const Reviews = () => {
         _id: "rev-5",
         rating: 5,
         status: "approved",
-        comment: "Great quality table mirror, packing was very secure and arrived in perfect condition.",
+        comment: "Stunning festive lehenga choli set with rich zari embroidery. Arrived in perfect condition.",
         created_at: "2026-07-13T16:45:00Z",
-        user_name: "Rahul Verma",
-        user_email: "rahul@example.com",
-        product_name: "Wall Mirror With Wooden Frame"
+        user_name: "Meera Kapoor",
+        user_email: "meera@example.com",
+        product_name: "Embroidered Silk Lehenga Choli Set"
       }
     ];
   };

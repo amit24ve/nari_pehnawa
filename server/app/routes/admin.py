@@ -169,6 +169,7 @@ def get_flash_sale_settings():
             "is_active": True,
             "title": "Grand Festive Flash Sale",
             "subtitle": "Exclusive Handcrafted Luxury Ethnic Wear",
+            "deal_type": "percentage",  # "percentage" | "bogo" | "buy2get1" | "buy3get1"
             "discount_percentage": 30,
             "target_type": "all",  # "all" | "category" | "custom_products"
             "target_category": "",
@@ -210,6 +211,7 @@ def get_flash_sale_settings():
         "is_active": is_active,
         "title": sale.get("title", "Grand Festive Flash Sale"),
         "subtitle": sale.get("subtitle", "Exclusive Handcrafted Luxury Ethnic Wear"),
+        "deal_type": sale.get("deal_type", "percentage"),
         "discount_percentage": sale.get("discount_percentage", 30),
         "target_type": sale.get("target_type", "all"),
         "target_category": sale.get("target_category", ""),
@@ -234,6 +236,7 @@ def update_flash_sale_settings(data: dict, current_user: dict = Depends(require_
     is_active = bool(data.get("is_active", True))
     title = str(data.get("title", "Grand Festive Flash Sale")).strip()
     subtitle = str(data.get("subtitle", "Exclusive Handcrafted Luxury Ethnic Wear")).strip()
+    deal_type = str(data.get("deal_type", "percentage")).strip()
     discount_percentage = int(data.get("discount_percentage", 30))
     target_type = str(data.get("target_type", "all")) # "all" | "category" | "custom_products"
     target_category = str(data.get("target_category", "")).strip()
@@ -246,6 +249,7 @@ def update_flash_sale_settings(data: dict, current_user: dict = Depends(require_
         "is_active": is_active,
         "title": title,
         "subtitle": subtitle,
+        "deal_type": deal_type,
         "discount_percentage": discount_percentage,
         "target_type": target_type,
         "target_category": target_category,

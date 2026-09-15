@@ -520,6 +520,16 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                 {flashSale?.subtitle || "Exclusive Limited-Time Discounts on Authentic Handcrafted Styles"}
               </p>
 
+              {/* Promotional Deal Badge */}
+              <div className="flex justify-center">
+                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 font-black text-xs sm:text-sm shadow-xl tracking-wider uppercase border border-amber-300">
+                  {flashSale?.deal_type === 'bogo' ? '🎁 BUY 1 GET 1 FREE (BOGO)' :
+                   flashSale?.deal_type === 'buy2get1' ? '🎁 BUY 2 GET 1 FREE' :
+                   flashSale?.deal_type === 'buy3get1' ? '🎁 BUY 3 GET 1 FREE' :
+                   `🔥 FLAT ${flashSale?.discount_percentage || 30}% OFF`}
+                </span>
+              </div>
+
               {/* Live Countdown Timer (if active sale has end time) */}
               {countdown.isLive && (
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-black/40 backdrop-blur-md border border-amber-300/40 shadow-lg text-white">

@@ -16,6 +16,14 @@ def create_review(review: ReviewCreate, current_user: dict = Depends(get_current
     reviews_collection = db["reviews"]
     try:
         review_data = review.model_dump()
+        user_id = str(current_user.get("_id") or current_user.get("id") or "")
+        user_name = current_user.get("name") or review_data.get("user_name") or "Verified Customer"
+        user_email = current_user.get("email") or ""
+        
+        review_data["user_id"] = user_id
+        review_data["user_name"] = user_name
+        review_data["user_email"] = user_email
+        review_data["verified_purchase"] = True
         review_data["status"] = "pending"
         review_data["created_at"] = datetime.now()
         review_data["updated_at"] = datetime.now()

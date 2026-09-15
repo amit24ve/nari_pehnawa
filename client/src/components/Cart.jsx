@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   X,
   Plus,
@@ -74,10 +74,65 @@ const Cart = () => {
         });
       })
       .catch(() => {});
+
+    // Fetch active Flash / Festive Sale for promo rules (BOGO, Buy 2 Get 1, etc.)
+    fetch(`${API_URL}/admin/flash-sale`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.is_currently_live) {
+          setActiveSale(data);
+        }
+      })
+      .catch(() => {});
   }, []);
+
+  const [activeSale, setActiveSale] = useState(null);
 
   // ── Price calculations ───────────────────────────────────────────────
   const subtotal = cartTotal;
+
+  // Flash Sale Promotional Discount (BOGO, Buy 2 Get 1, Buy 3 Get 1)
+  const promoDiscount = useMemo(() => {
+    if (!activeSale || !activeSale.is_currently_live) return 0;
+
+    const qualifyingPrices = [];
+    cartItems.forEach((item) => {
+      let isQualifying = false;
+      if (activeSale.target_type === "all") {
+        isQualifying = true;
+      } else if (activeSale.target_type === "category") {
+        if (item.category && item.category.toLowerCase() === (activeSale.target_category || "").toLowerCase()) {
+          isQualifying = true;
+        }
+      } else if (activeSale.target_type === "custom_products") {
+        const pids = activeSale.target_product_ids || [];
+        if (pids.includes(item.product_id) || pids.includes(item.id)) {
+          isQualifying = true;
+        }
+      }
+      if (isQualifying) {
+        for (let i = 0; i < (item.quantity || 1); i++) {
+          qualifyingPrices.push(Number(item.price || 0));
+        }
+      }
+    });
+
+    if (qualifyingPrices.length === 0) return 0;
+    qualifyingPrices.sort((a, b) => a - b); // Cheapest items first
+
+    if (activeSale.deal_type === "bogo") {
+      const freeCount = Math.floor(qualifyingPrices.length / 2);
+      return qualifyingPrices.slice(0, freeCount).reduce((sum, p) => sum + p, 0);
+    } else if (activeSale.deal_type === "buy2get1") {
+      const freeCount = Math.floor(qualifyingPrices.length / 3);
+      return qualifyingPrices.slice(0, freeCount).reduce((sum, p) => sum + p, 0);
+    } else if (activeSale.deal_type === "buy3get1") {
+      const freeCount = Math.floor(qualifyingPrices.length / 4);
+      return qualifyingPrices.slice(0, freeCount).reduce((sum, p) => sum + p, 0);
+    }
+    return 0;
+  }, [activeSale, cartItems]);
+
   const couponDiscount = appliedCoupon
     ? appliedCoupon.type === "percent"
       ? Math.round((subtotal * appliedCoupon.value) / 100)
@@ -85,7 +140,9 @@ const Cart = () => {
         ? Math.min(appliedCoupon.value, subtotal)
         : 0
     : 0;
-  const afterDiscount = subtotal - couponDiscount;
+
+  const totalDiscount = couponDiscount + promoDiscount;
+  const afterDiscount = Math.max(0, subtotal - totalDiscount);
 
   const calculateDeliveryFee = () => {
     const userOrderCount = user?.orders_count || 0;
@@ -353,6 +410,17 @@ const Cart = () => {
                   <span>Subtotal ({cartCount} items)</span>
                   <span>₹{subtotal.toLocaleString("en-IN")}</span>
                 </div>
+                {promoDiscount > 0 && (
+                  <div className="flex justify-between text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded-lg border border-amber-200 font-semibold text-xs">
+                    <span>
+                      {activeSale?.deal_type === 'bogo' ? '🎁 Buy 1 Get 1 Free Promo' :
+                       activeSale?.deal_type === 'buy2get1' ? '🎁 Buy 2 Get 1 Free Promo' :
+                       activeSale?.deal_type === 'buy3get1' ? '🎁 Buy 3 Get 1 Free Promo' :
+                       '⚡ Special Festive Deal'}
+                    </span>
+                    <span>− ₹{promoDiscount.toLocaleString("en-IN")}</span>
+                  </div>
+                )}
                 {couponDiscount > 0 && (
                   <div className="flex justify-between text-green-600 font-medium">
                     <span>Coupon Discount</span>
@@ -377,9 +445,9 @@ const Cart = () => {
                   <span>Total</span>
                   <span>₹{totalAmount.toLocaleString("en-IN")}</span>
                 </div>
-                {couponDiscount > 0 && (
+                {totalDiscount > 0 && (
                   <p className="text-green-600 text-xs font-medium bg-green-50 rounded-lg px-3 py-2">
-                    🎉 You save ₹{couponDiscount.toLocaleString("en-IN")} on
+                    🎉 You save ₹{totalDiscount.toLocaleString("en-IN")} on
                     this order!
                   </p>
                 )}
@@ -499,7 +567,7 @@ const Cart = () => {
         onClose={() => setShowCheckout(false)}
         items={cartItems}
         subtotal={subtotal}
-        discount={couponDiscount}
+        discount={totalDiscount}
         shipping={shipping}
         total={totalAmount}
         couponCode={appliedCoupon?.code || null}
