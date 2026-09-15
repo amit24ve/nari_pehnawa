@@ -29,18 +29,19 @@ const AIChatbot = () => {
 
   // Standard shopping suggestions
   const defaultSuggestions = [
-    { label: "👗 Browse Live Categories", key: "show_categories" },
-    { label: "🔥 Today's Mega Sale Offers", link: "/category/sale" },
-    { label: "✨ Best Sellers", key: "best_sellers" },
-    { label: "📦 Track My Order", link: "/user/orders" },
-    { label: "💬 Help & Support", link: "/support/contact-us" }
+    { label: "👗 Browse Collections", key: "show_categories", desc: "Kurtis, Sarees & Sets" },
+    { label: "🔥 Mega Sale Offers", link: "/category/sale", desc: "Up to 50% discount" },
+    { label: "✨ Best Sellers", key: "best_sellers", desc: "Customer favourites" },
+    { label: "📦 Track My Order", link: "/user/orders", desc: "Live dispatch status" },
+    { label: "🪙 Reward Coins", link: "/user/coins", desc: "10 Coins = ₹1 discount" },
+    { label: "💬 Help & Support", link: "/support/contact-us", desc: "Instant assistance" }
   ];
 
   // Initial welcome message
   const getInitialMessage = () => ({
     id: "welcome",
     sender: "bot",
-    text: `Hello! How may I help you?\n\nI am your Nari Pehnawa AI Assistant. You can explore our handcrafted collections, track your orders, check live offers, or ask for any style advice!`,
+    text: `Hello! May I help you find something special today? 🙏\n\nI can help you explore handcrafted ethnic wear, find live mega sale discounts, check your **Reward Coins**, or track your orders anytime.`,
     time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     suggestions: defaultSuggestions
   });
@@ -80,7 +81,7 @@ const AIChatbot = () => {
             {
               id: "welcome",
               sender: "bot",
-              text: `Hello! How may I help you?\n\nI am your Nari Pehnawa AI Assistant. You can explore our handcrafted ethnic wear, live discounts, or track your orders anytime.`,
+              text: `Hello ${user.name}! May I help you find something special today? 🙏\n\nExplore our latest festive arrivals, check live discounts, view your **Reward Coins balance**, or track your orders anytime.`,
               time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
               suggestions: defaultSuggestions
             }
@@ -217,9 +218,20 @@ const AIChatbot = () => {
       console.warn("Chatbot search error:", e);
     }
 
-    // 9. Default Fallback
+    // 9. Reward Coins Query
+    if (input.includes("coin") || input.includes("reward") || input.includes("points") || input.includes("sikke") || input.includes("wallet")) {
+      return {
+        text: `🪙 **Nari Pehnawa Reward Coins:**\n\n• **Earn**: 100 Coins on every regular product (50 Coins on sale items).\n• **Value**: 10 Coins = ₹1 INR (e.g. 500 Coins = ₹50 discount).\n• **Redeem**: Save up to 50% of your order value at checkout!\n\nYou can view your active coins and history in your account wallet.`,
+        suggestions: [
+          { label: "🪙 My Coins Wallet", link: "/user/coins", desc: "Check balance & earnings" },
+          { label: "🔥 Today's Mega Sale", link: "/category/sale", desc: "Earn 50 coins per item" }
+        ]
+      };
+    }
+
+    // 10. Default Fallback
     return {
-      text: `I'd love to help you find the perfect outfit! You can explore our live collections below, check today's offers, or track your orders anytime.`,
+      text: `May I help you find something special? You can explore our live collections below, check today's festive offers, or track your orders anytime.`,
       suggestions: defaultSuggestions
     };
   };
@@ -370,22 +382,23 @@ const AIChatbot = () => {
           className="fixed inset-x-3 bottom-3 sm:static sm:inset-auto w-auto sm:w-[380px] h-[510px] max-h-[82vh] sm:max-h-[85vh] bg-white rounded-3xl shadow-2xl border border-stone-200 flex flex-col overflow-hidden mb-3 transition-all duration-300 animate-fadeIn z-50"
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-[#8B0000] via-[#A01020] to-[#8B0000] px-4 py-3.5 flex items-center justify-between text-white shadow-md flex-shrink-0">
+          <div className="bg-gradient-to-r from-[#8B0000] via-[#9E1222] to-[#7B0000] px-4 py-3.5 flex items-center justify-between text-white shadow-md flex-shrink-0">
             <div className="flex items-center gap-2.5">
               <div className="relative">
-                <div className="w-9 h-9 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center text-amber-300 font-bold border border-white/25">
+                <div className="w-9 h-9 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center text-amber-300 font-bold border border-white/25 shadow-inner">
                   <Sparkles className="w-4.5 h-4.5" />
                 </div>
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#8B0000]" />
               </div>
 
-              <div>
-                <h3 className="font-serif font-bold text-sm leading-tight text-white">
-                  Nari Pehnawa Assistant
+              <div className="flex items-center gap-2">
+                <h3 className="font-serif font-bold text-[15px] sm:text-base leading-tight text-white tracking-wide">
+                  May I help you?
                 </h3>
-                <p className="text-[11px] text-amber-200/90 font-medium">
-                  Always here to help you • Online
-                </p>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-sans font-medium bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1 animate-pulse" />
+                  Online
+                </span>
               </div>
             </div>
 
@@ -475,18 +488,34 @@ const AIChatbot = () => {
                   </div>
                 </div>
 
-                {/* Quick Action Suggestion Chips */}
+                {/* Quick Action Suggestion Cards (Rich, modern & responsive) */}
                 {msg.suggestions && msg.suggestions.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pl-9 pt-1 animate-fadeIn">
-                    {msg.suggestions.map((sug, sIdx) => (
-                      <button
-                        key={sIdx}
-                        onClick={() => handleSuggestionClick(sug)}
-                        className="text-[11px] font-medium bg-white hover:bg-stone-50 border border-stone-300 hover:border-[#8B0000] text-stone-700 hover:text-[#8B0000] px-3 py-1.5 rounded-full shadow-2xs transition-all cursor-pointer text-left"
-                      >
-                        {sug.label}
-                      </button>
-                    ))}
+                  <div className="pt-2 pl-9 animate-fadeIn space-y-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-500 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-amber-500" />
+                      Quick Suggestions:
+                    </p>
+                    <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+                      {msg.suggestions.map((sug, sIdx) => (
+                        <button
+                          key={sIdx}
+                          onClick={() => handleSuggestionClick(sug)}
+                          className="group/btn relative flex flex-col justify-between p-2 sm:p-2.5 rounded-xl bg-white hover:bg-gradient-to-br hover:from-white hover:to-amber-50/50 border border-stone-200 hover:border-[#8B0000]/40 text-stone-800 shadow-2xs hover:shadow-md transition-all duration-200 cursor-pointer text-left active:scale-[0.98]"
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-[11px] sm:text-xs font-semibold text-stone-900 group-hover/btn:text-[#8B0000] transition-colors truncate">
+                              {sug.label}
+                            </span>
+                            <ChevronRight className="w-3.5 h-3.5 text-stone-300 group-hover/btn:text-[#8B0000] group-hover/btn:translate-x-0.5 transition-all flex-shrink-0 ml-1" />
+                          </div>
+                          {sug.desc && (
+                            <span className="text-[9.5px] text-stone-600 truncate mt-0.5 font-normal">
+                              {sug.desc}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
