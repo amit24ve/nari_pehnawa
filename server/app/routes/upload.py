@@ -6,7 +6,7 @@ import os
 import uuid
 from pathlib import Path
 
-from app.security import require_admin
+from app.security import get_current_user, require_admin
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 router = APIRouter(prefix="/upload", tags=["Upload"])
@@ -67,6 +67,46 @@ async def upload_image(
     }
     ext = ext_map.get(file.content_type, "jpg")
     filename = f"{uuid.uuid4().hex}.{ext}"
+    dest = UPLOAD_DIR / filename
+
+    with open(dest, "wb") as f:
+        f.write(content)
+
+    return {
+        "url": f"/uploads/{filename}",
+        "filename": filename,
+        "size_kb": round(len(content) / 1024, 1),
+    }
+
+
+@router.post("/review-image")
+async def upload_review_image(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Customer upload photo for product reviews."""
+    if file.content_type not in ALLOWED_MIME:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type '{file.content_type}'. Please upload JPG, PNG, or WebP.",
+        )
+
+    content = await file.read()
+    if len(content) > 15 * 1024 * 1024:
+        raise HTTPException(
+            status_code=400,
+            detail="Image too large. Maximum size is 15 MB.",
+        )
+
+    ext_map = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+        "image/gif": "gif",
+        "image/avif": "avif",
+    }
+    ext = ext_map.get(file.content_type, "jpg")
+    filename = f"rev_{uuid.uuid4().hex[:12]}.{ext}"
     dest = UPLOAD_DIR / filename
 
     with open(dest, "wb") as f:

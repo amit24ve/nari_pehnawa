@@ -12,7 +12,9 @@ import {
   AlertCircle,
   Download,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Camera,
+  X
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://naripehnawa.com:7100';
@@ -24,6 +26,7 @@ const Reviews = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -406,6 +409,32 @@ const Reviews = () => {
                   <span className="text-xs text-[#0891b2] font-bold flex items-center gap-1.5"><Package className="w-3.5 h-3.5" /> {getProductName(r)}</span>
                   <p className="text-slate-700 mt-2 leading-relaxed italic">"{r.comment}"</p>
                 </div>
+
+                {/* Uploaded Customer Photos */}
+                {r.images && r.images.length > 0 && (
+                  <div className="space-y-1.5 pt-1">
+                    <span className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                      <Camera className="w-3.5 h-3.5 text-[#0891b2]" /> Customer Photos ({r.images.length}):
+                    </span>
+                    <div className="flex gap-2 flex-wrap">
+                      {r.images.map((imgUrl, imgIdx) => (
+                        <button
+                          key={imgIdx}
+                          type="button"
+                          onClick={() => setSelectedImage(imgUrl)}
+                          className="w-14 h-14 rounded-lg overflow-hidden border border-slate-200 hover:border-[#0891b2] transition group focus:outline-none"
+                        >
+                          <img
+                            src={imgUrl}
+                            alt={`Customer review proof ${imgIdx + 1}`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-150"
+                            onError={(e) => { e.currentTarget.parentElement.style.display = 'none'; }}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-2 pt-3 border-t border-slate-100">
@@ -457,6 +486,28 @@ const Reviews = () => {
             >
               Next
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Customer Review Image Lightbox Preview Modal */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-xl max-h-[85vh] bg-black rounded-2xl overflow-hidden p-2 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/70 hover:bg-black text-white flex items-center justify-center transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <img
+              src={selectedImage}
+              alt="Customer uploaded review proof"
+              className="max-h-[80vh] w-auto max-w-full object-contain mx-auto rounded-lg"
+            />
           </div>
         </div>
       )}

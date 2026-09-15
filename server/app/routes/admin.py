@@ -212,6 +212,9 @@ def get_flash_sale_settings():
         "title": sale.get("title", "Grand Festive Flash Sale"),
         "subtitle": sale.get("subtitle", "Exclusive Handcrafted Luxury Ethnic Wear"),
         "deal_type": sale.get("deal_type", "percentage"),
+        "deal_text": sale.get("deal_text", ""),
+        "buy_qty": sale.get("buy_qty", 1),
+        "get_free_qty": sale.get("get_free_qty", 1),
         "discount_percentage": sale.get("discount_percentage", 30),
         "target_type": sale.get("target_type", "all"),
         "target_category": sale.get("target_category", ""),
@@ -237,6 +240,9 @@ def update_flash_sale_settings(data: dict, current_user: dict = Depends(require_
     title = str(data.get("title", "Grand Festive Flash Sale")).strip()
     subtitle = str(data.get("subtitle", "Exclusive Handcrafted Luxury Ethnic Wear")).strip()
     deal_type = str(data.get("deal_type", "percentage")).strip()
+    deal_text = str(data.get("deal_text", "")).strip()
+    buy_qty = int(data.get("buy_qty", 1))
+    get_free_qty = int(data.get("get_free_qty", 1))
     discount_percentage = int(data.get("discount_percentage", 30))
     target_type = str(data.get("target_type", "all")) # "all" | "category" | "custom_products"
     target_category = str(data.get("target_category", "")).strip()
@@ -250,6 +256,9 @@ def update_flash_sale_settings(data: dict, current_user: dict = Depends(require_
         "title": title,
         "subtitle": subtitle,
         "deal_type": deal_type,
+        "deal_text": deal_text,
+        "buy_qty": buy_qty,
+        "get_free_qty": get_free_qty,
         "discount_percentage": discount_percentage,
         "target_type": target_type,
         "target_category": target_category,
@@ -269,10 +278,22 @@ def update_flash_sale_settings(data: dict, current_user: dict = Depends(require_
             res = products_col.update_many({}, {"$set": {"on_sale": True}})
             affected_count = res.modified_count
         elif target_type == "category" and target_category:
-            # Reset non-matching first or mark matching
-            products_col.update_many({"category": {"$not": {"$regex": f"^{target_category}$", "$options": "i"}}}, {"$set": {"on_sale": False}})
-            res = products_col.update_many({"category": {"$regex": f"^{target_category}$", "$options": "i"}}, {"$set": {"on_sale": True}})
-            affected_count = res.modified_count
+            if target_product_ids and len(target_product_ids) > 0:
+                # Specific products selected from within this category
+                obj_ids = []
+                for pid in target_product_ids:
+                    try:
+                        obj_ids.append(ObjectId(pid))
+                    except Exception:
+                        pass
+                products_col.update_many({"_id": {"$nin": obj_ids}}, {"$set": {"on_sale": False}})
+                res = products_col.update_many({"_id": {"$in": obj_ids}}, {"$set": {"on_sale": True}})
+                affected_count = res.modified_count
+            else:
+                # All products in this category
+                products_col.update_many({"category": {"$not": {"$regex": f"^{target_category}$", "$options": "i"}}}, {"$set": {"on_sale": False}})
+                res = products_col.update_many({"category": {"$regex": f"^{target_category}$", "$options": "i"}}, {"$set": {"on_sale": True}})
+                affected_count = res.modified_count
         elif target_type == "custom_products" and target_product_ids:
             obj_ids = []
             for pid in target_product_ids:

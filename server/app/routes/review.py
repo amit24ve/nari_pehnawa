@@ -95,6 +95,48 @@ def get_product_reviews(product_id: str, skip: int = 0, limit: int = 10):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/product/{product_id}/stats")
+def get_product_review_stats(product_id: str):
+    """Get aggregated rating score, distribution (5, 4, 3, 2, 1 stars), and customer review images."""
+    db = get_database()
+    reviews_collection = db["reviews"]
+    try:
+        approved = list(reviews_collection.find({
+            "product_id": product_id,
+            "status": "approved"
+        }))
+        
+        total_reviews = len(approved)
+        distribution = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0}
+        all_images = []
+        
+        for r in approved:
+            rating_val = int(round(float(r.get("rating", 5))))
+            rating_val = max(1, min(5, rating_val))
+            distribution[rating_val] += 1
+            imgs = r.get("images", []) or []
+            for img in imgs:
+                if img and img not in all_images:
+                    all_images.append(img)
+                    
+        avg_rating = round(sum(r.get("rating", 5) for r in approved) / total_reviews, 1) if total_reviews > 0 else 5.0
+        
+        percentages = {}
+        for star in [5, 4, 3, 2, 1]:
+            percentages[star] = round((distribution[star] / total_reviews) * 100) if total_reviews > 0 else 0
+
+        return {
+            "product_id": product_id,
+            "total_reviews": total_reviews,
+            "average_rating": avg_rating,
+            "distribution": distribution,
+            "percentages": percentages,
+            "images": all_images
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{review_id}", response_model=Review)
 def get_review(review_id: str):
     """Get a specific review"""
@@ -156,6 +198,23 @@ def approve_review(review_id: str, current_user: dict = Depends(require_admin)):
         )
         if not result:
             raise HTTPException(status_code=404, detail="Review not found")
+        
+        # Synchronize product rating & count in products collection
+        product_id = result.get("product_id")
+        if product_id and product_id != "unknown":
+            approved = list(reviews_collection.find({"product_id": product_id, "status": "approved"}))
+            total_count = len(approved)
+            if total_count > 0:
+                avg_rating = round(sum(r.get("rating", 5) for r in approved) / total_count, 1)
+                prod_q = {"_id": ObjectId(product_id)} if ObjectId.is_valid(product_id) else {"_id": product_id}
+                db["products"].update_one(prod_q, {
+                    "$set": {
+                        "rating": avg_rating,
+                        "reviews_count": total_count,
+                        "total_reviews": total_count
+                    }
+                })
+
         result["_id"] = str(result["_id"])
         return result
     except HTTPException:

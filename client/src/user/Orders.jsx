@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Search, Filter, Eye, Truck, CheckCircle, XCircle, Clock, ChevronUp, ChevronDown as ChevronDownIcon, Star, MessageSquare, X } from 'lucide-react';
+import { Package, Search, Filter, Eye, Truck, CheckCircle, XCircle, Clock, ChevronUp, ChevronDown as ChevronDownIcon, Star, MessageSquare, X, Camera, Upload, Trash2, Loader2 } from 'lucide-react';
 import OrderTracking from '../components/OrderTracking';
 
 const Orders = () => {
@@ -15,6 +15,8 @@ const Orders = () => {
     const [reviewHoverRating, setReviewHoverRating] = useState(0);
     const [reviewTitle, setReviewTitle] = useState('');
     const [reviewComment, setReviewComment] = useState('');
+    const [reviewImages, setReviewImages] = useState([]);
+    const [uploadingImage, setUploadingImage] = useState(false);
     const [submittingReview, setSubmittingReview] = useState(false);
     const [reviewFeedback, setReviewFeedback] = useState(null);
     const [reviewedProducts, setReviewedProducts] = useState({});
@@ -91,7 +93,52 @@ const Orders = () => {
         setReviewHoverRating(0);
         setReviewTitle('');
         setReviewComment('');
+        setReviewImages([]);
         setReviewFeedback(null);
+    };
+
+    const handleImageUpload = async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+        if (reviewImages.length + files.length > 4) {
+            setReviewFeedback({ type: 'error', message: 'You can upload up to 4 photos.' });
+            return;
+        }
+
+        setUploadingImage(true);
+        setReviewFeedback(null);
+        const API_URL = import.meta.env.VITE_API_URL || 'https://naripehnawa.com:7100';
+        const token = localStorage.getItem('neel_token') || localStorage.getItem('token');
+
+        try {
+            for (const file of files) {
+                const formData = new FormData();
+                formData.append('file', file);
+                const res = await fetch(`${API_URL}/upload/review-image`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.url) {
+                        const fullUrl = data.url.startsWith('http') ? data.url : `${API_URL}${data.url}`;
+                        setReviewImages(prev => [...prev, fullUrl]);
+                    }
+                } else {
+                    throw new Error('Failed to upload image');
+                }
+            }
+        } catch (err) {
+            console.error('Image upload error:', err);
+            setReviewFeedback({ type: 'error', message: 'Failed to upload photo. Please ensure it is JPG or PNG under 15MB.' });
+        } finally {
+            setUploadingImage(false);
+        }
+    };
+
+    const removeReviewImage = (indexToRemove) => {
+        setReviewImages(prev => prev.filter((_, idx) => idx !== indexToRemove));
     };
 
     const submitReview = async (e) => {
@@ -115,6 +162,7 @@ const Orders = () => {
                 rating: Number(reviewRating),
                 title: reviewTitle.trim() || undefined,
                 comment: reviewComment.trim(),
+                images: reviewImages,
                 verified_purchase: true,
                 size_purchased: reviewModalItem.size || undefined,
                 color_purchased: reviewModalItem.color || undefined
@@ -428,13 +476,66 @@ const Orders = () => {
                             <div>
                                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Your Review *</label>
                                 <textarea
-                                    rows={4}
+                                    rows={3}
                                     required
                                     value={reviewComment}
                                     onChange={(e) => setReviewComment(e.target.value)}
                                     placeholder="Share details about the fitting, material, color, and your shopping experience..."
                                     className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0891b2] focus:border-transparent outline-none resize-none"
                                 />
+                            </div>
+
+                            {/* Upload Product Photos */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                                    <span>Product Photos (Optional)</span>
+                                    <span className="text-[11px] font-normal text-gray-500">{reviewImages.length}/4 photos</span>
+                                </label>
+                                
+                                <div className="space-y-2">
+                                    {/* Photos Preview Grid */}
+                                    {reviewImages.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 mb-2">
+                                            {reviewImages.map((imgUrl, imgIdx) => (
+                                                <div key={imgIdx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 group">
+                                                    <img src={imgUrl} alt={`Upload ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeReviewImage(imgIdx)}
+                                                        className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/70 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Upload Button */}
+                                    {reviewImages.length < 4 && (
+                                        <label className={`flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 hover:border-[#0891b2] rounded-xl cursor-pointer bg-gray-50 hover:bg-cyan-50/40 transition ${uploadingImage ? 'opacity-50 pointer-events-none' : ''}`}>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                multiple
+                                                onChange={handleImageUpload}
+                                                className="hidden"
+                                                disabled={uploadingImage}
+                                            />
+                                            {uploadingImage ? (
+                                                <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                    <Loader2 className="w-4 h-4 animate-spin text-[#0891b2]" />
+                                                    <span>Uploading photo...</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 text-xs font-semibold text-[#0891b2]">
+                                                    <Camera className="w-4 h-4" />
+                                                    <span>Attach Photos (Wear / Unbox)</span>
+                                                </div>
+                                            )}
+                                        </label>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Feedback Alert */}

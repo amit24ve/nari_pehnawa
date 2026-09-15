@@ -34,6 +34,7 @@ import {
   CheckCircle2,
   Tag,
   ArrowRight,
+  Camera,
 } from "lucide-react";
 import { useWishlist } from "../context/WishlistProvider";
 import { useCart } from "../context/CartProvider";
@@ -92,6 +93,8 @@ const ProductPage = () => {
   const [error, setError] = useState(null);
   const [related, setRelated] = useState([]);
   const [dbReviews, setDbReviews] = useState([]);
+  const [reviewStats, setReviewStats] = useState(null);
+  const [lightboxImage, setLightboxImage] = useState(null);
   const [activeImg, setActiveImg] = useState(0);
   const [selectedSize, setSelectedSize] = useState(null);
   const [selectedColor, setSelectedColor] = useState(null);
@@ -189,6 +192,14 @@ const ProductPage = () => {
         setDbReviews(Array.isArray(revs) ? revs : []);
       })
       .catch(() => setDbReviews([]));
+
+    // Fetch aggregated review stats & customer uploaded photos
+    fetch(`${API_BASE_URL}/reviews/product/${productId}/stats`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((stats) => {
+        if (stats) setReviewStats(stats);
+      })
+      .catch(() => {});
   }, [productId]);
 
   // Load Recently Viewed list from localStorage
@@ -524,11 +535,11 @@ const ProductPage = () => {
               {/* Ratings & Wishlist count */}
               <div className="flex items-center gap-3 flex-wrap text-xs">
                 <div className="flex items-center gap-1 bg-emerald-700 text-white font-bold px-2 py-0.5 rounded">
-                  <span>{(product.rating || 4.8).toFixed(1)}</span>
+                  <span>{(reviewStats?.total_reviews > 0 ? reviewStats.average_rating : (product.rating || 4.8)).toFixed(1)}</span>
                   <Star className="w-3 h-3 fill-white text-white" />
                 </div>
                 <span className="text-gray-500 font-medium">
-                  {(product.review_count || 128).toLocaleString("en-IN")} Verified Ratings
+                  {(reviewStats?.total_reviews > 0 ? reviewStats.total_reviews : (product.review_count || product.reviews_count || 128)).toLocaleString("en-IN")} Verified Ratings
                 </span>
                 <span className="text-gray-300">|</span>
                 <span className="text-gray-500 flex items-center gap-1">
@@ -927,39 +938,76 @@ const ProductPage = () => {
               <SectionHeading className="text-xl md:text-2xl">
                 Hum kuch nahi bolenge, hamari gossip queen khud batayegi!
               </SectionHeading>
-              <p className="text-xs text-gray-500 mt-1 text-center">Based on {(product.review_count || 0)} verified customer purchases</p>
+              <p className="text-xs text-gray-500 mt-1 text-center">
+                Based on {(reviewStats?.total_reviews > 0 ? reviewStats.total_reviews : (product.review_count || 0))} verified customer purchases
+              </p>
             </div>
 
             {/* Rating Breakdown */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
               <div className="text-center md:border-r border-gray-100 md:pr-6">
-                <span className="text-5xl font-extrabold text-gray-900">{(product.rating || 4.8).toFixed(1)}</span>
+                <span className="text-5xl font-extrabold text-gray-900">
+                  {(reviewStats?.total_reviews > 0 ? reviewStats.average_rating : (product.rating || 4.8)).toFixed(1)}
+                </span>
                 <div className="flex justify-center gap-1 my-2">
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                   ))}
                 </div>
-                <p className="text-xs text-gray-500 font-medium">96% of customers recommend this kurti</p>
+                <p className="text-xs text-gray-500 font-medium">
+                  {reviewStats?.total_reviews > 0 ? `${Math.round(((reviewStats.distribution?.[5] || 0) + (reviewStats.distribution?.[4] || 0)) / reviewStats.total_reviews * 100)}% of customers recommend this item` : "96% of customers recommend this kurti"}
+                </p>
               </div>
 
               <div className="md:col-span-2 space-y-2 text-xs">
-                {[
-                  [5, 82],
-                  [4, 12],
-                  [3, 4],
-                  [2, 1],
-                  [1, 1],
-                ].map(([stars, pct]) => (
-                  <div key={stars} className="flex items-center gap-3">
-                    <span className="w-8 text-gray-600 font-semibold">{stars} ★</span>
-                    <div className="flex-1 bg-gray-100 h-2 rounded-full overflow-hidden">
-                      <div className="bg-emerald-600 h-full rounded-full" style={{ width: `${pct}%` }} />
+                {[5, 4, 3, 2, 1].map((stars) => {
+                  const pct = reviewStats?.percentages
+                    ? (reviewStats.percentages[stars] || 0)
+                    : (stars === 5 ? 82 : stars === 4 ? 12 : stars === 3 ? 4 : stars === 2 ? 1 : 1);
+                  return (
+                    <div key={stars} className="flex items-center gap-3">
+                      <span className="w-8 text-gray-600 font-semibold">{stars} ★</span>
+                      <div className="flex-1 bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-emerald-600 h-full rounded-full transition-all duration-300"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="w-10 text-right text-gray-400 font-medium">{pct}%</span>
                     </div>
-                    <span className="w-10 text-right text-gray-400 font-medium">{pct}%</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
+
+            {/* Customer Photos Gallery Strip */}
+            {reviewStats?.images && reviewStats.images.length > 0 && (
+              <div className="pt-2 pb-2 border-t border-gray-100">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 mb-3 flex items-center gap-1.5">
+                  <Camera className="w-3.5 h-3.5 text-[#8B0000]" /> Customer Photos ({reviewStats.images.length})
+                </h4>
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+                  {reviewStats.images.map((img, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setLightboxImage(img)}
+                      className="relative shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 border-transparent hover:border-[#8B0000] transition group focus:outline-none"
+                    >
+                      <img
+                        src={img}
+                        alt={`Customer upload ${idx + 1}`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
+                        onError={(e) => { e.currentTarget.parentElement.style.display = 'none'; }}
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition flex items-center justify-center">
+                        <ZoomIn className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Verified Customer Reviews Cards (Dynamic from Backend API) */}
             <div className="space-y-4 pt-4 border-t border-gray-100">
@@ -990,8 +1038,9 @@ const ProductPage = () => {
                 const baseHelpful = rev.helpful_count || 15;
                 const currentHelpful = helpfulVotes[rId] ? baseHelpful + 1 : baseHelpful;
                 const formattedDate = rev.created_at ? new Date(rev.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : "Recent";
+                const revPhotos = rev.images || [];
                 return (
-                  <div key={rId} className="p-4 bg-gray-50/80 rounded-xl border border-gray-100 space-y-2 text-xs">
+                  <div key={rId} className="p-4 bg-gray-50/80 rounded-xl border border-gray-100 space-y-2.5 text-xs">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-gray-900">{rev.user_name || rev.reviewer_name || "Customer"}</span>
@@ -1009,6 +1058,28 @@ const ProductPage = () => {
                       ))}
                     </div>
                     <p className="text-gray-700 leading-relaxed">{rev.comment}</p>
+                    
+                    {/* Review Attached Photos */}
+                    {revPhotos.length > 0 && (
+                      <div className="flex gap-2 pt-1 flex-wrap">
+                        {revPhotos.map((imgUrl, imgIdx) => (
+                          <button
+                            key={imgIdx}
+                            type="button"
+                            onClick={() => setLightboxImage(imgUrl)}
+                            className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 hover:border-[#8B0000] transition group focus:outline-none"
+                          >
+                            <img
+                              src={imgUrl}
+                              alt={`Customer review photo ${imgIdx + 1}`}
+                              className="w-full h-full object-cover group-hover:scale-105 transition duration-150"
+                              onError={(e) => { e.currentTarget.parentElement.style.display = 'none'; }}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     <button
                       onClick={() => toggleHelpful(rId)}
                       className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-[#8B0000] transition-colors pt-1"
@@ -1270,6 +1341,28 @@ const ProductPage = () => {
           setShowCheckout(false);
         }}
       />
+
+      {/* ── Customer Photo Lightbox Modal ── */}
+      {lightboxImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs"
+          onClick={() => setLightboxImage(null)}
+        >
+          <div className="relative max-w-2xl max-h-[90vh] bg-black rounded-2xl overflow-hidden shadow-2xl p-2" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setLightboxImage(null)}
+              className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/60 hover:bg-black text-white flex items-center justify-center transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <img
+              src={lightboxImage}
+              alt="Enlarged customer photo"
+              className="max-h-[82vh] w-auto max-w-full object-contain mx-auto rounded-lg"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -16,6 +16,9 @@ const Settings = () => {
     title: 'Grand Festive Flash Sale',
     subtitle: 'Exclusive Handcrafted Luxury Ethnic Wear',
     deal_type: 'percentage', // 'percentage' | 'bogo' | 'buy2get1' | 'buy3get1'
+    deal_text: '',
+    buy_qty: 1,
+    get_free_qty: 1,
     discount_percentage: 30,
     target_type: 'all', // 'all' | 'category' | 'custom_products'
     target_category: '',
@@ -26,6 +29,10 @@ const Settings = () => {
   const [flashSaleLoading, setFlashSaleLoading] = useState(false);
   const [availableCategories, setAvailableCategories] = useState([]);
   const [availableProducts, setAvailableProducts] = useState([]);
+  const [categoryProductSearch, setCategoryProductSearch] = useState('');
+  const [customProductSearch, setCustomProductSearch] = useState('');
+  const [customCategoryFilter, setCustomCategoryFilter] = useState('all');
+  const [categorySpecificSelection, setCategorySpecificSelection] = useState(false);
 
   const authHeaders = () => ({
     'Content-Type': 'application/json',
@@ -167,6 +174,11 @@ const Settings = () => {
       if (res.ok) {
         const data = await res.json();
         setFlashSaleConfig(data);
+        if (data.target_type === 'category' && Array.isArray(data.target_product_ids) && data.target_product_ids.length > 0) {
+          setCategorySpecificSelection(true);
+        } else {
+          setCategorySpecificSelection(false);
+        }
       }
     } catch (e) {
       console.warn("Could not load flash sale config:", e);
@@ -177,7 +189,7 @@ const Settings = () => {
     try {
       const [cRes, pRes] = await Promise.all([
         fetch(`${API_BASE}/categories/?is_active=true`),
-        fetch(`${API_BASE}/products/?limit=100`)
+        fetch(`${API_BASE}/products/?limit=500`)
       ]);
       if (cRes.ok) {
         const cData = await cRes.json();
@@ -343,10 +355,11 @@ const Settings = () => {
               <div className="flex items-center gap-3 bg-white text-[#0891b2] px-5 py-3 rounded-xl shadow-md border border-white/40">
                 <span className="text-xs font-bold text-slate-700">Promo Deal:</span>
                 <span className="text-xl font-black text-[#0891b2] font-mono">
-                  {flashSaleConfig.deal_type === 'bogo' ? '🎁 BUY 1 GET 1 FREE' :
-                   flashSaleConfig.deal_type === 'buy2get1' ? '🎁 BUY 2 GET 1 FREE' :
-                   flashSaleConfig.deal_type === 'buy3get1' ? '🎁 BUY 3 GET 1 FREE' :
-                   `${flashSaleConfig.discount_percentage}% OFF`}
+                  {flashSaleConfig.deal_text ||
+                   (flashSaleConfig.deal_type === 'bogo' ? '🎁 BUY 1 GET 1 FREE' :
+                    flashSaleConfig.deal_type === 'buy2get1' ? '🎁 BUY 2 GET 1 FREE' :
+                    flashSaleConfig.deal_type === 'buy3get1' ? '🎁 BUY 3 GET 1 FREE' :
+                    `${flashSaleConfig.discount_percentage}% OFF`)}
                 </span>
               </div>
             </div>
@@ -381,22 +394,35 @@ const Settings = () => {
               </div>
             </div>
 
-            {/* Deal Type Selection (BOGO / Buy 2 Get 1 / Buy 3 Get 1 / Percentage) */}
-            <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-50/70 to-sky-50/70 border border-cyan-200 space-y-3">
-              <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
-                <Tag className="w-4 h-4 text-[#0891b2]" /> Promotional Offer Type &amp; Deal Mechanism *
-              </label>
+            {/* Deal Type Selection (BOGO / Buy 2 Get 1 / Buy 3 Get 1 / Percentage / Custom) */}
+            <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-50/70 to-sky-50/70 border border-cyan-200 space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                  <Tag className="w-4 h-4 text-[#0891b2]" /> Promotional Offer Type &amp; Deal Mechanism *
+                </label>
+                <span className="text-[11px] font-semibold text-[#0891b2] bg-white px-2.5 py-0.5 rounded-full border border-cyan-200 shadow-2xs">
+                  ⚡ Fully Dynamic &amp; Customizable
+                </span>
+              </div>
+
+              {/* Preset Buttons */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { id: 'percentage', label: 'Flat % Discount', desc: 'Flat % off qualifying items' },
-                  { id: 'bogo', label: 'Buy 1 Get 1 FREE', desc: 'Add 2, get 1 cheapest FREE' },
-                  { id: 'buy2get1', label: 'Buy 2 Get 1 FREE', desc: 'Add 3, get 1 cheapest FREE' },
-                  { id: 'buy3get1', label: 'Buy 3 Get 1 FREE', desc: 'Add 4, get 1 cheapest FREE' },
+                  { id: 'percentage', label: 'Flat % Discount', text: 'FLAT 30% OFF', desc: 'Flat % off qualifying items', buy: 1, get: 0 },
+                  { id: 'bogo', label: 'Buy 1 Get 1 FREE', text: 'BUY 1 GET 1 FREE (BOGO)', desc: 'Add 2, get 1 cheapest FREE', buy: 1, get: 1 },
+                  { id: 'buy2get1', label: 'Buy 2 Get 1 FREE', text: 'BUY 2 GET 1 FREE', desc: 'Add 3, get 1 cheapest FREE', buy: 2, get: 1 },
+                  { id: 'buy3get1', label: 'Buy 3 Get 1 FREE', text: 'BUY 3 GET 1 FREE', desc: 'Add 4, get 1 cheapest FREE', buy: 3, get: 1 },
                 ].map((dt) => (
                   <button
                     key={dt.id}
                     type="button"
-                    onClick={() => setFlashSaleConfig({ ...flashSaleConfig, deal_type: dt.id })}
+                    onClick={() => setFlashSaleConfig(prev => ({
+                      ...prev,
+                      deal_type: dt.id,
+                      deal_text: dt.text,
+                      buy_qty: dt.buy,
+                      get_free_qty: dt.get
+                    }))}
                     className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                       (flashSaleConfig.deal_type || 'percentage') === dt.id
                         ? 'bg-[#0891b2] border-[#0891b2] text-white shadow-md'
@@ -409,6 +435,52 @@ const Settings = () => {
                     </p>
                   </button>
                 ))}
+              </div>
+
+              {/* Dynamic Inputs: Custom Deal Text & Quantities */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-cyan-100">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Live Deal Badge / Title (Type to Customize Dynamically) *:
+                  </label>
+                  <input
+                    type="text"
+                    value={flashSaleConfig.deal_text || ''}
+                    onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, deal_text: e.target.value })}
+                    placeholder="e.g. BUY 1 GET 1 FREE, BUY 2 GET 1 FREE, FLAT 40% OFF"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-bold text-xs focus:outline-none focus:border-[#0891b2] shadow-2xs"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Whatever you type here instantly updates the live storefront banner and promo badge!
+                  </p>
+                </div>
+
+                {flashSaleConfig.deal_type !== 'percentage' && (
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">Buy Qty (X):</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="10"
+                        value={flashSaleConfig.buy_qty || 1}
+                        onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, buy_qty: Number(e.target.value) })}
+                        className="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-2 text-center text-xs font-bold"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">Free Qty (Y):</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="10"
+                        value={flashSaleConfig.get_free_qty || 1}
+                        onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, get_free_qty: Number(e.target.value) })}
+                        className="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-2 text-center text-xs font-bold"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -515,54 +587,219 @@ const Settings = () => {
                   ))}
                 </div>
 
-                {/* Category Dropdown if target_type === category */}
+                {/* Category Selection if target_type === category */}
                 {flashSaleConfig.target_type === "category" && (
-                  <div className="pt-2">
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Choose Category:</label>
-                    <select
-                      value={flashSaleConfig.target_category}
-                      onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, target_category: e.target.value })}
-                      className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-[#0891b2] text-xs font-medium"
-                    >
-                      <option value="">-- Select a Category --</option>
-                      {availableCategories.map((cat) => (
-                        <option key={cat._id || cat.id} value={cat.name}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="pt-2 space-y-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Choose Category:</label>
+                      <select
+                        value={flashSaleConfig.target_category}
+                        onChange={(e) => {
+                          const catName = e.target.value;
+                          setFlashSaleConfig({
+                            ...flashSaleConfig,
+                            target_category: catName,
+                            target_product_ids: []
+                          });
+                        }}
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-[#0891b2] text-xs font-medium"
+                      >
+                        <option value="">-- Select a Category --</option>
+                        {availableCategories.map((cat) => (
+                          <option key={cat._id || cat.id} value={cat.name}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {flashSaleConfig.target_category && (
+                      <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 text-xs">
+                          <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-700">
+                            <input
+                              type="radio"
+                              name="cat_scope"
+                              checked={!categorySpecificSelection}
+                              onChange={() => {
+                                setCategorySpecificSelection(false);
+                                setFlashSaleConfig({ ...flashSaleConfig, target_product_ids: [] });
+                              }}
+                              className="accent-[#0891b2]"
+                            />
+                            <span>All products in "{flashSaleConfig.target_category}"</span>
+                          </label>
+
+                          <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-700">
+                            <input
+                              type="radio"
+                              name="cat_scope"
+                              checked={categorySpecificSelection}
+                              onChange={() => setCategorySpecificSelection(true)}
+                              className="accent-[#0891b2]"
+                            />
+                            <span>Select specific products from "{flashSaleConfig.target_category}" ({flashSaleConfig.target_product_ids?.length || 0} selected)</span>
+                          </label>
+                        </div>
+
+                        {categorySpecificSelection && (
+                          <div className="space-y-2 pt-2 border-t border-slate-100">
+                            <div className="flex items-center justify-between gap-2">
+                              <input
+                                type="text"
+                                value={categoryProductSearch}
+                                onChange={(e) => setCategoryProductSearch(e.target.value)}
+                                placeholder={`Search products in ${flashSaleConfig.target_category}...`}
+                                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-[#0891b2]"
+                              />
+                              <div className="flex gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const catProds = availableProducts.filter(p => (p.category || '').toLowerCase() === flashSaleConfig.target_category.toLowerCase());
+                                    const allIds = catProds.map(p => p._id || p.id);
+                                    setFlashSaleConfig({ ...flashSaleConfig, target_product_ids: allIds });
+                                  }}
+                                  className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] rounded-lg font-medium cursor-pointer"
+                                >
+                                  Select All
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setFlashSaleConfig({ ...flashSaleConfig, target_product_ids: [] })}
+                                  className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] rounded-lg font-medium cursor-pointer"
+                                >
+                                  Clear
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="max-h-52 overflow-y-auto bg-slate-50/50 border border-slate-200 rounded-xl p-2 space-y-1">
+                              {availableProducts
+                                .filter(p => (p.category || '').toLowerCase() === flashSaleConfig.target_category.toLowerCase())
+                                .filter(p => !categoryProductSearch || (p.name || '').toLowerCase().includes(categoryProductSearch.toLowerCase()))
+                                .map((p) => {
+                                  const pid = p._id || p.id;
+                                  const isChecked = flashSaleConfig.target_product_ids?.includes(pid);
+                                  return (
+                                    <label key={pid} className="flex items-center gap-2.5 p-2 bg-white hover:bg-cyan-50/50 rounded-lg cursor-pointer border border-slate-200/80 shadow-2xs">
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={(e) => {
+                                          const currentIds = flashSaleConfig.target_product_ids || [];
+                                          const updated = e.target.checked
+                                            ? [...currentIds, pid]
+                                            : currentIds.filter(id => id !== pid);
+                                          setFlashSaleConfig({ ...flashSaleConfig, target_product_ids: updated });
+                                        }}
+                                        className="w-4 h-4 accent-[#0891b2] rounded cursor-pointer"
+                                      />
+                                      {p.image ? (
+                                        <img src={p.image} alt={p.name} className="w-9 h-9 object-cover rounded border" />
+                                      ) : (
+                                        <div className="w-9 h-9 bg-slate-200 rounded flex items-center justify-center text-[10px] text-slate-400">No img</div>
+                                      )}
+                                      <span className="text-slate-800 text-xs font-semibold truncate flex-1">{p.name}</span>
+                                      <span className="text-[#0891b2] font-mono font-bold text-xs">₹{p.price}</span>
+                                    </label>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Custom Products Multi-Select if target_type === custom_products */}
+                {/* Custom Products Multi-Select with Category Filter & Search if target_type === custom_products */}
                 {flashSaleConfig.target_type === "custom_products" && (
                   <div className="pt-2 space-y-2">
-                    <label className="block text-xs font-semibold text-slate-700">
-                      Select Products ({flashSaleConfig.target_product_ids?.length || 0} selected):
-                    </label>
-                    <div className="max-h-48 overflow-y-auto bg-white border border-slate-300 rounded-xl p-2 space-y-1">
-                      {availableProducts.map((p) => {
-                        const pid = p._id || p.id;
-                        const isChecked = flashSaleConfig.target_product_ids?.includes(pid);
-                        return (
-                          <label key={pid} className="flex items-center gap-2.5 p-2 hover:bg-slate-50 rounded-lg cursor-pointer border-b border-slate-100 last:border-0">
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={(e) => {
-                                const currentIds = flashSaleConfig.target_product_ids || [];
-                                const updated = e.target.checked
-                                  ? [...currentIds, pid]
-                                  : currentIds.filter(id => id !== pid);
-                                setFlashSaleConfig({ ...flashSaleConfig, target_product_ids: updated });
-                              }}
-                              className="w-4 h-4 accent-[#0891b2] rounded cursor-pointer"
-                            />
-                            <span className="text-slate-800 text-xs font-medium truncate flex-1">{p.name}</span>
-                            <span className="text-[#0891b2] font-mono font-bold text-xs">₹{p.price}</span>
-                          </label>
-                        );
-                      })}
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <label className="text-xs font-semibold text-slate-700">
+                        Select Products ({flashSaleConfig.target_product_ids?.length || 0} selected):
+                      </label>
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const filtered = availableProducts.filter(p => {
+                              const matchCat = customCategoryFilter === 'all' || (p.category || '').toLowerCase() === customCategoryFilter.toLowerCase();
+                              const matchSearch = !customProductSearch || (p.name || '').toLowerCase().includes(customProductSearch.toLowerCase());
+                              return matchCat && matchSearch;
+                            });
+                            const newIds = Array.from(new Set([...(flashSaleConfig.target_product_ids || []), ...filtered.map(p => p._id || p.id)]));
+                            setFlashSaleConfig({ ...flashSaleConfig, target_product_ids: newIds });
+                          }}
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] rounded-lg font-medium cursor-pointer"
+                        >
+                          Select Filtered
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFlashSaleConfig({ ...flashSaleConfig, target_product_ids: [] })}
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] rounded-lg font-medium cursor-pointer"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Filter controls */}
+                    <div className="flex gap-2">
+                      <select
+                        value={customCategoryFilter}
+                        onChange={(e) => setCustomCategoryFilter(e.target.value)}
+                        className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 outline-none"
+                      >
+                        <option value="all">All Categories</option>
+                        {availableCategories.map(cat => (
+                          <option key={cat._id || cat.id} value={cat.name}>{cat.name}</option>
+                        ))}
+                      </select>
+
+                      <input
+                        type="text"
+                        value={customProductSearch}
+                        onChange={(e) => setCustomProductSearch(e.target.value)}
+                        placeholder="Search products by title..."
+                        className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-[#0891b2]"
+                      />
+                    </div>
+
+                    <div className="max-h-52 overflow-y-auto bg-white border border-slate-300 rounded-xl p-2 space-y-1">
+                      {availableProducts
+                        .filter(p => customCategoryFilter === 'all' || (p.category || '').toLowerCase() === customCategoryFilter.toLowerCase())
+                        .filter(p => !customProductSearch || (p.name || '').toLowerCase().includes(customProductSearch.toLowerCase()))
+                        .map((p) => {
+                          const pid = p._id || p.id;
+                          const isChecked = flashSaleConfig.target_product_ids?.includes(pid);
+                          return (
+                            <label key={pid} className="flex items-center gap-2.5 p-2 hover:bg-slate-50 rounded-lg cursor-pointer border-b border-slate-100 last:border-0">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  const currentIds = flashSaleConfig.target_product_ids || [];
+                                  const updated = e.target.checked
+                                    ? [...currentIds, pid]
+                                    : currentIds.filter(id => id !== pid);
+                                  setFlashSaleConfig({ ...flashSaleConfig, target_product_ids: updated });
+                                }}
+                                className="w-4 h-4 accent-[#0891b2] rounded cursor-pointer"
+                              />
+                              {p.image ? (
+                                <img src={p.image} alt={p.name} className="w-8 h-8 object-cover rounded border" />
+                              ) : (
+                                <div className="w-8 h-8 bg-slate-200 rounded flex items-center justify-center text-[10px] text-slate-400">No img</div>
+                              )}
+                              <span className="text-slate-800 text-xs font-medium truncate flex-1">{p.name}</span>
+                              <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{p.category}</span>
+                              <span className="text-[#0891b2] font-mono font-bold text-xs">₹{p.price}</span>
+                            </label>
+                          );
+                        })}
                     </div>
                   </div>
                 )}
