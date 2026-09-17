@@ -16,6 +16,7 @@ import {
   Video,
   Heart
 } from "lucide-react";
+import CategoryProductLinkPicker from "./CategoryProductLinkPicker";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
@@ -1306,11 +1307,9 @@ const HeroBanners = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1">Category / Product Link</label>
-                  <input
-                    type="text"
+                  <CategoryProductLinkPicker
                     value={reelForm.product_link}
-                    onChange={(e) => setReelForm({ ...reelForm, product_link: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0891b2]"
+                    onChange={(val) => setReelForm({ ...reelForm, product_link: val })}
                     placeholder="/category/anarkali-kurtis"
                   />
                 </div>
@@ -1462,11 +1461,9 @@ const HeroBanners = () => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">Category / Product Link</label>
-                <input
-                  type="text"
+                <CategoryProductLinkPicker
                   value={celebForm.link}
-                  onChange={(e) => setCelebForm({ ...celebForm, link: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0891b2]"
+                  onChange={(val) => setCelebForm({ ...celebForm, link: val })}
                   placeholder="/category/anarkali-kurtis"
                 />
               </div>
