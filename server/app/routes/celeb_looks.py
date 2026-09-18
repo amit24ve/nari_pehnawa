@@ -40,47 +40,6 @@ def _fmt(doc: dict) -> dict:
     return doc
 
 
-def get_default_celeb_looks():
-    return [
-        {
-            "name": "Haldi Georgette Anarkali Suit Set",
-            "price": 4500.0,
-            "image": "https://images.pexels.com/photos/3622608/pexels-photo-3622608.jpeg?auto=compress&cs=tinysrgb&w=600",
-            "tag": "Festive Favorite",
-            "link": "/category/anarkali-kurtis",
-            "order": 1,
-            "is_active": True
-        },
-        {
-            "name": "Damini Cotton Printed Suit Set",
-            "price": 3200.0,
-            "image": "https://images.pexels.com/photos/2802024/pexels-photo-2802024.jpeg?auto=compress&cs=tinysrgb&w=600",
-            "tag": "Celebrity Pick",
-            "link": "/category/chikankari-kurtis",
-            "order": 2,
-            "is_active": True
-        },
-        {
-            "name": "Orange Bandhej Cotton Suit Set",
-            "price": 3800.0,
-            "image": "https://images.pexels.com/photos/3622618/pexels-photo-3622618.jpeg?auto=compress&cs=tinysrgb&w=600",
-            "tag": "Bollywood Style",
-            "link": "/category/printed-kurtis",
-            "order": 3,
-            "is_active": True
-        },
-        {
-            "name": "Urvi Silk Embroidered Suit Set",
-            "price": 5200.0,
-            "image": "https://images.pexels.com/photos/4210854/pexels-photo-4210854.jpeg?auto=compress&cs=tinysrgb&w=600",
-            "tag": "Trending Now",
-            "link": "/category/embroidered-kurtis",
-            "order": 4,
-            "is_active": True
-        }
-    ]
-
-
 @router.get("/", response_model=List[CelebLookOut])
 @cache_response(expire_seconds=300)
 def get_celeb_looks(request: Request, active_only: bool = True):
@@ -88,12 +47,6 @@ def get_celeb_looks(request: Request, active_only: bool = True):
     query = {"is_active": True} if active_only else {}
     collection = db["celeb_approved_looks"]
     looks = list(collection.find(query).sort("order", 1))
-    if not looks:
-        defaults = get_default_celeb_looks()
-        for d in defaults:
-            d["created_at"] = datetime.now()
-        collection.insert_many(defaults)
-        looks = list(collection.find(query).sort("order", 1))
     return [_fmt(l) for l in looks]
 
 
@@ -113,13 +66,14 @@ def update_celeb_look(look_id: str, data: CelebLookUpdate, _admin=Depends(requir
     db = get_database()
     try:
         oid = ObjectId(look_id)
+        filter_q = {"$or": [{"_id": oid}, {"id": look_id}]}
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid look id")
+        filter_q = {"id": look_id}
 
     update = data.model_dump()
     update["updated_at"] = datetime.now()
     result = db["celeb_approved_looks"].find_one_and_update(
-        {"_id": oid}, {"$set": update}, return_document=True
+        filter_q, {"$set": update}, return_document=True
     )
     if not result:
         raise HTTPException(status_code=404, detail="Celeb look not found")
@@ -132,9 +86,10 @@ def delete_celeb_look(look_id: str, _admin=Depends(require_admin)):
     db = get_database()
     try:
         oid = ObjectId(look_id)
+        filter_q = {"$or": [{"_id": oid}, {"id": look_id}]}
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid look id")
-    result = db["celeb_approved_looks"].delete_one({"_id": oid})
+        filter_q = {"id": look_id}
+    result = db["celeb_approved_looks"].delete_one(filter_q)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Celeb look not found")
     clear_api_cache()
@@ -146,12 +101,13 @@ def toggle_celeb_look(look_id: str, _admin=Depends(require_admin)):
     db = get_database()
     try:
         oid = ObjectId(look_id)
+        filter_q = {"$or": [{"_id": oid}, {"id": look_id}]}
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid look id")
-    doc = db["celeb_approved_looks"].find_one({"_id": oid})
+        filter_q = {"id": look_id}
+    doc = db["celeb_approved_looks"].find_one(filter_q)
     if not doc:
         raise HTTPException(status_code=404, detail="Celeb look not found")
     new_state = not doc.get("is_active", True)
-    db["celeb_approved_looks"].update_one({"_id": oid}, {"$set": {"is_active": new_state}})
+    db["celeb_approved_looks"].update_one(filter_q, {"$set": {"is_active": new_state}})
     clear_api_cache()
-    return {"success": True, "is_active": new_state}
+    return {"is_active": new_state}

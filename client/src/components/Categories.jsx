@@ -10,57 +10,6 @@ const Categories = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const getFallbackCategories = () => [
-    {
-      id: "cat-1",
-      name: "ANARKALI KURTIS",
-      tagline: "Timeless Anarkali Silhouettes!",
-      image: "https://images.pexels.com/photos/3622608/pexels-photo-3622608.jpeg?auto=compress&cs=tinysrgb&w=600",
-      link: "/category/anarkali-kurtis",
-      border_color: "#8B0000",
-    },
-    {
-      id: "cat-2",
-      name: "CHIKANKARI KURTIS",
-      tagline: "Lucknowi Craftsmanship At Its Finest!",
-      image: "https://images.pexels.com/photos/2802024/pexels-photo-2802024.jpeg?auto=compress&cs=tinysrgb&w=600",
-      link: "/category/chikankari-kurtis",
-      border_color: "#a52a2a",
-    },
-    {
-      id: "cat-3",
-      name: "PALAZZO SET KURTIS",
-      tagline: "Complete Sets For Effortless Dressing!",
-      image: "https://images.pexels.com/photos/4210854/pexels-photo-4210854.jpeg?auto=compress&cs=tinysrgb&w=600",
-      link: "/category/palazzo-set-kurtis",
-      border_color: "#8B0000",
-    },
-    {
-      id: "cat-4",
-      name: "EMBROIDERED KURTIS",
-      tagline: "Intricate Threadwork, Elegant Charm!",
-      image: "https://images.pexels.com/photos/3622618/pexels-photo-3622618.jpeg?auto=compress&cs=tinysrgb&w=600",
-      link: "/category/embroidered-kurtis",
-      border_color: "#a52a2a",
-    },
-    {
-      id: "cat-5",
-      name: "PRINTED KURTIS",
-      tagline: "Vibrant Prints For Every Occasion!",
-      image: "https://images.pexels.com/photos/2899764/pexels-photo-2899764.jpeg?auto=compress&cs=tinysrgb&w=600",
-      link: "/category/printed-kurtis",
-      border_color: "#8B0000",
-    },
-    {
-      id: "cat-6",
-      name: "STRAIGHT KURTIS",
-      tagline: "Sleek & Chic Everyday Fashion!",
-      image: "https://images.pexels.com/photos/2916450/pexels-photo-2916450.jpeg?auto=compress&cs=tinysrgb&w=600",
-      link: "/category/straight-kurtis",
-      border_color: "#a52a2a",
-    }
-  ];
-
   useEffect(() => {
     fetch(`${API_BASE_URL}/categories/?is_active=true`)
       .then((r) => {
@@ -68,15 +17,15 @@ const Categories = () => {
         return r.json();
       })
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setCategories(data);
         } else {
-          setCategories(getFallbackCategories());
+          setCategories([]);
         }
       })
       .catch((err) => {
         console.error("Categories fetch error:", err);
-        setCategories(getFallbackCategories());
+        setCategories([]);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -96,6 +45,10 @@ const Categories = () => {
     if (cat.image && cat.image.trim() !== "") return cat.image;
     return "https://images.pexels.com/photos/3622608/pexels-photo-3622608.jpeg?auto=compress&cs=tinysrgb&w=600";
   };
+
+  if (!loading && categories.length === 0) {
+    return null;
+  }
 
   const displayList = categories.length < 4 ? [...categories, ...categories, ...categories] : [...categories, ...categories];
 

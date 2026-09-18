@@ -529,7 +529,8 @@ const HeroBanners = () => {
     setCelebSubmitting(true);
     setError(null);
     try {
-      const url = editingCeleb ? `${API_BASE}/celeb-looks/${editingCeleb.id}` : `${API_BASE}/celeb-looks/`;
+      const lookId = editingCeleb._id || editingCeleb.id;
+      const url = editingCeleb ? `${API_BASE}/celeb-looks/${lookId}` : `${API_BASE}/celeb-looks/`;
       const method = editingCeleb ? "PUT" : "POST";
       const res = await fetch(url, {
         method,
@@ -956,9 +957,11 @@ const HeroBanners = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {celebLooks.map((look) => (
+            {celebLooks.map((look) => {
+              const lookId = look._id || look.id;
+              return (
               <div
-                key={look.id}
+                key={lookId}
                 className={`bg-white border ${
                   look.is_active ? "border-slate-200" : "border-slate-200 opacity-60"
                 } rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col`}
@@ -981,7 +984,7 @@ const HeroBanners = () => {
 
                   <div className="flex items-center justify-between border-t border-slate-100 pt-3">
                     <button
-                      onClick={() => handleToggleCeleb(look.id)}
+                      onClick={() => handleToggleCeleb(lookId)}
                       className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold ${
                         look.is_active ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-100 text-slate-600 border border-slate-200"
                       }`}
@@ -997,7 +1000,7 @@ const HeroBanners = () => {
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteCeleb(look.id)}
+                        onClick={() => handleDeleteCeleb(lookId)}
                         className="p-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg text-rose-600"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1006,7 +1009,7 @@ const HeroBanners = () => {
                   </div>
                 </div>
               </div>
-            ))}
+            );})}
           </div>
         )
       )}

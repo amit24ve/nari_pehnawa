@@ -5,41 +5,6 @@ import { SectionHeading } from "./NariHeadingDecoration";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
-const defaultCelebLooks = [
-  {
-    id: "c-1",
-    name: "Haldi Georgette Anarkali Suit Set",
-    price: 4500,
-    image: "https://images.pexels.com/photos/3622608/pexels-photo-3622608.jpeg?auto=compress&cs=tinysrgb&w=600",
-    tag: "Festive Favorite",
-    link: "/category/anarkali-kurtis"
-  },
-  {
-    id: "c-2",
-    name: "Damini Cotton Printed Suit Set",
-    price: 3200,
-    image: "https://images.pexels.com/photos/2802024/pexels-photo-2802024.jpeg?auto=compress&cs=tinysrgb&w=600",
-    tag: "Celebrity Pick",
-    link: "/category/chikankari-kurtis"
-  },
-  {
-    id: "c-3",
-    name: "Orange Bandhej Cotton Suit Set",
-    price: 3800,
-    image: "https://images.pexels.com/photos/3622618/pexels-photo-3622618.jpeg?auto=compress&cs=tinysrgb&w=600",
-    tag: "Bollywood Style",
-    link: "/category/printed-kurtis"
-  },
-  {
-    id: "c-4",
-    name: "Urvi Silk Embroidered Suit Set",
-    price: 5200,
-    image: "https://images.pexels.com/photos/4210854/pexels-photo-4210854.jpeg?auto=compress&cs=tinysrgb&w=600",
-    tag: "Trending Now",
-    link: "/category/embroidered-kurtis"
-  }
-];
-
 const CelebApprovedLooks = () => {
   const navigate = useNavigate();
   const scrollContainerRef = useRef(null);
@@ -55,15 +20,15 @@ const CelebApprovedLooks = () => {
         return res.json();
       })
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setCelebLooks(data);
         } else {
-          setCelebLooks(defaultCelebLooks);
+          setCelebLooks([]);
         }
       })
       .catch((e) => {
         console.error("Celeb looks fetch error:", e);
-        setCelebLooks(defaultCelebLooks);
+        setCelebLooks([]);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -91,6 +56,10 @@ const CelebApprovedLooks = () => {
       }, 300);
     }
   };
+
+  if (!loading && celebLooks.length === 0) {
+    return null;
+  }
 
   return (
     <section className="py-14 bg-white overflow-hidden relative">
