@@ -24,6 +24,8 @@ import {
     Tag,
     Loader2,
     Building2,
+    Star,
+    Image as ImageIcon,
 } from "lucide-react";
 import shippingApi from "../services/shippingApi";
 
@@ -97,6 +99,7 @@ const Products = () => {
         stock: "0",
         category: "",
         image: "",
+        images: [],
         sku: "",
         sizes: "S,M,L,XL",
         colors: "",
@@ -336,6 +339,14 @@ const Products = () => {
             const whTotalStock = whStockValues.reduce((a, b) => a + (Number(b) || 0), 0);
             const totalStock = whTotalStock > 0 ? whTotalStock : (formData.stock ? parseInt(formData.stock) : 0);
 
+            const allImages = (formData.images && formData.images.length > 0)
+                ? formData.images.filter(Boolean)
+                : (formData.image ? [formData.image] : []);
+            const primaryImage = formData.image || allImages[0] || "";
+            const orderedImages = primaryImage 
+                ? [primaryImage, ...allImages.filter(img => img !== primaryImage)] 
+                : allImages;
+
             const productData = {
                 name: formData.title || "",
                 description: formData.description || "",
@@ -344,7 +355,8 @@ const Products = () => {
                 discount: formData.discount ? parseInt(formData.discount) : null,
                 stock_quantity: totalStock,
                 category: formData.category || "",
-                image: formData.image || "",
+                image: primaryImage,
+                images: orderedImages,
                 brand: formData.brand || "Nari Pehnawa",
                 on_sale: formData.discount ? parseInt(formData.discount) > 0 : false,
                 is_new: false,
@@ -393,30 +405,86 @@ const Products = () => {
     };
 
     const handleImageFileUpload = async (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
         setUploadingImage(true);
         try {
             const token = getAuthToken();
             const fd = new FormData();
-            fd.append("file", file);
-            const res = await fetch(`${API_BASE_URL}/upload/image`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` },
-                body: fd,
-            });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.detail || "Upload failed");
+            files.forEach(f => fd.append("files", f));
+
+            let uploadedUrls = [];
+            try {
+                const res = await fetch(`${API_BASE_URL}/upload/images`, {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` },
+                    body: fd,
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    uploadedUrls = (data.urls || []).map(u => u.startsWith("http") ? u : `${API_BASE_URL}${u}`);
+                }
+            } catch (err) {
+                console.warn("Batch upload failed, fallback to individual:", err);
             }
-            const data = await res.json();
-            const fullUrl = `${API_BASE_URL}${data.url}`;
-            setFormData((f) => ({ ...f, image: fullUrl }));
+
+            if (uploadedUrls.length === 0) {
+                for (const file of files) {
+                    const singleFd = new FormData();
+                    singleFd.append("file", file);
+                    const singleRes = await fetch(`${API_BASE_URL}/upload/image`, {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${token}` },
+                        body: singleFd,
+                    });
+                    if (singleRes.ok) {
+                        const sData = await singleRes.json();
+                        uploadedUrls.push(sData.url.startsWith("http") ? sData.url : `${API_BASE_URL}${sData.url}`);
+                    }
+                }
+            }
+
+            if (uploadedUrls.length === 0) {
+                throw new Error("No images were uploaded. Please verify file type and size.");
+            }
+
+            setFormData(prev => {
+                const existing = prev.images || (prev.image ? [prev.image] : []);
+                const combined = [...existing, ...uploadedUrls];
+                const primary = prev.image || combined[0] || "";
+                return {
+                    ...prev,
+                    image: primary,
+                    images: combined
+                };
+            });
         } catch (err) {
             alert(`Image upload error: ${err.message}`);
         } finally {
             setUploadingImage(false);
+            if (e.target) e.target.value = "";
         }
+    };
+
+    const handleSetPrimaryImage = (imgUrl) => {
+        setFormData(prev => ({
+            ...prev,
+            image: imgUrl
+        }));
+    };
+
+    const handleRemoveImage = (indexToRemove) => {
+        setFormData(prev => {
+            const currentList = prev.images || (prev.image ? [prev.image] : []);
+            const updated = currentList.filter((_, idx) => idx !== indexToRemove);
+            const primaryStillExists = updated.includes(prev.image);
+            const newPrimary = primaryStillExists ? prev.image : (updated[0] || "");
+            return {
+                ...prev,
+                image: newPrimary,
+                images: updated
+            };
+        });
     };
 
     const handleEdit = (product) => {
@@ -444,6 +512,15 @@ const Products = () => {
             whStock[primaryName] = Number(product.stock ?? product.stock_quantity ?? 0);
         }
 
+        const rawImages = Array.isArray(product.images) && product.images.length > 0
+            ? product.images
+            : (product.image ? [product.image] : []);
+        const primaryImg = product.image || rawImages[0] || "";
+        const allImgs = [...rawImages];
+        if (primaryImg && !allImgs.includes(primaryImg)) {
+            allImgs.unshift(primaryImg);
+        }
+
         setFormData({
             title: product.title || product.name || "",
             description: product.description || "",
@@ -452,7 +529,8 @@ const Products = () => {
             discount: product.discount || "",
             stock: (product.stock ?? product.stock_quantity ?? 0).toString(),
             category: product.category || "",
-            image: product.image || "",
+            image: primaryImg,
+            images: allImgs,
             sku: product.sku || "",
             sizes: Array.isArray(product.sizes) ? product.sizes.join(",") : (product.sizes || "S,M,L,XL"),
             colors: Array.isArray(product.colors) ? product.colors.join(",") : (product.colors || ""),
@@ -1448,55 +1526,133 @@ const Products = () => {
                                     </select>
                                 </div>
 
-                                <div>
-                                    <label className="block text-slate-700 font-bold mb-1.5 flex items-center justify-between">
-                                        <span>Product Image (File Upload)</span>
-                                        <span className="text-[10px] text-slate-500 font-normal">PNG, JPG, WebP (Max 10MB)</span>
-                                    </label>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-3">
-                                            {formData.image ? (
-                                                <div className="w-14 h-14 rounded-xl overflow-hidden border-2 border-cyan-400/60 relative flex-shrink-0 group bg-slate-100 shadow-sm">
-                                                    <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setFormData({ ...formData, image: "" })}
-                                                        className="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 flex items-center justify-center text-rose-300 text-[10px] font-bold transition cursor-pointer"
-                                                    >
-                                                        Remove
-                                                    </button>
-                                                </div>
-                                            ) : null}
-
-                                            <label className="flex-1 border-2 border-dashed border-slate-300 hover:border-cyan-400 bg-slate-50 hover:bg-slate-100/70 rounded-xl p-2.5 text-center cursor-pointer transition flex items-center justify-center gap-2">
-                                                {uploadingImage ? (
-                                                    <RefreshCw className="w-4 h-4 text-cyan-500 animate-spin" />
-                                                ) : (
-                                                    <Upload className="w-4 h-4 text-cyan-500" />
-                                                )}
-                                                <span className="text-xs text-slate-700 font-semibold">
-                                                    {uploadingImage ? "Uploading Image..." : "Click to Upload Image File"}
-                                                </span>
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={handleImageFileUpload}
-                                                    className="hidden"
-                                                    disabled={uploadingImage}
-                                                />
-                                            </label>
-                                        </div>
-
-                                        <div>
-                                            <input
-                                                type="url"
-                                                value={formData.image}
-                                                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                                                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
-                                                placeholder="Or paste external image URL (optional)"
-                                            />
-                                        </div>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between flex-wrap gap-2">
+                                        <label className="block text-slate-800 font-bold text-xs flex items-center gap-1.5">
+                                            <ImageIcon className="w-4 h-4 text-cyan-600" />
+                                            <span>Product Photos (Select Multiple) *</span>
+                                        </label>
+                                        <span className="text-[11px] text-slate-500 font-medium">
+                                            Hold Shift/Ctrl to select multiple files • First photo is Primary
+                                        </span>
                                     </div>
+
+                                    {/* Upload Trigger Area */}
+                                    <label className="border-2 border-dashed border-slate-300 hover:border-cyan-400 bg-slate-50 hover:bg-cyan-50/30 rounded-2xl p-4 text-center cursor-pointer transition flex flex-col sm:flex-row items-center justify-center gap-3 group">
+                                        {uploadingImage ? (
+                                            <Loader2 className="w-6 h-6 text-cyan-500 animate-spin flex-shrink-0" />
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-xl bg-cyan-100 flex items-center justify-center text-cyan-700 group-hover:scale-105 transition-transform flex-shrink-0">
+                                                <Upload className="w-5 h-5" />
+                                            </div>
+                                        )}
+                                        <div className="text-center sm:text-left">
+                                            <div className="text-xs text-slate-800 font-bold">
+                                                {uploadingImage ? "Uploading product photos..." : "Click or Drag to Upload Multiple Images"}
+                                            </div>
+                                            <div className="text-[11px] text-slate-500 mt-0.5">
+                                                PNG, JPG, WebP (Max 10MB each) • You can select multiple images at once
+                                            </div>
+                                        </div>
+                                        <input
+                                            type="file"
+                                            multiple
+                                            accept="image/*"
+                                            onChange={handleImageFileUpload}
+                                            className="hidden"
+                                            disabled={uploadingImage}
+                                        />
+                                    </label>
+
+                                    {/* Gallery & Primary Preview */}
+                                    {((formData.images && formData.images.length > 0) || formData.image) && (
+                                        <div className="space-y-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                                            <div className="flex items-center justify-between text-xs">
+                                                <span className="font-bold text-slate-800">
+                                                    Uploaded Photos ({formData.images?.length || (formData.image ? 1 : 0)})
+                                                </span>
+                                                <span className="text-[11px] text-cyan-700 font-semibold">
+                                                    Click "Make Primary" to set the main cover image
+                                                </span>
+                                            </div>
+
+                                            {/* Thumbnail cards grid */}
+                                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2.5 pt-1">
+                                                {(formData.images && formData.images.length > 0 ? formData.images : [formData.image]).map((imgUrl, idx) => {
+                                                    const isPrimary = (formData.image === imgUrl) || (!formData.image && idx === 0);
+                                                    return (
+                                                        <div
+                                                            key={idx}
+                                                            className={`relative rounded-xl overflow-hidden group bg-white border-2 transition shadow-xs flex flex-col ${
+                                                                isPrimary
+                                                                    ? "border-cyan-400 ring-2 ring-cyan-400/30"
+                                                                    : "border-slate-200 hover:border-slate-300"
+                                                            }`}
+                                                        >
+                                                            <div className="w-full h-24 bg-slate-100 overflow-hidden relative">
+                                                                <img
+                                                                    src={imgUrl}
+                                                                    alt={`Product image ${idx + 1}`}
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                                
+                                                                {/* Primary Badge */}
+                                                                {isPrimary && (
+                                                                    <span className="absolute top-1.5 left-1.5 bg-cyan-400 text-black text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-sm flex items-center gap-0.5">
+                                                                        <Star className="w-2.5 h-2.5 fill-black" /> Primary
+                                                                    </span>
+                                                                )}
+
+                                                                {/* Delete Button */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleRemoveImage(idx);
+                                                                    }}
+                                                                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 hover:bg-rose-600 text-white flex items-center justify-center transition opacity-80 hover:opacity-100 cursor-pointer shadow-sm"
+                                                                    title="Remove image"
+                                                                >
+                                                                    <Trash2 className="w-3 h-3" />
+                                                                </button>
+                                                            </div>
+
+                                                            {/* Card footer action */}
+                                                            <div className="p-1 text-center bg-white border-t border-slate-100">
+                                                                {isPrimary ? (
+                                                                    <span className="text-[10px] font-bold text-cyan-700">
+                                                                        Cover Photo
+                                                                    </span>
+                                                                ) : (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleSetPrimaryImage(imgUrl)}
+                                                                        className="w-full py-0.5 text-[10px] font-bold text-slate-700 hover:text-black hover:bg-cyan-100 rounded transition cursor-pointer"
+                                                                    >
+                                                                        Make Primary
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+
+                                                {/* Add More Tile */}
+                                                <label className="h-28 rounded-xl border-2 border-dashed border-slate-300 hover:border-cyan-400 bg-white hover:bg-cyan-50/30 flex flex-col items-center justify-center cursor-pointer transition text-slate-500 hover:text-cyan-600">
+                                                    <Plus className="w-5 h-5" />
+                                                    <span className="text-[10px] font-bold mt-1">Add More</span>
+                                                    <input
+                                                        type="file"
+                                                        multiple
+                                                        accept="image/*"
+                                                        onChange={handleImageFileUpload}
+                                                        className="hidden"
+                                                        disabled={uploadingImage}
+                                                    />
+                                                </label>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div>

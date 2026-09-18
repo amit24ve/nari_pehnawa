@@ -6,6 +6,7 @@ import os
 import uuid
 from pathlib import Path
 
+from typing import List
 from app.security import get_current_user, require_admin
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
@@ -77,6 +78,43 @@ async def upload_image(
         "filename": filename,
         "size_kb": round(len(content) / 1024, 1),
     }
+
+
+@router.post("/images")
+async def upload_multiple_images(
+    files: List[UploadFile] = File(...),
+    current_user: dict = Depends(require_admin),
+):
+    """
+    Upload multiple product images at once.
+    Returns { "urls": [ ... ] }
+    """
+    ext_map = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+        "image/gif": "gif",
+        "image/avif": "avif",
+        "video/mp4": "mp4",
+        "video/webm": "webm",
+        "video/ogg": "ogg",
+        "video/quicktime": "mov",
+    }
+    saved_urls = []
+    for file in files:
+        if file.content_type not in ALLOWED_MIME:
+            continue
+        content = await file.read()
+        if len(content) > MAX_SIZE_MB * 1024 * 1024:
+            continue
+        ext = ext_map.get(file.content_type, "jpg")
+        filename = f"{uuid.uuid4().hex}.{ext}"
+        dest = UPLOAD_DIR / filename
+        with open(dest, "wb") as f:
+            f.write(content)
+        saved_urls.append(f"/uploads/{filename}")
+
+    return {"urls": saved_urls}
 
 
 @router.post("/review-image")
