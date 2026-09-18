@@ -69,6 +69,25 @@ const Products = () => {
     const [editingBrand, setEditingBrand] = useState(null);
     const [newBrand, setNewBrand] = useState({ name: "", country: "", status: "Active" });
 
+    // Categories states (Dynamic from Backend API)
+    const [categoriesList, setCategoriesList] = useState([]);
+    const [categoriesLoading, setCategoriesLoading] = useState(false);
+
+    const fetchCategories = async () => {
+        try {
+            setCategoriesLoading(true);
+            const res = await fetch(`${API_BASE_URL}/categories/`);
+            if (res.ok) {
+                const data = await res.json();
+                setCategoriesList(Array.isArray(data) ? data : []);
+            }
+        } catch (err) {
+            console.error("Error fetching categories:", err);
+        } finally {
+            setCategoriesLoading(false);
+        }
+    };
+
     const emptyForm = {
         title: "",
         description: "",
@@ -111,6 +130,7 @@ const Products = () => {
     };
 
     const handleOpenAddModal = async () => {
+        fetchCategories();
         const liveLocations = await fetchPickupLocations(true);
         const locs = (liveLocations && liveLocations.length > 0) ? liveLocations : pickupLocations;
         const initialWhStock = {};
@@ -257,6 +277,7 @@ const Products = () => {
     useEffect(() => {
         fetchProducts();
         fetchBrands();
+        fetchCategories();
     }, []);
 
     // Inline stock editing
@@ -399,6 +420,7 @@ const Products = () => {
     };
 
     const handleEdit = (product) => {
+        fetchCategories();
         fetchPickupLocations();
         setEditingProductId(product.id || product._id);
         const whStock = { ...(product.warehouse_stock || {}) };
@@ -806,16 +828,16 @@ const Products = () => {
                     {activeTab === "brands" ? (
                         <button
                             onClick={() => setShowAddBrandModal(true)}
-                            className="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-lg hover:shadow-cyan-500/20 transition duration-200"
+                            className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-amber-500/20 transition duration-200 cursor-pointer"
                         >
-                            <Plus className="w-4 h-4" /> Add Brand
+                            <Plus className="w-4 h-4 text-slate-950 stroke-[2.5]" /> Add Brand
                         </button>
                     ) : (
                         <button
                             onClick={handleOpenAddModal}
-                            className="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-lg hover:shadow-cyan-500/20 transition duration-200"
+                            className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-amber-500/20 transition duration-200 cursor-pointer"
                         >
-                            <Plus className="w-4 h-4" /> Add Product
+                            <Plus className="w-4 h-4 text-slate-950 stroke-[2.5]" /> Add Product
                         </button>
                     )}
                 </div>
@@ -928,21 +950,16 @@ const Products = () => {
                                 <select
                                     value={filterCategory}
                                     onChange={(e) => { setFilterCategory(e.target.value); setCurrentPage(1); }}
-                                    className="w-full pl-10 pr-4 py-2.5 bg-[#0b1220] border border-gray-800 rounded-xl text-xs text-gray-300 focus:outline-none focus:border-[#d4af37] cursor-pointer"
+                                    className="w-full pl-10 pr-4 py-2.5 bg-[#0b1220] border border-gray-800 rounded-xl text-xs text-gray-200 focus:outline-none focus:border-[#d4af37] cursor-pointer"
                                 >
-                                    <option value="all">All Categories</option>
-                                    <optgroup label="── Kurtis ──">
-                                        <option value="Anarkali Kurtis">Anarkali Kurtis</option>
-                                        <option value="Straight Kurtis">Straight Kurtis</option>
-                                        <option value="A-Line Kurtis">A-Line Kurtis</option>
-                                        <option value="Printed Kurtis">Printed Kurtis</option>
-                                        <option value="Embroidered Kurtis">Embroidered Kurtis</option>
-                                        <option value="Denim Kurtis">Denim Kurtis</option>
-                                        <option value="Kaftan Kurtis">Kaftan Kurtis</option>
-                                        <option value="Chikankari Kurtis">Chikankari Kurtis</option>
-                                        <option value="Palazzo Set Kurtis">Palazzo Set Kurtis</option>
-                                        <option value="Angrakha Kurtis">Angrakha Kurtis</option>
-                                    </optgroup>
+                                    <option value="all" className="bg-slate-900 text-white">All Categories ({totalProducts})</option>
+                                    {categoriesList && categoriesList.length > 0 ? (
+                                        categoriesList.map((cat) => (
+                                            <option key={cat._id || cat.id} value={cat.name} className="bg-slate-900 text-white">
+                                                {cat.name}
+                                            </option>
+                                        ))
+                                    ) : null}
                                 </select>
                             </div>
 
@@ -1252,60 +1269,61 @@ const Products = () => {
 
             {/* Add / Edit Brand Modal */}
             {(showAddBrandModal || showEditBrandModal) && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-                    <div className="bg-[#0f1724] border border-gray-700 rounded-2xl w-full max-w-md shadow-2xl text-left">
-                        <div className="flex items-center justify-between p-4 border-b border-gray-800">
-                            <h3 className="text-base font-bold text-white">
+                <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#0f172a] border border-slate-700/90 rounded-2xl w-full max-w-md shadow-2xl text-left overflow-hidden">
+                        <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-[#0c1322]">
+                            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
                                 {showEditBrandModal ? "Edit Brand Details" : "Add New Partner Brand"}
                             </h3>
                             <button
                                 onClick={() => { setShowAddBrandModal(false); setShowEditBrandModal(false); setEditingBrand(null); }}
-                                className="p-1 hover:bg-gray-800 rounded-xl text-gray-400"
+                                className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition cursor-pointer"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
                         <form onSubmit={showEditBrandModal ? handleUpdateBrandSubmit : handleAddBrand} className="p-5 space-y-4 text-xs">
                             <div>
-                                <label className="block text-gray-400 mb-1">Brand Name *</label>
+                                <label className="block text-slate-200 font-semibold mb-1.5">Brand Name <span className="text-amber-400">*</span></label>
                                 <input
                                     type="text"
                                     required
                                     value={newBrand.name}
                                     onChange={(e) => setNewBrand({ ...newBrand, name: e.target.value })}
-                                    className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#d4af37]"
+                                    className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 text-xs transition"
                                     placeholder="e.g. Nari Pehnawa, Bunaai"
                                 />
                             </div>
                             <div>
-                                <label className="block text-gray-400 mb-1">Country Origin</label>
+                                <label className="block text-slate-200 font-semibold mb-1.5">Country Origin</label>
                                 <input
                                     type="text"
                                     value={newBrand.country}
                                     onChange={(e) => setNewBrand({ ...newBrand, country: e.target.value })}
-                                    className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#d4af37]"
+                                    className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 text-xs transition"
                                     placeholder="e.g. India"
                                 />
                             </div>
                             <div>
-                                <label className="block text-gray-400 mb-1">Status</label>
+                                <label className="block text-slate-200 font-semibold mb-1.5">Status</label>
                                 <select
                                     value={newBrand.status}
                                     onChange={(e) => setNewBrand({ ...newBrand, status: e.target.value })}
-                                    className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#d4af37]"
+                                    className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
                                 >
-                                    <option value="Active">Active</option>
-                                    <option value="Inactive">Inactive</option>
+                                    <option value="Active" className="bg-slate-900 text-white">Active</option>
+                                    <option value="Inactive" className="bg-slate-900 text-white">Inactive</option>
                                 </select>
                             </div>
                             <div className="flex gap-3 pt-2">
-                                <button type="submit" className="flex-1 py-2 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-500 transition duration-200">
+                                <button type="submit" className="flex-1 py-2.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold rounded-xl shadow-md transition duration-200 cursor-pointer text-xs">
                                     {showEditBrandModal ? "Update Brand" : "Save Brand"}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => { setShowAddBrandModal(false); setShowEditBrandModal(false); setEditingBrand(null); }}
-                                    className="flex-1 py-2 bg-gray-800 text-white rounded-xl"
+                                    className="flex-1 py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-semibold rounded-xl transition cursor-pointer text-xs"
                                 >
                                     Cancel
                                 </button>
@@ -1317,12 +1335,16 @@ const Products = () => {
 
             {/* Add/Edit Product Modal */}
             {(showAddModal || showEditModal) && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-                    <div className="bg-[#0f1724] border border-gray-800 rounded-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto shadow-2xl text-left">
-                        <div className="flex items-center justify-between p-4 border-b border-gray-800">
-                            <h3 className="text-sm font-bold text-white">
-                                {showEditModal ? "Edit Product Listing" : "Add New Product"}
-                            </h3>
+                <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
+                    <div className="bg-[#0f172a] border border-slate-700/80 rounded-2xl w-full max-w-3xl my-auto max-h-[92vh] flex flex-col shadow-2xl text-left overflow-hidden">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-[#0c1322] flex-shrink-0">
+                            <div className="flex items-center gap-2.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 ring-4 ring-amber-400/20"></span>
+                                <h3 className="text-base font-bold text-white tracking-wide">
+                                    {showEditModal ? "Edit Product Listing" : "Add New Product"}
+                                </h3>
+                            </div>
                             <button
                                 onClick={() => {
                                     setShowAddModal(false);
@@ -1330,115 +1352,129 @@ const Products = () => {
                                     setEditingProductId(null);
                                     setFormData(emptyForm);
                                 }}
-                                className="p-1 hover:bg-gray-800 rounded-xl text-gray-400"
+                                className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition cursor-pointer"
+                                title="Close"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
+                        {/* Modal Body */}
+                        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5 text-xs overflow-y-auto flex-1">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-gray-400 mb-1">Product Title *</label>
+                                    <label className="block text-slate-200 font-semibold mb-1.5">Product Title <span className="text-amber-400">*</span></label>
                                     <input
                                         type="text"
                                         required
                                         value={formData.title}
                                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                        className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none"
-                                        placeholder="Product name"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-xs transition"
+                                        placeholder="e.g. Royal Embroidered Anarkali Kurti"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-gray-400 mb-1">Brand Name</label>
+                                    <label className="block text-slate-200 font-semibold mb-1.5">Brand Name</label>
                                     <select
                                         value={formData.brand || "Nari Pehnawa"}
                                         onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                                        className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 cursor-pointer"
                                     >
                                         {(brands || []).map((b, idx) => (
-                                            <option key={b.id || idx} value={b.name}>{b.name}</option>
+                                            <option key={b.id || idx} value={b.name} className="bg-slate-900 text-white">{b.name}</option>
                                         ))}
+                                        {(!brands || brands.length === 0) && (
+                                            <option value="Nari Pehnawa" className="bg-slate-900 text-white">Nari Pehnawa</option>
+                                        )}
                                     </select>
                                 </div>
 
                                 <div>
-                                    <label className="block text-gray-400 mb-1">Price (INR) *</label>
+                                    <label className="block text-slate-200 font-semibold mb-1.5">Price (INR) <span className="text-amber-400">*</span></label>
                                     <input
                                         type="number"
                                         step="0.01"
                                         required
                                         value={formData.price}
                                         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                        className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-xs transition"
                                         placeholder="e.g. 1299"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-gray-400 mb-1">Stock Quantity *</label>
+                                    <label className="block text-slate-200 font-semibold mb-1.5 flex items-center justify-between">
+                                        <span>Total Stock Quantity <span className="text-amber-400">*</span></span>
+                                        <span className="text-[10px] text-amber-400/90 font-normal">Auto-calculated from Warehouses</span>
+                                    </label>
                                     <input
                                         type="number"
                                         required
                                         value={formData.stock}
                                         onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                                        className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none"
-                                        placeholder="100"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-xs font-mono font-bold transition"
+                                        placeholder="0"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-gray-400 mb-1">Category *</label>
+                                    <label className="block text-slate-200 font-semibold mb-1.5 flex items-center justify-between">
+                                        <span>Category <span className="text-amber-400">*</span></span>
+                                        <span className="text-[10px] text-amber-400/90 font-normal">Dynamic ({categoriesList.length} Available)</span>
+                                    </label>
                                     <select
                                         required
                                         value={formData.category}
                                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                        className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 cursor-pointer"
                                     >
-                                        <option value="">Select category</option>
-                                        <optgroup label="── Kurti Types ──">
-                                            <option value="Anarkali Kurtis">Anarkali Kurtis</option>
-                                            <option value="Straight Kurtis">Straight Kurtis</option>
-                                            <option value="A-Line Kurtis">A-Line Kurtis</option>
-                                            <option value="Printed Kurtis">Printed Kurtis</option>
-                                            <option value="Embroidered Kurtis">Embroidered Kurtis</option>
-                                            <option value="Denim Kurtis">Denim Kurtis</option>
-                                            <option value="Kaftan Kurtis">Kaftan Kurtis</option>
-                                            <option value="Chikankari Kurtis">Chikankari Kurtis</option>
-                                            <option value="Palazzo Set Kurtis">Palazzo Set Kurtis</option>
-                                            <option value="Angrakha Kurtis">Angrakha Kurtis</option>
-                                        </optgroup>
+                                        <option value="" className="bg-slate-900 text-slate-400">── Select Category ──</option>
+                                        {categoriesList && categoriesList.length > 0 ? (
+                                            categoriesList.map((cat) => (
+                                                <option key={cat._id || cat.id} value={cat.name} className="bg-slate-900 text-white">
+                                                    {cat.name}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option disabled className="bg-slate-900 text-slate-400">No categories found in Admin</option>
+                                        )}
+                                        {/* Retain current product category if not in fetched list */}
+                                        {formData.category && !categoriesList.some(c => c.name?.toLowerCase() === formData.category?.toLowerCase()) && (
+                                            <option value={formData.category} className="bg-slate-900 text-amber-300">
+                                                {formData.category} (Current)
+                                            </option>
+                                        )}
                                     </select>
                                 </div>
 
                                 <div>
-                                    <label className="block text-gray-400 mb-1 font-semibold text-xs flex items-center justify-between">
+                                    <label className="block text-slate-200 font-semibold mb-1.5 flex items-center justify-between">
                                         <span>Product Image (File Upload)</span>
-                                        <span className="text-[10px] text-gray-500 font-normal">PNG, JPG, WebP (Max 10MB)</span>
+                                        <span className="text-[10px] text-slate-400 font-normal">PNG, JPG, WebP (Max 10MB)</span>
                                     </label>
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-3">
                                             {formData.image ? (
-                                                <div className="w-14 h-14 rounded-xl overflow-hidden border border-cyan-500/40 relative flex-shrink-0 group bg-gray-900">
+                                                <div className="w-14 h-14 rounded-xl overflow-hidden border-2 border-amber-400/60 relative flex-shrink-0 group bg-slate-900 shadow-md">
                                                     <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
                                                     <button
                                                         type="button"
                                                         onClick={() => setFormData({ ...formData, image: "" })}
-                                                        className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 flex items-center justify-center text-red-400 text-[10px] font-bold transition"
+                                                        className="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 flex items-center justify-center text-rose-300 text-[10px] font-bold transition cursor-pointer"
                                                     >
                                                         Remove
                                                     </button>
                                                 </div>
                                             ) : null}
 
-                                            <label className="flex-1 border-2 border-dashed border-gray-700 hover:border-cyan-500/60 bg-[#0b1220] rounded-xl p-2.5 text-center cursor-pointer transition flex items-center justify-center gap-2">
+                                            <label className="flex-1 border-2 border-dashed border-amber-500/30 hover:border-amber-400 bg-[#141f36]/70 hover:bg-[#141f36] rounded-xl p-2.5 text-center cursor-pointer transition flex items-center justify-center gap-2">
                                                 {uploadingImage ? (
-                                                    <RefreshCw className="w-4 h-4 text-cyan-400 animate-spin" />
+                                                    <RefreshCw className="w-4 h-4 text-amber-400 animate-spin" />
                                                 ) : (
-                                                    <Upload className="w-4 h-4 text-cyan-400" />
+                                                    <Upload className="w-4 h-4 text-amber-400" />
                                                 )}
-                                                <span className="text-xs text-gray-300 font-medium">
+                                                <span className="text-xs text-amber-200 font-semibold">
                                                     {uploadingImage ? "Uploading Image..." : "Click to Upload Image File"}
                                                 </span>
                                                 <input
@@ -1456,7 +1492,7 @@ const Products = () => {
                                                 type="url"
                                                 value={formData.image}
                                                 onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                                                className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none"
+                                                className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
                                                 placeholder="Or paste external image URL (optional)"
                                             />
                                         </div>
@@ -1464,63 +1500,63 @@ const Products = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-gray-400 mb-1">Original Price (MRP)</label>
+                                    <label className="block text-slate-200 font-semibold mb-1.5">Original Price (MRP)</label>
                                     <input
                                         type="number"
                                         step="0.01"
                                         value={formData.original_price}
                                         onChange={(e) => setFormData({ ...formData, original_price: e.target.value })}
-                                        className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 text-xs transition"
                                         placeholder="e.g. 1999"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-gray-400 mb-1">Discount %</label>
+                                    <label className="block text-slate-200 font-semibold mb-1.5">Discount %</label>
                                     <input
                                         type="number"
                                         min="0"
                                         max="100"
                                         value={formData.discount}
                                         onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
-                                        className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 text-xs transition"
                                         placeholder="e.g. 20"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-gray-400 mb-1">Fabric</label>
+                                    <label className="block text-slate-200 font-semibold mb-1.5">Fabric</label>
                                     <input
                                         type="text"
                                         value={formData.fabric}
                                         onChange={(e) => setFormData({ ...formData, fabric: e.target.value })}
-                                        className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none"
-                                        placeholder="e.g. Cotton, Silk"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 text-xs transition"
+                                        placeholder="e.g. Pure Cotton, Chanderi Silk"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-gray-400 mb-1">Delivery Charge (INR)</label>
+                                    <label className="block text-slate-200 font-semibold mb-1.5">Delivery Charge (INR)</label>
                                     <input
                                         type="number"
                                         step="0.01"
                                         min="0"
                                         value={formData.delivery_charge}
                                         onChange={(e) => setFormData({ ...formData, delivery_charge: e.target.value })}
-                                        className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 text-xs transition"
                                         placeholder="0 (or leave empty for default)"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-gray-400 mb-1">Primary Dispatch Warehouse (Shiprocket)</label>
+                                    <label className="block text-slate-200 font-semibold mb-1.5">Primary Dispatch Warehouse (Shiprocket)</label>
                                     <select
                                         value={formData.pickup_location || "Home"}
                                         onChange={(e) => setFormData({ ...formData, pickup_location: e.target.value })}
-                                        className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
                                     >
                                         {(pickupLocations || []).map((loc) => (
-                                            <option key={loc.id || loc.pickup_location} value={loc.pickup_location}>
+                                            <option key={loc.id || loc.pickup_location} value={loc.pickup_location} className="bg-slate-900 text-white">
                                                 {loc.pickup_location} — {loc.city}, {loc.state} ({loc.pin_code}) {loc.is_primary_location ? "★ Primary" : ""}
                                             </option>
                                         ))}
@@ -1528,95 +1564,96 @@ const Products = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-gray-400 mb-1">Sizes (comma separated)</label>
+                                    <label className="block text-slate-200 font-semibold mb-1.5">Sizes (comma separated)</label>
                                     <input
                                         type="text"
                                         value={formData.sizes}
                                         onChange={(e) => setFormData({ ...formData, sizes: e.target.value })}
-                                        className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none"
-                                        placeholder="e.g. S,M,L,XL"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 text-xs transition"
+                                        placeholder="e.g. S,M,L,XL,XXL"
                                     />
                                 </div>
                             </div>
 
                             {/* ── Multi-Warehouse Inventory & Variant Stock Allocation Card ── */}
-                            <div className="bg-[#0b1220] border border-cyan-900/40 rounded-2xl p-4 space-y-3">
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-gray-800/80 pb-3">
+                            <div className="bg-gradient-to-br from-[#121c33] to-[#0c1322] border border-amber-500/30 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-700/80 pb-3.5">
                                     <div>
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <label className="text-cyan-400 font-bold text-xs uppercase tracking-wide flex items-center gap-1.5">
-                                                <Building2 className="w-4 h-4 text-cyan-400" /> Shiprocket Multi-Warehouse Inventory Allocation
-                                            </label>
-                                            <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                                        <div className="flex items-center gap-2.5 flex-wrap">
+                                            <span className="text-amber-400 font-extrabold text-sm uppercase tracking-wide flex items-center gap-1.5">
+                                                <Building2 className="w-4 h-4 text-amber-400" /> Shiprocket Multi-Warehouse Allocation
+                                            </span>
+                                            <span className="text-[11px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1.5">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                                                 Dynamic Shiprocket ({pickupLocations.length} Warehouses)
                                             </span>
                                         </div>
-                                        <p className="text-[11px] text-gray-400 mt-0.5">
-                                            Retrieved directly from your Shiprocket account. Quantity per size updates automatically!
+                                        <p className="text-xs text-slate-300 mt-1">
+                                            Manage stock per size for each Shiprocket warehouse. Totals sync automatically!
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2.5 self-stretch sm:self-auto justify-between sm:justify-end">
                                         <button
                                             type="button"
                                             onClick={() => fetchPickupLocations(true)}
                                             disabled={isSyncingWarehouses}
-                                            className="px-2.5 py-1.5 bg-[#111827] hover:bg-cyan-950/40 text-cyan-300 border border-cyan-800/50 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition disabled:opacity-50"
+                                            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold flex items-center gap-1.5 transition active:scale-95 disabled:opacity-50 cursor-pointer shadow-sm"
                                             title="Sync live warehouses from Shiprocket"
                                         >
-                                            <RefreshCw className={`w-3.5 h-3.5 ${isSyncingWarehouses ? "animate-spin text-cyan-400" : ""}`} />
+                                            <RefreshCw className={`w-3.5 h-3.5 ${isSyncingWarehouses ? "animate-spin text-amber-400" : ""}`} />
                                             <span>{isSyncingWarehouses ? "Syncing..." : "Sync Shiprocket"}</span>
                                         </button>
-                                        <div className="text-left sm:text-right bg-[#111827] px-3 py-1.5 rounded-xl border border-gray-800">
-                                            <span className="text-[10px] text-gray-400 block uppercase font-medium">Total Synced Stock</span>
-                                            <span className="text-sm font-bold text-emerald-400 font-mono">{formData.stock || 0} units</span>
+                                        <div className="text-right bg-[#141f36] px-3.5 py-1.5 rounded-xl border border-slate-700">
+                                            <span className="text-[10px] text-slate-400 block uppercase font-semibold">Total Stock</span>
+                                            <span className="text-sm font-extrabold text-emerald-400 font-mono">{formData.stock || 0} units</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {(pickupLocations.length > 0 ? pickupLocations : DEFAULT_WAREHOUSES).map((wh) => {
                                         const whCode = wh.pickup_location;
                                         const whTotal = formData.warehouse_stock?.[whCode] ?? 0;
                                         const parsedSizeList = formData.sizes ? formData.sizes.split(",").map(s => s.trim()).filter(Boolean) : [];
 
                                         return (
-                                            <div key={whCode} className="bg-[#111827] border border-gray-800 rounded-xl p-3.5 space-y-3 shadow-sm">
-                                                <div className="flex items-center justify-between border-b border-gray-800 pb-2">
+                                            <div key={whCode} className="bg-[#141f36] border border-slate-700/90 rounded-xl p-4 space-y-3.5 shadow-md">
+                                                <div className="flex items-center justify-between border-b border-slate-700/80 pb-2.5">
                                                     <div>
-                                                        <div className="font-bold text-white text-xs flex items-center gap-1.5">
-                                                            📍 {whCode}
+                                                        <div className="font-bold text-white text-sm flex items-center gap-2">
+                                                            <span className="text-amber-400">📍</span>
+                                                            <span>{whCode}</span>
                                                             {wh.is_primary_location && (
-                                                                <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30 font-semibold">Primary</span>
+                                                                <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/40 font-bold">Primary</span>
                                                             )}
                                                             {formData.pickup_location === whCode && (
-                                                                <span className="text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-500/30 font-semibold">Selected Dispatch</span>
+                                                                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/40 font-bold">Selected Dispatch</span>
                                                             )}
                                                         </div>
-                                                        <span className="text-[10px] text-gray-400 block mt-0.5">{wh.city || "UP"}, PIN: {wh.pin_code || ""}</span>
+                                                        <span className="text-xs text-slate-300 block mt-1 font-medium">{wh.city || "UP"}, PIN: {wh.pin_code || ""}</span>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <span className="text-[10px] text-gray-500 block uppercase">Warehouse Qty</span>
-                                                        <span className="font-bold text-xs text-cyan-400 font-mono">{whTotal} units</span>
+                                                    <div className="text-right bg-[#0c1322] border border-slate-700/80 px-2.5 py-1 rounded-lg">
+                                                        <span className="text-[10px] text-slate-400 block uppercase font-semibold">Warehouse Qty</span>
+                                                        <span className="font-extrabold text-xs text-amber-300 font-mono">{whTotal} units</span>
                                                     </div>
                                                 </div>
 
                                                 {parsedSizeList.length > 0 ? (
-                                                    <div className="space-y-1.5">
-                                                        <span className="text-[10px] text-gray-400 font-semibold block uppercase tracking-wider">Quantities by Size:</span>
-                                                        <div className="grid grid-cols-4 gap-2">
+                                                    <div className="space-y-2">
+                                                        <span className="text-[11px] text-slate-300 font-bold block uppercase tracking-wider">Quantities by Size:</span>
+                                                        <div className="grid grid-cols-4 gap-2.5">
                                                             {parsedSizeList.map((sz) => {
                                                                 const qty = formData.warehouse_size_stock?.[whCode]?.[sz] ?? "";
                                                                 return (
-                                                                    <div key={sz} className="text-center bg-[#0b1220] p-1.5 rounded-lg border border-gray-800">
-                                                                        <span className="text-[10px] font-bold text-gray-300 font-mono block mb-1">{sz}</span>
+                                                                    <div key={sz} className="text-center bg-[#0c1322] p-2 rounded-xl border border-slate-700/90 focus-within:border-amber-400 focus-within:ring-1 focus-within:ring-amber-400 transition">
+                                                                        <span className="text-xs font-bold text-amber-300 font-mono block mb-1">{sz}</span>
                                                                         <input
                                                                             type="number"
                                                                             min="0"
                                                                             placeholder="0"
                                                                             value={qty}
                                                                             onChange={(e) => handleWarehouseSizeStockChange(whCode, sz, e.target.value)}
-                                                                            className="w-full bg-[#111827] border border-gray-700 rounded py-1 text-center text-xs text-white font-bold font-mono focus:outline-none focus:border-cyan-500"
+                                                                            className="w-full bg-[#16233f] border border-slate-600 rounded-lg py-1 text-center text-xs text-white font-extrabold font-mono focus:outline-none focus:border-amber-400 placeholder-slate-600"
                                                                         />
                                                                     </div>
                                                                 );
@@ -1625,14 +1662,14 @@ const Products = () => {
                                                     </div>
                                                 ) : (
                                                     <div>
-                                                        <label className="text-[10px] text-gray-400 block mb-1">Total Warehouse Stock</label>
+                                                        <label className="text-xs text-slate-300 font-semibold block mb-1.5">Total Warehouse Stock</label>
                                                         <input
                                                             type="number"
                                                             min="0"
                                                             placeholder="0"
                                                             value={whTotal}
                                                             onChange={(e) => handleWarehouseTotalStockChange(whCode, e.target.value)}
-                                                            className="w-full bg-[#0b1220] border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                                                            className="w-full bg-[#0c1322] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-bold font-mono focus:outline-none focus:border-amber-400"
                                                         />
                                                     </div>
                                                 )}
@@ -1643,18 +1680,21 @@ const Products = () => {
                             </div>
 
                             <div>
-                                <label className="block text-gray-400 mb-1">Description</label>
+                                <label className="block text-slate-200 font-semibold mb-1.5">Description</label>
                                 <textarea
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none h-24 resize-none"
-                                    placeholder="Product description..."
+                                    className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-xs h-24 resize-none transition"
+                                    placeholder="Enter detailed product description, fabric details, styling notes..."
                                 />
                             </div>
 
-                            <div className="flex gap-3 pt-2">
-                                <button type="submit" className="flex-1 py-2.5 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-500 transition duration-200">
-                                    {showEditModal ? "Update Listing" : "Publish Listing"}
+                            <div className="flex gap-3 pt-3 border-t border-slate-800">
+                                <button
+                                    type="submit"
+                                    className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold rounded-xl shadow-lg shadow-amber-500/20 transition duration-200 text-xs flex items-center justify-center gap-2 cursor-pointer"
+                                >
+                                    {showEditModal ? "Update Product Listing" : "Publish Product Listing"}
                                 </button>
                                 <button
                                     type="button"
@@ -1664,7 +1704,7 @@ const Products = () => {
                                         setEditingProductId(null);
                                         setFormData(emptyForm);
                                     }}
-                                    className="flex-1 py-2.5 bg-gray-800 text-white rounded-xl"
+                                    className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-bold rounded-xl transition duration-200 text-xs cursor-pointer"
                                 >
                                     Cancel
                                 </button>
