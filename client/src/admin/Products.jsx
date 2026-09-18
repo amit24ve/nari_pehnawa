@@ -91,6 +91,46 @@ const Products = () => {
 
     const [formData, setFormData] = useState(emptyForm);
     const [pickupLocations, setPickupLocations] = useState(DEFAULT_WAREHOUSES);
+    const [isSyncingWarehouses, setIsSyncingWarehouses] = useState(false);
+
+    const fetchPickupLocations = async (force = false) => {
+        try {
+            setIsSyncingWarehouses(true);
+            const res = await shippingApi.getPickupLocations();
+            const locationsList = Array.isArray(res) ? res : (res?.locations || res?.shipping_address || []);
+            if (locationsList && locationsList.length > 0) {
+                setPickupLocations(locationsList);
+                return locationsList;
+            }
+        } catch (e) {
+            console.warn("Dynamic pickup locations fetch failed:", e);
+        } finally {
+            setIsSyncingWarehouses(false);
+        }
+        return pickupLocations;
+    };
+
+    const handleOpenAddModal = async () => {
+        const liveLocations = await fetchPickupLocations(true);
+        const locs = (liveLocations && liveLocations.length > 0) ? liveLocations : pickupLocations;
+        const initialWhStock = {};
+        const initialWhSizeStock = {};
+        locs.forEach(loc => {
+            const name = loc.pickup_location || loc.name;
+            if (name) {
+                initialWhStock[name] = 0;
+                initialWhSizeStock[name] = {};
+            }
+        });
+        const primaryLoc = locs.find(l => l.is_primary_location)?.pickup_location || locs[0]?.pickup_location || "Home";
+        setFormData({
+            ...emptyForm,
+            pickup_location: primaryLoc,
+            warehouse_stock: initialWhStock,
+            warehouse_size_stock: initialWhSizeStock
+        });
+        setShowAddModal(true);
+    };
 
     const handleWarehouseSizeStockChange = (whName, size, qty) => {
         const val = qty === "" ? "" : Math.max(0, parseInt(qty) || 0);
@@ -141,18 +181,7 @@ const Products = () => {
         try {
             setLoading(true);
             setError(null);
-            shippingApi.getPickupLocations()
-                .then((res) => {
-                    const locationsList = Array.isArray(res) ? res : (res?.locations || res?.shipping_address || []);
-                    if (locationsList.length > 0) {
-                        setPickupLocations(locationsList);
-                    } else {
-                        setPickupLocations(DEFAULT_WAREHOUSES);
-                    }
-                })
-                .catch(() => {
-                    setPickupLocations(DEFAULT_WAREHOUSES);
-                });
+            fetchPickupLocations();
             const token = getAuthToken();
             const headers = {
                 Authorization: `Bearer ${token}`,
@@ -370,11 +399,28 @@ const Products = () => {
     };
 
     const handleEdit = (product) => {
+        fetchPickupLocations();
         setEditingProductId(product.id || product._id);
-        const whStock = product.warehouse_stock && Object.keys(product.warehouse_stock).length > 0
-            ? product.warehouse_stock
-            : { "Home": Number(product.stock ?? product.stock_quantity ?? 0), "home-1": 0 };
-        const whSizeStock = product.warehouse_size_stock || { "Home": {}, "home-1": {} };
+        const whStock = { ...(product.warehouse_stock || {}) };
+        const whSizeStock = { ...(product.warehouse_size_stock || {}) };
+
+        // Ensure all discovered Shiprocket warehouses have keys
+        pickupLocations.forEach(loc => {
+            const name = loc.pickup_location || loc.name;
+            if (name && whStock[name] === undefined) {
+                whStock[name] = 0;
+            }
+            if (name && !whSizeStock[name]) {
+                whSizeStock[name] = {};
+            }
+        });
+
+        // If no warehouse stock was previously allocated, allocate current stock to primary warehouse
+        const totalWhAllocated = Object.values(whStock).reduce((a, b) => a + Number(b || 0), 0);
+        if (totalWhAllocated === 0) {
+            const primaryName = pickupLocations.find(l => l.is_primary_location)?.pickup_location || pickupLocations[0]?.pickup_location || "Home";
+            whStock[primaryName] = Number(product.stock ?? product.stock_quantity ?? 0);
+        }
 
         setFormData({
             title: product.title || product.name || "",
@@ -391,7 +437,7 @@ const Products = () => {
             fabric: product.fabric || "",
             brand: product.brand || "Nari Pehnawa",
             delivery_charge: product.delivery_charge !== undefined && product.delivery_charge !== null ? product.delivery_charge : "",
-            pickup_location: product.pickup_location || "Home",
+            pickup_location: product.pickup_location || pickupLocations[0]?.pickup_location || "Home",
             warehouse_stock: whStock,
             warehouse_size_stock: whSizeStock
         });
@@ -766,7 +812,7 @@ const Products = () => {
                         </button>
                     ) : (
                         <button
-                            onClick={() => setShowAddModal(true)}
+                            onClick={handleOpenAddModal}
                             className="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-lg hover:shadow-cyan-500/20 transition duration-200"
                         >
                             <Plus className="w-4 h-4" /> Add Product
@@ -1494,19 +1540,37 @@ const Products = () => {
                             </div>
 
                             {/* ── Multi-Warehouse Inventory & Variant Stock Allocation Card ── */}
-                            <div className="bg-[#0b1220] border border-cyan-900/30 rounded-2xl p-4 space-y-3">
+                            <div className="bg-[#0b1220] border border-cyan-900/40 rounded-2xl p-4 space-y-3">
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-gray-800/80 pb-3">
                                     <div>
-                                        <label className="block text-cyan-400 font-bold text-xs uppercase tracking-wide flex items-center gap-1.5">
-                                            <Building2 className="w-4 h-4 text-cyan-400" /> Shiprocket Multi-Warehouse Inventory Allocation
-                                        </label>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <label className="text-cyan-400 font-bold text-xs uppercase tracking-wide flex items-center gap-1.5">
+                                                <Building2 className="w-4 h-4 text-cyan-400" /> Shiprocket Multi-Warehouse Inventory Allocation
+                                            </label>
+                                            <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                                Dynamic Shiprocket ({pickupLocations.length} Warehouses)
+                                            </span>
+                                        </div>
                                         <p className="text-[11px] text-gray-400 mt-0.5">
-                                            Manage stock across your 2 Shiprocket warehouses. Quantity per size updates automatically!
+                                            Retrieved directly from your Shiprocket account. Quantity per size updates automatically!
                                         </p>
                                     </div>
-                                    <div className="text-left sm:text-right bg-[#111827] px-3 py-1.5 rounded-xl border border-gray-800">
-                                        <span className="text-[10px] text-gray-400 block uppercase font-medium">Total Synced Stock</span>
-                                        <span className="text-sm font-bold text-emerald-400 font-mono">{formData.stock || 0} units</span>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => fetchPickupLocations(true)}
+                                            disabled={isSyncingWarehouses}
+                                            className="px-2.5 py-1.5 bg-[#111827] hover:bg-cyan-950/40 text-cyan-300 border border-cyan-800/50 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition disabled:opacity-50"
+                                            title="Sync live warehouses from Shiprocket"
+                                        >
+                                            <RefreshCw className={`w-3.5 h-3.5 ${isSyncingWarehouses ? "animate-spin text-cyan-400" : ""}`} />
+                                            <span>{isSyncingWarehouses ? "Syncing..." : "Sync Shiprocket"}</span>
+                                        </button>
+                                        <div className="text-left sm:text-right bg-[#111827] px-3 py-1.5 rounded-xl border border-gray-800">
+                                            <span className="text-[10px] text-gray-400 block uppercase font-medium">Total Synced Stock</span>
+                                            <span className="text-sm font-bold text-emerald-400 font-mono">{formData.stock || 0} units</span>
+                                        </div>
                                     </div>
                                 </div>
 

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Store, IndianRupee, Save, Truck, Plus, Trash2,
   Tag, Flame, Clock, Loader2, X, Download, Info,
-  Calendar, CheckCircle, RefreshCw, Zap, Eye, Play, Pause
+  Calendar, CheckCircle, RefreshCw, Zap, Eye, Play, Pause,
+  Image, Upload, Link2
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://naripehnawa.com:7100';
@@ -25,8 +26,12 @@ const Settings = () => {
     target_category: '',
     target_product_ids: [],
     start_time: '',
-    end_time: ''
+    end_time: '',
+    banner_image: ''
   });
+  const [saleImgTab, setSaleImgTab] = useState('upload'); // 'upload' | 'url'
+  const [saleUploading, setSaleUploading] = useState(false);
+  const saleFileInputRef = useRef(null);
   const [allCampaigns, setAllCampaigns] = useState([]);
   const [currentIstTime, setCurrentIstTime] = useState('');
   const [editingCampaignId, setEditingCampaignId] = useState(null); // null = active_sale, "new" = create new, or id
@@ -282,6 +287,31 @@ const Settings = () => {
     }));
   };
 
+  const handleSaleImageUpload = async (file) => {
+    if (!file) return;
+    setSaleUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${API_BASE}/upload/image`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${localStorage.getItem('neel_token') || localStorage.getItem('token') || ''}` },
+        body: fd,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Upload failed");
+      }
+      const data = await res.json();
+      const fullUrl = `${API_BASE}${data.url}`;
+      setFlashSaleConfig(prev => ({ ...prev, banner_image: fullUrl }));
+    } catch (e) {
+      alert(`Banner image upload failed: ${e.message}`);
+    } finally {
+      setSaleUploading(false);
+    }
+  };
+
   const handleCreateNewCampaign = () => {
     setEditingCampaignId("new");
     const now = new Date();
@@ -301,6 +331,7 @@ const Settings = () => {
       target_product_ids: [],
       start_time: toLocal(now),
       end_time: toLocal(end),
+      banner_image: "",
       is_active: true
     });
     setCategorySpecificSelection(false);
@@ -325,6 +356,7 @@ const Settings = () => {
       target_product_ids: c.target_product_ids || [],
       start_time: c.start_time ? c.start_time.slice(0, 16) : "",
       end_time: c.end_time ? c.end_time.slice(0, 16) : "",
+      banner_image: c.banner_image || c.image || "",
       is_active: c.is_active !== false
     });
     if (c.target_type === 'category' && Array.isArray(c.target_product_ids) && c.target_product_ids.length > 0) {
@@ -527,6 +559,15 @@ const Settings = () => {
                         <h4 className="font-bold text-slate-900 text-sm line-clamp-1">{camp.title}</h4>
                         <p className="text-[11px] text-slate-500 line-clamp-1">{camp.subtitle || "Exclusive Handcrafted Luxury Ethnic Wear"}</p>
                         
+                        {camp.banner_image && (
+                          <div className="h-14 rounded-lg overflow-hidden border border-slate-200 relative my-1.5 shadow-2xs">
+                            <img src={camp.banner_image} alt="" className="w-full h-full object-cover" />
+                            <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded font-mono font-bold">
+                              🖼️ Banner
+                            </span>
+                          </div>
+                        )}
+                        
                         <div className="text-[11px] text-slate-600 pt-1 space-y-0.5">
                           <div>
                             <strong className="text-slate-700">Target:</strong>{" "}
@@ -621,30 +662,149 @@ const Settings = () => {
               </label>
             </div>
 
-            {/* Live Store Preview Card — High Contrast Clean Banner */}
-            <div className="p-5 rounded-xl bg-gradient-to-r from-[#0891b2] via-[#0e7490] to-[#0891b2] text-white shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="space-y-1.5 text-center md:text-left">
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-white/20 text-white px-2.5 py-0.5 rounded-full uppercase tracking-wider backdrop-blur-xs">
-                  📢 Live Storefront Banner (On /category/sale)
-                </span>
-                <h4 className="text-xl font-bold text-white tracking-wide">
-                  {flashSaleConfig.title || "Grand Festive Flash Sale"}
-                </h4>
-                <p className="text-xs text-cyan-100 font-medium">
-                  {flashSaleConfig.subtitle || "Exclusive Handcrafted Luxury Ethnic Wear"}
-                </p>
+            {/* Live Store Preview Card — Ultra-Premium Banner with Image & Overlays */}
+            <div className="relative overflow-hidden rounded-2xl min-h-[170px] shadow-xl border border-cyan-900/30 flex flex-col justify-end p-6 text-white group">
+              {flashSaleConfig.banner_image ? (
+                <>
+                  <img
+                    src={flashSaleConfig.banner_image}
+                    alt="Flash Sale Banner"
+                    className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/80 backdrop-blur-[1px]" />
+                </>
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-r from-[#0891b2] via-[#0e7490] to-[#0891b2]" />
+              )}
+
+              <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-white/20 text-white px-2.5 py-0.5 rounded-full uppercase tracking-wider backdrop-blur-xs">
+                      📢 Live Storefront Banner (On /category/sale)
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full uppercase tracking-wider font-mono">
+                      ⚡ LIVE FESTIVE EVENT
+                    </span>
+                  </div>
+                  <h4 className="text-xl md:text-2xl font-black text-white tracking-wide drop-shadow-md">
+                    {flashSaleConfig.title || "Grand Festive Flash Sale"}
+                  </h4>
+                  <p className="text-xs md:text-sm text-cyan-100 font-medium drop-shadow">
+                    {flashSaleConfig.subtitle || "Exclusive Handcrafted Luxury Ethnic Wear"}
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-3 bg-white/95 text-slate-900 px-5 py-3 rounded-2xl shadow-xl border border-white/60 backdrop-blur-md">
+                  <div className="text-center sm:text-left">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Promotional Offer</span>
+                    <span className="text-lg md:text-xl font-black text-[#0891b2] font-mono tracking-tight">
+                      {flashSaleConfig.deal_text ||
+                       (flashSaleConfig.deal_type === 'bogo' ? '🎁 BUY 1 GET 1 FREE' :
+                        flashSaleConfig.deal_type === 'buy2get1' ? '🎁 BUY 2 GET 1 FREE' :
+                        flashSaleConfig.deal_type === 'buy3get1' ? '🎁 BUY 3 GET 1 FREE' :
+                        `${flashSaleConfig.discount_percentage}% OFF`)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Event Hero Banner Image (Upload or URL) ── */}
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 shadow-2xs">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                    <Image className="w-4 h-4 text-[#0891b2]" /> Event Hero Banner Image
+                  </label>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Upload an eye-catching banner image. It appears as the hero banner on the sale page (/category/sale) and homepage events!
+                  </p>
+                </div>
+                {flashSaleConfig.banner_image && (
+                  <button
+                    type="button"
+                    onClick={() => setFlashSaleConfig(prev => ({ ...prev, banner_image: "" }))}
+                    className="text-xs text-rose-600 hover:text-rose-700 font-semibold flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Remove Image
+                  </button>
+                )}
               </div>
 
-              <div className="flex items-center gap-3 bg-white text-[#0891b2] px-5 py-3 rounded-xl shadow-md border border-white/40">
-                <span className="text-xs font-bold text-slate-700">Promo Deal:</span>
-                <span className="text-xl font-black text-[#0891b2] font-mono">
-                  {flashSaleConfig.deal_text ||
-                   (flashSaleConfig.deal_type === 'bogo' ? '🎁 BUY 1 GET 1 FREE' :
-                    flashSaleConfig.deal_type === 'buy2get1' ? '🎁 BUY 2 GET 1 FREE' :
-                    flashSaleConfig.deal_type === 'buy3get1' ? '🎁 BUY 3 GET 1 FREE' :
-                    `${flashSaleConfig.discount_percentage}% OFF`)}
-                </span>
+              {/* Tab Switcher: Upload vs URL */}
+              <div className="flex rounded-lg overflow-hidden border border-slate-300 w-full sm:w-64">
+                <button
+                  type="button"
+                  onClick={() => setSaleImgTab("upload")}
+                  className={`flex-1 py-1.5 text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
+                    saleImgTab === "upload" ? "bg-[#0891b2] text-white" : "bg-white text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  <Upload className="w-3.5 h-3.5" /> Upload File
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSaleImgTab("url")}
+                  className={`flex-1 py-1.5 text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
+                    saleImgTab === "url" ? "bg-[#0891b2] text-white" : "bg-white text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  <Link2 className="w-3.5 h-3.5" /> Paste URL
+                </button>
               </div>
+
+              {/* Upload Drop Area */}
+              {saleImgTab === "upload" ? (
+                <div
+                  onClick={() => saleFileInputRef.current?.click()}
+                  className="border-2 border-dashed border-slate-300 hover:border-[#0891b2] rounded-xl p-5 flex flex-col items-center justify-center cursor-pointer transition bg-white group"
+                >
+                  {saleUploading ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <Loader2 className="w-7 h-7 text-[#0891b2] animate-spin" />
+                      <span className="text-xs text-slate-500 font-medium">Uploading banner image...</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-center">
+                      <Upload className="w-7 h-7 text-slate-400 group-hover:text-[#0891b2] transition" />
+                      <span className="text-xs font-bold text-slate-700 group-hover:text-[#0891b2] transition">
+                        Click to select and upload banner image
+                      </span>
+                      <span className="text-[11px] text-slate-400">JPEG, PNG, WebP — High Resolution</span>
+                    </div>
+                  )}
+                  <input
+                    ref={saleFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleSaleImageUpload(e.target.files?.[0])}
+                  />
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={flashSaleConfig.banner_image || ""}
+                  onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, banner_image: e.target.value })}
+                  placeholder="https://images.unsplash.com/photo-xxx or /uploads/banner.jpg"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:outline-none focus:border-[#0891b2] text-xs font-mono"
+                />
+              )}
+
+              {/* Preview Thumbnail if set */}
+              {flashSaleConfig.banner_image && (
+                <div className="relative rounded-xl overflow-hidden h-32 border border-slate-200 bg-slate-100 shadow-inner">
+                  <img
+                    src={flashSaleConfig.banner_image}
+                    alt="Banner preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-2 left-2 bg-black/75 text-white text-[10px] px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1">
+                    <span>✓ Active Banner Image</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Form Fields Grid */}

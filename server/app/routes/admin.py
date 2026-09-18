@@ -285,6 +285,7 @@ def format_sale_dict(sale: dict, now_ist: datetime) -> dict:
         "target_product_ids": sale.get("target_product_ids", []) or [],
         "start_time": sale.get("start_time"),
         "end_time": sale.get("end_time"),
+        "banner_image": str(sale.get("banner_image") or sale.get("image") or "").strip(),
         "is_active": bool(sale.get("is_active", True)),
         "is_currently_live": is_live,
         "seconds_remaining": remaining,
@@ -430,6 +431,7 @@ def create_flash_sale(data: dict, current_user: dict = Depends(require_admin)):
     target_product_ids = data.get("target_product_ids", []) or []
     start_time = data.get("start_time") or now_ist.isoformat()
     end_time = data.get("end_time")
+    banner_image = str(data.get("banner_image") or data.get("image") or "").strip()
     is_active = bool(data.get("is_active", True))
     
     doc = {
@@ -445,6 +447,7 @@ def create_flash_sale(data: dict, current_user: dict = Depends(require_admin)):
         "target_product_ids": target_product_ids,
         "start_time": start_time,
         "end_time": end_time,
+        "banner_image": banner_image,
         "is_active": is_active,
         "created_at": now_ist.isoformat(),
         "updated_at": now_ist.isoformat(),
@@ -495,6 +498,7 @@ def update_flash_sale_by_id(sale_id: str, data: dict, current_user: dict = Depen
     target_product_ids = data.get("target_product_ids", sale.get("target_product_ids", [])) or []
     start_time = data.get("start_time", sale.get("start_time"))
     end_time = data.get("end_time", sale.get("end_time"))
+    banner_image = str(data.get("banner_image") if "banner_image" in data else data.get("image", sale.get("banner_image", "")) or "").strip()
     is_active = bool(data.get("is_active", sale.get("is_active", True)))
     
     update_data = {
@@ -510,6 +514,7 @@ def update_flash_sale_by_id(sale_id: str, data: dict, current_user: dict = Depen
         "target_product_ids": target_product_ids,
         "start_time": start_time,
         "end_time": end_time,
+        "banner_image": banner_image,
         "is_active": is_active,
         "updated_at": now_ist.isoformat(),
         "updated_by": current_user.get("email", "admin")
@@ -591,6 +596,7 @@ def get_flash_sale_settings():
             "target_product_ids": [],
             "start_time": now_ist.isoformat(),
             "end_time": None,
+            "banner_image": "",
             "is_currently_live": False,
             "seconds_remaining": 0,
             "status": "inactive"
@@ -623,6 +629,7 @@ def update_flash_sale_settings(data: dict, current_user: dict = Depends(require_
     target_product_ids = data.get("target_product_ids", []) or []
     start_time = data.get("start_time")
     end_time = data.get("end_time")
+    banner_image = str(data.get("banner_image") or data.get("image") or "").strip()
     is_active = bool(data.get("is_active", True))
     sale_id = data.get("id") or data.get("_id")
     
@@ -641,6 +648,7 @@ def update_flash_sale_settings(data: dict, current_user: dict = Depends(require_
         "target_product_ids": target_product_ids,
         "start_time": start_time,
         "end_time": end_time,
+        "banner_image": banner_image,
         "updated_at": now_ist.isoformat(),
         "updated_by": current_user.get("email", "admin")
     }

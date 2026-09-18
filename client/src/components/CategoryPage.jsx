@@ -460,10 +460,10 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
         <style>{`@media(min-width:768px){.cat-hero{height:540px!important;}}`}</style>
 
         {/* Background image */}
-        {categoryInfo?.image && (
+        {(slug === "sale" ? (flashSale?.banner_image || categoryInfo?.image) : categoryInfo?.image) && (
           <img
-            src={categoryInfo.image}
-            alt={categoryInfo.name || displayName}
+            src={slug === "sale" ? (flashSale?.banner_image || categoryInfo?.image) : categoryInfo?.image}
+            alt={slug === "sale" ? (flashSale?.title || "Festive Flash Sale") : (categoryInfo?.name || displayName)}
             className="absolute inset-0 w-full h-full object-cover"
             style={{ objectPosition: "center top" }}
             onError={(e) => {
@@ -476,8 +476,9 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
         <div
           className="absolute inset-0"
           style={{
-            background:
-              "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.2) 100%)",
+            background: slug === "sale"
+              ? "linear-gradient(to top, rgba(10,15,28,0.92) 0%, rgba(10,15,28,0.6) 50%, rgba(0,0,0,0.4) 100%)"
+              : "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.2) 100%)",
           }}
         />
 

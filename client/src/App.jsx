@@ -10,6 +10,7 @@ import Navbar from "./components/Navbar";
 import VisitorTracker from "./components/VisitorTracker";
 import CookieConsent from "./components/CookieConsent";
 import HeroSection from "./components/HeroSection";
+import FestiveEventBanner from "./components/FestiveEventBanner";
 import Categories from "./components/Categories";
 import FeaturedProducts from "./components/FeaturedProducts";
 import HomeCategorySections from "./components/HomeCategorySections";
@@ -63,6 +64,7 @@ function HomePage() {
     return (
         <>
             <HeroSection />
+            <FestiveEventBanner />
             <Categories />
             <FeaturedProducts />
             <HomeCategorySections />

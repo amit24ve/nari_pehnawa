@@ -12,7 +12,9 @@ import {
     Upload,
     Link2,
     Download,
-    Search
+    Search,
+    Copy,
+    Check
 } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
@@ -43,6 +45,21 @@ const Categories = () => {
     const [imgTab, setImgTab] = useState("url"); // "url" | "upload"
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef(null);
+
+    const [copiedId, setCopiedId] = useState(null);
+    const [copiedModal, setCopiedModal] = useState(false);
+
+    const copyToClipboard = (text, id = null) => {
+        if (!text) return;
+        navigator.clipboard.writeText(text);
+        if (id) {
+            setCopiedId(id);
+            setTimeout(() => setCopiedId(null), 2000);
+        } else {
+            setCopiedModal(true);
+            setTimeout(() => setCopiedModal(false), 2000);
+        }
+    };
 
     const [searchTerm, setSearchTerm] = useState("");
     const [sortBy, setSortBy] = useState("name");
@@ -99,14 +116,16 @@ const Categories = () => {
 
     /* Auto-generate link from name */
     const handleNameChange = (name) => {
-        const autoLink = `/category/${name
+        const slug = name
             .toLowerCase()
+            .trim()
             .replace(/[^a-z0-9]+/g, "-")
-            .replace(/^-|-$/g, "")}`;
+            .replace(/^-+|-+$/g, "");
+        const autoLink = slug ? `/category/${slug}` : "";
         setFormData((f) => ({
             ...f,
             name,
-            link: f.link && f.link !== autoLink ? f.link : autoLink,
+            link: autoLink,
         }));
     };
 
@@ -410,16 +429,36 @@ const Categories = () => {
                             {/* Card body */}
                             <div className="p-3.5">
                                 <div className="flex items-center justify-between">
-                                    {/* Link */}
-                                    <a
-                                        href={cat.link || "#"}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-[#d4af37] transition-colors truncate max-w-[70%]"
-                                    >
-                                        <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                                        {cat.link || "No link set"}
-                                    </a>
+                                    {/* Link & Copy */}
+                                    <div className="flex items-center gap-1.5 truncate max-w-[75%]">
+                                        <a
+                                            href={cat.link || "#"}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-[#d4af37] transition-colors truncate"
+                                        >
+                                            <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                                            {cat.link || "No link set"}
+                                        </a>
+                                        {cat.link && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    copyToClipboard(cat.link, cat.id || cat._id);
+                                                }}
+                                                title="Copy Category URL Path"
+                                                className="p-1 rounded hover:bg-gray-700/70 text-gray-400 hover:text-[#d4af37] transition flex-shrink-0"
+                                            >
+                                                {copiedId === (cat.id || cat._id) ? (
+                                                    <Check className="w-3 h-3 text-green-400" />
+                                                ) : (
+                                                    <Copy className="w-3 h-3" />
+                                                )}
+                                            </button>
+                                        )}
+                                    </div>
 
                                     {/* Color dot */}
                                     <div
@@ -665,23 +704,47 @@ const Categories = () => {
                                 </p>
                             </div>
 
-                            {/* Link */}
+                            {/* Link with Auto-Generation and Copy Button */}
                             <InputField label="Category URL Path">
-                                <input
-                                    type="text"
-                                    value={formData.link}
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            link: e.target.value,
-                                        })
-                                    }
-                                    className="w-full bg-[#0b1220] border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-[#d4af37] transition"
-                                    placeholder="/category/anarkali"
-                                />
-                                <p className="text-[11px] text-gray-600 mt-1">
-                                    Auto-generated from name. Change only if
-                                    needed.
+                                <div className="relative flex items-center">
+                                    <input
+                                        type="text"
+                                        value={formData.link}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                link: e.target.value,
+                                            })
+                                        }
+                                        className="w-full bg-[#0b1220] border border-gray-700 rounded-lg pl-4 pr-28 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-[#d4af37] transition font-mono"
+                                        placeholder="/category/anarkali-kurtis"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => copyToClipboard(formData.link)}
+                                        disabled={!formData.link}
+                                        className="absolute right-1.5 px-2.5 py-1.5 bg-[#1f293d] hover:bg-[#d4af37] text-gray-300 hover:text-[#0f1724] rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-40"
+                                    >
+                                        {copiedModal ? (
+                                            <>
+                                                <Check className="w-3.5 h-3.5 text-green-400" />
+                                                <span className="text-green-400">Copied!</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Copy className="w-3.5 h-3.5" />
+                                                <span>Copy Path</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                                <p className="text-[11px] text-gray-400 mt-1 flex items-center justify-between">
+                                    <span>⚡ Auto-generated from name. Change only if needed.</span>
+                                    {formData.link && (
+                                        <span className="text-amber-400 font-mono text-[10px]">
+                                            Live: {formData.link}
+                                        </span>
+                                    )}
                                 </p>
                             </InputField>
 
