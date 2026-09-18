@@ -1294,9 +1294,9 @@ const Orders = () => {
                       <td className="py-3.5 px-6 text-right">
                         <button
                           onClick={() => handleViewDetails(o)}
-                          className="px-3.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition text-slate-700 font-bold flex items-center gap-1 ml-auto shadow-sm"
+                          className="px-3.5 py-1.5 bg-cyan-400 hover:bg-cyan-300 rounded-xl transition text-black font-extrabold flex items-center gap-1 ml-auto shadow-sm"
                         >
-                          Process Control <Eye className="w-3.5 h-3.5 text-[#0891b2]" />
+                          Process Control <Eye className="w-3.5 h-3.5 text-black" />
                         </button>
                       </td>
                     </tr>
@@ -1352,9 +1352,9 @@ const Orders = () => {
                       <td className="py-3.5 px-6 text-right">
                         <button
                           onClick={() => handleViewDetails(o)}
-                          className="px-3.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition text-slate-700 font-bold flex items-center gap-1 ml-auto shadow-sm"
+                          className="px-3.5 py-1.5 bg-cyan-400 hover:bg-cyan-300 rounded-xl transition text-black font-extrabold flex items-center gap-1 ml-auto shadow-sm"
                         >
-                          Logs Timeline <Truck className="w-3.5 h-3.5 text-[#0891b2]" />
+                          Logs Timeline <Truck className="w-3.5 h-3.5 text-black" />
                         </button>
                       </td>
                     </tr>
@@ -1810,11 +1810,11 @@ const Orders = () => {
                           <button
                             onClick={handleCreateShipment}
                             disabled={shippingActionLoading === "create"}
-                            className="px-4 py-2.5 bg-[#8B0000] text-white text-xs font-bold rounded-xl shadow-md hover:bg-[#720000] transition disabled:opacity-40 flex items-center gap-1.5"
+                            className="px-4 py-2.5 bg-cyan-400 text-black text-xs font-extrabold rounded-xl shadow-md hover:bg-cyan-300 transition disabled:opacity-40 flex items-center gap-1.5 cursor-pointer"
                           >
                             {shippingActionLoading === "create" ? (
                               <>
-                                <Loader className="w-3.5 h-3.5 animate-spin" />
+                                <Loader className="w-3.5 h-3.5 animate-spin text-black" />
                                 Processing with Shiprocket...
                               </>
                             ) : (
@@ -2046,7 +2046,7 @@ const Orders = () => {
                             <button
                               onClick={handleUpdateOrderFields}
                               disabled={actionLoading}
-                              className="px-2.5 py-1 bg-[#0891b2] text-white rounded text-[10px] font-bold"
+                              className="px-3 py-1 bg-cyan-400 hover:bg-cyan-300 text-black rounded text-[10px] font-extrabold shadow-sm cursor-pointer"
                             >
                               Save Notes
                             </button>

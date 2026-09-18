@@ -34,8 +34,8 @@ const emptyForm = {
 
 const InputField = ({ label, required, children }) => (
     <div>
-        <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">
-            {label} {required && <span className="text-[#d4af37]">*</span>}
+        <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
+            {label} {required && <span className="text-cyan-600 font-extrabold">*</span>}
         </label>
         {children}
     </div>
@@ -285,9 +285,9 @@ const Categories = () => {
                 </div>
                 <button
                     onClick={openAdd}
-                    className="flex items-center gap-2 bg-gradient-to-r from-[#d4af37] to-[#c49f2f] text-[#0f1724] px-4 py-2.5 rounded-lg text-sm font-semibold hover:shadow-lg hover:shadow-[#d4af37]/30 transition-all duration-300"
+                    className="flex items-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-black px-4 py-2.5 rounded-xl text-sm font-extrabold shadow-md transition-all duration-200 cursor-pointer"
                 >
-                    <Plus className="w-4 h-4" /> Add Category
+                    <Plus className="w-4 h-4 stroke-[2.5]" /> Add Category
                 </button>
             </div>
 
@@ -300,7 +300,7 @@ const Categories = () => {
                         placeholder="Search categories by name..."
                         value={searchTerm}
                         onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                        className="w-full pl-10 pr-4 py-2 bg-[#0b1220] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-[#d4af37]"
+                        className="w-full pl-10 pr-4 py-2 bg-[#0b1220] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-400"
                     />
                 </div>
                 
@@ -316,9 +316,9 @@ const Categories = () => {
 
                     <button
                         onClick={handleExportCSV}
-                        className="px-4 py-2 bg-[#0f1724] border border-gray-850 rounded-xl text-xs font-bold text-white flex items-center gap-1.5"
+                        className="px-4 py-2 bg-[#0f1724] border border-gray-850 rounded-xl text-xs font-bold text-white flex items-center gap-1.5 hover:bg-gray-800 transition cursor-pointer"
                     >
-                        <Download className="w-4 h-4 text-[#d4af37]" /> Export CSV
+                        <Download className="w-4 h-4 text-cyan-400" /> Export CSV
                     </button>
                 </div>
             </div>
@@ -449,10 +449,10 @@ const Categories = () => {
                                                     copyToClipboard(cat.link, cat.id || cat._id);
                                                 }}
                                                 title="Copy Category URL Path"
-                                                className="p-1 rounded hover:bg-gray-700/70 text-gray-400 hover:text-[#d4af37] transition flex-shrink-0"
+                                                className="p-1 rounded hover:bg-gray-700/70 text-gray-400 hover:text-cyan-400 transition flex-shrink-0"
                                             >
                                                 {copiedId === (cat.id || cat._id) ? (
-                                                    <Check className="w-3 h-3 text-green-400" />
+                                                    <Check className="w-3 h-3 text-emerald-400" />
                                                 ) : (
                                                     <Copy className="w-3 h-3" />
                                                 )}
@@ -474,13 +474,13 @@ const Categories = () => {
                                 <div className="flex gap-2 mt-3">
                                     <button
                                         onClick={() => handleEdit(cat)}
-                                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-600/20 text-blue-400 rounded-lg hover:bg-blue-600/30 text-xs font-medium transition-colors"
+                                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-cyan-400 hover:bg-cyan-300 text-black rounded-lg text-xs font-extrabold transition-all shadow-sm cursor-pointer"
                                     >
-                                        <Edit2 className="w-3.5 h-3.5" /> Edit
+                                        <Edit2 className="w-3.5 h-3.5 stroke-[2.5]" /> Edit
                                     </button>
                                     <button
                                         onClick={() => handleDelete(cat)}
-                                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 text-xs font-medium transition-colors"
+                                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-600/20 text-red-400 hover:bg-red-600/30 rounded-lg text-xs font-bold border border-red-500/30 transition-colors cursor-pointer"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />{" "}
                                         Delete
@@ -517,17 +517,17 @@ const Categories = () => {
 
             {/* Add / Edit Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-gradient-to-br from-[#111827] to-[#1a2332] border border-gray-700 rounded-xl w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] overflow-y-auto text-left">
                         {/* Modal header */}
-                        <div className="flex items-center justify-between p-5 border-b border-gray-700">
+                        <div className="flex items-center justify-between p-5 border-b border-slate-200 bg-slate-50/50">
                             <div>
-                                <h3 className="text-lg font-bold text-white">
+                                <h3 className="text-lg font-bold text-slate-900">
                                     {editingCategory
                                         ? "Edit Category"
                                         : "Add New Category"}
                                 </h3>
-                                <p className="text-xs text-gray-500 mt-0.5">
+                                <p className="text-xs text-slate-500 mt-0.5">
                                     Categories appear automatically in navbar
                                     &amp; hero sections
                                 </p>
@@ -537,7 +537,7 @@ const Categories = () => {
                                     setShowModal(false);
                                     setEditing(null);
                                 }}
-                                className="p-2 hover:bg-gray-700/50 rounded-lg transition text-gray-400 hover:text-white"
+                                className="p-2 hover:bg-slate-100 rounded-xl transition text-slate-400 hover:text-slate-800 cursor-pointer"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -553,7 +553,7 @@ const Categories = () => {
                                     onChange={(e) =>
                                         handleNameChange(e.target.value)
                                     }
-                                    className="w-full bg-[#0b1220] border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-[#d4af37] transition"
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
                                     placeholder="e.g. Anarkali Suits"
                                 />
                             </InputField>
@@ -569,10 +569,10 @@ const Categories = () => {
                                             tagline: e.target.value,
                                         })
                                     }
-                                    className="w-full bg-[#0b1220] border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-[#d4af37] transition"
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
                                     placeholder="e.g. Anarkalis Made For Forever Moments!"
                                 />
-                                <p className="text-[11px] text-gray-600 mt-1">
+                                <p className="text-[11px] text-slate-500 mt-1">
                                     Shown in the hero banner on the category
                                     page
                                 </p>
@@ -580,21 +580,21 @@ const Categories = () => {
 
                             {/* ── Hero Banner Image (URL or Upload) ── */}
                             <div>
-                                <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">
+                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
                                     Hero Banner Image
                                 </label>
 
                                 {/* Tab switcher */}
-                                <div className="flex rounded-lg overflow-hidden border border-gray-700 mb-3">
+                                <div className="flex rounded-xl overflow-hidden border border-slate-300 mb-3 bg-slate-100 p-1">
                                     {["url", "upload"].map((tab) => (
                                         <button
                                             key={tab}
                                             type="button"
                                             onClick={() => setImgTab(tab)}
-                                            className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold transition-colors ${
+                                            className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
                                                 imgTab === tab
-                                                    ? "bg-[#d4af37] text-[#0f1724]"
-                                                    : "bg-[#0b1220] text-gray-400 hover:text-gray-200"
+                                                    ? "bg-cyan-400 text-black shadow-sm"
+                                                    : "text-slate-600 hover:text-slate-900"
                                             }`}
                                         >
                                             {tab === "url" ? (
@@ -624,7 +624,7 @@ const Categories = () => {
                                             });
                                             setImgError(false);
                                         }}
-                                        className="w-full bg-[#0b1220] border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-[#d4af37] transition"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
                                         placeholder="https://images.unsplash.com/photo-xxx"
                                     />
                                 )}
@@ -635,22 +635,22 @@ const Categories = () => {
                                         onClick={() =>
                                             fileInputRef.current?.click()
                                         }
-                                        className="w-full border-2 border-dashed border-gray-700 hover:border-[#d4af37] rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer transition-colors group"
+                                        className="w-full border-2 border-dashed border-slate-300 hover:border-cyan-400 bg-slate-50 hover:bg-slate-100/70 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors group"
                                     >
                                         {uploading ? (
                                             <>
-                                                <Loader2 className="w-8 h-8 text-[#d4af37] animate-spin mb-2" />
-                                                <p className="text-sm text-gray-400">
+                                                <Loader2 className="w-8 h-8 text-cyan-500 animate-spin mb-2" />
+                                                <p className="text-sm text-slate-600 font-medium">
                                                     Uploading…
                                                 </p>
                                             </>
                                         ) : (
                                             <>
-                                                <Upload className="w-8 h-8 text-gray-500 group-hover:text-[#d4af37] mb-2 transition-colors" />
-                                                <p className="text-sm text-gray-400 group-hover:text-gray-200 transition-colors">
+                                                <Upload className="w-8 h-8 text-slate-400 group-hover:text-cyan-500 mb-2 transition-colors" />
+                                                <p className="text-sm text-slate-700 font-semibold group-hover:text-cyan-600 transition-colors">
                                                     Click to select image
                                                 </p>
-                                                <p className="text-xs text-gray-600 mt-1">
+                                                <p className="text-xs text-slate-400 mt-1">
                                                     JPEG, PNG, WebP — Max 10 MB
                                                 </p>
                                             </>
@@ -671,7 +671,7 @@ const Categories = () => {
 
                                 {/* Preview */}
                                 {formData.image && !imagePreviewError && (
-                                    <div className="mt-2 rounded-lg overflow-hidden h-28 bg-gray-800 relative">
+                                    <div className="mt-2 rounded-xl overflow-hidden h-28 bg-slate-100 relative border border-slate-200 shadow-sm">
                                         <img
                                             src={formData.image}
                                             alt="Preview"
@@ -686,19 +686,19 @@ const Categories = () => {
                                                     image: "",
                                                 })
                                             }
-                                            className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition-colors"
+                                            className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition-colors cursor-pointer"
                                         >
                                             <X className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
                                 )}
                                 {imagePreviewError && (
-                                    <p className="text-xs text-red-400 mt-1">
+                                    <p className="text-xs text-red-500 mt-1">
                                         ⚠️ Could not load image — check URL or
                                         re-upload
                                     </p>
                                 )}
-                                <p className="text-[11px] text-gray-600 mt-1.5">
+                                <p className="text-[11px] text-slate-500 mt-1.5">
                                     This image appears as the full-width hero
                                     banner on the category page
                                 </p>
@@ -716,32 +716,32 @@ const Categories = () => {
                                                 link: e.target.value,
                                             })
                                         }
-                                        className="w-full bg-[#0b1220] border border-gray-700 rounded-lg pl-4 pr-28 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-[#d4af37] transition font-mono"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-4 pr-28 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition font-mono"
                                         placeholder="/category/anarkali-kurtis"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => copyToClipboard(formData.link)}
                                         disabled={!formData.link}
-                                        className="absolute right-1.5 px-2.5 py-1.5 bg-[#1f293d] hover:bg-[#d4af37] text-gray-300 hover:text-[#0f1724] rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-40"
+                                        className="absolute right-1.5 px-2.5 py-1.5 bg-cyan-400 hover:bg-cyan-300 text-black rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-40 cursor-pointer shadow-sm"
                                     >
                                         {copiedModal ? (
                                             <>
-                                                <Check className="w-3.5 h-3.5 text-green-400" />
-                                                <span className="text-green-400">Copied!</span>
+                                                <Check className="w-3.5 h-3.5 text-emerald-800" />
+                                                <span className="text-black">Copied!</span>
                                             </>
                                         ) : (
                                             <>
-                                                <Copy className="w-3.5 h-3.5" />
+                                                <Copy className="w-3.5 h-3.5 text-black" />
                                                 <span>Copy Path</span>
                                             </>
                                         )}
                                     </button>
                                 </div>
-                                <p className="text-[11px] text-gray-400 mt-1 flex items-center justify-between">
+                                <p className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
                                     <span>⚡ Auto-generated from name. Change only if needed.</span>
                                     {formData.link && (
-                                        <span className="text-amber-400 font-mono text-[10px]">
+                                        <span className="text-cyan-700 font-mono text-[10px] font-bold">
                                             Live: {formData.link}
                                         </span>
                                     )}
@@ -762,7 +762,7 @@ const Categories = () => {
                                                         e.target.value,
                                                 })
                                             }
-                                            className="w-10 h-10 rounded-lg border border-gray-700 cursor-pointer bg-transparent"
+                                            className="w-10 h-10 rounded-xl border border-slate-300 cursor-pointer bg-transparent"
                                         />
                                         <input
                                             type="text"
@@ -774,7 +774,7 @@ const Categories = () => {
                                                         e.target.value,
                                                 })
                                             }
-                                            className="flex-1 bg-[#0b1220] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-[#d4af37] transition"
+                                            className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition font-mono"
                                             placeholder="#8B0000"
                                         />
                                     </div>
@@ -791,22 +791,22 @@ const Categories = () => {
                                                 display_order: e.target.value,
                                             })
                                         }
-                                        className="w-full bg-[#0b1220] border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-[#d4af37] transition"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
                                         placeholder="0"
                                     />
-                                    <p className="text-[11px] text-gray-600 mt-1">
+                                    <p className="text-[11px] text-slate-500 mt-1">
                                         Lower = appears first in navbar
                                     </p>
                                 </InputField>
                             </div>
 
                             {/* Active toggle */}
-                            <div className="flex items-center justify-between bg-[#0b1220] border border-gray-700 rounded-lg px-4 py-3">
+                            <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
                                 <div>
-                                    <p className="text-sm text-gray-300 font-medium">
+                                    <p className="text-sm text-slate-900 font-bold">
                                         Show in Navbar
                                     </p>
-                                    <p className="text-xs text-gray-600">
+                                    <p className="text-xs text-slate-500">
                                         Toggle visibility in navbar &amp;
                                         category list
                                     </p>
@@ -819,10 +819,10 @@ const Categories = () => {
                                             is_active: !f.is_active,
                                         }))
                                     }
-                                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+                                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer ${
                                         formData.is_active
-                                            ? "bg-green-500"
-                                            : "bg-gray-600"
+                                            ? "bg-cyan-500"
+                                            : "bg-slate-300"
                                     }`}
                                 >
                                     <span
@@ -840,10 +840,10 @@ const Categories = () => {
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="flex-1 bg-gradient-to-r from-[#d4af37] to-[#c49f2f] text-[#0f1724] px-4 py-2.5 rounded-lg text-sm font-semibold hover:shadow-lg hover:shadow-[#d4af37]/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    className="flex-1 bg-cyan-400 hover:bg-cyan-300 text-black px-4 py-2.5 rounded-xl text-sm font-extrabold shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                                 >
                                     {submitting && (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        <Loader2 className="w-4 h-4 animate-spin text-black" />
                                     )}
                                     {submitting
                                         ? "Saving…"
@@ -858,7 +858,7 @@ const Categories = () => {
                                         setEditing(null);
                                     }}
                                     disabled={submitting}
-                                    className="flex-1 bg-gray-700/50 text-gray-200 px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-600/50 transition disabled:opacity-50"
+                                    className="flex-1 bg-slate-200 hover:bg-slate-300 text-black border border-slate-300 px-4 py-2.5 rounded-xl text-sm font-bold transition disabled:opacity-50 cursor-pointer"
                                 >
                                     Cancel
                                 </button>

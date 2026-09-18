@@ -35,6 +35,7 @@ const Settings = () => {
   const [allCampaigns, setAllCampaigns] = useState([]);
   const [currentIstTime, setCurrentIstTime] = useState('');
   const [editingCampaignId, setEditingCampaignId] = useState(null); // null = active_sale, "new" = create new, or id
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
   const [flashSaleLoading, setFlashSaleLoading] = useState(false);
   const [availableCategories, setAvailableCategories] = useState([]);
   const [availableProducts, setAvailableProducts] = useState([]);
@@ -335,6 +336,7 @@ const Settings = () => {
       is_active: true
     });
     setCategorySpecificSelection(false);
+    setShowCampaignModal(true);
   };
 
   const handleSelectCampaign = (c) => {
@@ -364,6 +366,7 @@ const Settings = () => {
     } else {
       setCategorySpecificSelection(false);
     }
+    setShowCampaignModal(true);
   };
 
   const handleDeleteCampaign = async (cId) => {
@@ -377,6 +380,7 @@ const Settings = () => {
       alert("Campaign deleted successfully!");
       await Promise.all([fetchAllCampaigns(), fetchFlashSaleConfig()]);
       setEditingCampaignId(null);
+      setShowCampaignModal(false);
     } catch (e) {
       alert(e.message || "Error deleting campaign");
     }
@@ -425,6 +429,7 @@ const Settings = () => {
       if (data.sale && (data.sale.id || data.sale._id)) {
         setEditingCampaignId(data.sale.id || data.sale._id);
       }
+      setShowCampaignModal(false);
     } catch (e) {
       alert(e.message || 'Error saving flash sale');
     } finally {
@@ -510,9 +515,9 @@ const Settings = () => {
                 <button
                   type="button"
                   onClick={handleCreateNewCampaign}
-                  className="px-3.5 py-2 bg-[#0891b2] hover:bg-[#0e7490] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm shadow-[#0891b2]/20 cursor-pointer"
+                  className="px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 shadow-md cursor-pointer"
                 >
-                  <Plus className="w-4 h-4" /> Create New Offer
+                  <Plus className="w-4 h-4 text-black" /> Create New Offer
                 </button>
               </div>
             </div>
@@ -530,7 +535,7 @@ const Settings = () => {
                       key={cId}
                       className={`p-4 rounded-xl border text-left transition relative flex flex-col justify-between space-y-3 ${
                         isSelected
-                          ? 'border-[#0891b2] bg-cyan-50/40 ring-2 ring-[#0891b2]/20 shadow-xs'
+                          ? 'border-cyan-400 bg-cyan-50/40 ring-2 ring-cyan-400/30 shadow-xs'
                           : 'border-slate-200 bg-white hover:border-slate-300'
                       }`}
                     >
@@ -551,7 +556,7 @@ const Settings = () => {
                             {status === 'live' ? '● Live Now (IST)' : status === 'upcoming' ? 'Upcoming' : status === 'expired' ? 'Expired' : 'Paused'}
                           </span>
 
-                          <span className="text-[11px] font-bold text-[#0891b2] font-mono bg-cyan-50 px-2 py-0.5 rounded border border-cyan-100">
+                          <span className="text-[11px] font-bold text-cyan-800 font-mono bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">
                             {camp.deal_text || `${camp.discount_percentage}% OFF`}
                           </span>
                         </div>
@@ -590,14 +595,14 @@ const Settings = () => {
                         <button
                           type="button"
                           onClick={() => handleSelectCampaign(camp)}
-                          className="flex-1 py-1.5 bg-slate-100 hover:bg-[#0891b2] hover:text-white rounded-lg text-xs font-bold text-slate-700 transition cursor-pointer text-center"
+                          className="flex-1 py-2 bg-cyan-400 hover:bg-cyan-300 text-black rounded-lg text-xs font-extrabold transition cursor-pointer text-center shadow-sm"
                         >
-                          {isSelected ? '✓ Editing' : 'Edit Campaign'}
+                          Edit Campaign
                         </button>
                         <button
                           type="button"
                           onClick={() => handleToggleCampaignActive(camp)}
-                          className={`p-1.5 rounded-lg border text-xs font-bold transition cursor-pointer ${
+                          className={`p-2 rounded-lg border text-xs font-bold transition cursor-pointer ${
                             camp.is_active
                               ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
                               : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
@@ -609,7 +614,7 @@ const Settings = () => {
                         <button
                           type="button"
                           onClick={() => handleDeleteCampaign(cId)}
-                          className="p-1.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 transition cursor-pointer"
+                          className="p-2 rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 transition cursor-pointer"
                           title="Delete Campaign"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -625,6 +630,339 @@ const Settings = () => {
               </div>
             )}
           </div>
+
+          {/* ── DEDICATED MODAL: EDIT / CREATE PROMOTIONAL CAMPAIGN ── */}
+          {showCampaignModal && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+              <div className="bg-white border border-slate-200 text-slate-900 rounded-3xl w-full max-w-4xl p-5 sm:p-7 relative shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-cyan-400 flex items-center justify-center text-black font-bold shadow-sm">
+                      <Flame className="w-5 h-5 text-black" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                        {editingCampaignId && editingCampaignId !== 'new' ? "Edit Promotional Campaign" : "Create New Promotional Campaign"}
+                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                          flashSaleConfig.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {flashSaleConfig.is_active ? '● Active' : 'Paused'}
+                        </span>
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Configure offer deals, countdown schedules (IST), product targets, and custom banners
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCampaignModal(false)}
+                    className="p-2 text-slate-400 hover:text-black rounded-full bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveFlashSale} className="space-y-6 text-left">
+                  {/* Status Toggle & Top Controls */}
+                  <div className="flex items-center justify-between gap-4 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                    <span className="text-xs text-slate-700 font-medium">Turn campaign on or off immediately across storefront:</span>
+                    <label className="flex items-center gap-2.5 cursor-pointer bg-white px-4 py-2 rounded-xl border border-slate-300 hover:border-cyan-400 transition shadow-2xs">
+                      <input
+                        type="checkbox"
+                        checked={flashSaleConfig.is_active}
+                        onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, is_active: e.target.checked })}
+                        className="w-4 h-4 accent-cyan-500 rounded cursor-pointer"
+                      />
+                      <span className="text-xs font-bold text-slate-800">Enable Campaign</span>
+                    </label>
+                  </div>
+
+                  {/* Title & Subtitle */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Campaign Title *</label>
+                      <input
+                        type="text"
+                        required
+                        value={flashSaleConfig.title}
+                        onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, title: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs font-semibold focus:outline-none focus:border-cyan-400"
+                        placeholder="e.g. Grand Festive Flash Sale"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Subtitle / Tagline</label>
+                      <input
+                        type="text"
+                        value={flashSaleConfig.subtitle}
+                        onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, subtitle: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs font-semibold focus:outline-none focus:border-cyan-400"
+                        placeholder="e.g. Up to 50% Off on Handcrafted Kurtis"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Deal Type Selection Presets */}
+                  <div className="p-4 rounded-2xl bg-cyan-50/50 border border-cyan-200 space-y-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                        <Tag className="w-4 h-4 text-cyan-600" /> Promotional Offer Mechanism *
+                      </label>
+                      <span className="text-[11px] font-bold text-cyan-800 bg-white px-2.5 py-0.5 rounded-full border border-cyan-200">
+                        ⚡ Customizable
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                      {[
+                        { id: 'percentage', label: 'Flat % Discount', text: 'FLAT 30% OFF', desc: 'Flat % off qualifying items', buy: 1, get: 0 },
+                        { id: 'bogo', label: 'Buy 1 Get 1 FREE', text: 'BUY 1 GET 1 FREE', desc: 'Add 2, get 1 cheapest FREE', buy: 1, get: 1 },
+                        { id: 'buy2get1', label: 'Buy 2 Get 1 FREE', text: 'BUY 2 GET 1 FREE', desc: 'Add 3, get 1 cheapest FREE', buy: 2, get: 1 },
+                        { id: 'buy3get1', label: 'Buy 3 Get 1 FREE', text: 'BUY 3 GET 1 FREE', desc: 'Add 4, get 1 cheapest FREE', buy: 3, get: 1 },
+                        { id: 'custom_deal', label: 'Buy 5 Get 2 FREE', text: 'Buy 5 Get 2 Free', desc: 'Add 7, get 2 cheapest FREE', buy: 5, get: 2 },
+                      ].map((dt) => (
+                        <button
+                          key={dt.id}
+                          type="button"
+                          onClick={() => setFlashSaleConfig(prev => ({
+                            ...prev,
+                            deal_type: dt.id,
+                            deal_text: dt.text,
+                            buy_qty: dt.buy,
+                            get_free_qty: dt.get
+                          }))}
+                          className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                            (flashSaleConfig.deal_type || 'percentage') === dt.id
+                              ? 'bg-cyan-400 border-cyan-400 text-black font-extrabold shadow-sm'
+                              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <p className="font-bold text-xs">{dt.label}</p>
+                          <p className="text-[10px] text-slate-600 mt-0.5">{dt.desc}</p>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-cyan-100">
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Live Deal Badge / Title *:
+                        </label>
+                        <input
+                          type="text"
+                          value={flashSaleConfig.deal_text || ''}
+                          onChange={(e) => handleDealTextChange(e.target.value)}
+                          placeholder="e.g. Buy 1 Get 1 Free, Flat 40% OFF"
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-bold text-xs focus:outline-none focus:border-cyan-400"
+                        />
+                      </div>
+                      {flashSaleConfig.deal_type !== 'percentage' && (
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">Buy Qty:</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="20"
+                              value={flashSaleConfig.buy_qty || 1}
+                              onChange={(e) => handleBuyQtyChange(e.target.value)}
+                              className="w-full bg-white border border-slate-300 rounded-xl px-2 py-2 text-center text-xs font-bold"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">Free Qty:</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="20"
+                              value={flashSaleConfig.get_free_qty || 1}
+                              onChange={(e) => handleFreeQtyChange(e.target.value)}
+                              className="w-full bg-white border border-slate-300 rounded-xl px-2 py-2 text-center text-xs font-bold"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Schedule IST */}
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-cyan-600" /> Quick Duration Presets:
+                      </label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { label: "2 Hours", hours: 2 },
+                          { label: "6 Hours", hours: 6 },
+                          { label: "12 Hours", hours: 12 },
+                          { label: "24 Hours (1 Day)", hours: 24 },
+                          { label: "48 Hours", hours: 48 },
+                          { label: "3 Days", hours: 72 },
+                          { label: "7 Days", hours: 168 },
+                        ].map((preset) => (
+                          <button
+                            key={preset.label}
+                            type="button"
+                            onClick={() => applyDurationPreset(preset.hours)}
+                            className="px-2.5 py-1 bg-white hover:bg-cyan-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition cursor-pointer"
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Start Date &amp; Time (IST)</label>
+                        <input
+                          type="datetime-local"
+                          value={flashSaleConfig.start_time ? flashSaleConfig.start_time.slice(0, 16) : ""}
+                          onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, start_time: e.target.value })}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs font-medium focus:outline-none focus:border-cyan-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">End Date &amp; Time (IST)</label>
+                        <input
+                          type="datetime-local"
+                          value={flashSaleConfig.end_time ? flashSaleConfig.end_time.slice(0, 16) : ""}
+                          onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, end_time: e.target.value })}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs font-medium focus:outline-none focus:border-cyan-400"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Target Scope */}
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                    <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide">
+                      Target Product Scope
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: "all", label: "🌟 All Products" },
+                        { id: "category", label: "👗 Specific Category" },
+                        { id: "custom_products", label: "🏷️ Selected Products" }
+                      ].map((scope) => (
+                        <button
+                          key={scope.id}
+                          type="button"
+                          onClick={() => setFlashSaleConfig({ ...flashSaleConfig, target_type: scope.id })}
+                          className={`p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer ${
+                            flashSaleConfig.target_type === scope.id
+                              ? "bg-cyan-400 border-cyan-400 text-black font-extrabold shadow-sm"
+                              : "bg-white border-slate-300 text-slate-700 hover:bg-slate-100"
+                          }`}
+                        >
+                          {scope.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {flashSaleConfig.target_type === "category" && (
+                      <div className="pt-2">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Select Category:</label>
+                        <select
+                          value={flashSaleConfig.target_category}
+                          onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, target_category: e.target.value, target_product_ids: [] })}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs font-medium"
+                        >
+                          <option value="">-- Select a Category --</option>
+                          {availableCategories.map((cat) => (
+                            <option key={cat._id || cat.id} value={cat.name}>{cat.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Banner Image */}
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                        <Image className="w-4 h-4 text-cyan-600" /> Event Banner Image (Optional)
+                      </label>
+                      {flashSaleConfig.banner_image && (
+                        <button
+                          type="button"
+                          onClick={() => setFlashSaleConfig(prev => ({ ...prev, banner_image: "" }))}
+                          className="text-xs text-rose-600 font-semibold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Remove
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex rounded-lg overflow-hidden border border-slate-300 w-full sm:w-64">
+                      <button
+                        type="button"
+                        onClick={() => setSaleImgTab("upload")}
+                        className={`flex-1 py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 transition ${
+                          saleImgTab === "upload" ? "bg-cyan-400 text-black" : "bg-white text-slate-600"
+                        }`}
+                      >
+                        <Upload className="w-3.5 h-3.5" /> Upload File
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSaleImgTab("url")}
+                        className={`flex-1 py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 transition ${
+                          saleImgTab === "url" ? "bg-cyan-400 text-black" : "bg-white text-slate-600"
+                        }`}
+                      >
+                        <Link2 className="w-3.5 h-3.5" /> Paste URL
+                      </button>
+                    </div>
+                    {saleImgTab === "upload" ? (
+                      <div
+                        onClick={() => saleFileInputRef.current?.click()}
+                        className="border-2 border-dashed border-slate-300 hover:border-cyan-400 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer bg-white transition"
+                      >
+                        {saleUploading ? (
+                          <span className="text-xs text-slate-500 font-medium">Uploading banner...</span>
+                        ) : (
+                          <span className="text-xs font-bold text-slate-700">Click to upload banner image</span>
+                        )}
+                      </div>
+                    ) : (
+                      <input
+                        type="url"
+                        placeholder="https://..."
+                        value={flashSaleConfig.banner_image}
+                        onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, banner_image: e.target.value })}
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs"
+                      />
+                    )}
+                    {flashSaleConfig.banner_image && (
+                      <div className="h-24 rounded-xl overflow-hidden border border-slate-200 relative">
+                        <img src={flashSaleConfig.banner_image} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Modal Action Buttons */}
+                  <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setShowCampaignModal(false)}
+                      className="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-black font-bold rounded-xl text-xs transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={flashSaleLoading}
+                      className="px-6 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold rounded-xl flex items-center gap-2 shadow-md transition cursor-pointer disabled:opacity-50 text-xs"
+                    >
+                      {flashSaleLoading ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <Flame className="w-4 h-4 text-black" />}
+                      <span>{editingCampaignId && editingCampaignId !== 'new' ? 'Update Campaign' : 'Create & Launch Campaign'}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSaveFlashSale} className="space-y-6">
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
@@ -1257,10 +1595,10 @@ const Settings = () => {
               <button
                 type="submit"
                 disabled={flashSaleLoading}
-                className="px-6 py-2.5 bg-[#0891b2] hover:bg-cyan-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-md shadow-[#0891b2]/20 transition cursor-pointer disabled:opacity-50 text-xs"
+                className="px-6 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold rounded-xl flex items-center gap-2 shadow-md transition cursor-pointer disabled:opacity-50 text-xs"
               >
-                {flashSaleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flame className="w-4 h-4 text-white" />}
-                <span>Save &amp; Launch Flash Sale</span>
+                {flashSaleLoading ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <Flame className="w-4 h-4 text-black" />}
+                <span>{editingCampaignId && editingCampaignId !== 'new' ? 'Update Campaign' : 'Save & Launch Flash Sale'}</span>
               </button>
             </div>
           </div>
@@ -1336,8 +1674,8 @@ const Settings = () => {
             </div>
 
             <div className="pt-3 flex justify-end border-t border-slate-100">
-              <button type="submit" className="px-6 py-2.5 bg-[#0891b2] hover:bg-cyan-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-md shadow-[#0891b2]/20 transition cursor-pointer text-xs">
-                <Save className="w-4 h-4 text-white" /> Save Store Settings
+              <button type="submit" className="px-6 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold rounded-xl flex items-center gap-2 shadow-md transition cursor-pointer text-xs">
+                <Save className="w-4 h-4 text-black" /> Save Store Settings
               </button>
             </div>
           </div>
@@ -1400,8 +1738,8 @@ const Settings = () => {
             </div>
 
             <div className="pt-3 flex justify-end border-t border-slate-100">
-              <button type="submit" className="px-6 py-2.5 bg-[#0891b2] hover:bg-cyan-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-md shadow-[#0891b2]/20 transition cursor-pointer text-xs">
-                <Save className="w-4 h-4 text-white" /> Save Pricing Config
+              <button type="submit" className="px-6 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold rounded-xl flex items-center gap-2 shadow-md transition cursor-pointer text-xs">
+                <Save className="w-4 h-4 text-black" /> Save Pricing Config
               </button>
             </div>
           </div>
@@ -1458,9 +1796,9 @@ const Settings = () => {
               <button
                 type="button"
                 onClick={handleSaveDeliveryRules}
-                className="px-6 py-2.5 bg-[#0891b2] hover:bg-cyan-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-md shadow-[#0891b2]/20 transition cursor-pointer text-xs"
+                className="px-6 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold rounded-xl flex items-center gap-2 shadow-md transition cursor-pointer text-xs"
               >
-                <Save className="w-4 h-4 text-white" /> Save Delivery Rules
+                <Save className="w-4 h-4 text-black" /> Save Delivery Rules
               </button>
             </div>
           </div>
@@ -1477,8 +1815,8 @@ const Settings = () => {
                 <strong className="text-[#0891b2]">Purpose:</strong> Create coupon codes that customers can enter at cart/checkout for flat or percentage discounts.
               </p>
             </div>
-            <button onClick={() => setShowCouponModal(true)} className="px-4 py-2 bg-[#0891b2] hover:bg-cyan-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-[#0891b2]/20 transition cursor-pointer text-xs">
-              <Plus className="w-4 h-4 text-white" /> Add Code
+            <button onClick={() => setShowCouponModal(true)} className="px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold rounded-xl flex items-center gap-2 shadow-md transition cursor-pointer text-xs">
+              <Plus className="w-4 h-4 text-black" /> Add Code
             </button>
           </div>
 
@@ -1586,8 +1924,8 @@ const Settings = () => {
                 </div>
 
                 <div className="flex gap-3 pt-3">
-                  <button type="submit" className="flex-1 py-2.5 bg-[#0891b2] hover:bg-cyan-700 text-white font-bold rounded-xl transition cursor-pointer text-xs">Save Coupon</button>
-                  <button type="button" onClick={() => setShowCouponModal(false)} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition cursor-pointer text-xs">Cancel</button>
+                  <button type="submit" className="flex-1 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold rounded-xl transition cursor-pointer text-xs shadow-md">Save Coupon</button>
+                  <button type="button" onClick={() => setShowCouponModal(false)} className="flex-1 py-2.5 bg-slate-200 hover:bg-slate-300 text-black font-bold rounded-xl transition cursor-pointer text-xs">Cancel</button>
                 </div>
               </form>
             </div>

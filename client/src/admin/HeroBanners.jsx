@@ -645,9 +645,9 @@ const HeroBanners = () => {
               setSlideImgTab("upload");
               setShowSlideModal(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-sm font-semibold transition-all shadow-md shadow-[#0891b2]/20 self-start sm:self-auto"
+            className="flex items-center gap-2 px-4 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl text-sm font-extrabold transition-all shadow-md cursor-pointer self-start sm:self-auto"
           >
-            <Plus className="w-4 h-4" /> Add Slide
+            <Plus className="w-4 h-4 text-black" /> Add Slide
           </button>
         )}
 
@@ -660,9 +660,9 @@ const HeroBanners = () => {
               setReelThumbTab("upload");
               setShowReelModal(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-sm font-semibold transition-all shadow-md shadow-[#0891b2]/20 self-start sm:self-auto"
+            className="flex items-center gap-2 px-4 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl text-sm font-extrabold transition-all shadow-md cursor-pointer self-start sm:self-auto"
           >
-            <Plus className="w-4 h-4" /> Add Reel Video
+            <Plus className="w-4 h-4 text-black" /> Add Reel Video
           </button>
         )}
 
@@ -674,9 +674,9 @@ const HeroBanners = () => {
               setCelebImgTab("upload");
               setShowCelebModal(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-sm font-semibold transition-all shadow-md shadow-[#0891b2]/20 self-start sm:self-auto"
+            className="flex items-center gap-2 px-4 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl text-sm font-extrabold transition-all shadow-md cursor-pointer self-start sm:self-auto"
           >
-            <Plus className="w-4 h-4" /> Add Celeb Look
+            <Plus className="w-4 h-4 text-black" /> Add Celeb Look
           </button>
         )}
       </div>
@@ -1115,10 +1115,10 @@ const HeroBanners = () => {
 
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 flex-shrink-0">
-                <button type="button" onClick={() => setShowSlideModal(false)} className="px-4 py-2.5 bg-slate-100 rounded-xl text-sm font-semibold">
+                <button type="button" onClick={() => setShowSlideModal(false)} className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-black rounded-xl text-sm font-bold cursor-pointer transition">
                   Cancel
                 </button>
-                <button type="submit" disabled={slideSubmitting} className="px-5 py-2.5 bg-[#0891b2] text-white rounded-xl text-sm font-semibold">
+                <button type="submit" disabled={slideSubmitting} className="px-5 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl text-sm font-extrabold shadow-md cursor-pointer disabled:opacity-50 transition">
                   Save Slide
                 </button>
               </div>
@@ -1333,10 +1333,10 @@ const HeroBanners = () => {
 
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 flex-shrink-0">
-                <button type="button" onClick={() => setShowReelModal(false)} className="px-4 py-2.5 bg-slate-100 rounded-xl text-sm font-semibold">
+                <button type="button" onClick={() => setShowReelModal(false)} className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-black rounded-xl text-sm font-bold cursor-pointer transition">
                   Cancel
                 </button>
-                <button type="submit" disabled={reelSubmitting} className="px-5 py-2.5 bg-[#0891b2] text-white rounded-xl text-sm font-semibold">
+                <button type="submit" disabled={reelSubmitting} className="px-5 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl text-sm font-extrabold shadow-md cursor-pointer disabled:opacity-50 transition">
                   Save Reel
                 </button>
               </div>
@@ -1476,10 +1476,10 @@ const HeroBanners = () => {
 
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 flex-shrink-0">
-                <button type="button" onClick={() => setShowCelebModal(false)} className="px-4 py-2.5 bg-slate-100 rounded-xl text-sm font-semibold">
+                <button type="button" onClick={() => setShowCelebModal(false)} className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-black rounded-xl text-sm font-bold cursor-pointer transition">
                   Cancel
                 </button>
-                <button type="submit" disabled={celebSubmitting} className="px-5 py-2.5 bg-[#0891b2] text-white rounded-xl text-sm font-semibold">
+                <button type="submit" disabled={celebSubmitting} className="px-5 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl text-sm font-extrabold shadow-md cursor-pointer disabled:opacity-50 transition">
                   Save Celeb Look
                 </button>
               </div>
@@ -1583,10 +1583,10 @@ const HeroBanners = () => {
 
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 flex-shrink-0">
-                <button type="button" onClick={() => setShowCatModal(false)} className="px-4 py-2.5 bg-slate-100 rounded-xl text-sm font-semibold">
+                <button type="button" onClick={() => setShowCatModal(false)} className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-black rounded-xl text-sm font-bold cursor-pointer transition">
                   Cancel
                 </button>
-                <button type="submit" disabled={catSubmitting} className="px-5 py-2.5 bg-[#0891b2] text-white rounded-xl text-sm font-semibold">
+                <button type="submit" disabled={catSubmitting} className="px-5 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl text-sm font-extrabold shadow-md cursor-pointer disabled:opacity-50 transition">
                   Save Banner
                 </button>
               </div>

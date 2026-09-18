@@ -265,16 +265,16 @@ const Inquiries = () => {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => { setReplyingId(null); setReplyText(""); }}
-                          className="px-2.5 py-1 text-xs text-gray-600 hover:text-gray-900 font-semibold"
+                          className="px-3 py-1 text-xs bg-slate-200 hover:bg-slate-300 text-black font-bold rounded-lg cursor-pointer transition"
                         >
                           Cancel
                         </button>
                         <button
                           onClick={() => handleReplySubmit(item.id)}
                           disabled={submittingReply || !replyText.trim()}
-                          className="px-3 py-1 bg-[#8B0000] hover:bg-[#6B0000] text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1"
+                          className="px-3 py-1 bg-cyan-400 hover:bg-cyan-300 text-black text-xs font-extrabold rounded-lg shadow-sm flex items-center gap-1 cursor-pointer disabled:opacity-50 transition"
                         >
-                          {submittingReply ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                          {submittingReply ? <RefreshCw className="w-3 h-3 animate-spin text-black" /> : <Send className="w-3 h-3 text-black" />}
                           <span>Save Reply</span>
                         </button>
                       </div>
@@ -310,9 +310,9 @@ const Inquiries = () => {
                         setReplyingId(isReplying ? null : item.id);
                         setReplyText(item.reply_message || "");
                       }}
-                      className="text-xs font-bold text-[#8B0000] hover:underline flex items-center gap-1"
+                      className="px-2.5 py-1 bg-cyan-400 hover:bg-cyan-300 text-black text-xs font-extrabold rounded-lg shadow-xs flex items-center gap-1 cursor-pointer transition"
                     >
-                      <Send className="w-3 h-3" />
+                      <Send className="w-3 h-3 text-black" />
                       <span>{item.reply_message ? "Edit Reply" : "Reply"}</span>
                     </button>
 
