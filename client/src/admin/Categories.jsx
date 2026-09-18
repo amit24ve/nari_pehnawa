@@ -32,6 +32,15 @@ const emptyForm = {
     is_active: true,
 };
 
+const InputField = ({ label, required, children }) => (
+    <div>
+        <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">
+            {label} {required && <span className="text-[#d4af37]">*</span>}
+        </label>
+        {children}
+    </div>
+);
+
 const Categories = () => {
     const [showModal, setShowModal] = useState(false);
     const [editingCategory, setEditing] = useState(null);
@@ -260,15 +269,6 @@ const Categories = () => {
         setImgTab("url");
         setShowModal(true);
     };
-
-    const InputField = ({ label, required, children }) => (
-        <div>
-            <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">
-                {label} {required && <span className="text-[#d4af37]">*</span>}
-            </label>
-            {children}
-        </div>
-    );
 
     return (
         <div className="space-y-6">
