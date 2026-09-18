@@ -120,14 +120,14 @@ const Orders = () => {
         throw new Error(err.detail);
       }
       const data = await res.json();
-      if (data && data.length > 0) {
+      if (data && Array.isArray(data)) {
         setOrders(data.map(transformOrder));
       } else {
-        setOrders(getDummyOrders());
+        setOrders([]);
       }
     } catch (e) {
       setError(e.message);
-      setOrders(getDummyOrders());
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -185,42 +185,7 @@ const Orders = () => {
     refund_status: o.refund_status || "N/A",
   });
 
-  const getDummyOrders = () => {
-    return [
-      {
-        id: "#ORD-o-10938", orderId: "o-10938", order_number: "o-10938", customer: "Anita Sharma", customerId: "u-101", email: "anita@example.com", total: 4200,
-        status: "completed", payment_status: "completed", payment_method: "Razorpay", date: "2026-07-23", created_at: "2026-07-23T05:12:00Z",
-        items: [{ product_id: "p-1", name: "Blush Glow Anarkali Kurta Set", sku: "BLUSH-AN-01", category: "Anarkali Set", brand: "Nari Pehnawa", color: "Blush Pink", size: "L", quantity: 1, price: 4000, discount: 200, tax: 200, shipping: 0 }],
-        shippingAddress: { full_name: "Anita Sharma", phone: "+91 9876543210", address_line1: "Flat 402, Sunrise Apt, Andheri", city: "Mumbai", state: "Maharashtra", postal_code: "400053", country: "India" }, phone: "+91 9876543210",
-        awb_code: "AWB9382109", courier_name: "Delhivery", shiprocket_order_id: "SR93821", shipment_id: "SH9382", payment_id: "pay_OpL283js9x", razorpay_order_id: "order_OpL123ks", signature_verified: "Verified", notes: "Deliver in evening.", staff_assigned: "Rahul", warehouse_assigned: "Mumbai Hub"
-      },
-      {
-        id: "#ORD-o-10937", orderId: "o-10937", order_number: "o-10937", customer: "Rahul Verma", customerId: "u-102", email: "rahul@example.com", total: 1599,
-        status: "processing", payment_status: "pending", payment_method: "COD", date: "2026-07-23", created_at: "2026-07-23T08:15:00Z",
-        items: [{ product_id: "p-2", name: "Palazzo Set Kurti - Teal", sku: "PAL-TEAL-02", category: "Palazzo Set", brand: "Nari Pehnawa", color: "Teal", size: "M", quantity: 1, price: 1599, discount: 0, tax: 80, shipping: 50 }],
-        shippingAddress: { full_name: "Rahul Verma", phone: "+91 9876543211", address_line1: "H No 12, Sector 4", city: "Panchkula", state: "Haryana", postal_code: "134109", country: "India" }, phone: "+91 9876543211",
-        awb_code: "AWB9382110", courier_name: "Shadowfax", shiprocket_order_id: "SR93822", shipment_id: "SH9383", payment_id: "N/A", razorpay_order_id: "N/A", signature_verified: "N/A", notes: "", staff_assigned: "Amit", warehouse_assigned: "Delhi Hub"
-      },
-      {
-        id: "#ORD-o-10936", orderId: "o-10936", order_number: "o-10936", customer: "Priyanka Sen", customerId: "u-103", email: "priyanka@example.com", total: 3400,
-        status: "pending", payment_status: "pending", payment_method: "COD", date: "2026-07-22", created_at: "2026-07-22T10:45:00Z",
-        items: [{ product_id: "p-3", name: "Rayon Anarkali Kurti - Maroon", sku: "RAY-MAR-03", category: "Kurti", brand: "Nari Pehnawa", color: "Maroon", size: "XL", quantity: 2, price: 1299, discount: 100, tax: 130, shipping: 50 }],
-        shippingAddress: { full_name: "Priyanka Sen", phone: "+91 9876543212", address_line1: "Flat 2C, Park Street", city: "Kolkata", state: "West Bengal", postal_code: "700016", country: "India" }, phone: "+91 9876543212"
-      },
-      {
-        id: "#ORD-o-10935", orderId: "o-10935", order_number: "o-10935", customer: "Amit Patel", customerId: "u-104", email: "amit@example.com", total: 5999,
-        status: "completed", payment_status: "completed", payment_method: "Razorpay", date: "2026-07-21", created_at: "2026-07-21T14:20:00Z",
-        items: [{ product_id: "p-4", name: "Royal Blue Silk Saree", sku: "SAR-BLU-04", category: "Saree", brand: "Nari Pehnawa", color: "Royal Blue", size: "Free Size", quantity: 1, price: 5999, discount: 500, tax: 300, shipping: 0 }],
-        shippingAddress: { full_name: "Amit Patel", phone: "+91 9876543213", address_line1: "B-404, Shanti Heights, Vastrapur", city: "Ahmedabad", state: "Gujarat", postal_code: "380015", country: "India" }, phone: "+91 9876543213"
-      },
-      {
-        id: "#ORD-o-10934", orderId: "o-10934", order_number: "o-10934", customer: "Deepa Nair", customerId: "u-105", email: "deepa@example.com", total: 1149,
-        status: "cancelled", payment_status: "pending", payment_method: "COD", date: "2026-07-21", created_at: "2026-07-21T18:05:00Z",
-        items: [{ product_id: "p-5", name: "Printed Kaftan Kurti - Green", sku: "KAF-GRN-05", category: "Kurti", brand: "Nari Pehnawa", color: "Green", size: "L", quantity: 1, price: 1149, discount: 0, tax: 50, shipping: 50 }],
-        shippingAddress: { full_name: "Deepa Nair", phone: "+91 9876543214", address_line1: "G-12, Green Glen Layout", city: "Bangalore", state: "Karnataka", postal_code: "560103", country: "India" }, phone: "+91 9876543214"
-      }
-    ];
-  };
+
 
   const fetchPickupLocations = async () => {
     try {

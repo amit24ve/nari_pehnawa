@@ -62,74 +62,16 @@ const Reviews = () => {
 
       const data = await response.json();
       const reviewsArray = Array.isArray(data) ? data : [];
-      if (reviewsArray.length > 0) {
-        setReviews(reviewsArray);
-      } else {
-        setReviews(getDummyReviews());
-      }
+      setReviews(reviewsArray);
     } catch (err) {
       console.error('Error fetching reviews:', err);
-      // Fallback dummy reviews representing customer feedback
-      setReviews(getDummyReviews());
+      setReviews([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const getDummyReviews = () => {
-    return [
-      {
-        _id: "rev-1",
-        rating: 5,
-        status: "approved",
-        comment: "Absolutely gorgeous kurta set! The fabric is high quality cotton and the embroidery is perfect.",
-        created_at: "2026-07-15T12:00:00Z",
-        user_name: "Pooja Roy",
-        user_email: "pooja@example.com",
-        product_name: "Blush Glow Anarkali Kurta Set"
-      },
-      {
-        _id: "rev-2",
-        rating: 5,
-        status: "approved",
-        comment: "Matches description exactly. Fits perfectly and looks elegant for casual day outings.",
-        created_at: "2026-07-14T09:30:00Z",
-        user_name: "Sneha Reddy",
-        user_email: "sneha@example.com",
-        product_name: "Cotton Printed Straight Kurti - Blue"
-      },
-      {
-        _id: "rev-3",
-        rating: 4,
-        status: "pending",
-        comment: "Nice color, but shipping took 5 days. Product itself is very comfortable.",
-        created_at: "2026-07-16T14:10:00Z",
-        user_name: "Ananya Iyer",
-        user_email: "ananya@example.com",
-        product_name: "Rayon Anarkali Kurti - Maroon"
-      },
-      {
-        _id: "rev-4",
-        rating: 2,
-        status: "pending",
-        comment: "Received the wrong color straight fit kurti. Requested replacement.",
-        created_at: "2026-07-16T15:20:00Z",
-        user_name: "Divya Sen",
-        user_email: "divya@example.com",
-        product_name: "Straight Fit Kurti - Mustard"
-      },
-      {
-        _id: "rev-5",
-        rating: 5,
-        status: "approved",
-        comment: "Stunning festive lehenga choli set with rich zari embroidery. Arrived in perfect condition.",
-        created_at: "2026-07-13T16:45:00Z",
-        user_name: "Meera Kapoor",
-        user_email: "meera@example.com",
-        product_name: "Embroidered Silk Lehenga Choli Set"
-      }
-    ];
-  };
+
 
   useEffect(() => {
     fetchReviews();
@@ -382,89 +324,114 @@ const Reviews = () => {
 
       {/* Reviews List */}
       {!loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {paginatedReviews.map((r, idx) => (
-            <div key={r._id || idx} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col justify-between space-y-4 text-xs text-left hover:border-slate-300 transition">
-              <div className="space-y-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0891b2] to-[#06b6d4] flex items-center justify-center font-bold text-white shadow-sm">
-                      {getInitials(getUserName(r))}
+        paginatedReviews.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {paginatedReviews.map((r, idx) => (
+              <div key={r._id || idx} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col justify-between space-y-4 text-xs text-left hover:border-slate-300 transition">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0891b2] to-[#06b6d4] flex items-center justify-center font-bold text-white shadow-sm">
+                        {getInitials(getUserName(r))}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-800 text-sm">{getUserName(r)}</h4>
+                        <span className="text-xs text-slate-400 font-mono">{getUserEmail(r)}</span>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-bold text-slate-800 text-sm">{getUserName(r)}</h4>
-                      <span className="text-xs text-slate-400 font-mono">{getUserEmail(r)}</span>
-                    </div>
+                    {getStatusBadge(r.status)}
                   </div>
-                  {getStatusBadge(r.status)}
-                </div>
 
-                <div className="flex items-center gap-2">
-                  {renderStars(r.rating)}
-                  <span className="text-xs text-slate-300">•</span>
-                  <span className="text-xs text-slate-400 font-medium">{r.created_at ? new Date(r.created_at).toLocaleDateString() : "Recently"}</span>
-                </div>
+                  <div className="flex items-center gap-2">
+                    {renderStars(r.rating)}
+                    <span className="text-xs text-slate-300">•</span>
+                    <span className="text-xs text-slate-400 font-medium">{r.created_at ? new Date(r.created_at).toLocaleDateString() : "Recently"}</span>
+                  </div>
 
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
-                  <span className="text-xs text-[#0891b2] font-bold flex items-center gap-1.5"><Package className="w-3.5 h-3.5" /> {getProductName(r)}</span>
-                  <p className="text-slate-700 mt-2 leading-relaxed italic">"{r.comment}"</p>
-                </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                    <span className="text-xs text-[#0891b2] font-bold flex items-center gap-1.5"><Package className="w-3.5 h-3.5" /> {getProductName(r)}</span>
+                    <p className="text-slate-700 mt-2 leading-relaxed italic">"{r.comment}"</p>
+                  </div>
 
-                {/* Uploaded Customer Photos */}
-                {r.images && r.images.length > 0 && (
-                  <div className="space-y-1.5 pt-1">
-                    <span className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
-                      <Camera className="w-3.5 h-3.5 text-[#0891b2]" /> Customer Photos ({r.images.length}):
-                    </span>
-                    <div className="flex gap-2 flex-wrap">
-                      {r.images.map((imgUrl, imgIdx) => (
-                        <button
-                          key={imgIdx}
-                          type="button"
-                          onClick={() => setSelectedImage(imgUrl)}
-                          className="w-14 h-14 rounded-lg overflow-hidden border border-slate-200 hover:border-[#0891b2] transition group focus:outline-none"
-                        >
+                  {/* Uploaded Customer Photos */}
+                  {r.images && r.images.length > 0 && (
+                    <div className="space-y-1.5 pt-1">
+                      <span className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                        <Camera className="w-3.5 h-3.5 text-[#0891b2]" /> Customer Photos ({r.images.length}):
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {r.images.map((imgUrl, imgIdx) => (
                           <img
+                            key={imgIdx}
                             src={imgUrl}
-                            alt={`Customer review proof ${imgIdx + 1}`}
-                            className="w-full h-full object-cover group-hover:scale-105 transition duration-150"
-                            onError={(e) => { e.currentTarget.parentElement.style.display = 'none'; }}
+                            alt={`Customer review ${imgIdx + 1}`}
+                            onClick={() => setSelectedImage(imgUrl)}
+                            className="w-14 h-14 object-cover rounded-xl border border-slate-200 cursor-pointer hover:opacity-90 hover:scale-105 transition duration-150"
                           />
-                        </button>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
 
-              <div className="flex gap-2 pt-3 border-t border-slate-100">
-                {r.status === 'pending' && (
-                  <>
+                {/* Moderation Controls */}
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                  {r.status === 'pending' && (
+                    <>
+                      <button
+                        onClick={() => handleApprove(r._id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl font-bold border border-emerald-200 transition"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleReject(r._id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl font-bold border border-rose-200 transition"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        Reject
+                      </button>
+                    </>
+                  )}
+                  {r.status === 'rejected' && (
                     <button
                       onClick={() => handleApprove(r._id)}
-                      className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition shadow-sm"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl font-bold border border-emerald-200 transition"
                     >
+                      <Check className="w-3.5 h-3.5" />
                       Approve
                     </button>
+                  )}
+                  {r.status === 'approved' && (
                     <button
                       onClick={() => handleReject(r._id)}
-                      className="flex-1 py-2 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 rounded-xl font-bold transition"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl font-bold border border-rose-200 transition"
                     >
+                      <X className="w-3.5 h-3.5" />
                       Reject
                     </button>
-                  </>
-                )}
-                <button
-                  onClick={() => handleDelete(r._id)}
-                  className="p-2 bg-slate-100 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl border border-slate-200 transition"
-                  title="Remove Review"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                  )}
+                  <button
+                    onClick={() => handleDelete(r._id)}
+                    className="p-2 bg-slate-100 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl border border-slate-200 transition"
+                    title="Remove Review"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-xs">
+            <Star className="w-12 h-12 text-slate-300 mx-auto mb-3 stroke-[1.5]" />
+            <h3 className="text-base font-bold text-slate-700">No Customer Reviews Yet</h3>
+            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+              Reviews submitted by customers from "My Orders" will appear here for your moderation and approval.
+            </p>
+          </div>
+        )
       )}
 
       {/* Pagination Footer */}

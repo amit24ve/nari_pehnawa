@@ -16,15 +16,13 @@ def get_dashboard_stats(current_user: dict = Depends(require_admin)):
     db = get_database()
     
     try:
-        # Get total users count
-        total_users = db["users"].count_documents({})
+        # Get total users count (excluding admin)
+        total_users = db["users"].count_documents({"role": {"$ne": "admin"}})
         
-        # Get total orders count
-        total_orders = db["orders"].count_documents({})
-        
-        # Calculate total revenue from orders
+        # Get total orders count and revenue
         orders = list(db["orders"].find())
-        total_revenue = sum(order.get("total", 0) for order in orders)
+        total_orders = len(orders)
+        total_revenue = sum(float(order.get("total", 0) or 0) for order in orders if order.get("status") not in ["cancelled", "refunded"])
         
         # Get total products count
         total_products = db["products"].count_documents({})
@@ -36,17 +34,86 @@ def get_dashboard_stats(current_user: dict = Depends(require_admin)):
         recent_orders = list(db["orders"].find().sort("_id", -1).limit(10))
         for order in recent_orders:
             order["id"] = str(order.pop("_id"))
-            # Get user info for each order
-            if "user_id" in order:
-                user = db["users"].find_one({"_id": ObjectId(order["user_id"])})
-                if user:
-                    order["customer_name"] = user.get("name", "Unknown")
-                    order["customer_email"] = user.get("email", "")
+            if "user_id" in order and order["user_id"]:
+                try:
+                    user = db["users"].find_one({"_id": ObjectId(order["user_id"])})
+                    if user:
+                        order["customer_name"] = user.get("full_name") or user.get("name") or "Customer"
+                        order["customer_email"] = user.get("email", "")
+                except Exception:
+                    pass
+            if not order.get("customer_name"):
+                order["customer_name"] = order.get("shipping_address", {}).get("name") or "Customer"
         
-        # Get top selling products (placeholder - would need order items data)
-        top_products = list(db["products"].find().sort("_id", -1).limit(5))
-        for product in top_products:
-            product["id"] = str(product.pop("_id"))
+        # Compute real Top Selling Products from order items
+        sales_by_product = {}
+        for order in orders:
+            if order.get("status") in ["cancelled", "refunded"]:
+                continue
+            items = order.get("items", []) or []
+            for item in items:
+                pid = str(item.get("product_id") or item.get("id") or "")
+                qty = int(item.get("quantity") or 1)
+                if pid:
+                    sales_by_product[pid] = sales_by_product.get(pid, 0) + qty
+        
+        top_selling_products = []
+        if sales_by_product:
+            sorted_sales = sorted(sales_by_product.items(), key=lambda x: x[1], reverse=True)[:6]
+            for pid, sold_count in sorted_sales:
+                p_doc = None
+                if ObjectId.is_valid(pid):
+                    p_doc = db["products"].find_one({"_id": ObjectId(pid)})
+                if not p_doc:
+                    p_doc = db["products"].find_one({"id": pid})
+                if p_doc:
+                    img = ""
+                    if p_doc.get("images") and len(p_doc["images"]) > 0:
+                        img = p_doc["images"][0]
+                    elif p_doc.get("image"):
+                        img = p_doc.get("image")
+                    top_selling_products.append({
+                        "id": str(p_doc.get("_id") or pid),
+                        "name": p_doc.get("name") or p_doc.get("title") or "Kurti",
+                        "sales": f"{sold_count}+ sold" if sold_count > 1 else f"{sold_count} sold",
+                        "sold_count": sold_count,
+                        "image": img or "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=100&h=100&fit=crop",
+                        "price": float(p_doc.get("price", 0) or 0)
+                    })
+        
+        # Dynamic visitors count
+        total_visitors = db["visitors"].count_documents({}) or db["visits"].count_documents({})
+        
+        # Dynamic carts total item quantity
+        total_carts = 0
+        for cart in db["carts"].find():
+            items = cart.get("items", []) or []
+            total_carts += sum(int(it.get("quantity", 1) or 1) for it in items)
+            
+        # Dynamic wishlist count
+        total_wishlist = 0
+        for w in db["wishlist"].find():
+            prods = w.get("products", []) or w.get("items", []) or []
+            total_wishlist += len(prods) if prods else 1
+            
+        # Dynamic traffic sources
+        traffic_sources = []
+        if total_visitors > 0:
+            sources_agg = list(db["visitors"].aggregate([
+                {"$group": {"_id": "$source", "count": {"$sum": 1}}},
+                {"$sort": {"count": -1}}
+            ]))
+            if sources_agg:
+                for s in sources_agg:
+                    label = str(s.get("_id") or "Direct").replace("_", " ").title()
+                    traffic_sources.append({"label": label, "value": s.get("count", 0)})
+        if not traffic_sources:
+            traffic_sources = [
+                {"label": "Direct", "value": total_visitors},
+                {"label": "Organic Search", "value": 0},
+                {"label": "Social Media", "value": 0},
+                {"label": "Referral", "value": 0}
+            ]
         
         return {
             "total_users": total_users,
@@ -54,8 +121,13 @@ def get_dashboard_stats(current_user: dict = Depends(require_admin)):
             "total_revenue": total_revenue,
             "total_products": total_products,
             "total_categories": total_categories,
+            "total_visitors": total_visitors,
+            "total_carts": total_carts,
+            "total_wishlist": total_wishlist,
             "recent_orders": recent_orders,
-            "top_products": top_products
+            "top_selling_products": top_selling_products,
+            "top_products": top_selling_products,
+            "traffic_sources": traffic_sources
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

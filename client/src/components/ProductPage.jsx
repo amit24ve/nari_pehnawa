@@ -1034,29 +1034,8 @@ const ProductPage = () => {
 
             {/* Verified Customer Reviews Cards (Dynamic from Backend API) */}
             <div className="space-y-4 pt-4 border-t border-gray-100">
-              {(dbReviews && dbReviews.length > 0
-                ? dbReviews
-                : [
-                    {
-                      _id: "rev-fallback-1",
-                      user_name: "Pooja Sharma",
-                      rating: 5,
-                      created_at: new Date().toISOString(),
-                      comment: `Absolutely stunning ${product.name}! The fabric is extremely soft, breathable, and comfortable. Fits true to size.`,
-                      verified_buyer: true,
-                      helpful_count: 18,
-                    },
-                    {
-                      _id: "rev-fallback-2",
-                      user_name: "Ananya Verma",
-                      rating: 5,
-                      created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-                      comment: "Received so many compliments at the office festive lunch. Fast delivery by Shiprocket and vibrant colors!",
-                      verified_buyer: true,
-                      helpful_count: 14,
-                    },
-                  ]
-              ).map((rev) => {
+              {dbReviews && dbReviews.length > 0 ? (
+                dbReviews.map((rev) => {
                 const rId = rev._id || rev.id;
                 const baseHelpful = rev.helpful_count || 15;
                 const currentHelpful = helpfulVotes[rId] ? baseHelpful + 1 : baseHelpful;
@@ -1112,9 +1091,18 @@ const ProductPage = () => {
                     </button>
                   </div>
                 );
-              })}
-            </div>
+              })
+            ) : (
+              <div className="py-8 text-center bg-gray-50/60 rounded-2xl border border-dashed border-gray-200">
+                <Star className="w-8 h-8 text-amber-400/60 mx-auto mb-2" />
+                <p className="text-sm font-bold text-gray-700">No reviews yet for this kurti</p>
+                <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
+                  Be the first to review this outfit after receiving your order!
+                </p>
+              </div>
+            )}
           </div>
+        </div>
 
           {/* Q&A Accordion (100% Dynamic from product.q_and_a API) */}
           <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs space-y-4">

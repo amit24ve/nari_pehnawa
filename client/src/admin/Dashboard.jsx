@@ -382,24 +382,13 @@ const Dashboard = () => {
     );
   }
 
-  // Exact recent orders from database seeding or fallback:
-  const recentOrders = dashboardStats?.recent_orders || [
-    { id: "ORD-1025", customer_name: "Neha Sharma", total: 1299, status: "delivered", created_at: new Date().toISOString() },
-    { id: "ORD-1024", customer_name: "Priya Verma", total: 2499, status: "processing", created_at: new Date().toISOString() },
-    { id: "ORD-1023", customer_name: "Anjali Singh", total: 899, status: "shipped", created_at: new Date().toISOString() },
-    { id: "ORD-1022", customer_name: "Kavita Patel", total: 1699, status: "delivered", created_at: new Date().toISOString() }
-  ];
-
-  // Limit recent orders to 4 as shown in the screenshot
+  // Dynamic recent orders from database
+  const recentOrders = dashboardStats?.recent_orders || [];
   const displayOrders = recentOrders.slice(0, 4);
 
-  // Exact best sellers list from the screenshot
-  const topProducts = [
-    { name: "Elegant Floral Kurti", sales: "1200+ sold", image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=100&h=100&fit=crop", pct: 100 },
-    { name: "Designer Anarkali Suit", sales: "950+ sold", image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=100&h=100&fit=crop", pct: 79 },
-    { name: "Cotton Printed Kurti", sales: "875+ sold", image: "https://images.unsplash.com/photo-1609357605129-26f69add5d6e?w=100&h=100&fit=crop", pct: 72 },
-    { name: "Embroidered Palazzo Set", sales: "760+ sold", image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=100&h=100&fit=crop", pct: 63 }
-  ];
+  // Dynamic top selling products from database
+  const topProducts = dashboardStats?.top_selling_products || [];
+  const trafficData = dashboardStats?.traffic_sources || [];
 
   return (
     <div className="space-y-6">
@@ -539,22 +528,32 @@ const Dashboard = () => {
           <div>
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-sm font-bold text-gray-800">Top Selling Products</h2>
-              <button className="text-xs text-[#0891b2] font-semibold flex items-center gap-0.5 hover:underline">
-                View All
-              </button>
+              <span className="text-[11px] text-slate-400 font-semibold">
+                {topProducts.length > 0 ? `${topProducts.length} Items` : "Live"}
+              </span>
             </div>
-            <div className="space-y-4">
-              {topProducts.map((p, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <span className="text-[11px] font-bold text-gray-400 w-4 font-mono">{index + 1}</span>
-                  <img src={p.image} alt={p.name} className="w-10 h-10 object-cover rounded-lg border border-slate-100" />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-xs font-bold text-gray-800 truncate leading-snug">{p.name}</h3>
-                    <span className="text-[10px] text-gray-500 block mt-0.5 font-semibold">{p.sales}</span>
+            {topProducts.length > 0 ? (
+              <div className="space-y-4">
+                {topProducts.map((p, index) => (
+                  <div key={p.id || index} className="flex items-center gap-3">
+                    <span className="text-[11px] font-bold text-gray-400 w-4 font-mono">{index + 1}</span>
+                    <img src={p.image} alt={p.name} className="w-10 h-10 object-cover rounded-lg border border-slate-100" />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-xs font-bold text-gray-800 truncate leading-snug">{p.name}</h3>
+                      <span className="text-[10px] text-gray-500 block mt-0.5 font-semibold">{p.sales}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center text-slate-400">
+                <ShoppingBag className="w-10 h-10 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
+                <p className="text-xs font-bold text-slate-600">No Sales Recorded Yet</p>
+                <p className="text-[11px] text-slate-400 mt-1 max-w-[200px] mx-auto">
+                  Top selling kurtis will automatically calculate and appear here as orders are placed.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -563,31 +562,41 @@ const Dashboard = () => {
           <div>
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-sm font-bold text-gray-800">Recent Orders</h2>
-              <button className="text-xs text-[#0891b2] font-semibold flex items-center gap-0.5 hover:underline">
-                View All
-              </button>
+              <span className="text-[11px] text-slate-400 font-semibold">
+                {displayOrders.length > 0 ? `${displayOrders.length} New` : "Live"}
+              </span>
             </div>
-            <div className="space-y-4">
-              {displayOrders.map((order, idx) => (
-                <div key={idx} className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-xs font-bold text-slate-500 font-mono">
-                      {order.customer_name.split(' ').map(n => n[0]).join('')}
+            {displayOrders.length > 0 ? (
+              <div className="space-y-4">
+                {displayOrders.map((order, idx) => (
+                  <div key={idx} className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-xs font-bold text-slate-500 font-mono">
+                        {(order.customer_name || "C").split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-xs font-bold text-gray-800 truncate leading-snug">#{order.id}</h3>
+                        <p className="text-[10px] text-gray-500 font-semibold truncate mt-0.5">{order.customer_name}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <h3 className="text-xs font-bold text-gray-800 truncate leading-snug">#{order.id}</h3>
-                      <p className="text-[10px] text-gray-500 font-semibold truncate mt-0.5">{order.customer_name}</p>
+                    <div className="text-right flex-shrink-0 flex items-center gap-2.5">
+                      <p className="text-xs font-bold text-gray-900 font-mono">{formatCurrency(order.total)}</p>
+                      <span className={`text-[9px] px-2 py-0.5 rounded font-bold capitalize leading-none ${getStatusColor(order.status)}`}>
+                        {order.status}
+                      </span>
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0 flex items-center gap-2.5">
-                    <p className="text-xs font-bold text-gray-900 font-mono">{formatCurrency(order.total)}</p>
-                    <span className={`text-[9px] px-2 py-0.5 rounded font-bold capitalize leading-none ${getStatusColor(order.status)}`}>
-                      {order.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center text-slate-400">
+                <Package className="w-10 h-10 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
+                <p className="text-xs font-bold text-slate-600">No Recent Orders</p>
+                <p className="text-[11px] text-slate-400 mt-1 max-w-[200px] mx-auto">
+                  New customer orders will appear here automatically in real time.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -595,11 +604,16 @@ const Dashboard = () => {
         <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-sm font-bold text-gray-800">Visitors Overview</h2>
-            <select className="text-[10px] font-bold text-gray-600 border border-slate-200 rounded-lg p-1 focus:outline-none">
-              <option value="month">This Month</option>
-            </select>
+            <span className="text-[10px] font-bold text-gray-500 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
+              Live Sources
+            </span>
           </div>
-          <SVGDonutChart data={dummyTraffic} />
+          <SVGDonutChart data={trafficData.length > 0 ? trafficData : [
+            { label: "Direct", value: dashboardStats?.total_visitors || 0 },
+            { label: "Organic", value: 0 },
+            { label: "Social", value: 0 },
+            { label: "Referral", value: 0 }
+          ]} />
         </div>
 
       </div>
@@ -611,40 +625,58 @@ const Dashboard = () => {
         <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm flex items-center justify-between">
           <div>
             <span className="text-[10px] text-gray-400 font-bold block uppercase tracking-wider">Visitors</span>
-            <h4 className="text-lg font-bold text-gray-900 font-mono mt-1">12,450</h4>
-            <span className="text-[10px] text-emerald-600 font-bold mt-1.5 block">▲ +15.3%</span>
+            <h4 className="text-lg font-bold text-gray-900 font-mono mt-1">
+              {(dashboardStats?.total_visitors ?? 0).toLocaleString()}
+            </h4>
+            <span className="text-[10px] text-emerald-600 font-bold mt-1.5 block">
+              ● Live Tracking
+            </span>
           </div>
-          <MiniSparkline data={[10000, 10500, 11200, 10800, 11500, 12000, 12450]} strokeColor="#8b5cf6" />
+          <MiniSparkline data={[0, 0, 0, 0, 0, 0, Math.max(1, dashboardStats?.total_visitors || 0)]} strokeColor="#8b5cf6" />
         </div>
 
-        {/* Page Views Sparkline */}
+        {/* Wishlist Sparkline (Replaces Page Views as requested) */}
         <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[10px] text-gray-400 font-bold block uppercase tracking-wider">Page Views</span>
-            <h4 className="text-lg font-bold text-gray-900 font-mono mt-1">28,356</h4>
-            <span className="text-[10px] text-emerald-600 font-bold mt-1.5 block">▲ +10.2%</span>
+            <span className="text-[10px] text-gray-400 font-bold block uppercase tracking-wider">Wishlist Items</span>
+            <h4 className="text-lg font-bold text-gray-900 font-mono mt-1">
+              {(dashboardStats?.total_wishlist ?? 0).toLocaleString()}
+            </h4>
+            <span className="text-[10px] text-indigo-600 font-bold mt-1.5 block">
+              ♥ User Favorites
+            </span>
           </div>
-          <MiniSparkline data={[22000, 24000, 23500, 25000, 27000, 26500, 28356]} strokeColor="#3b82f6" />
+          <MiniSparkline data={[0, 0, 0, 0, 0, 0, Math.max(1, dashboardStats?.total_wishlist || 0)]} strokeColor="#3b82f6" />
         </div>
 
         {/* Add to Cart Sparkline */}
         <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm flex items-center justify-between">
           <div>
             <span className="text-[10px] text-gray-400 font-bold block uppercase tracking-wider">Add to Cart</span>
-            <h4 className="text-lg font-bold text-gray-900 font-mono mt-1">1,245</h4>
-            <span className="text-[10px] text-emerald-600 font-bold mt-1.5 block">▲ +7.8%</span>
+            <h4 className="text-lg font-bold text-gray-900 font-mono mt-1">
+              {(dashboardStats?.total_carts ?? 0).toLocaleString()}
+            </h4>
+            <span className="text-[10px] text-emerald-600 font-bold mt-1.5 block">
+              🛒 Cart Activity
+            </span>
           </div>
-          <MiniSparkline data={[900, 1000, 1100, 1050, 1150, 1200, 1245]} strokeColor="#10b981" />
+          <MiniSparkline data={[0, 0, 0, 0, 0, 0, Math.max(1, dashboardStats?.total_carts || 0)]} strokeColor="#10b981" />
         </div>
 
         {/* Conversion Rate Sparkline */}
         <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm flex items-center justify-between">
           <div>
             <span className="text-[10px] text-gray-400 font-bold block uppercase tracking-wider">Conversion Rate</span>
-            <h4 className="text-lg font-bold text-gray-900 font-mono mt-1">3.65%</h4>
-            <span className="text-[10px] text-emerald-600 font-bold mt-1.5 block">▲ +8.4%</span>
+            <h4 className="text-lg font-bold text-gray-900 font-mono mt-1">
+              {dashboardStats?.total_visitors > 0
+                ? `${(((dashboardStats?.total_orders || 0) / dashboardStats.total_visitors) * 100).toFixed(2)}%`
+                : "0.00%"}
+            </h4>
+            <span className="text-[10px] text-amber-600 font-bold mt-1.5 block">
+              ⚡ Orders / Visitors
+            </span>
           </div>
-          <MiniSparkline data={[3.1, 3.2, 3.4, 3.3, 3.5, 3.6, 3.65]} strokeColor="#f59e0b" />
+          <MiniSparkline data={[0, 0, 0, 0, 0, 0, Math.max(1, dashboardStats?.total_orders || 0)]} strokeColor="#f59e0b" />
         </div>
 
       </div>

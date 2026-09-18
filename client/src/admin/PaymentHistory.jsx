@@ -45,43 +45,37 @@ const PaymentHistory = () => {
 
       if (!paymentsRes || !paymentsRes.ok) throw new Error("Failed to fetch payments");
       const { payments: data } = await paymentsRes.json();
-      if (data && data.length > 0) {
+      if (data && Array.isArray(data)) {
         setPayments(data);
       } else {
-        setPayments(getDummyPayments());
-        setStats(getDummyStats());
+        setPayments([]);
       }
 
       if (statsRes && statsRes.ok) {
         setStats(await statsRes.json());
       } else {
-        setStats(getDummyStats());
+        setStats({
+          total_revenue: 0,
+          captured: 0,
+          cod_pending: 0,
+          cod_completed: 0,
+          failed: 0
+        });
       }
     } catch (e) {
       setError(e.message);
-      // Fallback dummy database payments
-      setPayments(getDummyPayments());
-      setStats(getDummyStats());
+      setPayments([]);
+      setStats({
+        total_revenue: 0,
+        captured: 0,
+        cod_pending: 0,
+        cod_completed: 0,
+        failed: 0
+      });
     } finally {
       setLoading(false);
     }
   };
-
-  const getDummyPayments = () => [
-    { order_number: "o-10938", customer_name: "Anita Sharma", customer_email: "anita@example.com", payment_method: "Razorpay", amount: 4200, status: "captured", razorpay_payment_id: "pay_Pj93821K", created_at: "2026-07-16T12:00:00Z" },
-    { order_number: "o-10937", customer_name: "Rahul Verma", customer_email: "rahul@example.com", payment_method: "COD", amount: 1599, status: "cod_pending", razorpay_payment_id: "cod_9382109", created_at: "2026-07-16T09:30:00Z" },
-    { order_number: "o-10936", customer_name: "Priyanka Sen", customer_email: "priyanka@example.com", payment_method: "COD", amount: 3400, status: "cod_pending", razorpay_payment_id: "cod_9382110", created_at: "2026-07-16T08:15:00Z" },
-    { order_number: "o-10935", customer_name: "Amit Patel", customer_email: "amit@example.com", payment_method: "Razorpay", amount: 5999, status: "captured", razorpay_payment_id: "pay_Pj93822L", created_at: "2026-07-15T16:40:00Z" },
-    { order_number: "o-10934", customer_name: "Deepa Nair", customer_email: "deepa@example.com", payment_method: "COD", amount: 1149, status: "failed", razorpay_payment_id: "cod_9382111", created_at: "2026-07-15T11:20:00Z" }
-  ];
-
-  const getDummyStats = () => ({
-    total_revenue: 128450,
-    captured: 145,
-    cod_pending: 12,
-    cod_completed: 108,
-    failed: 5
-  });
 
   useEffect(() => {
     fetchData();
@@ -290,46 +284,56 @@ const PaymentHistory = () => {
       )}
 
       {/* Table grid layout */}
-      {!loading && paginated.length > 0 && (
-        <div className="bg-gradient-to-br from-[#111827] to-[#1a2332] border border-gray-800/50 rounded-2xl shadow-lg overflow-hidden text-left">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-xs">
-              <thead className="bg-[#0b1220]/60 text-gray-400 font-semibold border-b border-gray-800/80">
-                <tr>
-                  <th className="py-4 px-6">Order Ref</th>
-                  <th className="py-4 px-6">Customer</th>
-                  <th className="py-4 px-6">Payment Method</th>
-                  <th className="py-4 px-6">Transacted Amount</th>
-                  <th className="py-4 px-6">Ledger Status</th>
-                  <th className="py-4 px-6">Gateway Reference ID</th>
-                  <th className="py-4 px-6">Timestamp</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800/40 text-gray-200">
-                {paginated.map((p, idx) => (
-                  <tr key={idx} className="hover:bg-gray-800/20 transition">
-                    <td className="py-3.5 px-6 font-mono font-semibold text-[#d4af37]">{p.order_number}</td>
-                    <td className="py-3.5 px-6">
-                      <div className="font-semibold text-white">{p.customer_name}</div>
-                      <div className="text-[10px] text-gray-500 mt-0.5">{p.customer_email}</div>
-                    </td>
-                    <td className="py-3.5 px-6">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        p.payment_method === "COD" ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                      }`}>{p.payment_method}</span>
-                    </td>
-                    <td className="py-3.5 px-6 font-mono font-bold text-white">{formatCurrency(p.amount)}</td>
-                    <td className="py-3.5 px-6">{getStatusBadge(p.status)}</td>
-                    <td className="py-3.5 px-6 font-mono text-gray-400">
-                      {p.razorpay_payment_id && !p.razorpay_payment_id.startsWith("cod_") ? p.razorpay_payment_id : "—"}
-                    </td>
-                    <td className="py-3.5 px-6 text-gray-500 font-mono">{formatDate(p.created_at)}</td>
+      {!loading && (
+        paginated.length > 0 ? (
+          <div className="bg-gradient-to-br from-[#111827] to-[#1a2332] border border-gray-800/50 rounded-2xl shadow-lg overflow-hidden text-left">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[850px] border-collapse text-xs">
+                <thead className="bg-[#0b1220]/60 text-gray-400 font-semibold border-b border-gray-800/80">
+                  <tr>
+                    <th className="py-4 px-6">Order Ref</th>
+                    <th className="py-4 px-6">Customer</th>
+                    <th className="py-4 px-6">Payment Method</th>
+                    <th className="py-4 px-6">Transacted Amount</th>
+                    <th className="py-4 px-6">Ledger Status</th>
+                    <th className="py-4 px-6">Gateway Reference ID</th>
+                    <th className="py-4 px-6">Timestamp</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-800/40 text-gray-200">
+                  {paginated.map((p, idx) => (
+                    <tr key={idx} className="hover:bg-gray-800/20 transition">
+                      <td className="py-3.5 px-6 font-mono font-semibold text-[#d4af37]">{p.order_number}</td>
+                      <td className="py-3.5 px-6">
+                        <div className="font-semibold text-white">{p.customer_name}</div>
+                        <div className="text-[10px] text-gray-500 mt-0.5">{p.customer_email}</div>
+                      </td>
+                      <td className="py-3.5 px-6">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          p.payment_method === "COD" ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                        }`}>{p.payment_method}</span>
+                      </td>
+                      <td className="py-3.5 px-6 font-mono font-bold text-white">{formatCurrency(p.amount)}</td>
+                      <td className="py-3.5 px-6">{getStatusBadge(p.status)}</td>
+                      <td className="py-3.5 px-6 font-mono text-gray-400">
+                        {p.razorpay_payment_id && !p.razorpay_payment_id.startsWith("cod_") ? p.razorpay_payment_id : "—"}
+                      </td>
+                      <td className="py-3.5 px-6 text-gray-500 font-mono">{formatDate(p.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-gradient-to-br from-[#111827] to-[#1a2332] border border-gray-800/50 rounded-2xl p-12 text-center shadow-lg">
+            <CreditCard className="w-12 h-12 text-gray-600 mx-auto mb-3 stroke-[1.5]" />
+            <h3 className="text-base font-bold text-white">No Payment Records Yet</h3>
+            <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
+              Online Razorpay transactions and Cash on Delivery (COD) orders will appear here automatically when placed.
+            </p>
+          </div>
+        )
       )}
 
       {/* Pagination Footer */}
