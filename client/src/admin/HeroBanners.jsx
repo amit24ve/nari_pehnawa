@@ -381,7 +381,8 @@ const HeroBanners = () => {
     setReelSubmitting(true);
     setError(null);
     try {
-      const url = editingReel ? `${API_BASE}/reels/${editingReel.id}` : `${API_BASE}/reels/`;
+      const reelId = editingReel._id || editingReel.id;
+      const url = editingReel ? `${API_BASE}/reels/${reelId}` : `${API_BASE}/reels/`;
       const method = editingReel ? "PUT" : "POST";
       const res = await fetch(url, {
         method,
@@ -889,9 +890,11 @@ const HeroBanners = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {reels.map((reel) => (
+            {reels.map((reel) => {
+              const reelId = reel._id || reel.id;
+              return (
               <div
-                key={reel.id}
+                key={reelId}
                 className={`bg-white border ${
                   reel.is_active ? "border-slate-200" : "border-slate-200 opacity-60"
                 } rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col`}
@@ -915,7 +918,7 @@ const HeroBanners = () => {
 
                   <div className="flex items-center justify-between border-t border-slate-100 pt-3">
                     <button
-                      onClick={() => handleToggleReel(reel.id)}
+                      onClick={() => handleToggleReel(reelId)}
                       className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold ${
                         reel.is_active ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-100 text-slate-600 border border-slate-200"
                       }`}
@@ -931,7 +934,7 @@ const HeroBanners = () => {
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteReel(reel.id)}
+                        onClick={() => handleDeleteReel(reelId)}
                         className="p-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg text-rose-600"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -940,7 +943,7 @@ const HeroBanners = () => {
                   </div>
                 </div>
               </div>
-            ))}
+            );})}
           </div>
         )
       )}

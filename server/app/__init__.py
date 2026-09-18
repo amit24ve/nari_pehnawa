@@ -3,7 +3,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
+from app.range_static import RangeStaticFiles
 
 from app.api.shipping import router as shipping_router
 from app.database import close_database_connection, connect_to_database
@@ -116,4 +116,4 @@ app.include_router(coins_router)
 
 # Serve uploaded images as static files
 Path("uploads").mkdir(exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/uploads", RangeStaticFiles(directory="uploads"), name="uploads")

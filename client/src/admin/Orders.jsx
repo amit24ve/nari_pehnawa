@@ -277,9 +277,21 @@ const Orders = () => {
     // Resolve the default warehouse location
     const resolveDefaultWarehouse = (detailObj) => {
       if (detailObj && detailObj.items && detailObj.items.length > 0) {
-        const itemWithLoc = detailObj.items.find(it => it.product && it.product.pickup_location);
-        if (itemWithLoc && itemWithLoc.product.pickup_location) {
-          return itemWithLoc.product.pickup_location;
+        for (const it of detailObj.items) {
+          const prod = it.product || {};
+          const sz = it.size;
+          const whSizeStock = prod.warehouse_size_stock || {};
+          const whStock = prod.warehouse_stock || {};
+          
+          if (sz) {
+            if (whSizeStock["Home"] && Number(whSizeStock["Home"][sz]) > 0) return "Home";
+            if (whSizeStock["home-1"] && Number(whSizeStock["home-1"][sz]) > 0) return "home-1";
+          }
+          if (Number(whStock["Home"]) > 0) return "Home";
+          if (Number(whStock["home-1"]) > 0) return "home-1";
+
+          if (prod.pickup_location) return prod.pickup_location;
+          if (it.pickup_location) return it.pickup_location;
         }
       }
       const assignedVal = detailObj ? detailObj.warehouse_assigned : null;
@@ -290,7 +302,7 @@ const Orders = () => {
         const primary = pickupLocations.find(loc => loc.is_primary_location === true || loc.is_primary === 1);
         return primary ? primary.pickup_location : pickupLocations[0].pickup_location;
       }
-      return "";
+      return "Home";
     };
 
     try {
@@ -1747,9 +1759,39 @@ const Orders = () => {
                           </div>
                         </div>
 
+                        {selectedOrder.items && selectedOrder.items.length > 0 && (
+                          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5 ml-9">
+                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                              <span>📦 Item Inventory by Warehouse</span>
+                            </div>
+                            {selectedOrder.items.map((it, idx) => {
+                              const prod = it.product || {};
+                              const whStock = prod.warehouse_stock || {};
+                              const whSizeStock = prod.warehouse_size_stock || {};
+                              const sz = it.size;
+                              return (
+                                <div key={idx} className="flex flex-wrap items-center justify-between gap-2 text-xs bg-white border border-slate-200/80 p-2 rounded-lg">
+                                  <div>
+                                    <span className="font-semibold text-slate-800">{it.name || "Product"}</span>
+                                    {sz && <span className="ml-1.5 px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold">Size: {sz}</span>}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-[11px]">
+                                    <span className={`px-2 py-0.5 rounded font-semibold ${selectedPickupLocation === "Home" ? "bg-amber-100 text-amber-900 border border-amber-300" : "bg-slate-100 text-slate-600"}`}>
+                                      Home (Sultanpur): {sz && whSizeStock.Home?.[sz] !== undefined ? whSizeStock.Home[sz] : (whStock.Home ?? "—")}
+                                    </span>
+                                    <span className={`px-2 py-0.5 rounded font-semibold ${selectedPickupLocation === "home-1" ? "bg-cyan-100 text-cyan-900 border border-cyan-300" : "bg-slate-100 text-slate-600"}`}>
+                                      home-1 (Allahabad): {sz && whSizeStock["home-1"]?.[sz] !== undefined ? whSizeStock["home-1"][sz] : (whStock["home-1"] ?? "—")}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
                         {pickupLocations.length > 0 && (
                           <div className="flex flex-col gap-1.5 pl-9">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase">Fulfillment Pickup Location</label>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase">Dispatch From Warehouse (Shiprocket)</label>
                             <select
                               value={selectedPickupLocation}
                               onChange={(e) => setSelectedPickupLocation(e.target.value)}

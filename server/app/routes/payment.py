@@ -138,9 +138,26 @@ def _trigger_shiprocket(order_id: str, order_data: dict, db):
                         try:
                             from bson import ObjectId
                             prod = db["products"].find_one({"_id": ObjectId(str(pid))})
-                            if prod and prod.get("pickup_location"):
-                                order_data["pickup_location"] = prod["pickup_location"]
-                                break
+                            if prod:
+                                sz = item.get("size")
+                                wh_size_stock = prod.get("warehouse_size_stock") or {}
+                                wh_stock = prod.get("warehouse_stock") or {}
+                                if sz:
+                                    if int(wh_size_stock.get("Home", {}).get(sz, 0) or 0) > 0:
+                                        order_data["pickup_location"] = "Home"
+                                        break
+                                    elif int(wh_size_stock.get("home-1", {}).get(sz, 0) or 0) > 0:
+                                        order_data["pickup_location"] = "home-1"
+                                        break
+                                if int(wh_stock.get("Home", 0) or 0) > 0:
+                                    order_data["pickup_location"] = "Home"
+                                    break
+                                elif int(wh_stock.get("home-1", 0) or 0) > 0:
+                                    order_data["pickup_location"] = "home-1"
+                                    break
+                                if prod.get("pickup_location"):
+                                    order_data["pickup_location"] = prod["pickup_location"]
+                                    break
                         except Exception:
                             pass
 

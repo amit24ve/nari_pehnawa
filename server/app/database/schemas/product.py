@@ -37,6 +37,8 @@ class ProductBase(BaseModel):
     hsn_code: Optional[str] = None  # GST HSN/SAC code, used on invoices
     delivery_charge: float = 0.0
     pickup_location: Optional[str] = None  # Shiprocket pickup warehouse nickname
+    warehouse_stock: Optional[Dict[str, int]] = {}  # e.g. {"Home": 15, "home-1": 10}
+    warehouse_size_stock: Optional[Dict[str, Dict[str, int]]] = {}  # e.g. {"Home": {"S": 5, "M": 10}, "home-1": {"S": 2, "M": 8}}
     sale_title: Optional[str] = None
     deal_text: Optional[str] = None
     deal_type: Optional[str] = None
@@ -80,6 +82,8 @@ class ProductUpdate(BaseModel):
     hsn_code: Optional[str] = None
     delivery_charge: Optional[float] = None
     pickup_location: Optional[str] = None
+    warehouse_stock: Optional[Dict[str, int]] = None
+    warehouse_size_stock: Optional[Dict[str, Dict[str, int]]] = None
     sale_title: Optional[str] = None
     deal_text: Optional[str] = None
     deal_type: Optional[str] = None

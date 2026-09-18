@@ -23,10 +23,16 @@ import {
     Upload,
     Tag,
     Loader2,
+    Building2,
 } from "lucide-react";
 import shippingApi from "../services/shippingApi";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
+
+const DEFAULT_WAREHOUSES = [
+    { id: 1, pickup_location: "Home", city: "Sultanpur", state: "Uttar Pradesh", pin_code: "228151", is_primary_location: true },
+    { id: 2, pickup_location: "home-1", city: "Allahabad", state: "Uttar Pradesh", pin_code: "211006", is_primary_location: false }
+];
 
 const Products = () => {
     const [activeTab, setActiveTab] = useState("products"); // "products" | "inventory" | "brands"
@@ -63,13 +69,13 @@ const Products = () => {
     const [editingBrand, setEditingBrand] = useState(null);
     const [newBrand, setNewBrand] = useState({ name: "", country: "", status: "Active" });
 
-    const [formData, setFormData] = useState({
+    const emptyForm = {
         title: "",
         description: "",
         price: "",
         original_price: "",
         discount: "",
-        stock: "",
+        stock: "0",
         category: "",
         image: "",
         sku: "",
@@ -78,9 +84,56 @@ const Products = () => {
         fabric: "",
         brand: "Nari Pehnawa",
         delivery_charge: "",
-        pickup_location: ""
-    });
-    const [pickupLocations, setPickupLocations] = useState([]);
+        pickup_location: "Home",
+        warehouse_stock: { "Home": 0, "home-1": 0 },
+        warehouse_size_stock: { "Home": {}, "home-1": {} }
+    };
+
+    const [formData, setFormData] = useState(emptyForm);
+    const [pickupLocations, setPickupLocations] = useState(DEFAULT_WAREHOUSES);
+
+    const handleWarehouseSizeStockChange = (whName, size, qty) => {
+        const val = qty === "" ? "" : Math.max(0, parseInt(qty) || 0);
+        setFormData(prev => {
+            const currentWhSize = { ...(prev.warehouse_size_stock || {}) };
+            const whSizes = { ...(currentWhSize[whName] || {}), [size]: val };
+            currentWhSize[whName] = whSizes;
+
+            const currentWhStock = { ...(prev.warehouse_stock || {}) };
+            const activeWhList = (pickupLocations.length > 0 ? pickupLocations : DEFAULT_WAREHOUSES).map(l => l.pickup_location);
+            
+            let grandTotal = 0;
+            activeWhList.forEach(wName => {
+                const sizesForWh = currentWhSize[wName] || {};
+                const sizeValues = Object.values(sizesForWh).filter(v => v !== "" && !isNaN(v));
+                if (sizeValues.length > 0) {
+                    const sum = sizeValues.reduce((a, b) => a + Number(b), 0);
+                    currentWhStock[wName] = sum;
+                }
+                grandTotal += Number(currentWhStock[wName] || 0);
+            });
+
+            return {
+                ...prev,
+                warehouse_size_stock: currentWhSize,
+                warehouse_stock: currentWhStock,
+                stock: grandTotal.toString()
+            };
+        });
+    };
+
+    const handleWarehouseTotalStockChange = (whName, totalQty) => {
+        const val = totalQty === "" ? "" : Math.max(0, parseInt(totalQty) || 0);
+        setFormData(prev => {
+            const updatedStock = { ...(prev.warehouse_stock || {}), [whName]: val };
+            const grandTotal = Object.values(updatedStock).reduce((a, b) => a + (Number(b) || 0), 0);
+            return {
+                ...prev,
+                warehouse_stock: updatedStock,
+                stock: grandTotal.toString()
+            };
+        });
+    };
 
     const getAuthToken = () => localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
 
@@ -90,10 +143,16 @@ const Products = () => {
             setError(null);
             shippingApi.getPickupLocations()
                 .then((res) => {
-                    const locationsList = Array.isArray(res) ? res : (res?.shipping_address || []);
-                    setPickupLocations(locationsList);
+                    const locationsList = Array.isArray(res) ? res : (res?.locations || res?.shipping_address || []);
+                    if (locationsList.length > 0) {
+                        setPickupLocations(locationsList);
+                    } else {
+                        setPickupLocations(DEFAULT_WAREHOUSES);
+                    }
                 })
-                .catch(() => {});
+                .catch(() => {
+                    setPickupLocations(DEFAULT_WAREHOUSES);
+                });
             const token = getAuthToken();
             const headers = {
                 Authorization: `Bearer ${token}`,
@@ -208,24 +267,46 @@ const Products = () => {
             const parsedSizes = formData.sizes ? formData.sizes.split(",").map(s => s.trim()).filter(Boolean) : ["S", "M", "L", "XL"];
             const parsedColors = formData.colors ? formData.colors.split(",").map(c => c.trim()).filter(Boolean) : [];
             
+            // Aggregate size_stock across warehouses
+            const aggregatedSizeStock = {};
+            const whSizeStock = formData.warehouse_size_stock || {};
+            Object.values(whSizeStock).forEach(whSizes => {
+                if (whSizes && typeof whSizes === "object") {
+                    Object.entries(whSizes).forEach(([sz, q]) => {
+                        const num = Number(q) || 0;
+                        if (num > 0) {
+                            aggregatedSizeStock[sz] = (aggregatedSizeStock[sz] || 0) + num;
+                        }
+                    });
+                }
+            });
+
+            // If warehouse_stock is specified, use sum of warehouses, otherwise formData.stock
+            const whStockValues = Object.values(formData.warehouse_stock || {});
+            const whTotalStock = whStockValues.reduce((a, b) => a + (Number(b) || 0), 0);
+            const totalStock = whTotalStock > 0 ? whTotalStock : (formData.stock ? parseInt(formData.stock) : 0);
+
             const productData = {
                 name: formData.title || "",
                 description: formData.description || "",
                 price: formData.price ? parseFloat(formData.price) : 0.0,
                 original_price: formData.original_price ? parseFloat(formData.original_price) : null,
                 discount: formData.discount ? parseInt(formData.discount) : null,
-                stock_quantity: formData.stock ? parseInt(formData.stock) : 0,
+                stock_quantity: totalStock,
                 category: formData.category || "",
                 image: formData.image || "",
                 brand: formData.brand || "Nari Pehnawa",
                 on_sale: formData.discount ? parseInt(formData.discount) > 0 : false,
                 is_new: false,
-                in_stock: (formData.stock ? parseInt(formData.stock) : 0) > 0,
+                in_stock: totalStock > 0,
                 sizes: parsedSizes,
+                size_stock: Object.keys(aggregatedSizeStock).length > 0 ? aggregatedSizeStock : {},
                 colors: parsedColors,
                 fabric: formData.fabric || null,
                 delivery_charge: formData.delivery_charge !== "" ? parseFloat(formData.delivery_charge) : 0.0,
-                pickup_location: formData.pickup_location || null
+                pickup_location: formData.pickup_location || "Home",
+                warehouse_stock: formData.warehouse_stock || {},
+                warehouse_size_stock: formData.warehouse_size_stock || {}
             };
 
             let res;
@@ -254,6 +335,7 @@ const Products = () => {
             setShowAddModal(false);
             setShowEditModal(false);
             setEditingProductId(null);
+            setFormData(emptyForm);
             fetchProducts();
         } catch (err) {
             alert(`Error saving product: ${err.message}`);
@@ -265,9 +347,9 @@ const Products = () => {
         if (!file) return;
         setUploadingImage(true);
         try {
+            const token = getAuthToken();
             const fd = new FormData();
             fd.append("file", file);
-            const token = getAuthToken();
             const res = await fetch(`${API_BASE_URL}/upload/image`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` },
@@ -277,8 +359,8 @@ const Products = () => {
                 const err = await res.json().catch(() => ({}));
                 throw new Error(err.detail || "Upload failed");
             }
-            const { url } = await res.json();
-            const fullUrl = `${API_BASE_URL}${url}`;
+            const data = await res.json();
+            const fullUrl = `${API_BASE_URL}${data.url}`;
             setFormData((f) => ({ ...f, image: fullUrl }));
         } catch (err) {
             alert(`Image upload error: ${err.message}`);
@@ -288,14 +370,19 @@ const Products = () => {
     };
 
     const handleEdit = (product) => {
-        setEditingProductId(product.id);
+        setEditingProductId(product.id || product._id);
+        const whStock = product.warehouse_stock && Object.keys(product.warehouse_stock).length > 0
+            ? product.warehouse_stock
+            : { "Home": Number(product.stock ?? product.stock_quantity ?? 0), "home-1": 0 };
+        const whSizeStock = product.warehouse_size_stock || { "Home": {}, "home-1": {} };
+
         setFormData({
-            title: product.title || "",
+            title: product.title || product.name || "",
             description: product.description || "",
             price: product.price || "",
             original_price: product.original_price || "",
             discount: product.discount || "",
-            stock: product.stock || "",
+            stock: (product.stock ?? product.stock_quantity ?? 0).toString(),
             category: product.category || "",
             image: product.image || "",
             sku: product.sku || "",
@@ -304,7 +391,9 @@ const Products = () => {
             fabric: product.fabric || "",
             brand: product.brand || "Nari Pehnawa",
             delivery_charge: product.delivery_charge !== undefined && product.delivery_charge !== null ? product.delivery_charge : "",
-            pickup_location: product.pickup_location || ""
+            pickup_location: product.pickup_location || "Home",
+            warehouse_stock: whStock,
+            warehouse_size_stock: whSizeStock
         });
         setShowEditModal(true);
     };
@@ -856,14 +945,28 @@ const Products = () => {
                                                     </div>
                                                     <div>
                                                         <div className="font-semibold text-white truncate max-w-[200px]">{p.title}</div>
-                                                        <div className="text-[10px] text-gray-500 mt-0.5">{p.brand} {p.pickup_location ? `• 📍 Warehouse: ${p.pickup_location}` : ""}</div>
+                                                        <div className="flex items-center gap-1.5 flex-wrap mt-0.5 text-[10px] text-gray-500">
+                                                            <span>{p.brand}</span>
+                                                            {p.pickup_location && (
+                                                                <span className="px-1.5 py-0.5 rounded bg-cyan-950/40 text-cyan-400 border border-cyan-800/40 text-[9px] font-semibold">
+                                                                    📍 {p.pickup_location}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="py-3.5 px-6 font-mono text-gray-400">{p.sku}</td>
                                             <td className="py-3.5 px-6 text-gray-400">{p.category}</td>
                                             <td className="py-3.5 px-6 font-bold text-[#d4af37] font-mono">₹{p.price.toLocaleString()}</td>
-                                            <td className="py-3.5 px-6 font-mono text-gray-300">{p.stock} units</td>
+                                            <td className="py-3.5 px-6 font-mono text-gray-300">
+                                                <div className="font-bold text-white">{p.stock} units</div>
+                                                {p.warehouse_stock && Object.keys(p.warehouse_stock).length > 0 && (
+                                                    <div className="text-[10px] text-gray-400 font-sans mt-0.5">
+                                                        <span className="text-amber-300/90 font-medium">Home: {p.warehouse_stock.Home ?? 0}</span> • <span className="text-cyan-300/90 font-medium">home-1: {p.warehouse_stock['home-1'] ?? 0}</span>
+                                                    </div>
+                                                )}
+                                            </td>
                                             <td className="py-3.5 px-6">{getStockBadge(p.stock)}</td>
                                             <td className="py-3.5 px-6 text-right">
                                                 <div className="flex items-center justify-end gap-2">
@@ -1179,21 +1282,7 @@ const Products = () => {
                                     setShowAddModal(false);
                                     setShowEditModal(false);
                                     setEditingProductId(null);
-                                    setFormData({
-                                        title: "",
-                                        description: "",
-                                        price: "",
-                                        original_price: "",
-                                        discount: "",
-                                        stock: "",
-                                        category: "",
-                                        image: "",
-                                        sku: "",
-                                        sizes: "S,M,L,XL",
-                                        colors: "",
-                                        fabric: "",
-                                        brand: "Nari Pehnawa"
-                                    });
+                                    setFormData(emptyForm);
                                 }}
                                 className="p-1 hover:bg-gray-800 rounded-xl text-gray-400"
                             >
@@ -1378,13 +1467,12 @@ const Products = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-gray-400 mb-1">Pickup Warehouse (Shiprocket)</label>
+                                    <label className="block text-gray-400 mb-1">Primary Dispatch Warehouse (Shiprocket)</label>
                                     <select
-                                        value={formData.pickup_location || ""}
+                                        value={formData.pickup_location || "Home"}
                                         onChange={(e) => setFormData({ ...formData, pickup_location: e.target.value })}
                                         className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none"
                                     >
-                                        <option value="">Default (Primary Warehouse)</option>
                                         {(pickupLocations || []).map((loc) => (
                                             <option key={loc.id || loc.pickup_location} value={loc.pickup_location}>
                                                 {loc.pickup_location} — {loc.city}, {loc.state} ({loc.pin_code}) {loc.is_primary_location ? "★ Primary" : ""}
@@ -1402,6 +1490,91 @@ const Products = () => {
                                         className="w-full bg-[#0b1220] border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none"
                                         placeholder="e.g. S,M,L,XL"
                                     />
+                                </div>
+                            </div>
+
+                            {/* ── Multi-Warehouse Inventory & Variant Stock Allocation Card ── */}
+                            <div className="bg-[#0b1220] border border-cyan-900/30 rounded-2xl p-4 space-y-3">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-gray-800/80 pb-3">
+                                    <div>
+                                        <label className="block text-cyan-400 font-bold text-xs uppercase tracking-wide flex items-center gap-1.5">
+                                            <Building2 className="w-4 h-4 text-cyan-400" /> Shiprocket Multi-Warehouse Inventory Allocation
+                                        </label>
+                                        <p className="text-[11px] text-gray-400 mt-0.5">
+                                            Manage stock across your 2 Shiprocket warehouses. Quantity per size updates automatically!
+                                        </p>
+                                    </div>
+                                    <div className="text-left sm:text-right bg-[#111827] px-3 py-1.5 rounded-xl border border-gray-800">
+                                        <span className="text-[10px] text-gray-400 block uppercase font-medium">Total Synced Stock</span>
+                                        <span className="text-sm font-bold text-emerald-400 font-mono">{formData.stock || 0} units</span>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                    {(pickupLocations.length > 0 ? pickupLocations : DEFAULT_WAREHOUSES).map((wh) => {
+                                        const whCode = wh.pickup_location;
+                                        const whTotal = formData.warehouse_stock?.[whCode] ?? 0;
+                                        const parsedSizeList = formData.sizes ? formData.sizes.split(",").map(s => s.trim()).filter(Boolean) : [];
+
+                                        return (
+                                            <div key={whCode} className="bg-[#111827] border border-gray-800 rounded-xl p-3.5 space-y-3 shadow-sm">
+                                                <div className="flex items-center justify-between border-b border-gray-800 pb-2">
+                                                    <div>
+                                                        <div className="font-bold text-white text-xs flex items-center gap-1.5">
+                                                            📍 {whCode}
+                                                            {wh.is_primary_location && (
+                                                                <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30 font-semibold">Primary</span>
+                                                            )}
+                                                            {formData.pickup_location === whCode && (
+                                                                <span className="text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-500/30 font-semibold">Selected Dispatch</span>
+                                                            )}
+                                                        </div>
+                                                        <span className="text-[10px] text-gray-400 block mt-0.5">{wh.city || "UP"}, PIN: {wh.pin_code || ""}</span>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="text-[10px] text-gray-500 block uppercase">Warehouse Qty</span>
+                                                        <span className="font-bold text-xs text-cyan-400 font-mono">{whTotal} units</span>
+                                                    </div>
+                                                </div>
+
+                                                {parsedSizeList.length > 0 ? (
+                                                    <div className="space-y-1.5">
+                                                        <span className="text-[10px] text-gray-400 font-semibold block uppercase tracking-wider">Quantities by Size:</span>
+                                                        <div className="grid grid-cols-4 gap-2">
+                                                            {parsedSizeList.map((sz) => {
+                                                                const qty = formData.warehouse_size_stock?.[whCode]?.[sz] ?? "";
+                                                                return (
+                                                                    <div key={sz} className="text-center bg-[#0b1220] p-1.5 rounded-lg border border-gray-800">
+                                                                        <span className="text-[10px] font-bold text-gray-300 font-mono block mb-1">{sz}</span>
+                                                                        <input
+                                                                            type="number"
+                                                                            min="0"
+                                                                            placeholder="0"
+                                                                            value={qty}
+                                                                            onChange={(e) => handleWarehouseSizeStockChange(whCode, sz, e.target.value)}
+                                                                            className="w-full bg-[#111827] border border-gray-700 rounded py-1 text-center text-xs text-white font-bold font-mono focus:outline-none focus:border-cyan-500"
+                                                                        />
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div>
+                                                        <label className="text-[10px] text-gray-400 block mb-1">Total Warehouse Stock</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            placeholder="0"
+                                                            value={whTotal}
+                                                            onChange={(e) => handleWarehouseTotalStockChange(whCode, e.target.value)}
+                                                            className="w-full bg-[#0b1220] border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -1425,21 +1598,7 @@ const Products = () => {
                                         setShowAddModal(false);
                                         setShowEditModal(false);
                                         setEditingProductId(null);
-                                        setFormData({
-                                            title: "",
-                                            description: "",
-                                            price: "",
-                                            original_price: "",
-                                            discount: "",
-                                            stock: "",
-                                            category: "",
-                                            image: "",
-                                            sku: "",
-                                            sizes: "S,M,L,XL",
-                                            colors: "",
-                                            fabric: "",
-                                            brand: "Nari Pehnawa"
-                                        });
+                                        setFormData(emptyForm);
                                     }}
                                     className="flex-1 py-2.5 bg-gray-800 text-white rounded-xl"
                                 >

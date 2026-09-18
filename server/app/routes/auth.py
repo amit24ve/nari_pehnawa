@@ -16,6 +16,8 @@ from app.config import (
 )
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
+from app.routes import google_mobile
+router.include_router(google_mobile.router)
 
 
 class LoginRequest(BaseModel):
@@ -367,11 +369,14 @@ def google_login():
 
 
 @router.get("/google/callback")
-def google_callback(code: Optional[str] = None, error: Optional[str] = None):
+def google_callback(code: Optional[str] = None, error: Optional[str] = None, state: Optional[str] = None):
     """Handles Google's redirect back, logs the user in (or auto-creates
     a new "customer" account), then redirects to the frontend with a
     ready-to-use access token. Google sign-in can NEVER log in or create
     an admin account — admins must still use the password login."""
+
+    if state and state.startswith("mobile_"):
+        return google_mobile.callback(state, code, error)
 
     def fail(reason: str):
         return RedirectResponse(f"{frontend_url}/auth/google/success?error={reason}")

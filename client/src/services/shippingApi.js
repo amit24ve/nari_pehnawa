@@ -80,7 +80,19 @@ export const shippingApi = {
     }),
 
   /** Admin: get all registered pickup locations/warehouses from Shiprocket */
-  getPickupLocations: () => request("/shipping/pickup-locations"),
+  getPickupLocations: async () => {
+    try {
+      const res = await request("/shipping/pickup-locations");
+      const list = Array.isArray(res) ? res : (res?.locations || res?.shipping_address || res?.data?.shipping_address || []);
+      if (list && list.length > 0) return list;
+    } catch (e) {
+      console.warn("Could not fetch Shiprocket pickup locations, using registered defaults:", e);
+    }
+    return [
+      { id: 1, pickup_location: "Home", city: "Sultanpur", state: "Uttar Pradesh", pin_code: "228151", is_primary_location: true },
+      { id: 2, pickup_location: "home-1", city: "Allahabad", state: "Uttar Pradesh", pin_code: "211006", is_primary_location: false }
+    ];
+  },
 
   /** Admin: run the full create -> AWB -> pickup pipeline in one call */
   fulfillOrder: (orderId, pickupLocation) =>

@@ -59,7 +59,7 @@ from app.services.shiprocket_service import (
     get_shiprocket_service,
 )
 from app.utils.shiprocket_helper import build_tracking_url, logger, map_shiprocket_status
-from app.config import shiprocket_webhook_secret
+from app.config import shiprocket_pickup_location, shiprocket_webhook_secret
 
 router = APIRouter(prefix="/shipping", tags=["Shipping"])
 
@@ -239,8 +239,15 @@ async def track_shipment(
     sr: ShiprocketService = Depends(get_shiprocket_service),
     repo: ShippingRepository = Depends(get_shipping_repository),
 ):
-    """Track a shipment by AWB. Any authenticated user may track (order
-    ownership is enforced at the /shipping/order/{order_id} level)."""
+    """Track a shipment by AWB for the order owner or an admin."""
+    order = await repo.find_order_by_awb(awb)
+    if not order:
+        raise HTTPException(status_code=404, detail=f"No order found for AWB {awb}")
+    if current_user.get("role") != "admin" and str(order.get("user_id")) != str(
+        current_user.get("id")
+    ):
+        raise HTTPException(status_code=403, detail="Not authorised to track this order")
+
     try:
         raw = await sr.track_by_awb(awb)
     except ShiprocketAPIError as exc:
@@ -249,18 +256,16 @@ async def track_shipment(
     summary = build_tracking_summary(awb, raw)
 
     # Sync latest status back onto the order for fast subsequent reads.
-    order = await repo.find_order_by_awb(awb)
-    if order:
-        mapped_status = map_shiprocket_status(summary["current_status"])
-        await repo.update_shipping_info(
-            str(order["_id"]),
-            ShippingInfo(
-                current_status=summary["current_status"],
-                shipment_status=mapped_status,
-                estimated_delivery=summary.get("estimated_delivery") or None,
-                delivered_date=summary.get("delivered_date") or None,
-            ),
-        )
+    mapped_status = map_shiprocket_status(summary["current_status"])
+    await repo.update_shipping_info(
+        str(order["_id"]),
+        ShippingInfo(
+            current_status=summary["current_status"],
+            shipment_status=mapped_status,
+            estimated_delivery=summary.get("estimated_delivery") or None,
+            delivered_date=summary.get("delivered_date") or None,
+        ),
+    )
 
     return TrackShipmentResponse(**summary, shipment_status=map_shiprocket_status(summary["current_status"]))
 
@@ -307,6 +312,31 @@ async def cancel_shipment(
 # ── Serviceability ───────────────────────────────────────────────────────────
 
 
+def _serviceability_response(raw: dict) -> ServiceabilityResponse:
+    companies = (raw.get("data") or {}).get("available_courier_companies") or []
+    options: List[CourierOption] = []
+    for company in companies:
+        courier_id = company.get("courier_company_id")
+        if courier_id is None:
+            continue
+        options.append(
+            CourierOption(
+                courier_company_id=courier_id,
+                courier_name=company.get("courier_name", ""),
+                rate=float(company.get("rate", 0) or 0),
+                estimated_delivery_days=str(company.get("estimated_delivery_days", "")),
+                is_cod_available=bool(company.get("cod") or company.get("is_cod")),
+                rating=company.get("rating"),
+            )
+        )
+    options.sort(key=lambda option: option.rate)
+    recommended = options[0].courier_company_id if options else None
+    return ServiceabilityResponse(
+        available_couriers=options,
+        recommended_courier_id=recommended,
+    )
+
+
 @router.get("/courier-serviceability", response_model=ServiceabilityResponse)
 async def courier_serviceability(
     pickup_postcode: str = Query(...),
@@ -322,23 +352,60 @@ async def courier_serviceability(
     except ShiprocketAPIError as exc:
         raise HTTPException(status_code=502, detail=str(exc))
 
-    companies = (raw.get("data") or {}).get("available_courier_companies") or []
-    options: List[CourierOption] = []
-    for c in companies:
-        options.append(
-            CourierOption(
-                courier_company_id=c.get("courier_company_id"),
-                courier_name=c.get("courier_name", ""),
-                rate=float(c.get("rate", 0) or 0),
-                estimated_delivery_days=str(c.get("estimated_delivery_days", "")),
-                is_cod_available=bool(c.get("cod") or c.get("is_cod")),
-                rating=c.get("rating"),
-            )
-        )
-    options.sort(key=lambda o: o.rate)
-    recommended = options[0].courier_company_id if options else None
+    return _serviceability_response(raw)
 
-    return ServiceabilityResponse(available_couriers=options, recommended_courier_id=recommended)
+
+@router.get("/customer-serviceability", response_model=ServiceabilityResponse)
+async def customer_serviceability(
+    delivery_postcode: str = Query(..., pattern=r"^[1-9]\d{5}$"),
+    weight: float = Query(0.5, gt=0, le=50),
+    cod: bool = Query(False),
+    declared_value: Optional[float] = Query(None, gt=0),
+    current_user: dict = Depends(get_current_user),
+    sr: ShiprocketService = Depends(get_shiprocket_service),
+):
+    """Check delivery from the store pickup without exposing its postcode."""
+    try:
+        locations = await sr.get_pickup_locations()
+        configured_name = (shiprocket_pickup_location or "").strip().lower()
+        pickup = next(
+            (
+                location
+                for location in locations
+                if str(
+                    location.get("pickup_location")
+                    or location.get("pickup_location_name")
+                    or location.get("name")
+                    or ""
+                ).strip().lower()
+                == configured_name
+            ),
+            None,
+        )
+        pickup = pickup or next(
+            (location for location in locations if location.get("is_primary_location")),
+            None,
+        )
+        pickup = pickup or (locations[0] if locations else None)
+        pickup_postcode = str((pickup or {}).get("pin_code") or "").strip()
+        if len(pickup_postcode) != 6 or not pickup_postcode.isdigit():
+            raise HTTPException(
+                status_code=503,
+                detail="Store pickup location is not configured for delivery checks",
+            )
+        raw = await sr.check_serviceability(
+            pickup_postcode,
+            delivery_postcode,
+            weight,
+            cod,
+            declared_value,
+        )
+    except HTTPException:
+        raise
+    except ShiprocketAPIError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+    return _serviceability_response(raw)
 
 
 # ── Label / Invoice ──────────────────────────────────────────────────────────
@@ -478,9 +545,26 @@ async def fulfill_order(
                     from bson import ObjectId
                     db = repo.db
                     prod = db["products"].find_one({"_id": ObjectId(str(pid))})
-                    if prod and prod.get("pickup_location"):
-                        order_data["pickup_location"] = prod["pickup_location"]
-                        break
+                    if prod:
+                        sz = item.get("size")
+                        wh_size_stock = prod.get("warehouse_size_stock") or {}
+                        wh_stock = prod.get("warehouse_stock") or {}
+                        if sz:
+                            if int(wh_size_stock.get("Home", {}).get(sz, 0) or 0) > 0:
+                                order_data["pickup_location"] = "Home"
+                                break
+                            elif int(wh_size_stock.get("home-1", {}).get(sz, 0) or 0) > 0:
+                                order_data["pickup_location"] = "home-1"
+                                break
+                        if int(wh_stock.get("Home", 0) or 0) > 0:
+                            order_data["pickup_location"] = "Home"
+                            break
+                        elif int(wh_stock.get("home-1", 0) or 0) > 0:
+                            order_data["pickup_location"] = "home-1"
+                            break
+                        if prod.get("pickup_location"):
+                            order_data["pickup_location"] = prod["pickup_location"]
+                            break
                 except Exception:
                     pass
 

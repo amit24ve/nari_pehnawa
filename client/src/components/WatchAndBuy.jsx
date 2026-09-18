@@ -21,53 +21,6 @@ import {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
-const defaultVideoProducts = [
-  {
-    id: "v-1",
-    product_link: "/category/anarkali-kurtis",
-    title: "Blush Glow Anarkali Kurta Set",
-    price: 4500,
-    original_price: 5400,
-    views: "2.4L",
-    likes: 14200,
-    thumbnail: "https://images.pexels.com/photos/3622608/pexels-photo-3622608.jpeg?auto=compress&cs=tinysrgb&w=600",
-    video_url: "https://res.cloudinary.com/demo/video/upload/v1687258384/samples/dance-2.mp4",
-  },
-  {
-    id: "v-2",
-    product_link: "/category/chikankari-kurtis",
-    title: "Chikankari Handcrafted Silk Kurti",
-    price: 3800,
-    original_price: 4600,
-    views: "1.8L",
-    likes: 9800,
-    thumbnail: "https://images.pexels.com/photos/2802024/pexels-photo-2802024.jpeg?auto=compress&cs=tinysrgb&w=600",
-    video_url: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-  },
-  {
-    id: "v-3",
-    product_link: "/category/embroidered-kurtis",
-    title: "Maroon Mirror Work Anarkali Suit",
-    price: 5200,
-    original_price: 6200,
-    views: "3.1L",
-    likes: 21500,
-    thumbnail: "https://images.pexels.com/photos/3622618/pexels-photo-3622618.jpeg?auto=compress&cs=tinysrgb&w=600",
-    video_url: "https://res.cloudinary.com/demo/video/upload/v1687258385/samples/sea-turtle.mp4",
-  },
-  {
-    id: "v-4",
-    product_link: "/category/palazzo-set-kurtis",
-    title: "Palazzo Set - Festive Teal & Gold",
-    price: 2999,
-    original_price: 3800,
-    views: "1.2L",
-    likes: 8300,
-    thumbnail: "https://images.pexels.com/photos/4210854/pexels-photo-4210854.jpeg?auto=compress&cs=tinysrgb&w=600",
-    video_url: "https://res.cloudinary.com/demo/video/upload/v1687258382/samples/cld-sample-video.mp4",
-  }
-];
-
 const WatchAndBuy = () => {
   const navigate = useNavigate();
   const scrollContainerRef = useRef(null);
@@ -89,15 +42,15 @@ const WatchAndBuy = () => {
         return res.json();
       })
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setVideoProducts(data);
         } else {
-          setVideoProducts(defaultVideoProducts);
+          setVideoProducts([]);
         }
       })
       .catch((e) => {
         console.error("Reels fetch error:", e);
-        setVideoProducts(defaultVideoProducts);
+        setVideoProducts([]);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -207,6 +160,10 @@ const WatchAndBuy = () => {
       }, 300);
     }
   };
+
+  if (!loading && videoProducts.length === 0) {
+    return null;
+  }
 
   const activeReel = activeReelIndex !== null && videoProducts[activeReelIndex] ? videoProducts[activeReelIndex] : null;
 

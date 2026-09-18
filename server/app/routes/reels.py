@@ -2,9 +2,9 @@ from datetime import datetime
 from typing import List, Optional
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.database import get_database
-from app.security import require_admin
+from app.security import get_current_user, require_admin
 from app.utils.cache import cache_response, clear_api_cache
 
 router = APIRouter(prefix="/reels", tags=["WatchAndBuyReels"])
@@ -38,62 +38,13 @@ class ReelOut(ReelBase):
         populate_by_name = True
 
 
+class ReelCommentCreate(BaseModel):
+    comment: str = Field(min_length=1, max_length=500)
+
+
 def _fmt(doc: dict) -> dict:
     doc["id"] = str(doc.pop("_id"))
     return doc
-
-
-def get_default_reels():
-    return [
-        {
-            "title": "Blush Glow Anarkali Kurta Set",
-            "video_url": "https://res.cloudinary.com/demo/video/upload/v1687258384/samples/dance-2.mp4",
-            "thumbnail": "https://images.pexels.com/photos/3622608/pexels-photo-3622608.jpeg?auto=compress&cs=tinysrgb&w=600",
-            "price": 4500.0,
-            "original_price": 5400.0,
-            "product_link": "/category/anarkali-kurtis",
-            "views": "2.4L",
-            "likes": 14200,
-            "order": 1,
-            "is_active": True
-        },
-        {
-            "title": "Chikankari Handcrafted Silk Kurti",
-            "video_url": "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-            "thumbnail": "https://images.pexels.com/photos/2802024/pexels-photo-2802024.jpeg?auto=compress&cs=tinysrgb&w=600",
-            "price": 3800.0,
-            "original_price": 4600.0,
-            "product_link": "/category/chikankari-kurtis",
-            "views": "1.8L",
-            "likes": 9800,
-            "order": 2,
-            "is_active": True
-        },
-        {
-            "title": "Maroon Mirror Work Anarkali Suit",
-            "video_url": "https://res.cloudinary.com/demo/video/upload/v1687258385/samples/sea-turtle.mp4",
-            "thumbnail": "https://images.pexels.com/photos/3622618/pexels-photo-3622618.jpeg?auto=compress&cs=tinysrgb&w=600",
-            "price": 5200.0,
-            "original_price": 6200.0,
-            "product_link": "/category/embroidered-kurtis",
-            "views": "3.1L",
-            "likes": 21500,
-            "order": 3,
-            "is_active": True
-        },
-        {
-            "title": "Palazzo Set - Festive Teal & Gold",
-            "video_url": "https://res.cloudinary.com/demo/video/upload/v1687258382/samples/cld-sample-video.mp4",
-            "thumbnail": "https://images.pexels.com/photos/4210854/pexels-photo-4210854.jpeg?auto=compress&cs=tinysrgb&w=600",
-            "price": 2999.0,
-            "original_price": 3800.0,
-            "product_link": "/category/palazzo-set-kurtis",
-            "views": "1.2L",
-            "likes": 8300,
-            "order": 4,
-            "is_active": True
-        }
-    ]
 
 
 @router.get("/", response_model=List[ReelOut])
@@ -103,15 +54,94 @@ def get_reels(request: Request, active_only: bool = True):
     query = {"is_active": True} if active_only else {}
     collection = db["watch_buy_reels"]
     reels = list(collection.find(query).sort("order", 1))
-    if not reels or (len(reels) > 0 and "googleapis.com" in reels[0].get("video_url", "")):
-        # Reset and seed valid working MP4 URLs
-        collection.delete_many({})
-        defaults = get_default_reels()
-        for d in defaults:
-            d["created_at"] = datetime.now()
-        collection.insert_many(defaults)
-        reels = list(collection.find(query).sort("order", 1))
     return [_fmt(r) for r in reels]
+
+
+def _reel_or_404(db, reel_id: str) -> ObjectId:
+    try:
+        oid = ObjectId(reel_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid reel id")
+    if not db["watch_buy_reels"].find_one({"_id": oid, "is_active": True}):
+        raise HTTPException(status_code=404, detail="Reel not found")
+    return oid
+
+
+def _engagement(db, reel_id: str, user_id: Optional[str] = None) -> dict:
+    reel = db["watch_buy_reels"].find_one({"_id": ObjectId(reel_id)}) or {}
+    organic_likes = db["reel_likes"].count_documents({"reel_id": reel_id})
+    return {
+        "reel_id": reel_id,
+        "likes": max(0, int(reel.get("likes") or 0)) + organic_likes,
+        "comments": db["reel_comments"].count_documents({"reel_id": reel_id}),
+        "liked": bool(user_id and db["reel_likes"].find_one({"reel_id": reel_id, "user_id": user_id})),
+    }
+
+
+@router.get("/{reel_id}/engagement")
+def get_reel_engagement(reel_id: str):
+    db = get_database()
+    _reel_or_404(db, reel_id)
+    return _engagement(db, reel_id)
+
+
+@router.get("/{reel_id}/engagement/me")
+def get_my_reel_engagement(reel_id: str, current_user=Depends(get_current_user)):
+    db = get_database()
+    _reel_or_404(db, reel_id)
+    return _engagement(db, reel_id, str(current_user.get("id")))
+
+
+@router.post("/{reel_id}/like")
+def toggle_reel_like(reel_id: str, current_user=Depends(get_current_user)):
+    db = get_database()
+    _reel_or_404(db, reel_id)
+    user_id = str(current_user.get("id"))
+    query = {"reel_id": reel_id, "user_id": user_id}
+    existing = db["reel_likes"].find_one(query)
+    if existing:
+        db["reel_likes"].delete_one({"_id": existing["_id"]})
+        liked = False
+    else:
+        db["reel_likes"].update_one(
+            query,
+            {"$setOnInsert": {**query, "created_at": datetime.now()}},
+            upsert=True,
+        )
+        liked = True
+    return {**_engagement(db, reel_id, user_id), "liked": liked}
+
+
+@router.get("/{reel_id}/comments")
+def get_reel_comments(reel_id: str, skip: int = 0, limit: int = 50):
+    db = get_database()
+    _reel_or_404(db, reel_id)
+    limit = min(max(limit, 1), 100)
+    rows = list(db["reel_comments"].find({"reel_id": reel_id}).sort("created_at", -1).skip(max(skip, 0)).limit(limit))
+    return [{
+        "id": str(row["_id"]),
+        "user_name": row.get("user_name") or "Nari shopper",
+        "comment": row.get("comment") or "",
+        "created_at": row.get("created_at"),
+    } for row in rows]
+
+
+@router.post("/{reel_id}/comments", status_code=201)
+def create_reel_comment(reel_id: str, data: ReelCommentCreate, current_user=Depends(get_current_user)):
+    db = get_database()
+    _reel_or_404(db, reel_id)
+    comment = " ".join(data.comment.strip().split())
+    if not comment:
+        raise HTTPException(status_code=422, detail="Comment cannot be empty")
+    doc = {
+        "reel_id": reel_id,
+        "user_id": str(current_user.get("id")),
+        "user_name": current_user.get("name") or "Nari shopper",
+        "comment": comment,
+        "created_at": datetime.now(),
+    }
+    result = db["reel_comments"].insert_one(doc)
+    return {"id": str(result.inserted_id), **{k: doc[k] for k in ("user_name", "comment", "created_at")}}
 
 
 @router.post("/", response_model=ReelOut, status_code=201)
@@ -130,13 +160,14 @@ def update_reel(reel_id: str, data: ReelUpdate, _admin=Depends(require_admin)):
     db = get_database()
     try:
         oid = ObjectId(reel_id)
+        filter_q = {"$or": [{"_id": oid}, {"id": reel_id}]}
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid reel id")
+        filter_q = {"id": reel_id}
 
     update = data.model_dump()
     update["updated_at"] = datetime.now()
     result = db["watch_buy_reels"].find_one_and_update(
-        {"_id": oid}, {"$set": update}, return_document=True
+        filter_q, {"$set": update}, return_document=True
     )
     if not result:
         raise HTTPException(status_code=404, detail="Reel not found")
@@ -149,9 +180,10 @@ def delete_reel(reel_id: str, _admin=Depends(require_admin)):
     db = get_database()
     try:
         oid = ObjectId(reel_id)
+        filter_q = {"$or": [{"_id": oid}, {"id": reel_id}]}
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid reel id")
-    result = db["watch_buy_reels"].delete_one({"_id": oid})
+        filter_q = {"id": reel_id}
+    result = db["watch_buy_reels"].delete_one(filter_q)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Reel not found")
     clear_api_cache()
@@ -163,12 +195,13 @@ def toggle_reel(reel_id: str, _admin=Depends(require_admin)):
     db = get_database()
     try:
         oid = ObjectId(reel_id)
+        filter_q = {"$or": [{"_id": oid}, {"id": reel_id}]}
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid reel id")
-    doc = db["watch_buy_reels"].find_one({"_id": oid})
+        filter_q = {"id": reel_id}
+    doc = db["watch_buy_reels"].find_one(filter_q)
     if not doc:
         raise HTTPException(status_code=404, detail="Reel not found")
     new_state = not doc.get("is_active", True)
-    db["watch_buy_reels"].update_one({"_id": oid}, {"$set": {"is_active": new_state}})
+    db["watch_buy_reels"].update_one(filter_q, {"$set": {"is_active": new_state}})
     clear_api_cache()
     return {"success": True, "is_active": new_state}
