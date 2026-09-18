@@ -823,21 +823,21 @@ const Products = () => {
                         onClick={handleExportCSV}
                         className="p-2.5 bg-[#111827] border border-gray-800 rounded-xl hover:bg-gray-800 transition text-xs font-semibold text-white flex items-center gap-2"
                     >
-                        <Download className="w-4 h-4 text-[#d4af37]" /> Export CSV
+                        <Download className="w-4 h-4 text-cyan-400" /> Export CSV
                     </button>
                     {activeTab === "brands" ? (
                         <button
                             onClick={() => setShowAddBrandModal(true)}
-                            className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-amber-500/20 transition duration-200 cursor-pointer"
+                            className="flex items-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-md transition duration-200 cursor-pointer"
                         >
-                            <Plus className="w-4 h-4 text-slate-950 stroke-[2.5]" /> Add Brand
+                            <Plus className="w-4 h-4 text-black stroke-[2.5]" /> Add Brand
                         </button>
                     ) : (
                         <button
                             onClick={handleOpenAddModal}
-                            className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-amber-500/20 transition duration-200 cursor-pointer"
+                            className="flex items-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-md transition duration-200 cursor-pointer"
                         >
-                            <Plus className="w-4 h-4 text-slate-950 stroke-[2.5]" /> Add Product
+                            <Plus className="w-4 h-4 text-black stroke-[2.5]" /> Add Product
                         </button>
                     )}
                 </div>
@@ -875,15 +875,15 @@ const Products = () => {
 
                 <div
                     onClick={() => { setActiveTab("inventory"); setShowOnlyLowStock(false); setCurrentPage(1); }}
-                    className="bg-gradient-to-br from-[#111827] to-[#1e293b] border border-gray-800 p-4 rounded-2xl flex items-center gap-3 shadow-md cursor-pointer hover:border-amber-500/50 transition transform hover:-translate-y-0.5 group"
+                    className="bg-gradient-to-br from-[#111827] to-[#1e293b] border border-gray-800 p-4 rounded-2xl flex items-center gap-3 shadow-md cursor-pointer hover:border-cyan-500/50 transition transform hover:-translate-y-0.5 group"
                     title="Click to view inventory asset valuation"
                 >
-                    <div className="p-3 bg-amber-500/10 rounded-xl text-[#d4af37] border border-amber-500/20 group-hover:bg-amber-500/20">
+                    <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-400 border border-cyan-500/20 group-hover:bg-cyan-500/20">
                         <IndianRupee className="w-6 h-6" />
                     </div>
                     <div>
                         <span className="text-[11px] text-gray-400 font-medium block uppercase tracking-wider">Stock Valuation</span>
-                        <span className="text-xl font-extrabold text-[#d4af37] font-mono">₹{totalStockValuation.toLocaleString("en-IN")}</span>
+                        <span className="text-xl font-extrabold text-cyan-400 font-mono">₹{totalStockValuation.toLocaleString("en-IN")}</span>
                     </div>
                 </div>
 
@@ -907,24 +907,24 @@ const Products = () => {
             <div className="flex border-b border-gray-800 gap-6">
                 <button
                     onClick={() => { setActiveTab("products"); setCurrentPage(1); }}
-                    className={`pb-3 text-sm font-bold relative transition ${activeTab === "products" ? "text-[#d4af37]" : "text-gray-400 hover:text-white"}`}
+                    className={`pb-3 text-sm font-bold relative transition ${activeTab === "products" ? "text-cyan-400" : "text-gray-400 hover:text-white"}`}
                 >
                     Product Catalog
-                    {activeTab === "products" && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#d4af37] rounded-full"></span>}
+                    {activeTab === "products" && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-cyan-400 rounded-full"></span>}
                 </button>
                 <button
                     onClick={() => { setActiveTab("inventory"); setCurrentPage(1); }}
-                    className={`pb-3 text-sm font-bold relative transition ${activeTab === "inventory" ? "text-[#d4af37]" : "text-gray-400 hover:text-white"}`}
+                    className={`pb-3 text-sm font-bold relative transition ${activeTab === "inventory" ? "text-cyan-400" : "text-gray-400 hover:text-white"}`}
                 >
                     Inventory Warnings
-                    {activeTab === "inventory" && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#d4af37] rounded-full"></span>}
+                    {activeTab === "inventory" && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-cyan-400 rounded-full"></span>}
                 </button>
                 <button
                     onClick={() => { setActiveTab("brands"); setCurrentPage(1); }}
-                    className={`pb-3 text-sm font-bold relative transition ${activeTab === "brands" ? "text-[#d4af37]" : "text-gray-400 hover:text-white"}`}
+                    className={`pb-3 text-sm font-bold relative transition ${activeTab === "brands" ? "text-cyan-400" : "text-gray-400 hover:text-white"}`}
                 >
                     Brands Manager
-                    {activeTab === "brands" && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#d4af37] rounded-full"></span>}
+                    {activeTab === "brands" && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-cyan-400 rounded-full"></span>}
                 </button>
             </div>
 
@@ -941,7 +941,7 @@ const Products = () => {
                                     placeholder="Search products by SKU or Name..."
                                     value={searchQuery}
                                     onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                                    className="w-full pl-10 pr-4 py-2.5 bg-[#0b1220] border border-gray-800 rounded-xl text-xs text-gray-200 focus:outline-none focus:border-[#d4af37] transition"
+                                    className="w-full pl-10 pr-4 py-2.5 bg-[#0b1220] border border-gray-800 rounded-xl text-xs text-gray-200 focus:outline-none focus:border-cyan-400 transition"
                                 />
                             </div>
 
@@ -950,7 +950,7 @@ const Products = () => {
                                 <select
                                     value={filterCategory}
                                     onChange={(e) => { setFilterCategory(e.target.value); setCurrentPage(1); }}
-                                    className="w-full pl-10 pr-4 py-2.5 bg-[#0b1220] border border-gray-800 rounded-xl text-xs text-gray-200 focus:outline-none focus:border-[#d4af37] cursor-pointer"
+                                    className="w-full pl-10 pr-4 py-2.5 bg-[#0b1220] border border-gray-800 rounded-xl text-xs text-gray-200 focus:outline-none focus:border-cyan-400 cursor-pointer"
                                 >
                                     <option value="all" className="bg-slate-900 text-white">All Categories ({totalProducts})</option>
                                     {categoriesList && categoriesList.length > 0 ? (
@@ -966,7 +966,7 @@ const Products = () => {
                             <select
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
-                                className="w-full px-4 py-2.5 bg-[#0b1220] border border-gray-800 rounded-xl text-xs text-gray-300 focus:outline-none focus:border-[#d4af37] cursor-pointer"
+                                className="w-full px-4 py-2.5 bg-[#0b1220] border border-gray-800 rounded-xl text-xs text-gray-300 focus:outline-none focus:border-cyan-400 cursor-pointer"
                             >
                                 <option value="newest">Sort by Newest First (Date)</option>
                                 <option value="stock_asc">Sort by Lowest Stock First (Restock Alert)</option>
@@ -1020,13 +1020,13 @@ const Products = () => {
                                                 </div>
                                             </td>
                                             <td className="py-3.5 px-6 font-mono text-gray-400">{p.sku}</td>
-                                            <td className="py-3.5 px-6 text-gray-400">{p.category}</td>
-                                            <td className="py-3.5 px-6 font-bold text-[#d4af37] font-mono">₹{p.price.toLocaleString()}</td>
+                                            <td className="py-3.5 px-6 text-gray-300">{p.category}</td>
+                                            <td className="py-3.5 px-6 font-bold text-white font-mono">₹{p.price.toLocaleString()}</td>
                                             <td className="py-3.5 px-6 font-mono text-gray-300">
                                                 <div className="font-bold text-white">{p.stock} units</div>
                                                 {p.warehouse_stock && Object.keys(p.warehouse_stock).length > 0 && (
                                                     <div className="text-[10px] text-gray-400 font-sans mt-0.5">
-                                                        <span className="text-amber-300/90 font-medium">Home: {p.warehouse_stock.Home ?? 0}</span> • <span className="text-cyan-300/90 font-medium">home-1: {p.warehouse_stock['home-1'] ?? 0}</span>
+                                                        <span className="text-cyan-400 font-medium">Home: {p.warehouse_stock.Home ?? 0}</span> • <span className="text-slate-300 font-medium">home-1: {p.warehouse_stock['home-1'] ?? 0}</span>
                                                     </div>
                                                 )}
                                             </td>
@@ -1035,29 +1035,29 @@ const Products = () => {
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button
                                                         onClick={() => setSharingProduct(p)}
-                                                        className="p-2 bg-purple-600/10 text-purple-400 border border-purple-600/20 rounded-xl hover:bg-purple-600/20 transition"
+                                                        className="p-2 bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 rounded-xl transition cursor-pointer"
                                                         title="Share Product & QR Code"
                                                     >
                                                         <Share2 className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => window.open(`/product/${p.id}`, "_blank")}
-                                                        className="p-2 bg-emerald-600/10 text-emerald-400 border border-emerald-600/20 rounded-xl hover:bg-emerald-600/20 transition"
+                                                        className="p-2 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 rounded-xl transition cursor-pointer"
                                                         title="View Product"
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleEdit(p)}
-                                                        className="p-2 bg-blue-600/10 text-blue-400 border border-blue-600/20 rounded-xl hover:bg-blue-600/20 transition"
-                                                        title="Edit"
+                                                        className="p-2 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl transition cursor-pointer font-bold shadow-sm"
+                                                        title="Edit Product"
                                                     >
                                                         <Edit2 className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(p.id)}
-                                                        className="p-2 bg-red-600/10 text-red-400 border border-red-600/20 rounded-xl hover:bg-red-600/20 transition"
-                                                        title="Delete"
+                                                        className="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-500/30 rounded-xl transition cursor-pointer"
+                                                        title="Delete Product"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -1226,14 +1226,14 @@ const Products = () => {
                                             return (
                                                 <tr key={b.id || b._id || idx} className="hover:bg-gray-800/20 transition">
                                                     <td className="py-3.5 px-6 font-semibold text-white flex items-center gap-2">
-                                                        <Tag className="w-4 h-4 text-[#d4af37]" /> {b.name}
+                                                        <Tag className="w-4 h-4 text-cyan-400" /> {b.name}
                                                     </td>
                                                     <td className="py-3.5 px-6 font-mono text-gray-400">{b.slug}</td>
                                                     <td className="py-3.5 px-6 font-mono text-gray-300">{liveCount || b.count || 0} listings</td>
                                                     <td className="py-3.5 px-6 text-gray-400">{b.country}</td>
                                                     <td className="py-3.5 px-6">
                                                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                                            b.status === "Active" ? "bg-green-500/10 text-green-400 border border-green-500/20" : "bg-gray-500/10 text-gray-400 border border-gray-500/20"
+                                                            b.status === "Active" ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30" : "bg-gray-500/10 text-gray-400 border border-gray-500/20"
                                                         }`}>
                                                             {b.status}
                                                         </span>
@@ -1242,14 +1242,14 @@ const Products = () => {
                                                         <div className="flex items-center justify-end gap-2">
                                                             <button
                                                                 onClick={() => handleEditBrand(b)}
-                                                                className="p-2 bg-blue-600/10 text-blue-400 border border-blue-600/20 rounded-xl hover:bg-blue-600/20 transition"
+                                                                className="p-2 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl transition cursor-pointer font-bold shadow-sm"
                                                                 title="Edit Brand"
                                                             >
                                                                 <Edit2 className="w-4 h-4" />
                                                             </button>
                                                             <button
                                                                 onClick={() => handleDeleteBrand(b)}
-                                                                className="p-2 bg-red-600/10 text-red-400 border border-red-600/20 rounded-xl hover:bg-red-600/20 transition"
+                                                                className="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-500/30 rounded-xl transition cursor-pointer"
                                                                 title="Delete Brand"
                                                             >
                                                                 <Trash2 className="w-4 h-4" />
@@ -1273,7 +1273,7 @@ const Products = () => {
                     <div className="bg-[#0f172a] border border-slate-700/90 rounded-2xl w-full max-w-md shadow-2xl text-left overflow-hidden">
                         <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-[#0c1322]">
                             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
                                 {showEditBrandModal ? "Edit Brand Details" : "Add New Partner Brand"}
                             </h3>
                             <button
@@ -1285,45 +1285,45 @@ const Products = () => {
                         </div>
                         <form onSubmit={showEditBrandModal ? handleUpdateBrandSubmit : handleAddBrand} className="p-5 space-y-4 text-xs">
                             <div>
-                                <label className="block text-slate-200 font-semibold mb-1.5">Brand Name <span className="text-amber-400">*</span></label>
+                                <label className="block text-white font-semibold mb-1.5">Brand Name <span className="text-cyan-400">*</span></label>
                                 <input
                                     type="text"
                                     required
                                     value={newBrand.name}
                                     onChange={(e) => setNewBrand({ ...newBrand, name: e.target.value })}
-                                    className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 text-xs transition"
+                                    className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs transition"
                                     placeholder="e.g. Nari Pehnawa, Bunaai"
                                 />
                             </div>
                             <div>
-                                <label className="block text-slate-200 font-semibold mb-1.5">Country Origin</label>
+                                <label className="block text-white font-semibold mb-1.5">Country Origin</label>
                                 <input
                                     type="text"
                                     value={newBrand.country}
                                     onChange={(e) => setNewBrand({ ...newBrand, country: e.target.value })}
-                                    className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 text-xs transition"
+                                    className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs transition"
                                     placeholder="e.g. India"
                                 />
                             </div>
                             <div>
-                                <label className="block text-slate-200 font-semibold mb-1.5">Status</label>
+                                <label className="block text-white font-semibold mb-1.5">Status</label>
                                 <select
                                     value={newBrand.status}
                                     onChange={(e) => setNewBrand({ ...newBrand, status: e.target.value })}
-                                    className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
+                                    className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-cyan-400 cursor-pointer"
                                 >
                                     <option value="Active" className="bg-slate-900 text-white">Active</option>
                                     <option value="Inactive" className="bg-slate-900 text-white">Inactive</option>
                                 </select>
                             </div>
                             <div className="flex gap-3 pt-2">
-                                <button type="submit" className="flex-1 py-2.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold rounded-xl shadow-md transition duration-200 cursor-pointer text-xs">
+                                <button type="submit" className="flex-1 py-2.5 px-4 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold rounded-xl shadow-md transition duration-200 cursor-pointer text-xs">
                                     {showEditBrandModal ? "Update Brand" : "Save Brand"}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => { setShowAddBrandModal(false); setShowEditBrandModal(false); setEditingBrand(null); }}
-                                    className="flex-1 py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-semibold rounded-xl transition cursor-pointer text-xs"
+                                    className="flex-1 py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-bold rounded-xl transition cursor-pointer text-xs"
                                 >
                                     Cancel
                                 </button>
@@ -1340,7 +1340,7 @@ const Products = () => {
                         {/* Modal Header */}
                         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-[#0c1322] flex-shrink-0">
                             <div className="flex items-center gap-2.5">
-                                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 ring-4 ring-amber-400/20"></span>
+                                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 ring-4 ring-cyan-400/20"></span>
                                 <h3 className="text-base font-bold text-white tracking-wide">
                                     {showEditModal ? "Edit Product Listing" : "Add New Product"}
                                 </h3>
@@ -1363,23 +1363,23 @@ const Products = () => {
                         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5 text-xs overflow-y-auto flex-1">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-slate-200 font-semibold mb-1.5">Product Title <span className="text-amber-400">*</span></label>
+                                    <label className="block text-white font-semibold mb-1.5">Product Title <span className="text-cyan-400">*</span></label>
                                     <input
                                         type="text"
                                         required
                                         value={formData.title}
                                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-xs transition"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs transition"
                                         placeholder="e.g. Royal Embroidered Anarkali Kurti"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-slate-200 font-semibold mb-1.5">Brand Name</label>
+                                    <label className="block text-white font-semibold mb-1.5">Brand Name</label>
                                     <select
                                         value={formData.brand || "Nari Pehnawa"}
                                         onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 cursor-pointer"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 cursor-pointer"
                                     >
                                         {(brands || []).map((b, idx) => (
                                             <option key={b.id || idx} value={b.name} className="bg-slate-900 text-white">{b.name}</option>
@@ -1391,43 +1391,43 @@ const Products = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-slate-200 font-semibold mb-1.5">Price (INR) <span className="text-amber-400">*</span></label>
+                                    <label className="block text-white font-semibold mb-1.5">Price (INR) <span className="text-cyan-400">*</span></label>
                                     <input
                                         type="number"
                                         step="0.01"
                                         required
                                         value={formData.price}
                                         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-xs transition"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs transition"
                                         placeholder="e.g. 1299"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-slate-200 font-semibold mb-1.5 flex items-center justify-between">
-                                        <span>Total Stock Quantity <span className="text-amber-400">*</span></span>
-                                        <span className="text-[10px] text-amber-400/90 font-normal">Auto-calculated from Warehouses</span>
+                                    <label className="block text-white font-semibold mb-1.5 flex items-center justify-between">
+                                        <span>Total Stock Quantity <span className="text-cyan-400">*</span></span>
+                                        <span className="text-[10px] text-cyan-400/90 font-normal">Auto-calculated from Warehouses</span>
                                     </label>
                                     <input
                                         type="number"
                                         required
                                         value={formData.stock}
                                         onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-xs font-mono font-bold transition"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-mono font-bold transition"
                                         placeholder="0"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-slate-200 font-semibold mb-1.5 flex items-center justify-between">
-                                        <span>Category <span className="text-amber-400">*</span></span>
-                                        <span className="text-[10px] text-amber-400/90 font-normal">Dynamic ({categoriesList.length} Available)</span>
+                                    <label className="block text-white font-semibold mb-1.5 flex items-center justify-between">
+                                        <span>Category <span className="text-cyan-400">*</span></span>
+                                        <span className="text-[10px] text-cyan-400 font-normal">Dynamic ({categoriesList.length} Available)</span>
                                     </label>
                                     <select
                                         required
                                         value={formData.category}
                                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 cursor-pointer"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 cursor-pointer"
                                     >
                                         <option value="" className="bg-slate-900 text-slate-400">── Select Category ──</option>
                                         {categoriesList && categoriesList.length > 0 ? (
@@ -1441,7 +1441,7 @@ const Products = () => {
                                         )}
                                         {/* Retain current product category if not in fetched list */}
                                         {formData.category && !categoriesList.some(c => c.name?.toLowerCase() === formData.category?.toLowerCase()) && (
-                                            <option value={formData.category} className="bg-slate-900 text-amber-300">
+                                            <option value={formData.category} className="bg-slate-900 text-cyan-300">
                                                 {formData.category} (Current)
                                             </option>
                                         )}
@@ -1449,14 +1449,14 @@ const Products = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-slate-200 font-semibold mb-1.5 flex items-center justify-between">
+                                    <label className="block text-white font-semibold mb-1.5 flex items-center justify-between">
                                         <span>Product Image (File Upload)</span>
                                         <span className="text-[10px] text-slate-400 font-normal">PNG, JPG, WebP (Max 10MB)</span>
                                     </label>
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-3">
                                             {formData.image ? (
-                                                <div className="w-14 h-14 rounded-xl overflow-hidden border-2 border-amber-400/60 relative flex-shrink-0 group bg-slate-900 shadow-md">
+                                                <div className="w-14 h-14 rounded-xl overflow-hidden border-2 border-cyan-400/60 relative flex-shrink-0 group bg-slate-900 shadow-md">
                                                     <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
                                                     <button
                                                         type="button"
@@ -1468,13 +1468,13 @@ const Products = () => {
                                                 </div>
                                             ) : null}
 
-                                            <label className="flex-1 border-2 border-dashed border-amber-500/30 hover:border-amber-400 bg-[#141f36]/70 hover:bg-[#141f36] rounded-xl p-2.5 text-center cursor-pointer transition flex items-center justify-center gap-2">
+                                            <label className="flex-1 border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 bg-[#141f36]/70 hover:bg-[#141f36] rounded-xl p-2.5 text-center cursor-pointer transition flex items-center justify-center gap-2">
                                                 {uploadingImage ? (
-                                                    <RefreshCw className="w-4 h-4 text-amber-400 animate-spin" />
+                                                    <RefreshCw className="w-4 h-4 text-cyan-400 animate-spin" />
                                                 ) : (
-                                                    <Upload className="w-4 h-4 text-amber-400" />
+                                                    <Upload className="w-4 h-4 text-cyan-400" />
                                                 )}
-                                                <span className="text-xs text-amber-200 font-semibold">
+                                                <span className="text-xs text-cyan-300 font-semibold">
                                                     {uploadingImage ? "Uploading Image..." : "Click to Upload Image File"}
                                                 </span>
                                                 <input
@@ -1492,7 +1492,7 @@ const Products = () => {
                                                 type="url"
                                                 value={formData.image}
                                                 onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                                                className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                                                className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
                                                 placeholder="Or paste external image URL (optional)"
                                             />
                                         </div>
@@ -1500,60 +1500,60 @@ const Products = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-slate-200 font-semibold mb-1.5">Original Price (MRP)</label>
+                                    <label className="block text-white font-semibold mb-1.5">Original Price (MRP)</label>
                                     <input
                                         type="number"
                                         step="0.01"
                                         value={formData.original_price}
                                         onChange={(e) => setFormData({ ...formData, original_price: e.target.value })}
-                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 text-xs transition"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs transition"
                                         placeholder="e.g. 1999"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-slate-200 font-semibold mb-1.5">Discount %</label>
+                                    <label className="block text-white font-semibold mb-1.5">Discount %</label>
                                     <input
                                         type="number"
                                         min="0"
                                         max="100"
                                         value={formData.discount}
                                         onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
-                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 text-xs transition"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs transition"
                                         placeholder="e.g. 20"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-slate-200 font-semibold mb-1.5">Fabric</label>
+                                    <label className="block text-white font-semibold mb-1.5">Fabric</label>
                                     <input
                                         type="text"
                                         value={formData.fabric}
                                         onChange={(e) => setFormData({ ...formData, fabric: e.target.value })}
-                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 text-xs transition"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs transition"
                                         placeholder="e.g. Pure Cotton, Chanderi Silk"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-slate-200 font-semibold mb-1.5">Delivery Charge (INR)</label>
+                                    <label className="block text-white font-semibold mb-1.5">Delivery Charge (INR)</label>
                                     <input
                                         type="number"
                                         step="0.01"
                                         min="0"
                                         value={formData.delivery_charge}
                                         onChange={(e) => setFormData({ ...formData, delivery_charge: e.target.value })}
-                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 text-xs transition"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs transition"
                                         placeholder="0 (or leave empty for default)"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-slate-200 font-semibold mb-1.5">Primary Dispatch Warehouse (Shiprocket)</label>
+                                    <label className="block text-white font-semibold mb-1.5">Primary Dispatch Warehouse (Shiprocket)</label>
                                     <select
                                         value={formData.pickup_location || "Home"}
                                         onChange={(e) => setFormData({ ...formData, pickup_location: e.target.value })}
-                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 cursor-pointer"
                                     >
                                         {(pickupLocations || []).map((loc) => (
                                             <option key={loc.id || loc.pickup_location} value={loc.pickup_location} className="bg-slate-900 text-white">
@@ -1564,27 +1564,27 @@ const Products = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-slate-200 font-semibold mb-1.5">Sizes (comma separated)</label>
+                                    <label className="block text-white font-semibold mb-1.5">Sizes (comma separated)</label>
                                     <input
                                         type="text"
                                         value={formData.sizes}
                                         onChange={(e) => setFormData({ ...formData, sizes: e.target.value })}
-                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 text-xs transition"
+                                        className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs transition"
                                         placeholder="e.g. S,M,L,XL,XXL"
                                     />
                                 </div>
                             </div>
 
                             {/* ── Multi-Warehouse Inventory & Variant Stock Allocation Card ── */}
-                            <div className="bg-gradient-to-br from-[#121c33] to-[#0c1322] border border-amber-500/30 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl">
+                            <div className="bg-gradient-to-br from-[#121c33] to-[#0c1322] border border-cyan-500/30 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl">
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-700/80 pb-3.5">
                                     <div>
                                         <div className="flex items-center gap-2.5 flex-wrap">
-                                            <span className="text-amber-400 font-extrabold text-sm uppercase tracking-wide flex items-center gap-1.5">
-                                                <Building2 className="w-4 h-4 text-amber-400" /> Shiprocket Multi-Warehouse Allocation
+                                            <span className="text-cyan-400 font-extrabold text-sm uppercase tracking-wide flex items-center gap-1.5">
+                                                <Building2 className="w-4 h-4 text-cyan-400" /> Shiprocket Multi-Warehouse Allocation
                                             </span>
-                                            <span className="text-[11px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1.5">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                            <span className="text-[11px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1.5">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
                                                 Dynamic Shiprocket ({pickupLocations.length} Warehouses)
                                             </span>
                                         </div>
@@ -1597,15 +1597,15 @@ const Products = () => {
                                             type="button"
                                             onClick={() => fetchPickupLocations(true)}
                                             disabled={isSyncingWarehouses}
-                                            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold flex items-center gap-1.5 transition active:scale-95 disabled:opacity-50 cursor-pointer shadow-sm"
+                                            className="px-3 py-2 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition active:scale-95 disabled:opacity-50 cursor-pointer shadow-md"
                                             title="Sync live warehouses from Shiprocket"
                                         >
-                                            <RefreshCw className={`w-3.5 h-3.5 ${isSyncingWarehouses ? "animate-spin text-amber-400" : ""}`} />
+                                            <RefreshCw className={`w-3.5 h-3.5 text-black ${isSyncingWarehouses ? "animate-spin" : ""}`} />
                                             <span>{isSyncingWarehouses ? "Syncing..." : "Sync Shiprocket"}</span>
                                         </button>
                                         <div className="text-right bg-[#141f36] px-3.5 py-1.5 rounded-xl border border-slate-700">
                                             <span className="text-[10px] text-slate-400 block uppercase font-semibold">Total Stock</span>
-                                            <span className="text-sm font-extrabold text-emerald-400 font-mono">{formData.stock || 0} units</span>
+                                            <span className="text-sm font-extrabold text-cyan-400 font-mono">{formData.stock || 0} units</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1621,39 +1621,39 @@ const Products = () => {
                                                 <div className="flex items-center justify-between border-b border-slate-700/80 pb-2.5">
                                                     <div>
                                                         <div className="font-bold text-white text-sm flex items-center gap-2">
-                                                            <span className="text-amber-400">📍</span>
+                                                            <span className="text-cyan-400">📍</span>
                                                             <span>{whCode}</span>
                                                             {wh.is_primary_location && (
-                                                                <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/40 font-bold">Primary</span>
+                                                                <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/40 font-bold">Primary</span>
                                                             )}
                                                             {formData.pickup_location === whCode && (
-                                                                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/40 font-bold">Selected Dispatch</span>
+                                                                <span className="text-[10px] bg-cyan-400 text-black font-bold px-2 py-0.5 rounded">Selected Dispatch</span>
                                                             )}
                                                         </div>
                                                         <span className="text-xs text-slate-300 block mt-1 font-medium">{wh.city || "UP"}, PIN: {wh.pin_code || ""}</span>
                                                     </div>
                                                     <div className="text-right bg-[#0c1322] border border-slate-700/80 px-2.5 py-1 rounded-lg">
                                                         <span className="text-[10px] text-slate-400 block uppercase font-semibold">Warehouse Qty</span>
-                                                        <span className="font-extrabold text-xs text-amber-300 font-mono">{whTotal} units</span>
+                                                        <span className="font-extrabold text-xs text-cyan-300 font-mono">{whTotal} units</span>
                                                     </div>
                                                 </div>
 
                                                 {parsedSizeList.length > 0 ? (
                                                     <div className="space-y-2">
-                                                        <span className="text-[11px] text-slate-300 font-bold block uppercase tracking-wider">Quantities by Size:</span>
+                                                        <span className="text-[11px] text-white font-bold block uppercase tracking-wider">Quantities by Size:</span>
                                                         <div className="grid grid-cols-4 gap-2.5">
                                                             {parsedSizeList.map((sz) => {
                                                                 const qty = formData.warehouse_size_stock?.[whCode]?.[sz] ?? "";
                                                                 return (
-                                                                    <div key={sz} className="text-center bg-[#0c1322] p-2 rounded-xl border border-slate-700/90 focus-within:border-amber-400 focus-within:ring-1 focus-within:ring-amber-400 transition">
-                                                                        <span className="text-xs font-bold text-amber-300 font-mono block mb-1">{sz}</span>
+                                                                    <div key={sz} className="text-center bg-[#0c1322] p-2 rounded-xl border border-slate-700/90 focus-within:border-cyan-400 focus-within:ring-1 focus-within:ring-cyan-400 transition">
+                                                                        <span className="text-xs font-bold text-cyan-300 font-mono block mb-1">{sz}</span>
                                                                         <input
                                                                             type="number"
                                                                             min="0"
                                                                             placeholder="0"
                                                                             value={qty}
                                                                             onChange={(e) => handleWarehouseSizeStockChange(whCode, sz, e.target.value)}
-                                                                            className="w-full bg-[#16233f] border border-slate-600 rounded-lg py-1 text-center text-xs text-white font-extrabold font-mono focus:outline-none focus:border-amber-400 placeholder-slate-600"
+                                                                            className="w-full bg-[#16233f] border border-slate-600 rounded-lg py-1 text-center text-xs text-white font-extrabold font-mono focus:outline-none focus:border-cyan-400 placeholder-slate-600"
                                                                         />
                                                                     </div>
                                                                 );
@@ -1662,14 +1662,14 @@ const Products = () => {
                                                     </div>
                                                 ) : (
                                                     <div>
-                                                        <label className="text-xs text-slate-300 font-semibold block mb-1.5">Total Warehouse Stock</label>
+                                                        <label className="text-xs text-white font-semibold block mb-1.5">Total Warehouse Stock</label>
                                                         <input
                                                             type="number"
                                                             min="0"
                                                             placeholder="0"
                                                             value={whTotal}
                                                             onChange={(e) => handleWarehouseTotalStockChange(whCode, e.target.value)}
-                                                            className="w-full bg-[#0c1322] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-bold font-mono focus:outline-none focus:border-amber-400"
+                                                            className="w-full bg-[#0c1322] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-bold font-mono focus:outline-none focus:border-cyan-400"
                                                         />
                                                     </div>
                                                 )}
@@ -1680,11 +1680,11 @@ const Products = () => {
                             </div>
 
                             <div>
-                                <label className="block text-slate-200 font-semibold mb-1.5">Description</label>
+                                <label className="block text-white font-semibold mb-1.5">Description</label>
                                 <textarea
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-xs h-24 resize-none transition"
+                                    className="w-full bg-[#141f36] border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs h-24 resize-none transition"
                                     placeholder="Enter detailed product description, fabric details, styling notes..."
                                 />
                             </div>
@@ -1692,7 +1692,7 @@ const Products = () => {
                             <div className="flex gap-3 pt-3 border-t border-slate-800">
                                 <button
                                     type="submit"
-                                    className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold rounded-xl shadow-lg shadow-amber-500/20 transition duration-200 text-xs flex items-center justify-center gap-2 cursor-pointer"
+                                    className="flex-1 py-3 px-4 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold rounded-xl shadow-md transition duration-200 text-xs flex items-center justify-center gap-2 cursor-pointer"
                                 >
                                     {showEditModal ? "Update Product Listing" : "Publish Product Listing"}
                                 </button>
@@ -1704,7 +1704,7 @@ const Products = () => {
                                         setEditingProductId(null);
                                         setFormData(emptyForm);
                                     }}
-                                    className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-bold rounded-xl transition duration-200 text-xs cursor-pointer"
+                                    className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-bold rounded-xl transition duration-200 text-xs cursor-pointer"
                                 >
                                     Cancel
                                 </button>
@@ -1738,7 +1738,7 @@ const Products = () => {
                             </div>
                             <div className="text-center">
                                 <div className="font-bold text-white text-sm">{sharingProduct.title}</div>
-                                <div className="text-xs text-[#d4af37] font-mono font-bold mt-0.5">₹{sharingProduct.price?.toLocaleString()} | SKU: {sharingProduct.sku}</div>
+                                <div className="text-xs text-cyan-400 font-mono font-bold mt-0.5">₹{sharingProduct.price?.toLocaleString()} | SKU: {sharingProduct.sku}</div>
                                 {sharingProduct.pickup_location && (
                                     <div className="text-[10px] text-cyan-400 bg-cyan-950/40 border border-cyan-800/40 px-2 py-0.5 rounded mt-1 inline-block">
                                         📍 Warehouse: {sharingProduct.pickup_location}
@@ -1770,9 +1770,9 @@ const Products = () => {
                                         setCopiedLink(true);
                                         setTimeout(() => setCopiedLink(false), 2000);
                                     }}
-                                    className="px-3.5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0"
+                                    className="px-3.5 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 flex-shrink-0 shadow-md cursor-pointer"
                                 >
-                                    {copiedLink ? <Check className="w-4 h-4 text-green-300" /> : <Copy className="w-4 h-4" />}
+                                    {copiedLink ? <Check className="w-4 h-4 text-emerald-800" /> : <Copy className="w-4 h-4 text-black" />}
                                     {copiedLink ? "Copied!" : "Copy"}
                                 </button>
                             </div>
@@ -1789,7 +1789,7 @@ const Products = () => {
 
                                 <button
                                     onClick={() => handlePrintSingleQRLabel(sharingProduct)}
-                                    className="py-2.5 px-3 bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-md text-center"
+                                    className="py-2.5 px-3 bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-md text-center cursor-pointer"
                                 >
                                     <Printer className="w-4 h-4 text-cyan-400" /> Print Label
                                 </button>
@@ -1797,14 +1797,14 @@ const Products = () => {
 
                             {/* Email Recommendation Section */}
                             <div className="border-t border-gray-800/80 pt-3 space-y-2">
-                                <label className="block text-[11px] font-semibold text-gray-400">Email Product to Customer</label>
+                                <label className="block text-[11px] font-semibold text-white">Email Product to Customer</label>
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="email"
                                         placeholder="customer@email.com"
                                         value={shareEmail}
                                         onChange={(e) => setShareEmail(e.target.value)}
-                                        className="w-full text-xs bg-[#0b1220] border border-gray-800 text-white rounded-xl px-3 py-2 focus:outline-none focus:border-cyan-500"
+                                        className="w-full text-xs bg-[#0b1220] border border-gray-800 text-white rounded-xl px-3 py-2 focus:outline-none focus:border-cyan-400"
                                     />
                                     <button
                                         disabled={sendingEmail || !shareEmail}
@@ -1835,9 +1835,9 @@ const Products = () => {
                                                 setSendingEmail(false);
                                             }
                                         }}
-                                        className="px-3 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0"
+                                        className="px-3 py-2 bg-cyan-400 hover:bg-cyan-300 disabled:opacity-50 text-black rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 flex-shrink-0 shadow-md cursor-pointer"
                                     >
-                                        <Mail className="w-4 h-4" />
+                                        <Mail className="w-4 h-4 text-black" />
                                         {sendingEmail ? "Sending..." : "Send Email"}
                                     </button>
                                 </div>
