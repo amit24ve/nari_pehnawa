@@ -112,6 +112,11 @@ export const WishlistProvider = ({ children }) => {
 
   /* ── Add to wishlist ── */
   const addToWishlist = async (product) => {
+    // Increment product's wishlist_count on backend
+    try {
+      fetch(`${API_URL}/products/${product.id}/wishlist-count?action=add`, { method: "POST" }).catch(() => {});
+    } catch (e) {}
+
     if (user) {
       const token = getToken();
       try {
@@ -147,6 +152,11 @@ export const WishlistProvider = ({ children }) => {
 
   /* ── Remove from wishlist ── */
   const removeFromWishlist = async (productId) => {
+    // Decrement product's wishlist_count on backend
+    try {
+      fetch(`${API_URL}/products/${productId}/wishlist-count?action=remove`, { method: "POST" }).catch(() => {});
+    } catch (e) {}
+
     if (user) {
       const token = getToken();
       try {

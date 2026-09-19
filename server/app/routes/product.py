@@ -255,7 +255,34 @@ def increment_product_view(product_id: str):
         )
         if not result:
             raise HTTPException(status_code=404, detail="Product not found")
+        clear_api_cache()
         return {"viewers_count": result.get("viewers_count", 1)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{product_id}/wishlist-count")
+def update_product_wishlist_count(product_id: str, action: str = Query("add")):
+    """Increment or decrement product wishlist_count (works for both guests and members)"""
+    db = get_database()
+    products_collection = db["products"]
+    inc_val = 1 if action == "add" else -1
+    try:
+        result = products_collection.find_one_and_update(
+            _build_product_query(product_id),
+            {"$inc": {"wishlist_count": inc_val}},
+            return_document=True
+        )
+        if not result:
+            raise HTTPException(status_code=404, detail="Product not found")
+        new_count = result.get("wishlist_count", 0)
+        if new_count < 0:
+            products_collection.update_one(_build_product_query(product_id), {"$set": {"wishlist_count": 0}})
+            new_count = 0
+        clear_api_cache()
+        return {"wishlist_count": new_count}
     except HTTPException:
         raise
     except Exception as e:

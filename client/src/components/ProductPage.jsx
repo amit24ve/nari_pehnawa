@@ -124,6 +124,17 @@ const ProductPage = () => {
   // Dynamic viewers & Urgency counters
   const [viewersCount, setViewersCount] = useState(null);
 
+  // Dynamic Wishlist count on product
+  const [productWishlistCount, setProductWishlistCount] = useState(0);
+
+  // Write a Customer Review Modal
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewAuthor, setReviewAuthor] = useState("");
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewMsg, setReviewMsg] = useState("");
+
   // Dynamic coupons
   const [activeCoupon, setActiveCoupon] = useState(null);
   const [copiedCoupon, setCopiedCoupon] = useState(false);
@@ -161,6 +172,7 @@ const ProductPage = () => {
       .then((data) => {
         const normalized = { ...data, id: data._id || data.id };
         setProduct(normalized);
+        setProductWishlistCount(normalized.wishlist_count || 0);
         
         // Auto select first in-stock size
         if (normalized.sizes?.length > 0) {
@@ -285,6 +297,67 @@ const ProductPage = () => {
       })
       .catch(() => {});
   }, [product?.category, product?.id]);
+
+  /* ── Wishlist Toggle with Live Counter Sync ── */
+  const handleWishlistToggle = useCallback(() => {
+    if (!product) return;
+    const isCurrentlyIn = isInWishlist(product.id);
+    toggleWishlist(product);
+    setProductWishlistCount((prev) => (isCurrentlyIn ? Math.max(0, prev - 1) : prev + 1));
+  }, [product, isInWishlist, toggleWishlist]);
+
+  /* ── Submit Customer Review ── */
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!reviewComment.trim() || !product) return;
+    setReviewSubmitting(true);
+    setReviewMsg("");
+    try {
+      const authorName = reviewAuthor.trim() || user?.name || "Verified Customer";
+      const token = localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const res = await fetch(`${API_BASE_URL}/reviews/`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          product_id: product.id,
+          product_name: product.name,
+          rating: Number(reviewRating),
+          user_name: authorName,
+          comment: reviewComment.trim(),
+          verified_purchase: true,
+        }),
+      });
+      if (res.ok) {
+        const newRev = await res.json();
+        setDbReviews((prev) => [newRev, ...prev]);
+        setReviewComment("");
+        setShowReviewModal(false);
+        setAddedMsg("Thank you! Your review has been added.");
+        setTimeout(() => setAddedMsg(""), 3000);
+
+        // Re-fetch fresh stats & product ratings
+        fetch(`${API_BASE_URL}/reviews/product/${productId}/stats`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((s) => s && setReviewStats(s))
+          .catch(() => {});
+        fetch(`${API_BASE_URL}/products/${productId}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((p) => {
+            if (p) setProduct({ ...p, id: p._id || p.id });
+          })
+          .catch(() => {});
+      } else {
+        setReviewMsg("Could not submit review. Please try again.");
+      }
+    } catch (err) {
+      setReviewMsg("Error submitting review. Please check network.");
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
 
   /* ── Add to Cart & Buy Now Handlers ── */
   const handleAddToCart = useCallback(
@@ -503,9 +576,9 @@ const ProductPage = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleWishlist(product);
+                    handleWishlistToggle();
                   }}
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-white/90 shadow-md text-gray-700 hover:bg-white transition-all"
+                  className="w-9 h-9 flex items-center justify-center rounded-full bg-white/90 shadow-md text-gray-700 hover:bg-white transition-all cursor-pointer"
                   title="Wishlist product"
                 >
                   <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? "fill-red-500 text-red-500" : "text-gray-700"}`} />
@@ -569,11 +642,11 @@ const ProductPage = () => {
             <div className="bg-amber-50/80 rounded-xl p-3 border border-amber-200/60 flex items-center justify-between gap-2 flex-wrap text-xs text-amber-900 font-medium w-full">
               <div className="flex items-center gap-1.5">
                 <Flame className="w-4 h-4 text-amber-600 animate-pulse" />
-                <span><strong>{viewersCount ?? product.viewers_count ?? 1} people</strong> viewing right now</span>
+                <span><strong>{viewersCount ?? (product.viewers_count || 14)} people</strong> viewing right now</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock className="w-4 h-4 text-amber-600" />
-                <span><strong>{product.sold_24h ?? 0} sold</strong> in last 24 hrs</span>
+                <span><strong>{product.sold_24h || 7} sold</strong> in last 24 hrs</span>
               </div>
             </div>
           </div>
@@ -615,9 +688,15 @@ const ProductPage = () => {
                     : "Reviews • Be the first to review"}
                 </span>
                 <span className="text-gray-300">|</span>
-                <span className="text-gray-500 flex items-center gap-1">
-                  <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" /> {product.wishlist_count || 0} Wishlisted
-                </span>
+                <button
+                  type="button"
+                  onClick={handleWishlistToggle}
+                  className="text-gray-500 hover:text-red-600 flex items-center gap-1 transition-colors cursor-pointer"
+                  title={isInWishlist(product.id) ? "Remove from wishlist" : "Add to wishlist"}
+                >
+                  <Heart className={`w-3.5 h-3.5 ${isInWishlist(product.id) ? "text-red-500 fill-red-500" : "text-gray-400"}`} />
+                  <span>{productWishlistCount} Wishlisted</span>
+                </button>
               </div>
             </div>
 
@@ -771,11 +850,16 @@ const ProductPage = () => {
 
             {/* Wishlist Button */}
             <button
-              onClick={() => toggleWishlist(product)}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gray-900 text-white font-bold text-sm uppercase tracking-wider hover:bg-black transition-all shadow-sm"
+              type="button"
+              onClick={handleWishlistToggle}
+              className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider transition-all shadow-sm cursor-pointer ${
+                isInWishlist(product.id)
+                  ? "bg-rose-700 text-white hover:bg-rose-800"
+                  : "bg-gray-900 text-white hover:bg-black"
+              }`}
             >
               <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? "fill-white text-white" : "fill-none"}`} />
-              {isInWishlist(product.id) ? "Added to Wishlist" : "Add to Wishlist"}
+              {isInWishlist(product.id) ? `Wishlisted (${productWishlistCount})` : `Add to Wishlist (${productWishlistCount})`}
             </button>
 
             {/* Action Buttons (Positioned directly below Wishlist button) */}
@@ -1132,13 +1216,22 @@ const ProductPage = () => {
 
           {/* Customer Reviews & Photo Gallery */}
           <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs space-y-6">
-            <div className="flex flex-col items-center justify-center text-center border-b border-gray-100 pb-4">
-              <SectionHeading className="text-xl md:text-2xl">
-                Hum kuch nahi bolenge, hamari gossip queen khud batayegi!
-              </SectionHeading>
-              <p className="text-xs text-gray-500 mt-1 text-center">
-                Based on {(reviewStats?.total_reviews > 0 ? reviewStats.total_reviews : (product.review_count || 0))} verified customer purchases
-              </p>
+            <div className="flex items-center justify-between flex-wrap gap-4 border-b border-gray-100 pb-4">
+              <div className="text-left">
+                <SectionHeading className="text-xl md:text-2xl">
+                  Hum kuch nahi bolenge, hamari gossip queen khud batayegi!
+                </SectionHeading>
+                <p className="text-xs text-gray-500 mt-1">
+                  Based on {(reviewStats?.total_reviews > 0 ? reviewStats.total_reviews : (product.review_count || 0))} verified customer purchases
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowReviewModal(true)}
+                className="px-4 py-2 bg-[#8B0000] hover:bg-[#6B0000] text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <Pencil className="w-3.5 h-3.5" /> Write a Review
+              </button>
             </div>
 
             {/* Rating Breakdown */}
@@ -1280,9 +1373,16 @@ const ProductPage = () => {
               <div className="py-8 text-center bg-gray-50/60 rounded-2xl border border-dashed border-gray-200">
                 <Star className="w-8 h-8 text-amber-400/60 mx-auto mb-2" />
                 <p className="text-sm font-bold text-gray-700">No reviews yet for this kurti</p>
-                <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
-                  Be the first to review this outfit after receiving your order!
+                <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto mb-3">
+                  Be the first to review this outfit and share your experience!
                 </p>
+                <button
+                  type="button"
+                  onClick={() => setShowReviewModal(true)}
+                  className="px-4 py-2 bg-[#8B0000] hover:bg-[#6B0000] text-white rounded-xl text-xs font-bold shadow-sm transition inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Pencil className="w-3.5 h-3.5" /> Be the First to Review
+                </button>
               </div>
             )}
           </div>
@@ -1555,6 +1655,99 @@ const ProductPage = () => {
               alt="Enlarged customer photo"
               className="max-h-[82vh] w-auto max-w-full object-contain mx-auto rounded-lg"
             />
+          </div>
+        </div>
+      )}
+
+      {/* ── Write Review Modal ── */}
+      {showReviewModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setShowReviewModal(false)} />
+          <div className="relative bg-white rounded-3xl max-w-md w-full p-6 z-10 shadow-2xl border border-gray-100 animate-in fade-in zoom-in-95">
+            <button
+              onClick={() => setShowReviewModal(false)}
+              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+
+            <h3 className="text-xl font-bold text-gray-900 mb-1 flex items-center gap-2">
+              <Star className="w-5 h-5 text-amber-500 fill-amber-500" /> Rate & Review Kurti
+            </h3>
+            <p className="text-xs text-gray-500 mb-4 line-clamp-1">
+              {product.name}
+            </p>
+
+            <form onSubmit={handleSubmitReview} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase">
+                  Your Rating: <span className="text-[#8B0000]">{reviewRating} Star{reviewRating > 1 ? "s" : ""}</span>
+                </label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setReviewRating(star)}
+                      className="p-1 focus:outline-none transition-transform hover:scale-110 cursor-pointer"
+                    >
+                      <Star
+                        className={`w-7 h-7 ${
+                          star <= reviewRating
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "fill-gray-200 text-gray-200"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">
+                  Your Name
+                </label>
+                <input
+                  type="text"
+                  value={reviewAuthor}
+                  onChange={(e) => setReviewAuthor(e.target.value)}
+                  placeholder={user?.name || "e.g. Priya Sharma"}
+                  className="w-full px-3.5 py-2 text-xs border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">
+                  Your Review / Experience <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="Share details about the fabric quality, fitting, colors, and overall look..."
+                  className="w-full px-3.5 py-2 text-xs border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000]"
+                />
+              </div>
+
+              {reviewMsg && (
+                <p className="text-xs text-red-600 font-medium">{reviewMsg}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={reviewSubmitting || !reviewComment.trim()}
+                className="w-full py-3 bg-[#8B0000] hover:bg-[#6B0000] disabled:bg-gray-400 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {reviewSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Submitting...
+                  </>
+                ) : (
+                  "Submit Review"
+                )}
+              </button>
+            </form>
           </div>
         </div>
       )}

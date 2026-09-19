@@ -6,31 +6,55 @@ from app.security import get_current_user, require_admin
 from bson import ObjectId
 from datetime import datetime
 
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from app.utils.cache import clear_api_cache
+
 router = APIRouter(prefix="/reviews", tags=["Reviews"])
+
+optional_security = HTTPBearer(auto_error=False)
+
+def get_optional_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security)) -> Optional[dict]:
+    if not credentials:
+        return None
+    try:
+        from jose import jwt
+        from app.security import SECRET_KEY, ALGORITHM
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        if user_id:
+            return {"id": user_id, "email": payload.get("email"), "role": payload.get("role", "customer")}
+    except Exception:
+        pass
+    return None
 
 
 @router.post("/", response_model=Review, status_code=201)
-def create_review(review: ReviewCreate, current_user: dict = Depends(get_current_user)):
-    """Create a new review"""
+def create_review(review: ReviewCreate, current_user: Optional[dict] = Depends(get_optional_current_user)):
+    """Create a new review (approved immediately and updates product rating)"""
     db = get_database()
     reviews_collection = db["reviews"]
     try:
         review_data = review.model_dump()
-        user_id = str(current_user.get("_id") or current_user.get("id") or "")
-        user_name = current_user.get("name") or review_data.get("user_name") or "Verified Customer"
-        user_email = current_user.get("email") or ""
+        user_id = str(current_user.get("_id") or current_user.get("id") or "") if current_user else "customer"
+        user_name = (current_user.get("name") if current_user else None) or review_data.get("user_name") or "Verified Customer"
+        user_email = (current_user.get("email") if current_user else None) or review_data.get("user_email") or ""
         
         review_data["user_id"] = user_id
         review_data["user_name"] = user_name
         review_data["user_email"] = user_email
         review_data["verified_purchase"] = True
-        review_data["status"] = "pending"
+        review_data["status"] = "approved"
         review_data["created_at"] = datetime.now()
         review_data["updated_at"] = datetime.now()
         review_data["helpful_count"] = 0
         
         result = reviews_collection.insert_one(review_data)
         review_data["_id"] = str(result.inserted_id)
+        
+        # Immediately sync product rating and review_count in products collection
+        _sync_product_rating(db, review_data["product_id"])
+        clear_api_cache()
+        
         return review_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -188,11 +212,13 @@ def update_review(review_id: str, review_update: ReviewUpdate, current_user: dic
 def _sync_product_rating(db, product_id: str):
     if not product_id or product_id == "unknown":
         return
-    approved = list(db["reviews"].find({"product_id": product_id, "status": "approved"}))
+    approved = list(db["reviews"].find({"product_id": str(product_id), "status": "approved"}))
     total_count = len(approved)
     avg_rating = round(sum(r.get("rating", 5) for r in approved) / total_count, 1) if total_count > 0 else 0.0
-    prod_q = {"_id": ObjectId(product_id)} if ObjectId.is_valid(product_id) else {"_id": product_id}
-    db["products"].update_one(prod_q, {
+    conds = [{"_id": str(product_id)}, {"id": str(product_id)}]
+    if ObjectId.is_valid(str(product_id)):
+        conds.insert(0, {"_id": ObjectId(str(product_id))})
+    db["products"].update_one({"$or": conds}, {
         "$set": {
             "rating": avg_rating,
             "review_count": total_count,
@@ -200,6 +226,7 @@ def _sync_product_rating(db, product_id: str):
             "total_reviews": total_count
         }
     })
+    clear_api_cache()
 
 
 @router.patch("/{review_id}/approve")

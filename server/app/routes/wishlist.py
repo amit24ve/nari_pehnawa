@@ -6,8 +6,16 @@ from app.database.schemas.wishlist import WishlistItem, WishlistItemCreate, Wish
 from app.security import get_current_user
 from bson import ObjectId
 from datetime import datetime
+from app.utils.cache import clear_api_cache
 
 router = APIRouter(prefix="/wishlist", tags=["Wishlist"])
+
+
+def _prod_query(pid: str):
+    conds = [{"_id": pid}, {"id": pid}]
+    if ObjectId.is_valid(pid):
+        conds.insert(0, {"_id": ObjectId(pid)})
+    return {"$or": conds}
 
 
 class MergeWishlistRequest(BaseModel):
@@ -32,8 +40,8 @@ def get_wishlist(current_user: dict = Depends(get_current_user)):
             
             # Get product details
             try:
-                product_obj_id = ObjectId(item["product_id"]) if isinstance(item["product_id"], str) else item["product_id"]
-                product = products_collection.find_one({"_id": product_obj_id})
+                product_obj_id = ObjectId(item["product_id"]) if isinstance(item["product_id"], str) and ObjectId.is_valid(item["product_id"]) else item["product_id"]
+                product = products_collection.find_one(_prod_query(str(item["product_id"])))
                 if product:
                     product["id"] = str(product["_id"])
                     product.pop("_id", None)
@@ -62,8 +70,7 @@ def merge_wishlist(request: MergeWishlistRequest, current_user: dict = Depends(g
     for pid in request.product_ids:
         try:
             # Check if product exists in database
-            product_obj_id = ObjectId(pid)
-            product = products_collection.find_one({"_id": product_obj_id})
+            product = products_collection.find_one(_prod_query(pid))
             if not product:
                 continue
             
@@ -78,10 +85,17 @@ def merge_wishlist(request: MergeWishlistRequest, current_user: dict = Depends(g
                     "product_id": pid,
                     "added_at": datetime.now().isoformat()
                 })
+                # Increment product wishlist count
+                products_collection.update_one(
+                    _prod_query(pid),
+                    {"$inc": {"wishlist_count": 1}}
+                )
                 added_count += 1
         except Exception:
             continue
             
+    if added_count > 0:
+        clear_api_cache()
     return {"success": True, "added_count": added_count}
 
 
@@ -96,13 +110,9 @@ def add_to_wishlist(item: WishlistItemCreate, current_user: dict = Depends(get_c
         user_id = current_user.get("id")
         
         # Check if product exists
-        try:
-            product_obj_id = ObjectId(item.product_id)
-            product = products_collection.find_one({"_id": product_obj_id})
-            if not product:
-                raise HTTPException(status_code=404, detail="Product not found")
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid product ID")
+        product = products_collection.find_one(_prod_query(item.product_id))
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
         
         # Check if item already in wishlist
         existing = wishlist_collection.find_one({
@@ -124,6 +134,13 @@ def add_to_wishlist(item: WishlistItemCreate, current_user: dict = Depends(get_c
         wishlist_data["id"] = str(result.inserted_id)
         wishlist_data.pop("_id", None)
         
+        # Increment wishlist_count on product
+        products_collection.update_one(
+            _prod_query(item.product_id),
+            {"$inc": {"wishlist_count": 1}}
+        )
+        clear_api_cache()
+        
         return wishlist_data
     except HTTPException:
         raise
@@ -136,6 +153,7 @@ def remove_from_wishlist(product_id: str, current_user: dict = Depends(get_curre
     """Remove a product from wishlist"""
     db = get_database()
     wishlist_collection = db["wishlist"]
+    products_collection = db["products"]
     
     try:
         user_id = current_user.get("id")
@@ -148,6 +166,16 @@ def remove_from_wishlist(product_id: str, current_user: dict = Depends(get_curre
         
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Product not found in wishlist")
+        
+        # Decrement wishlist_count on product
+        updated = products_collection.find_one_and_update(
+            _prod_query(product_id),
+            {"$inc": {"wishlist_count": -1}},
+            return_document=True
+        )
+        if updated and updated.get("wishlist_count", 0) < 0:
+            products_collection.update_one(_prod_query(product_id), {"$set": {"wishlist_count": 0}})
+        clear_api_cache()
         
         return {"message": "Product removed from wishlist successfully"}
     except HTTPException:

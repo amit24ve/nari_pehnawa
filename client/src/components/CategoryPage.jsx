@@ -24,6 +24,12 @@ import useSEO from "../hooks/useSEO";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
+const resolveImageUrl = (img) => {
+  if (!img) return "";
+  if (img.startsWith("http://") || img.startsWith("https://") || img.startsWith("data:")) return img;
+  return `${API_BASE_URL}${img.startsWith("/") ? "" : "/"}${img}`;
+};
+
 // Organic Pebble fluid curve shapes matching homepage cards
 const pebbleShapes = [
   "rounded-[45%_55%_65%_35%/55%_45%_55%_45%]",
@@ -237,11 +243,14 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
         const matched = cats.find((c) => {
           const catSlug = (c.link || "")
             .replace(/^\/category\//, "")
+            .replace(/^\//, "")
             .toLowerCase();
+          const cleanName = (c.name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
           return (
             catSlug === slug.toLowerCase() ||
-            c.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") ===
-            slug.toLowerCase()
+            cleanName === slug.toLowerCase() ||
+            (slug === "sale" && (cleanName.includes("sale") || cleanName.includes("mega"))) ||
+            (slug === "new-arrivals" && cleanName.includes("new"))
           );
         });
         if (matched) setCategoryInfo(matched);
@@ -459,10 +468,10 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
         <style>{`@media(min-width:768px){.cat-hero{height:540px!important;}}`}</style>
 
         {/* Background image */}
-        {(slug === "sale" ? (flashSale?.banner_image || categoryInfo?.image) : categoryInfo?.image) && (
+        {(categoryInfo?.image || (slug === "sale" ? flashSale?.banner_image : null)) && (
           <img
-            src={slug === "sale" ? (flashSale?.banner_image || categoryInfo?.image) : categoryInfo?.image}
-            alt={slug === "sale" ? (flashSale?.title || "Festive Flash Sale") : (categoryInfo?.name || displayName)}
+            src={resolveImageUrl(categoryInfo?.image || flashSale?.banner_image)}
+            alt={categoryInfo?.name || (slug === "sale" ? (flashSale?.title || "Festive Flash Sale") : displayName)}
             className="absolute inset-0 w-full h-full object-cover"
             style={{ objectPosition: "center top" }}
             onError={(e) => {
@@ -509,7 +518,7 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
             style={{ fontSize: "clamp(1.8rem, 5vw, 3.5rem)", lineHeight: 1.15 }}
           >
             <NariHeadingDecoration className="w-10 h-10 md:w-14 md:h-14" />
-            <span>{slug === "sale" ? (flashSale?.title || "Festive Flash Sale") : (categoryInfo?.name || displayName)}</span>
+            <span>{categoryInfo?.name || (slug === "sale" ? (flashSale?.title || "Festive Flash Sale") : displayName)}</span>
             <NariHeadingDecoration flip={true} className="w-10 h-10 md:w-14 md:h-14" />
           </h1>
 
@@ -517,7 +526,7 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
           {slug === "sale" ? (
             <div className="space-y-3 max-w-xl mx-auto">
               <p className="text-amber-200 text-sm md:text-base font-medium">
-                {flashSale?.subtitle || "Exclusive Limited-Time Discounts on Authentic Handcrafted Styles"}
+                {categoryInfo?.tagline || flashSale?.subtitle || "Exclusive Limited-Time Discounts on Authentic Handcrafted Styles"}
               </p>
 
               {/* Promotional Deal Badge */}
