@@ -121,12 +121,12 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0 }) 
         <div className="flex items-center justify-center gap-1 mb-2">
           <div className="flex items-center gap-0.5 bg-emerald-700 rounded px-1.5 py-0.5">
             <span className="text-[10px] font-bold text-white">
-              {(product.rating || 4.0).toFixed(1)}
+              {Number(product.rating || 0).toFixed(1)}
             </span>
             <Star className="w-2.5 h-2.5 fill-white text-white" />
           </div>
           <span className="text-[11px] text-gray-500">
-            ({(product.review_count || 0).toLocaleString("en-IN")})
+            ({(Number(product.review_count) || 0).toLocaleString("en-IN")})
           </span>
         </div>
         <div className="flex items-center justify-center gap-2 flex-wrap">

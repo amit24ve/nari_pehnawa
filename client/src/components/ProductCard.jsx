@@ -128,11 +128,11 @@ const ProductCard = ({
                     <div className="flex items-center gap-0.5 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
                         <Star className="w-3 h-3 fill-[#d4af37] text-[#d4af37]" />
                         <span className="text-[10px] font-bold text-gray-800">
-                            {(product.rating || 4.2).toFixed(1)}
+                            {Number(product.rating || 0).toFixed(1)}
                         </span>
                     </div>
                     <span className="text-[10px] text-gray-500 font-medium">
-                        ({(product.review_count || 12).toLocaleString("en-IN")})
+                        ({(Number(product.review_count) || 0).toLocaleString("en-IN")})
                     </span>
                 </div>
                 <div className="flex items-center justify-center gap-2 flex-wrap">

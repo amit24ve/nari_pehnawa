@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Mail, MapPin, ShieldCheck, Award, Headset, RefreshCw, Truck, MessageSquare, X, CheckCircle, Loader2 } from "lucide-react";
 
@@ -53,6 +53,7 @@ const Footer = () => {
   const [showInquiryModal, setShowInquiryModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -60,6 +61,17 @@ const Footer = () => {
     subject: "General Query",
     message: ""
   });
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/categories/?is_active=true`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((cats) => {
+        if (Array.isArray(cats) && cats.length > 0) {
+          setCategories(cats);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleInquirySubmit = async (e) => {
     e.preventDefault();
@@ -180,28 +192,49 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/category/anarkali-kurtis"
-                  className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]"
-                >
-                  Anarkali Kurtis
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/category/chikankari-kurtis"
-                  className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]"
-                >
-                  Chikankari Kurtis
-                </Link>
-              </li>
-              <li>
-                <Link
                   to="/category/sale"
                   className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]"
                 >
                   Mega Sale Offers
                 </Link>
               </li>
+              {categories
+                .filter((c) => {
+                  const link = (c.link || "").toLowerCase();
+                  const name = (c.name || "").toLowerCase();
+                  return !link.includes("new-arrivals") && !link.includes("sale") && !name.includes("new") && !name.includes("sale");
+                })
+                .slice(0, 4)
+                .map((cat) => (
+                  <li key={cat._id || cat.id || cat.name}>
+                    <Link
+                      to={cat.link || `/category/${cat.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                      className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]"
+                    >
+                      {cat.name}
+                    </Link>
+                  </li>
+                ))}
+              {categories.length === 0 && (
+                <>
+                  <li>
+                    <Link
+                      to="/category/sleeveless-kurtis"
+                      className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]"
+                    >
+                      Sleeveless Kurtis
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/category/halter-neck-top"
+                      className="footer-link text-xs md:text-sm text-[#3a0808] font-bold transition-all duration-300 inline-block no-underline drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]"
+                    >
+                      Halter Neck Top
+                    </Link>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
 

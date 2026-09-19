@@ -117,3 +117,4 @@ app.include_router(coins_router)
 # Serve uploaded images as static files
 Path("uploads").mkdir(exist_ok=True)
 app.mount("/uploads", RangeStaticFiles(directory="uploads"), name="uploads")
+app.mount("/api/uploads", RangeStaticFiles(directory="uploads"), name="api_uploads")

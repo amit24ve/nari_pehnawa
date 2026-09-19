@@ -260,25 +260,52 @@ const ProductPage = () => {
       .catch(() => {});
   }, [productId]);
 
-  // Load Recently Viewed list from localStorage and purge stale mock entries
+  // Load Recently Viewed list from localStorage and validate against real active database products
   useEffect(() => {
-    try {
-      const rawRV = localStorage.getItem(RECENTLY_VIEWED_KEY);
-      if (rawRV) {
-        const parsed = JSON.parse(rawRV);
-        // Retain only valid real store items, removing mock test kurtis
-        const valid = (Array.isArray(parsed) ? parsed : []).filter(
-          (item) =>
-            item &&
-            item.id &&
-            item.id !== productId &&
-            !item.name?.toLowerCase().includes("denim kurti") &&
-            !item.name?.toLowerCase().includes("anniversary anarkali")
-        );
-        setRecentlyViewed(valid);
-        localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(valid.slice(0, 10)));
-      }
-    } catch (e) {}
+    fetch(`${API_BASE_URL}/products/?limit=50`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((allProds) => {
+        const prodList = (Array.isArray(allProds) ? allProds : []).map((p) => ({
+          ...p,
+          id: p._id || p.id,
+        }));
+        const validMap = new Map();
+        prodList.forEach((p) => validMap.set(String(p.id), p));
+
+        try {
+          const rawRV = localStorage.getItem(RECENTLY_VIEWED_KEY);
+          if (rawRV) {
+            const parsed = JSON.parse(rawRV);
+            // Retain ONLY products that actually exist in the current store database
+            const valid = (Array.isArray(parsed) ? parsed : [])
+              .filter(
+                (item) =>
+                  item &&
+                  item.id &&
+                  validMap.has(String(item.id)) &&
+                  String(item.id) !== String(productId)
+              )
+              .map((item) => {
+                // Sync with latest catalog details (image, price, rating, review_count)
+                const live = validMap.get(String(item.id));
+                return {
+                  ...item,
+                  name: live.name || item.name,
+                  image: live.image || item.image,
+                  price: live.price ?? item.price,
+                  original_price: live.original_price ?? item.original_price,
+                  discount: live.discount ?? item.discount,
+                  rating: live.rating ?? 0.0,
+                  review_count: live.review_count ?? 0,
+                };
+              });
+
+            setRecentlyViewed(valid);
+            localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(valid.slice(0, 10)));
+          }
+        } catch (e) {}
+      })
+      .catch(() => {});
   }, [productId]);
 
   /* ── Fetch Related Products ── */
@@ -644,10 +671,17 @@ const ProductPage = () => {
                 <Flame className="w-4 h-4 text-amber-600 animate-pulse" />
                 <span><strong>{viewersCount ?? (product.viewers_count || 14)} people</strong> viewing right now</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-amber-600" />
-                <span><strong>{product.sold_24h || 7} sold</strong> in last 24 hrs</span>
-              </div>
+              {(product.sold_24h && product.sold_24h > 0) ? (
+                <div className="flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-amber-600" />
+                  <span><strong>{product.sold_24h} sold</strong> in last 24 hrs</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-amber-600" />
+                  <span><strong>Trending</strong> in festive ethnic wear</span>
+                </div>
+              )}
             </div>
           </div>
 
