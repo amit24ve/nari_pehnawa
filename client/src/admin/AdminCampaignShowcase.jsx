@@ -261,34 +261,60 @@ const AdminCampaignShowcase = () => {
         </span>
 
         <div className="rounded-3xl overflow-hidden shadow-xl border-2 border-[#8B0000]/40 flex flex-col md:flex-row bg-stone-950 min-h-[260px]">
-          {/* Left Preview — Clean White Background */}
-          <div className="w-full md:w-[28%] bg-white p-5 text-slate-800 flex flex-col items-center justify-center text-center relative overflow-hidden border-b-2 md:border-b-0 md:border-r-2 border-slate-200">
+          {/* Left Preview — Wall-Art Framed Plaque */}
+          <div className="w-full md:w-[28%] bg-gradient-to-b from-[#FFFDF9] via-[#FAF6F0] to-[#FFF2F4] p-4 text-slate-800 flex flex-col items-center justify-center text-center relative overflow-hidden border-b-2 md:border-b-0 md:border-r-2 border-[#8B0000]/20 min-h-[260px]">
             {campaign.left_image && (
-              <img
-                src={resolveImageUrl(campaign.left_image)}
-                alt=""
-                onError={(e) => { e.target.style.display = "none"; }}
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-              />
+              <>
+                <img
+                  src={resolveImageUrl(campaign.left_image)}
+                  alt=""
+                  onError={(e) => { e.target.style.display = "none"; }}
+                  className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                />
+                <div className="absolute inset-0 bg-stone-900/30 backdrop-blur-[2px] pointer-events-none" />
+              </>
             )}
-            <div className="relative z-10 flex flex-col items-center justify-center w-full">
-              <p className="text-slate-500 text-xs font-bold tracking-wider uppercase">
-                {campaign.title || "UP TO"}
-              </p>
-              <h3
-                className="text-3xl font-serif font-black leading-tight my-1"
-                style={{ color: campaign.text_color || "#111827" }}
-              >
-                {campaign.discount_text || "30% OFF"}
-              </h3>
-              <p className="text-slate-600 text-[11px] mt-0.5 whitespace-pre-line max-w-[200px] leading-relaxed">
-                {campaign.subtitle}
-              </p>
-              <div className="mt-3">
-                <span className="inline-flex items-center gap-1.5 bg-[#8B0000] text-white text-[11px] font-black px-4 py-1.5 rounded-full shadow hover:bg-[#6e0000] cursor-pointer">
-                  <span>{campaign.cta_text || "Explore Deals"}</span>
-                  <ArrowRight className="w-3 h-3 text-white" />
-                </span>
+            
+            {/* Wall-Art Framed Plaque */}
+            <div className="relative z-10 w-full max-w-[260px] p-3.5 rounded-2xl bg-white/95 backdrop-blur-md shadow-lg border-2 border-[#8B0000]/25 flex flex-col items-center justify-center text-center">
+              <div className="w-full border border-dashed border-[#8B0000]/30 rounded-xl p-3 flex flex-col items-center justify-center relative">
+                {/* Corner decorative wall-art ticks */}
+                <span className="absolute -top-1 -left-1 w-2 h-2 border-t-2 border-l-2 border-[#8B0000]" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 border-t-2 border-r-2 border-[#8B0000]" />
+                <span className="absolute -bottom-1 -left-1 w-2 h-2 border-b-2 border-l-2 border-[#8B0000]" />
+                <span className="absolute -bottom-1 -right-1 w-2 h-2 border-b-2 border-r-2 border-[#8B0000]" />
+
+                {/* Pre-Headline */}
+                <div className="flex items-center justify-center gap-1.5 w-full mb-1">
+                  <span className="h-[1px] w-4 bg-[#8B0000]/35" />
+                  <p className="text-[#8B0000] font-serif font-black text-[9px] tracking-[0.2em] uppercase">
+                    {campaign.title || "VOTE & WIN"}
+                  </p>
+                  <span className="h-[1px] w-4 bg-[#8B0000]/35" />
+                </div>
+
+                {/* Highlight Text Box */}
+                <div className="w-full my-1 py-1 px-2 rounded-lg border-2 border-stone-900/15 bg-gradient-to-b from-stone-50/90 to-stone-100/90 shadow-inner flex items-center justify-center">
+                  <h3
+                    className="text-2xl font-serif font-black leading-none text-center"
+                    style={{ color: campaign.text_color || "#111827" }}
+                  >
+                    {campaign.discount_text || "TOP LOOK"}
+                  </h3>
+                </div>
+
+                {/* Subtitle */}
+                <p className="text-stone-600 text-[10px] whitespace-pre-line max-w-[190px] leading-relaxed mt-1">
+                  {campaign.subtitle}
+                </p>
+
+                {/* CTA Button */}
+                <div className="mt-2.5">
+                  <span className="inline-flex items-center gap-1 bg-[#6E1624] text-white text-[10px] font-bold px-3.5 py-1 rounded-full shadow hover:bg-[#8B0000] cursor-pointer">
+                    <span>{campaign.cta_text || "Explore Deals"}</span>
+                    <ArrowRight className="w-3 h-3 text-white" />
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -408,7 +434,7 @@ const AdminCampaignShowcase = () => {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-600 block mb-1">Discount Text Color</label>
+              <label className="text-xs font-semibold text-slate-600 block mb-1">Highlight Text Color</label>
               <div className="flex items-center gap-2">
                 <input
                   type="color"
@@ -424,6 +450,66 @@ const AdminCampaignShowcase = () => {
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono outline-none"
                 />
               </div>
+
+              {/* Color preset chips */}
+              <div className="flex items-center gap-1.5 mt-2">
+                {[
+                  { name: "Black", code: "#111827" },
+                  { name: "Maroon", code: "#8B0000" },
+                  { name: "Gold", code: "#D97706" },
+                  { name: "Emerald", code: "#047857" },
+                  { name: "Indigo", code: "#4338CA" },
+                  { name: "Crimson", code: "#DC2626" },
+                ].map((swatch) => (
+                  <button
+                    key={swatch.code}
+                    type="button"
+                    title={swatch.name}
+                    onClick={() => setCampaign({ ...campaign, text_color: swatch.code })}
+                    className={`w-5 h-5 rounded-full border border-white shadow-xs transition-transform hover:scale-125 ${
+                      campaign.text_color === swatch.code ? "ring-2 ring-[#0891b2] scale-110" : ""
+                    }`}
+                    style={{ backgroundColor: swatch.code }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Quick 1-Click Templates */}
+            <div className="sm:col-span-2 lg:col-span-3 flex flex-wrap items-center gap-2 pt-1 pb-1 border-t border-slate-100">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Quick Fill:</span>
+              <button
+                type="button"
+                onClick={() =>
+                  setCampaign({
+                    ...campaign,
+                    title: "VOTE & WIN",
+                    discount_text: "TOP LOOK",
+                    subtitle: "Pick your favorite ethnic style & get rewards",
+                    cta_text: "Vote Now",
+                    text_color: "#8B0000",
+                  })
+                }
+                className="px-3 py-1 bg-rose-50 hover:bg-rose-100 text-[#8B0000] border border-rose-200 rounded-lg text-xs font-bold transition flex items-center gap-1"
+              >
+                🏆 Voting Contest Template
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setCampaign({
+                    ...campaign,
+                    title: "UP TO",
+                    discount_text: "30% OFF",
+                    subtitle: "on first order • Only on Nari Pehnawa",
+                    cta_text: "Explore Deals",
+                    text_color: "#111827",
+                  })
+                }
+                className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition flex items-center gap-1"
+              >
+                🏷️ Discount Deals Template
+              </button>
             </div>
 
             <div className="sm:col-span-2">

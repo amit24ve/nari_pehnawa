@@ -176,48 +176,68 @@ const InteractiveCampaignBanner = () => {
         className="relative overflow-hidden rounded-3xl shadow-2xl border-2 border-[#8B0000]/40 flex flex-col lg:flex-row transition-all duration-300 select-none bg-stone-950"
         style={{ minHeight: `${campaign.banner_height || 320}px` }}
       >
-        {/* ── LEFT PROMOTIONAL SECTION (~28% width) — CLEAN WHITE BACKGROUND WITH CRISP TYPOGRAPHY ── */}
-        <div className="relative w-full lg:w-[28%] xl:w-[26%] bg-white p-6 sm:p-7 flex flex-col items-center justify-center text-center flex-shrink-0 z-10 border-b-2 lg:border-b-0 lg:border-r-2 border-slate-200 shadow-inner overflow-hidden">
-          {/* Custom Left Image if uploaded by admin */}
+        {/* ── LEFT PROMOTIONAL SECTION (~28% width) — WALL-ART FRAMED PLAQUE TEMPLATE ── */}
+        <div className="relative w-full lg:w-[28%] xl:w-[27%] bg-gradient-to-b from-[#FFFDF9] via-[#FAF6F0] to-[#FFF2F4] p-4 sm:p-6 flex flex-col items-center justify-center text-center flex-shrink-0 z-10 border-b-2 lg:border-b-0 lg:border-r-2 border-[#8B0000]/20 shadow-inner overflow-hidden min-h-[290px]">
+          {/* Custom Left Background Image if uploaded by admin */}
           {campaign.left_image && (
-            <img
-              src={resolveImageUrl(campaign.left_image)}
-              alt=""
-              onError={(e) => {
-                e.target.style.display = "none";
-              }}
-              className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
-            />
+            <>
+              <img
+                src={resolveImageUrl(campaign.left_image)}
+                alt=""
+                onError={(e) => {
+                  e.target.style.display = "none";
+                }}
+                className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
+              />
+              <div className="absolute inset-0 bg-stone-900/30 backdrop-blur-[2px] pointer-events-none" />
+            </>
           )}
 
-          {/* Centered Promo Text Block */}
-          <div className="relative z-10 flex flex-col items-center justify-center space-y-1 w-full">
-            <p className="text-slate-500 font-bold text-xs sm:text-sm tracking-widest uppercase">
-              {campaign.title || "UP TO"}
-            </p>
+          {/* Wall-Art Framed Plaque (Border Box with Inset Frame & Corner Ticks) */}
+          <div className="relative z-10 w-full max-w-[285px] p-4 sm:p-5 rounded-2xl bg-white/95 backdrop-blur-md shadow-xl border-2 border-[#8B0000]/25 transition-all duration-300 flex flex-col items-center justify-center text-center">
+            {/* Inner Hairline Wall-Art Frame with Corner Accents */}
+            <div className="w-full border border-dashed border-[#8B0000]/30 rounded-xl p-3 sm:p-4 flex flex-col items-center justify-center relative">
+              {/* Corner decorative wall-art ticks */}
+              <span className="absolute -top-1 -left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-[#8B0000]" />
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-[#8B0000]" />
+              <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-b-2 border-l-2 border-[#8B0000]" />
+              <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-b-2 border-r-2 border-[#8B0000]" />
 
-            {/* Large Discount Headline */}
-            <h2
-              className="text-4xl sm:text-5xl xl:text-[3.2rem] font-serif font-black tracking-tight leading-none my-1"
-              style={{ color: campaign.text_color || "#111827" }}
-            >
-              {campaign.discount_text || "30% OFF"}
-            </h2>
+              {/* Pre-Headline with Elegant Spaced Rules */}
+              <div className="flex items-center justify-center gap-2 w-full mb-1">
+                <span className="h-[1px] w-5 sm:w-7 bg-[#8B0000]/35" />
+                <p className="text-[#8B0000] font-serif font-black text-[10px] sm:text-xs tracking-[0.22em] uppercase">
+                  {campaign.title || "VOTE & WIN"}
+                </p>
+                <span className="h-[1px] w-5 sm:w-7 bg-[#8B0000]/35" />
+              </div>
 
-            <p className="text-slate-600 text-xs sm:text-sm font-medium pt-1 whitespace-pre-line max-w-[240px] leading-relaxed">
-              {campaign.subtitle || "on first order • Only on Nari Pehnawa"}
-            </p>
+              {/* Dedicated Border Box For Highlight Text */}
+              <div className="w-full my-1.5 py-2 px-3 rounded-lg border-2 border-stone-900/15 bg-gradient-to-b from-stone-50/90 to-stone-100/90 shadow-inner flex items-center justify-center">
+                <h2
+                  className="text-2xl sm:text-3xl xl:text-[2.65rem] font-serif font-black tracking-tight leading-none text-center"
+                  style={{ color: campaign.text_color || "#111827" }}
+                >
+                  {campaign.discount_text || "TOP LOOK"}
+                </h2>
+              </div>
 
-            {/* High-conversion CTA Button */}
-            <div className="pt-4 w-full flex flex-col items-center">
-              <button
-                type="button"
-                onClick={() => handleCtaClick(campaign.cta_link)}
-                className="inline-flex items-center justify-center gap-2 bg-[#8B0000] hover:bg-[#6e0000] text-white font-black text-xs sm:text-sm px-6 py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 group cursor-pointer"
-              >
-                <span>{campaign.cta_text || "Explore Deals"}</span>
-                <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />
-              </button>
+              {/* Subtitle / Note */}
+              <p className="text-stone-600 text-[11px] sm:text-xs font-medium pt-1 whitespace-pre-line max-w-[210px] leading-relaxed">
+                {campaign.subtitle || "Pick your favorite ethnic style & get rewards"}
+              </p>
+
+              {/* High-conversion Wall-Art Action Button */}
+              <div className="pt-3 w-full flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => handleCtaClick(campaign.cta_link)}
+                  className="inline-flex items-center justify-center gap-2 bg-[#6E1624] hover:bg-[#8B0000] text-white font-bold text-[11px] sm:text-xs px-5 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 group cursor-pointer"
+                >
+                  <span>{campaign.cta_text || "Explore Deals"}</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
