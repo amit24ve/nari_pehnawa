@@ -155,12 +155,6 @@ const InteractiveCampaignBanner = () => {
 
           {/* Centered Promo Text Block */}
           <div className="relative z-10 flex flex-col items-center justify-center space-y-1 w-full">
-            {campaign.badge_text && (
-              <span className="inline-block text-[10px] sm:text-[11px] font-bold uppercase tracking-widest bg-white/15 border border-white/30 backdrop-blur-xs px-3.5 py-1 rounded-full text-rose-100 shadow-sm mb-1.5">
-                {campaign.badge_text}
-              </span>
-            )}
-
             <p className="text-rose-200/95 font-semibold text-xs sm:text-sm tracking-widest uppercase">
               {campaign.title || "Up to"}
             </p>
@@ -204,11 +198,11 @@ const InteractiveCampaignBanner = () => {
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-rose-300 animate-pulse" />
               <span className="text-xs sm:text-sm font-bold text-rose-200 uppercase tracking-wider font-serif">
-                Customer Favorites — Rate Your Favorite Look
+                Pick Any 1 Of 4 — Vote For Your Favorite Look
               </span>
             </div>
             <span className="text-[11px] text-rose-200/60 hidden sm:inline-block font-sans">
-              Live Ratings
+              1 Vote Per Look
             </span>
           </div>
 
@@ -224,83 +218,61 @@ const InteractiveCampaignBanner = () => {
               return (
                 <div
                   key={slotId}
-                  onClick={() => product.id && navigate(`/product/${product.id}`)}
-                  className="group relative flex flex-col items-center cursor-pointer transition-all duration-300 hover:-translate-y-1.5"
+                  className="group relative flex flex-col items-center transition-all duration-300 hover:-translate-y-1.5"
                 >
-                  {/* Card Container with Arched Top Frame */}
-                  <div className="w-full relative rounded-t-[38px] rounded-b-2xl overflow-hidden border-2 border-rose-300/40 hover:border-rose-300/80 transition-all duration-500 shadow-xl bg-stone-900/90">
-                    
-                    {/* Decorative floating icon in corner */}
-                    <div className="absolute top-2 right-2.5 z-20 pointer-events-none opacity-85 group-hover:opacity-100 transition-opacity">
-                      {slotId === 0 && <span className="text-sm drop-shadow">❤️</span>}
-                      {slotId === 1 && <span className="text-sm drop-shadow">🪙</span>}
-                      {slotId === 2 && <span className="text-sm drop-shadow">✨</span>}
-                      {slotId === 3 && <span className="text-sm drop-shadow">🌟</span>}
-                    </div>
-
-                    {/* Product Photo with Arched Top */}
-                    <div className="relative h-[160px] sm:h-[185px] md:h-[195px] w-full overflow-hidden bg-stone-900">
+                  {/* Card Container with Arched Top Frame — Pure Image Only, No Overlays */}
+                  <div
+                    onClick={() => product.id && navigate(`/product/${product.id}`)}
+                    className="w-full relative rounded-t-[38px] rounded-b-2xl overflow-hidden border-2 border-rose-300/40 hover:border-rose-300/80 transition-all duration-500 shadow-xl bg-stone-900 cursor-pointer"
+                    title={product.name ? `View ${product.name}` : "View product"}
+                  >
+                    {/* Pure Product Photo with Arched Top */}
+                    <div className="relative h-[180px] sm:h-[205px] md:h-[220px] w-full overflow-hidden bg-stone-900">
                       <img
                         src={imgSrc}
-                        alt={product.name || slot.tag}
+                        alt={product.name || `Look #${slotId + 1}`}
                         className="w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-108"
                         onError={(e) => {
                           e.target.onerror = null;
                           e.target.src = DEFAULT_HERO_FALLBACK;
                         }}
                       />
-                      {/* Gradient shadow overlay */}
-                      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
-                    </div>
-
-                    {/* Interactive Live Rating & "Rate Now" Button inside card bottom */}
-                    <div className="bg-black/75 backdrop-blur-md px-2.5 py-1.5 flex items-center justify-between border-t border-rose-300/20">
-                      {/* Star Rating */}
-                      <div className="flex items-center gap-1">
-                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        <span className="text-[11px] font-bold text-rose-100">
-                          {Number(slot.rating || 4.8).toFixed(1)}
-                        </span>
-                      </div>
-
-                      {/* Explicit "Rate Now" Button */}
-                      <button
-                        type="button"
-                        onClick={(e) => handleVote(e, slot)}
-                        className={`flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full border transition-all duration-300 active:scale-110 cursor-pointer ${
-                          isVoted
-                            ? "bg-emerald-700/90 border-emerald-400 text-white shadow-md shadow-emerald-700/40"
-                            : "bg-rose-700/90 hover:bg-rose-600 border-rose-400/50 text-white shadow-sm hover:scale-105"
-                        }`}
-                        title="Rate & Vote for this product"
-                      >
-                        {isVoted ? (
-                          <>
-                            <Check className="w-3 h-3 text-white" />
-                            <span>Rated</span>
-                          </>
-                        ) : (
-                          <>
-                            <Heart
-                              className={`w-3 h-3 text-white ${
-                                isJustVoted ? "scale-150 animate-ping" : "fill-white"
-                              }`}
-                            />
-                            <span>Rate Now</span>
-                          </>
-                        )}
-                        <span className="text-[9px] opacity-85 ml-0.5">
-                          ({(slot.votes || 0).toLocaleString("en-IN")})
-                        </span>
-                      </button>
                     </div>
                   </div>
 
-                  {/* Bottom Pill Badge */}
-                  <div className="mt-2 text-center w-full">
-                    <span className="inline-block w-full max-w-[155px] truncate bg-white hover:bg-rose-50 text-[#520030] font-bold text-[11px] sm:text-xs py-1.5 px-3 rounded-full shadow-md border border-rose-200/80 tracking-wide transition-colors group-hover:scale-105">
-                      {slot.tag || "Special Pick"}
-                    </span>
+                  {/* Dedicated "Rate Now" Button Underneath the Card */}
+                  <div className="mt-2.5 text-center w-full flex justify-center">
+                    {isVoted ? (
+                      <button
+                        type="button"
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full max-w-[155px] bg-emerald-600 text-white font-bold text-[11px] sm:text-xs py-2 px-3 rounded-full shadow-md border border-emerald-400 flex items-center justify-center gap-1.5 cursor-default"
+                        title="You have rated this look"
+                      >
+                        <Check className="w-3.5 h-3.5 text-white" />
+                        <span>Rated</span>
+                        <span className="text-[10px] opacity-85">
+                          ({(slot.votes || 0).toLocaleString("en-IN")})
+                        </span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => handleVote(e, slot)}
+                        className="w-full max-w-[155px] bg-white hover:bg-rose-50 text-[#8B0000] font-black text-[11px] sm:text-xs py-2 px-3 rounded-full shadow-md hover:shadow-lg border border-rose-200/90 flex items-center justify-center gap-1.5 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
+                        title="Click to Vote / Rate this look"
+                      >
+                        <Heart
+                          className={`w-3.5 h-3.5 text-[#8B0000] fill-[#8B0000] ${
+                            isJustVoted ? "scale-150 animate-ping" : ""
+                          }`}
+                        />
+                        <span>Rate Now</span>
+                        <span className="text-[10px] font-semibold text-rose-800/80">
+                          ({(slot.votes || 0).toLocaleString("en-IN")})
+                        </span>
+                      </button>
+                    )}
                   </div>
                 </div>
               );

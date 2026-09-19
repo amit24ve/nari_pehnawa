@@ -700,11 +700,11 @@ const HeroBanners = () => {
         </div>
       )}
 
-      {/* ── TABS ── */}
-      <div className="flex flex-wrap border border-slate-200 bg-slate-100/80 p-1.5 rounded-xl shadow-sm gap-1">
+      {/* ── TABS (SINGLE ROW) ── */}
+      <div className="flex flex-nowrap overflow-x-auto no-scrollbar border border-slate-200 bg-slate-100/90 p-1.5 rounded-xl shadow-sm gap-1.5 w-full">
         <button
           onClick={() => setActiveTab("home-slider")}
-          className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-xs md:text-sm font-semibold transition-all ${
+          className={`flex-1 min-w-fit flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs md:text-sm font-semibold whitespace-nowrap transition-all ${
             activeTab === "home-slider"
               ? "bg-[#0891b2] text-white shadow-sm"
               : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
@@ -715,7 +715,7 @@ const HeroBanners = () => {
         </button>
         <button
           onClick={() => setActiveTab("category-banners")}
-          className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-xs md:text-sm font-semibold transition-all ${
+          className={`flex-1 min-w-fit flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs md:text-sm font-semibold whitespace-nowrap transition-all ${
             activeTab === "category-banners"
               ? "bg-[#0891b2] text-white shadow-sm"
               : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
@@ -726,7 +726,7 @@ const HeroBanners = () => {
         </button>
         <button
           onClick={() => setActiveTab("reels")}
-          className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-xs md:text-sm font-semibold transition-all ${
+          className={`flex-1 min-w-fit flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs md:text-sm font-semibold whitespace-nowrap transition-all ${
             activeTab === "reels"
               ? "bg-[#0891b2] text-white shadow-sm"
               : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
@@ -737,7 +737,7 @@ const HeroBanners = () => {
         </button>
         <button
           onClick={() => setActiveTab("celeb-looks")}
-          className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-xs md:text-sm font-semibold transition-all ${
+          className={`flex-1 min-w-fit flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs md:text-sm font-semibold whitespace-nowrap transition-all ${
             activeTab === "celeb-looks"
               ? "bg-[#0891b2] text-white shadow-sm"
               : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
@@ -748,7 +748,7 @@ const HeroBanners = () => {
         </button>
         <button
           onClick={() => setActiveTab("campaign-showcase")}
-          className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-xs md:text-sm font-semibold transition-all ${
+          className={`flex-1 min-w-fit flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs md:text-sm font-semibold whitespace-nowrap transition-all ${
             activeTab === "campaign-showcase"
               ? "bg-[#0891b2] text-white shadow-sm"
               : "text-slate-600 hover:text-slate-900 hover:bg-white/60"

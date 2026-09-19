@@ -270,10 +270,7 @@ const AdminCampaignShowcase = () => {
               />
             )}
             <div className="relative z-10 flex flex-col items-center justify-center w-full">
-              <span className="text-[9px] font-bold uppercase tracking-wider bg-white/15 border border-white/25 px-2.5 py-0.5 rounded-full text-rose-100">
-                {campaign.badge_text || "SPECIAL FESTIVE OFFER"}
-              </span>
-              <p className="text-rose-200/90 text-xs font-semibold tracking-wider uppercase mt-1.5">
+              <p className="text-rose-200/90 text-xs font-semibold tracking-wider uppercase">
                 {campaign.title || "Up to"}
               </p>
               <h3 className="text-3xl font-serif font-black text-white leading-tight drop-shadow my-0.5">
@@ -293,6 +290,13 @@ const AdminCampaignShowcase = () => {
 
           {/* Right Preview */}
           <div className="flex-1 bg-gradient-to-r from-[#4A0019] via-[#350012] to-[#20000A] p-4 flex flex-col justify-center">
+            <div className="flex items-center justify-between mb-2.5 px-1">
+              <span className="text-xs font-bold text-rose-200 uppercase font-serif">
+                Pick Any 1 Of 4 — Vote For Your Favorite Look
+              </span>
+              <span className="text-[10px] text-rose-200/60">1 Vote Per Look</span>
+            </div>
+
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {campaign.slots?.map((slot) => {
                 const prod = productsList.find((p) => String(p.id) === String(slot.product_id)) || {};
@@ -300,8 +304,9 @@ const AdminCampaignShowcase = () => {
 
                 return (
                   <div key={slot.slot_id} className="flex flex-col items-center">
+                    {/* Pure Arched Image Card */}
                     <div className="w-full rounded-t-3xl rounded-b-xl overflow-hidden border-2 border-rose-300/40 relative bg-stone-900 shadow-md">
-                      <div className="h-28 w-full bg-stone-800">
+                      <div className="h-32 w-full bg-stone-800">
                         {imgSrc ? (
                           <img src={resolveImageUrl(imgSrc)} alt="preview" className="w-full h-full object-cover object-top" />
                         ) : (
@@ -310,16 +315,16 @@ const AdminCampaignShowcase = () => {
                           </div>
                         )}
                       </div>
-                      <div className="bg-black/75 px-2 py-1 flex items-center justify-between text-[10px] text-white border-t border-rose-300/20">
-                        <span className="text-rose-100">★ {slot.rating || 4.8}</span>
-                        <span className="bg-rose-700/80 px-1.5 py-0.5 rounded-full text-white text-[9px] font-bold">
-                          Rate Now ({slot.votes || 0})
-                        </span>
-                      </div>
                     </div>
-                    <span className="mt-1.5 bg-white text-[#520030] text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow truncate max-w-full border border-rose-200/80">
-                      {slot.tag || "Special Pick"}
-                    </span>
+
+                    {/* Dedicated Rate Now button preview */}
+                    <div className="mt-2 text-center w-full flex justify-center">
+                      <span className="w-full max-w-[130px] bg-white text-[#8B0000] text-[10px] font-black py-1 px-2 rounded-full shadow border border-rose-200/80 flex items-center justify-center gap-1">
+                        <Heart className="w-2.5 h-2.5 fill-[#8B0000] text-[#8B0000]" />
+                        <span>Rate Now</span>
+                        <span className="text-[9px] text-rose-800/80">({slot.votes || 0})</span>
+                      </span>
+                    </div>
                   </div>
                 );
               })}
@@ -374,17 +379,6 @@ const AdminCampaignShowcase = () => {
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-slate-600 block mb-1">Badge Text</label>
-              <input
-                type="text"
-                value={campaign.badge_text || ""}
-                onChange={(e) => setCampaign({ ...campaign, badge_text: e.target.value })}
-                placeholder="LIMITED OFFER"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:border-[#0891b2] outline-none"
-              />
-            </div>
-
             <div>
               <label className="text-xs font-semibold text-slate-600 block mb-1">Pre-Headline</label>
               <input
