@@ -55,8 +55,8 @@ const AIChatbot = () => {
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          const valid = data.filter((c) => c.display_order !== 0 && c.display_order !== 99);
-          setCategories(valid.length > 0 ? valid : data);
+          const valid = data.filter((c) => c.is_active !== false);
+          setCategories(valid);
         }
       })
       .catch((err) => console.warn("Could not load categories for chatbot:", err));

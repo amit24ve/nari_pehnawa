@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Search,
   User,
@@ -43,6 +43,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:71
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout, isLoginModalOpen, openLoginModal, closeLoginModal, loginModalMode } = useAuth();
   const { wishlistCount } = useWishlist();
   const { cartCount } = useCart();
@@ -81,11 +82,33 @@ const Navbar = () => {
   const profileDropdownRef = useRef(null);
 
   // ── Fetch categories from backend (dynamic navbar) ──
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/categories/?is_active=true`)
+  const fetchNavbarCategories = () => {
+    fetch(`${API_BASE_URL}/categories/?is_active=true&_t=${Date.now()}`)
       .then((r) => r.json())
-      .then((data) => setCategories(Array.isArray(data) ? data : []))
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setCategories(data);
+        }
+      })
       .catch(() => { });
+  };
+
+  // Re-fetch categories on route changes (e.g. returning from Admin)
+  useEffect(() => {
+    fetchNavbarCategories();
+  }, [location.pathname]);
+
+  // Listen for category updates from Admin panel and tab focus/storage events
+  useEffect(() => {
+    const handleUpdate = () => fetchNavbarCategories();
+    window.addEventListener("categoriesUpdated", handleUpdate);
+    window.addEventListener("focus", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+    return () => {
+      window.removeEventListener("categoriesUpdated", handleUpdate);
+      window.removeEventListener("focus", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+    };
   }, []);
 
   // ── Fetch search products from backend (debounced) ──
@@ -221,36 +244,23 @@ const Navbar = () => {
     },
   ];
 
-  /* ── Pure Women Ethnic Fashion categories ── */
-  const HOME_DECOR_KEYWORDS = [
-    "wall",
-    "vase",
-    "cushion",
-    "candle",
-    "pooja",
-    "home-decor",
-    "home-living",
-    "decor",
-    "gifting",
-    "hamper",
-    "pot",
-    "bedsheet",
-    "curtain",
-    "lamp",
-    "rug",
-  ];
-  const isHomeDecor = (cat) =>
-    HOME_DECOR_KEYWORDS.some(
-      (kw) =>
-        (cat.link || "").toLowerCase().includes(kw) ||
-        (cat.name || "").toLowerCase().includes(kw),
+  /* ── Dynamic Fashion Categories ── */
+  const isSpecialNav = (cat) => {
+    const link = (cat.link || "").toLowerCase().trim();
+    const name = (cat.name || "").toLowerCase().trim();
+    return (
+      link === "/new-arrivals" ||
+      link === "/category/sale" ||
+      name === "new arrivals" ||
+      name === "mega sale" ||
+      name === "sale"
     );
+  };
 
-  // Filter out display_order=0 (New Arrivals), display_order=99 (Sale), and any Home Decor
-  const regularCats = categories.filter(
-    (c) => c.display_order !== 0 && c.display_order !== 99 && !isHomeDecor(c),
-  );
-  const fashionCats = regularCats;
+  // Render all active categories added from Admin, sorted by display_order
+  const fashionCats = (Array.isArray(categories) ? categories : [])
+    .filter((c) => c.is_active !== false && !isSpecialNav(c))
+    .sort((a, b) => (Number(a.display_order) || 0) - (Number(b.display_order) || 0));
 
   return (
     <header
@@ -632,10 +642,10 @@ const Navbar = () => {
               whole thing scrolls together as ONE row/line.
               Counts are fully dynamic.
           ══════════════════════ */}
-      <div className="bg-white border-b border-gray-100 hidden md:block">
+      <div className="bg-white border-b border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
         <div
-          className="flex items-center h-[38px] overflow-x-auto"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          className="flex items-center h-[38px] overflow-x-auto scrollbar-none"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
         >
           {/* ── Fashion group ── */}
           <span className="flex-shrink-0 px-3 h-full flex items-center text-[9px] font-black text-[#8B0000] uppercase tracking-[0.15em] whitespace-nowrap bg-[#8B0000]/5">

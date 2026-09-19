@@ -212,6 +212,8 @@ const Categories = () => {
             }
 
             await fetchCategories();
+            window.dispatchEvent(new Event("categoriesUpdated"));
+            localStorage.setItem("categories_updated_at", Date.now().toString());
             setShowModal(false);
             setEditing(null);
             setFormData(emptyForm);
@@ -257,6 +259,8 @@ const Categories = () => {
             }
             if (!res.ok) throw new Error("Delete failed");
             await fetchCategories();
+            window.dispatchEvent(new Event("categoriesUpdated"));
+            localStorage.setItem("categories_updated_at", Date.now().toString());
         } catch (e) {
             setError(e.message);
         }

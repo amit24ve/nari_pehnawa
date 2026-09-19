@@ -82,8 +82,8 @@ function MainLayout() {
             <Navbar />
             <VisitorTracker />
             <CookieConsent />
-            {/* pt: mobile = header(80px); md = header(80px) + category strip(38px) = 118px */}
-            <div className="pt-[80px] md:pt-[118px]">
+            {/* pt: header(80px) + category strip(38px) = 118px */}
+            <div className="pt-[118px]">
                 <Routes>
                     {/* Home Page */}
                     <Route path="/" element={<HomePage />} />
