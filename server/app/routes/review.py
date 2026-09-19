@@ -28,34 +28,96 @@ def get_optional_current_user(credentials: Optional[HTTPAuthorizationCredentials
     return None
 
 
+def check_user_purchased_product(db, user_id: str, email: Optional[str], product_id: str) -> bool:
+    """Verify if user has actually purchased this product in any non-cancelled order"""
+    conds = []
+    if user_id and user_id != "unknown":
+        conds.extend([{"user_id": user_id}, {"customer_id": user_id}])
+    if email:
+        conds.extend([{"user_email": email}, {"customer_email": email}, {"email": email}])
+    if not conds:
+        return False
+
+    pid_str = str(product_id)
+    prod_matches = [
+        {"items.product_id": pid_str},
+        {"items.id": pid_str},
+        {"items._id": pid_str}
+    ]
+    if ObjectId.is_valid(pid_str):
+        prod_matches.append({"items.product_id": ObjectId(pid_str)})
+
+    query = {
+        "$and": [
+            {"$or": conds},
+            {"status": {"$nin": ["cancelled", "payment_failed", "failed"]}},
+            {"$or": prod_matches}
+        ]
+    }
+    order = db["orders"].find_one(query)
+    return bool(order)
+
+
+@router.get("/can-review/{product_id}")
+def can_user_review_product(product_id: str, current_user: Optional[dict] = Depends(get_optional_current_user)):
+    """Check if the current user is eligible to write a review for this product"""
+    if not current_user:
+        return {"can_review": False, "reason": "not_logged_in"}
+
+    db = get_database()
+    user_id = str(current_user.get("id") or current_user.get("_id") or "")
+    user_email = current_user.get("email") or ""
+
+    if current_user.get("role") == "admin":
+        return {"can_review": True, "reason": "admin"}
+
+    has_purchased = check_user_purchased_product(db, user_id, user_email, product_id)
+    if not has_purchased:
+        return {"can_review": False, "reason": "not_purchased"}
+
+    return {"can_review": True}
+
+
 @router.post("/", response_model=Review, status_code=201)
-def create_review(review: ReviewCreate, current_user: Optional[dict] = Depends(get_optional_current_user)):
-    """Create a new review (approved immediately and updates product rating)"""
+def create_review(review: ReviewCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new review (pending admin approval; only verified purchasers can review)"""
     db = get_database()
     reviews_collection = db["reviews"]
+
+    user_id = str(current_user.get("id") or current_user.get("_id") or "")
+    user_email = current_user.get("email") or ""
+
+    # Verify that the user has purchased the item (admin can bypass)
+    if current_user.get("role") != "admin":
+        has_purchased = check_user_purchased_product(db, user_id, user_email, review.product_id)
+        if not has_purchased:
+            raise HTTPException(
+                status_code=403,
+                detail="Only verified buyers who have purchased this product can leave a review."
+            )
+
     try:
         review_data = review.model_dump()
-        user_id = str(current_user.get("_id") or current_user.get("id") or "") if current_user else "customer"
-        user_name = (current_user.get("name") if current_user else None) or review_data.get("user_name") or "Verified Customer"
-        user_email = (current_user.get("email") if current_user else None) or review_data.get("user_email") or ""
-        
+        user_record = db["users"].find_one({"_id": ObjectId(user_id)}) if ObjectId.is_valid(user_id) else db["users"].find_one({"id": user_id})
+        user_name = review_data.get("user_name") or (user_record.get("name") if user_record else None) or current_user.get("name") or "Verified Buyer"
+
         review_data["user_id"] = user_id
         review_data["user_name"] = user_name
         review_data["user_email"] = user_email
         review_data["verified_purchase"] = True
-        review_data["status"] = "approved"
+        review_data["status"] = "pending"  # Requires Admin Approval to appear publicly
+        review_data["images"] = []  # No customer photo uploads
         review_data["created_at"] = datetime.now()
         review_data["updated_at"] = datetime.now()
         review_data["helpful_count"] = 0
-        
+
         result = reviews_collection.insert_one(review_data)
         review_data["_id"] = str(result.inserted_id)
-        
-        # Immediately sync product rating and review_count in products collection
-        _sync_product_rating(db, review_data["product_id"])
+
         clear_api_cache()
-        
         return review_data
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

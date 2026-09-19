@@ -333,14 +333,46 @@ const ProductPage = () => {
     setProductWishlistCount((prev) => (isCurrentlyIn ? Math.max(0, prev - 1) : prev + 1));
   }, [product, isInWishlist, toggleWishlist]);
 
-  /* ── Submit Customer Review ── */
+  /* ── Open Review Modal with Verified Purchase Gate ── */
+  const handleOpenReviewModal = async () => {
+    if (!user) {
+      setAddedMsg("Please log in to review this kurti.");
+      setTimeout(() => setAddedMsg(""), 3000);
+      if (openLoginModal) openLoginModal();
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
+      const res = await fetch(`${API_BASE_URL}/reviews/can-review/${productId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = await res.json();
+      if (data && data.can_review) {
+        setReviewMsg("");
+        setShowReviewModal(true);
+      } else {
+        alert("Only verified customers who have purchased this kurti can leave a review.");
+      }
+    } catch (e) {
+      setShowReviewModal(true);
+    }
+  };
+
+  /* ── Submit Customer Review (Requires Purchase, Submits as Pending for Admin Approval) ── */
   const handleSubmitReview = async (e) => {
     e.preventDefault();
     if (!reviewComment.trim() || !product) return;
+    if (!user) {
+      setReviewMsg("Please log in to submit your review.");
+      if (openLoginModal) openLoginModal();
+      return;
+    }
+
     setReviewSubmitting(true);
     setReviewMsg("");
     try {
-      const authorName = reviewAuthor.trim() || user?.name || "Verified Customer";
+      const authorName = reviewAuthor.trim() || user?.name || "Verified Buyer";
       const token = localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
       const headers = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -358,26 +390,13 @@ const ProductPage = () => {
         }),
       });
       if (res.ok) {
-        const newRev = await res.json();
-        setDbReviews((prev) => [newRev, ...prev]);
         setReviewComment("");
         setShowReviewModal(false);
-        setAddedMsg("Thank you! Your review has been added.");
-        setTimeout(() => setAddedMsg(""), 3000);
-
-        // Re-fetch fresh stats & product ratings
-        fetch(`${API_BASE_URL}/reviews/product/${productId}/stats`)
-          .then((r) => (r.ok ? r.json() : null))
-          .then((s) => s && setReviewStats(s))
-          .catch(() => {});
-        fetch(`${API_BASE_URL}/products/${productId}`)
-          .then((r) => (r.ok ? r.json() : null))
-          .then((p) => {
-            if (p) setProduct({ ...p, id: p._id || p.id });
-          })
-          .catch(() => {});
+        setAddedMsg("Thank you! Your review has been submitted for admin verification.");
+        setTimeout(() => setAddedMsg(""), 4000);
       } else {
-        setReviewMsg("Could not submit review. Please try again.");
+        const errData = await res.json().catch(() => ({}));
+        setReviewMsg(errData.detail || "Could not submit review. Only verified buyers who ordered this product can review.");
       }
     } catch (err) {
       setReviewMsg("Error submitting review. Please check network.");
@@ -947,62 +966,79 @@ const ProductPage = () => {
                 <p className="text-xs text-red-600 font-semibold">{pincodeMsg}</p>
               )}
             </div>
+          </div>
+        </div>
 
-            {/* Key Highlights Card (Fills right column space below wishlist) */}
-            <div className="bg-gradient-to-br from-amber-50/60 to-orange-50/40 rounded-2xl p-4 border border-amber-200/70 space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-amber-600" /> Key Highlights & Fabric Notes
-              </h3>
-              <ul className="text-xs text-gray-700 space-y-2 leading-relaxed">
+        {/* ═══════ FULL-WIDTH KEY HIGHLIGHTS & FABRIC SPECIFICATIONS (COVERS BOTH SIDES ON DESKTOP) ═══════ */}
+        <div className="mt-10 bg-gradient-to-br from-[#FFF9F6] via-white to-amber-50/50 rounded-3xl p-6 sm:p-8 border border-amber-200/80 shadow-xs w-full">
+          <div className="flex items-center gap-2 mb-6 border-b border-amber-200/60 pb-3">
+            <Sparkles className="w-5 h-5 text-[#8B0000]" />
+            <h3 className="text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900">
+              Key Highlights &amp; Fabric Notes
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start w-full">
+            {/* Left Column: Key Highlights Bullet Points */}
+            <div className="space-y-3.5">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900/90 flex items-center gap-1.5">
+                <span>✨</span> Design &amp; Craftsmanship Highlights
+              </h4>
+              <ul className="text-xs sm:text-sm text-gray-700 space-y-3 leading-relaxed">
                 {(product.highlights && product.highlights.length > 0
                   ? product.highlights
                   : [
-                      "100% Premium Quality Fabric & Fine Stitching",
-                      "Breathable & Comfortable All-Day Fit",
-                      "Pre-Shrunk Material with Fast Color Tones",
-                      "Ideal for Festive Gatherings & Casual Wear",
+                      "100% Premium Quality Fabric & Authentic Handcrafted Stitching",
+                      "Breathable, Ultra-Comfortable Silhouette Designed for All-Day Wear",
+                      "Pre-Shrunk Material with Vivid, Long-Lasting Color Fastness",
+                      "Versatile Design Ideal for Festive Gatherings, Office & Casual Outings",
                     ]
                 ).map((hl, idx) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <span className="text-[#8B0000] font-bold mt-0.5">•</span>
-                    <span>{hl}</span>
+                  <li key={idx} className="flex items-start gap-2.5">
+                    <span className="text-[#8B0000] font-bold text-base leading-none mt-0.5">•</span>
+                    <span className="text-gray-800 font-medium">{hl}</span>
                   </li>
                 ))}
               </ul>
-
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-amber-200/60 text-xs">
-                {product.fabric && (
-                  <div className="bg-white/80 rounded px-2.5 py-1.5 border border-amber-100">
-                    <span className="text-gray-400 block text-[10px]">Fabric</span>
-                    <span className="font-semibold text-gray-800">{product.fabric}</span>
-                  </div>
-                )}
-                {product.sleeve_type && (
-                  <div className="bg-white/80 rounded px-2.5 py-1.5 border border-amber-100">
-                    <span className="text-gray-400 block text-[10px]">Sleeves</span>
-                    <span className="font-semibold text-gray-800">{product.sleeve_type}</span>
-                  </div>
-                )}
-                {product.pattern && (
-                  <div className="bg-white/80 rounded px-2.5 py-1.5 border border-amber-100">
-                    <span className="text-gray-400 block text-[10px]">Pattern</span>
-                    <span className="font-semibold text-gray-800">{product.pattern}</span>
-                  </div>
-                )}
-                {product.fit_type && (
-                  <div className="bg-white/80 rounded px-2.5 py-1.5 border border-amber-100">
-                    <span className="text-gray-400 block text-[10px]">Fit Type</span>
-                    <span className="font-semibold text-gray-800">{product.fit_type}</span>
-                  </div>
-                )}
-              </div>
             </div>
 
+            {/* Right Column: Fabric & Silhouette Matrix */}
+            <div className="space-y-3.5">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900/90 flex items-center gap-1.5">
+                <span>🧵</span> Fabric &amp; Silhouette Matrix
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                <div className="bg-white rounded-xl p-3 border border-amber-100/90 shadow-xs">
+                  <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Fabric</span>
+                  <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.fabric || "Cotton Blend"}</span>
+                </div>
+                <div className="bg-white rounded-xl p-3 border border-amber-100/90 shadow-xs">
+                  <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Sleeve Style</span>
+                  <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.sleeve_type || "3/4 Sleeves"}</span>
+                </div>
+                <div className="bg-white rounded-xl p-3 border border-amber-100/90 shadow-xs">
+                  <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Pattern</span>
+                  <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.pattern || "Floral Print"}</span>
+                </div>
+                <div className="bg-white rounded-xl p-3 border border-amber-100/90 shadow-xs">
+                  <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Fit Type</span>
+                  <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.fit_type || "Comfort Fit"}</span>
+                </div>
+                <div className="bg-white rounded-xl p-3 border border-amber-100/90 shadow-xs">
+                  <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Occasion</span>
+                  <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.occasion || "Festive & Casual"}</span>
+                </div>
+                <div className="bg-white rounded-xl p-3 border border-amber-100/90 shadow-xs">
+                  <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Origin</span>
+                  <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.country_of_origin || "India 🇮🇳"}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* ═══════ FULL-WIDTH EXTENDED DETAILS SECTION ═══════ */}
-        <div className="mt-12 pt-8 border-t border-gray-200 space-y-10">
+        <div className="mt-10 pt-6 border-t border-gray-200 space-y-10">
           
           {/* Trust Badges Bar */}
           <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200/80 grid grid-cols-1 md:grid-cols-2 gap-6 shadow-xs">
@@ -1261,7 +1297,7 @@ const ProductPage = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setShowReviewModal(true)}
+                onClick={handleOpenReviewModal}
                 className="px-4 py-2 bg-[#8B0000] hover:bg-[#6B0000] text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer"
               >
                 <Pencil className="w-3.5 h-3.5" /> Write a Review
@@ -1289,7 +1325,7 @@ const ProductPage = () => {
                 <p className="text-xs text-gray-500 font-medium">
                   {reviewStats?.total_reviews > 0
                     ? `${Math.round(((reviewStats.distribution?.[5] || 0) + (reviewStats.distribution?.[4] || 0)) / reviewStats.total_reviews * 100)}% of customers recommend this item`
-                    : "No reviews yet. Be the first to review!"}
+                    : "No reviews yet. Be the first verified buyer to review!"}
                 </p>
               </div>
 
@@ -1314,36 +1350,7 @@ const ProductPage = () => {
               </div>
             </div>
 
-            {/* Customer Photos Gallery Strip */}
-            {reviewStats?.images && reviewStats.images.length > 0 && (
-              <div className="pt-2 pb-2 border-t border-gray-100">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 mb-3 flex items-center gap-1.5">
-                  <Camera className="w-3.5 h-3.5 text-[#8B0000]" /> Customer Photos ({reviewStats.images.length})
-                </h4>
-                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
-                  {reviewStats.images.map((img, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setLightboxImage(img)}
-                      className="relative shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 border-transparent hover:border-[#8B0000] transition group focus:outline-none"
-                    >
-                      <img
-                        src={img}
-                        alt={`Customer upload ${idx + 1}`}
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
-                        onError={(e) => { e.currentTarget.parentElement.style.display = 'none'; }}
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition flex items-center justify-center">
-                        <ZoomIn className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition" />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Verified Customer Reviews Cards (Dynamic from Backend API) */}
+            {/* Verified Customer Reviews Cards (Dynamic from Backend API - only admin-approved reviews) */}
             <div className="space-y-4 pt-4 border-t border-gray-100">
               {dbReviews && dbReviews.length > 0 ? (
                 dbReviews.map((rev) => {
@@ -1351,13 +1358,12 @@ const ProductPage = () => {
                 const baseHelpful = rev.helpful_count || 15;
                 const currentHelpful = helpfulVotes[rId] ? baseHelpful + 1 : baseHelpful;
                 const formattedDate = rev.created_at ? new Date(rev.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : "Recent";
-                const revPhotos = rev.images || [];
                 return (
                   <div key={rId} className="p-4 bg-gray-50/80 rounded-xl border border-gray-100 space-y-2.5 text-xs">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-gray-900">{rev.user_name || rev.reviewer_name || "Customer"}</span>
-                        {(rev.verified_buyer || rev.status === "approved") && (
+                        {(rev.verified_buyer || rev.verified_purchase) && (
                           <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
                             <CheckCircle2 className="w-2.5 h-2.5" /> Verified Buyer
                           </span>
@@ -1371,27 +1377,6 @@ const ProductPage = () => {
                       ))}
                     </div>
                     <p className="text-gray-700 leading-relaxed">{rev.comment}</p>
-                    
-                    {/* Review Attached Photos */}
-                    {revPhotos.length > 0 && (
-                      <div className="flex gap-2 pt-1 flex-wrap">
-                        {revPhotos.map((imgUrl, imgIdx) => (
-                          <button
-                            key={imgIdx}
-                            type="button"
-                            onClick={() => setLightboxImage(imgUrl)}
-                            className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 hover:border-[#8B0000] transition group focus:outline-none"
-                          >
-                            <img
-                              src={imgUrl}
-                              alt={`Customer review photo ${imgIdx + 1}`}
-                              className="w-full h-full object-cover group-hover:scale-105 transition duration-150"
-                              onError={(e) => { e.currentTarget.parentElement.style.display = 'none'; }}
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    )}
 
                     <button
                       onClick={() => toggleHelpful(rId)}
@@ -1408,14 +1393,14 @@ const ProductPage = () => {
                 <Star className="w-8 h-8 text-amber-400/60 mx-auto mb-2" />
                 <p className="text-sm font-bold text-gray-700">No reviews yet for this kurti</p>
                 <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto mb-3">
-                  Be the first to review this outfit and share your experience!
+                  Verified buyers who ordered this kurti can leave a review after logging in.
                 </p>
                 <button
                   type="button"
-                  onClick={() => setShowReviewModal(true)}
+                  onClick={handleOpenReviewModal}
                   className="px-4 py-2 bg-[#8B0000] hover:bg-[#6B0000] text-white rounded-xl text-xs font-bold shadow-sm transition inline-flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Pencil className="w-3.5 h-3.5" /> Be the First to Review
+                  <Pencil className="w-3.5 h-3.5" /> {user ? "Write a Review" : "Login to Review"}
                 </button>
               </div>
             )}
@@ -1671,28 +1656,6 @@ const ProductPage = () => {
         }}
       />
 
-      {/* ── Customer Photo Lightbox Modal ── */}
-      {lightboxImage && (
-        <div
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs"
-          onClick={() => setLightboxImage(null)}
-        >
-          <div className="relative max-w-2xl max-h-[90vh] bg-black rounded-2xl overflow-hidden shadow-2xl p-2" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setLightboxImage(null)}
-              className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/60 hover:bg-black text-white flex items-center justify-center transition"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <img
-              src={lightboxImage}
-              alt="Enlarged customer photo"
-              className="max-h-[82vh] w-auto max-w-full object-contain mx-auto rounded-lg"
-            />
-          </div>
-        </div>
-      )}
-
       {/* ── Write Review Modal ── */}
       {showReviewModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -1706,11 +1669,14 @@ const ProductPage = () => {
             </button>
 
             <h3 className="text-xl font-bold text-gray-900 mb-1 flex items-center gap-2">
-              <Star className="w-5 h-5 text-amber-500 fill-amber-500" /> Rate & Review Kurti
+              <Star className="w-5 h-5 text-amber-500 fill-amber-500" /> Rate &amp; Review Kurti
             </h3>
-            <p className="text-xs text-gray-500 mb-4 line-clamp-1">
+            <p className="text-xs text-gray-500 mb-2 line-clamp-1">
               {product.name}
             </p>
+            <div className="bg-amber-50 text-amber-900 text-[11px] font-medium px-3 py-1.5 rounded-xl mb-4 border border-amber-200/60 flex items-center gap-1.5">
+              <span>🛡️</span> Verified buyer reviews are published upon admin verification.
+            </div>
 
             <form onSubmit={handleSubmitReview} className="space-y-4">
               <div>
