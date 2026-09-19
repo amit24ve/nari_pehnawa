@@ -6,15 +6,28 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request
+from jose import jwt
 from pydantic import BaseModel
 
 from app.database import get_database
-from app.security import require_admin
+from app.security import require_admin, get_current_user, SECRET_KEY, ALGORITHM
 from app.utils.cache import cache_response, clear_api_cache
 
 router = APIRouter(prefix="/campaign", tags=["Campaign"])
 
 DEFAULT_TAGS = ["Special Pick", "Festive Favorite", "Budget Buy", "Daily Essential"]
+
+
+def _get_optional_user_id(request: Request) -> Optional[str]:
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return None
+    token = auth_header[7:].strip()
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload.get("sub")
+    except Exception:
+        return None
 
 
 class SlotConfig(BaseModel):
@@ -30,13 +43,14 @@ class CampaignUpdate(BaseModel):
     is_active: bool = True
     title: str = "Up to"
     discount_text: str = "30% OFF"
-    subtitle: str = "on first order • *Only on Nari Pehnawa"
-    badge_text: str = "SPECIAL FESTIVE OFFER"
+    subtitle: str = "on first order • Only on Nari Pehnawa"
+    badge_text: str = ""
     cta_text: str = "Explore Deals"
     cta_link: str = "/category/sale"
     left_image: Optional[str] = ""
     full_banner_image: Optional[str] = ""
     banner_height: int = 320
+    text_color: Optional[str] = "#111827"
     slots: List[SlotConfig] = []
 
 
@@ -84,7 +98,7 @@ def _ensure_default_campaign(db) -> dict:
 
 
 @router.get("/active")
-def get_active_campaign():
+def get_active_campaign(request: Request):
     """Public endpoint to get the active campaign with populated products and votes."""
     db = get_database()
     campaign = _ensure_default_campaign(db)
@@ -93,15 +107,14 @@ def get_active_campaign():
         return {"is_active": False}
 
     slots = campaign.get("slots", [])
-    max_votes = -1
-    top_slot_id = -1
 
-    # Find highest voted slot
-    for s in slots:
-        v = s.get("votes", 0)
-        if v > max_votes:
-            max_votes = v
-            top_slot_id = s.get("slot_id", 0)
+    # Check optional logged-in user
+    user_id = _get_optional_user_id(request)
+    user_voted_slot = None
+    if user_id:
+        existing_vote = db["campaign_votes"].find_one({"user_id": str(user_id)})
+        if existing_vote:
+            user_voted_slot = existing_vote.get("slot_id")
 
     populated_slots = []
     for s in slots:
@@ -127,7 +140,6 @@ def get_active_campaign():
 
         # Fallback if product was deleted or none selected
         if not product_data:
-            # Fallback to random or default product
             fallback_prod = db["products"].find_one()
             if fallback_prod:
                 product_data = {
@@ -156,69 +168,82 @@ def get_active_campaign():
         "is_active": True,
         "title": campaign.get("title", "Up to"),
         "discount_text": campaign.get("discount_text", "30% OFF"),
-        "subtitle": campaign.get("subtitle", "on first order • *Only on Nari Pehnawa"),
-        "badge_text": campaign.get("badge_text", "SPECIAL FESTIVE OFFER"),
+        "subtitle": campaign.get("subtitle", "on first order • Only on Nari Pehnawa"),
+        "badge_text": campaign.get("badge_text", ""),
         "cta_text": campaign.get("cta_text", "Explore Deals"),
         "cta_link": campaign.get("cta_link", "/category/sale"),
         "left_image": campaign.get("left_image", ""),
         "full_banner_image": campaign.get("full_banner_image", ""),
         "banner_height": campaign.get("banner_height", 320),
+        "text_color": campaign.get("text_color", "#111827"),
+        "user_voted_slot": user_voted_slot,
         "slots": populated_slots,
     }
 
 
 @router.post("/vote")
-def vote_campaign_product(data: VoteRequest, request: Request):
-    """Public voting endpoint: increments votes for a slot and returns updated vote count."""
+def vote_campaign_product(
+    data: VoteRequest,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+):
+    """Voting endpoint: Requires user login. Enforces exactly ONE choice among the 4 slots."""
     db = get_database()
     campaign = _ensure_default_campaign(db)
+    user_id = str(current_user["id"])
+    new_slot_id = data.slot_id
 
-    slot_id = data.slot_id
-    # Find slot in campaign
     slots = campaign.get("slots", [])
-    target_slot = None
-    target_index = -1
-    for i, s in enumerate(slots):
-        if s.get("slot_id") == slot_id:
-            target_slot = s
-            target_index = i
-            break
-
-    if target_index == -1:
+    slot_map = {s.get("slot_id"): idx for idx, s in enumerate(slots)}
+    if new_slot_id not in slot_map:
         raise HTTPException(status_code=404, detail="Slot not found")
 
-    new_votes = target_slot.get("votes", 0) + 1
-    # Recalculate slightly higher rating with vote
-    current_rating = target_slot.get("rating", 4.8)
-    new_rating = min(5.0, round(current_rating + 0.02, 1)) if current_rating < 5.0 else 5.0
+    existing_vote = db["campaign_votes"].find_one({"user_id": user_id})
 
-    db["campaign_showcase"].update_one(
-        {"key": "active_campaign", "slots.slot_id": slot_id},
-        {
-            "$set": {
-                f"slots.{target_index}.votes": new_votes,
-                f"slots.{target_index}.rating": new_rating,
-                "updated_at": datetime.now(),
+    if existing_vote:
+        old_slot_id = existing_vote.get("slot_id")
+        if old_slot_id == new_slot_id:
+            return {
+                "success": True,
+                "user_voted_slot": new_slot_id,
+                "already_voted": True,
+                "slots": slots,
             }
-        }
-    )
 
-    # Also record vote analytics event
-    try:
+        # User switched vote: decrement old slot, increment new slot
+        if old_slot_id in slot_map:
+            old_idx = slot_map[old_slot_id]
+            slots[old_idx]["votes"] = max(0, slots[old_idx].get("votes", 1) - 1)
+
+        new_idx = slot_map[new_slot_id]
+        slots[new_idx]["votes"] = slots[new_idx].get("votes", 0) + 1
+
+        db["campaign_votes"].update_one(
+            {"_id": existing_vote["_id"]},
+            {"$set": {"slot_id": new_slot_id, "updated_at": datetime.now()}}
+        )
+    else:
+        # First vote by this user
+        new_idx = slot_map[new_slot_id]
+        slots[new_idx]["votes"] = slots[new_idx].get("votes", 0) + 1
+
         db["campaign_votes"].insert_one({
-            "slot_id": slot_id,
-            "product_id": data.product_id or target_slot.get("product_id"),
-            "ip": request.client.host if request.client else "unknown",
+            "user_id": user_id,
+            "slot_id": new_slot_id,
+            "product_id": data.product_id,
             "created_at": datetime.now(),
         })
-    except Exception:
-        pass
+
+    # Save updated slots back to campaign_showcase
+    db["campaign_showcase"].update_one(
+        {"key": "active_campaign"},
+        {"$set": {"slots": slots, "updated_at": datetime.now()}}
+    )
 
     return {
         "success": True,
-        "slot_id": slot_id,
-        "votes": new_votes,
-        "rating": new_rating,
+        "user_voted_slot": new_slot_id,
+        "slots": slots,
     }
 
 
@@ -272,5 +297,6 @@ def reset_campaign_votes(_admin=Depends(require_admin)):
         {"key": "active_campaign"},
         {"$set": {"slots": slots, "updated_at": datetime.now()}}
     )
+    db["campaign_votes"].delete_many({})
     clear_api_cache()
     return {"success": True, "message": "Votes reset to 0"}

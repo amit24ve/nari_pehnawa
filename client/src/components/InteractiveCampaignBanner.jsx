@@ -1,94 +1,132 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Heart, Star, Sparkles, ArrowRight, Award, Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Heart, Sparkles, ArrowRight, Check } from "lucide-react";
 import { resolveImageUrl, DEFAULT_HERO_FALLBACK } from "../utils/imageUrl";
+import { useAuth } from "../context/AuthProvider";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
-const VOTED_STORAGE_KEY = "nari_campaign_votes";
+const VOTED_STORAGE_KEY = "nari_campaign_user_voted_slot";
+
+const getToken = () =>
+  localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
 
 const InteractiveCampaignBanner = () => {
   const navigate = useNavigate();
+  const { user, openLoginModal } = useAuth();
+
   const [campaign, setCampaign] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [votedSlots, setVotedSlots] = useState({});
+  const [userVotedSlot, setUserVotedSlot] = useState(null);
   const [justVotedSlot, setJustVotedSlot] = useState(null);
+  const [authTip, setAuthTip] = useState(false);
 
-  // Load voted state from localStorage
+  // Load user voted slot from localStorage as fast fallback
   useEffect(() => {
     try {
       const stored = localStorage.getItem(VOTED_STORAGE_KEY);
-      if (stored) {
-        setVotedSlots(JSON.parse(stored));
+      if (stored !== null && stored !== undefined && stored !== "") {
+        setUserVotedSlot(Number(stored));
       }
     } catch (e) {}
   }, []);
 
-  // Fetch active campaign from server
+  // Fetch active campaign from server with auth header if available
   useEffect(() => {
-    fetch(`${API_BASE_URL}/campaign/active`)
+    const token = getToken();
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    fetch(`${API_BASE_URL}/campaign/active`, { headers })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data && data.is_active !== false) {
           setCampaign(data);
+          if (data.user_voted_slot !== null && data.user_voted_slot !== undefined) {
+            setUserVotedSlot(Number(data.user_voted_slot));
+            try {
+              localStorage.setItem(VOTED_STORAGE_KEY, String(data.user_voted_slot));
+            } catch (e) {}
+          }
         } else {
           setCampaign(null);
         }
       })
       .catch(() => setCampaign(null))
       .finally(() => setLoading(false));
-  }, []);
+  }, [user]);
 
   const handleVote = async (e, slot) => {
     e.stopPropagation();
     const slotId = slot.slot_id;
 
-    // If already voted for this slot in this session, provide soft feedback
-    if (votedSlots[slotId]) return;
+    // REQUIRE LOGIN: if not logged in, prompt user to login
+    if (!user) {
+      setAuthTip(true);
+      setTimeout(() => setAuthTip(false), 3500);
+      if (typeof openLoginModal === "function") {
+        openLoginModal("login");
+      }
+      return;
+    }
 
-    // Optimistically update vote in state
+    // If already voted for this exact slot, do nothing
+    if (userVotedSlot === slotId) return;
+
+    const previousVotedSlot = userVotedSlot;
+
+    // Trigger pulse micro-animation
     setJustVotedSlot(slotId);
     setTimeout(() => setJustVotedSlot(null), 1200);
 
-    const newVoted = { ...votedSlots, [slotId]: true };
-    setVotedSlots(newVoted);
+    // Optimistically enforce SINGLE choice out of 4
+    setUserVotedSlot(slotId);
     try {
-      localStorage.setItem(VOTED_STORAGE_KEY, JSON.stringify(newVoted));
+      localStorage.setItem(VOTED_STORAGE_KEY, String(slotId));
     } catch (e) {}
 
-    // Update campaign slots locally
+    // Optimistically update slots votes locally
     setCampaign((prev) => {
       if (!prev || !prev.slots) return prev;
-      const updatedSlots = prev.slots.map((s) => {
+      const updated = prev.slots.map((s) => {
         if (s.slot_id === slotId) {
-          return {
-            ...s,
-            votes: (s.votes || 0) + 1,
-            rating: Math.min(5.0, Number(((s.rating || 4.8) + 0.02).toFixed(1))),
-          };
+          return { ...s, votes: (s.votes || 0) + 1 };
+        }
+        if (previousVotedSlot !== null && s.slot_id === previousVotedSlot) {
+          return { ...s, votes: Math.max(0, (s.votes || 1) - 1) };
         }
         return s;
       });
-
-      // Recalculate top voted
-      const maxVotes = Math.max(...updatedSlots.map((s) => s.votes || 0));
-      const withTop = updatedSlots.map((s) => ({
-        ...s,
-        is_top_voted: s.votes === maxVotes && maxVotes > 0,
-      }));
-
-      return { ...prev, slots: withTop };
+      return { ...prev, slots: updated };
     });
 
     // Send vote to server
     try {
-      await fetch(`${API_BASE_URL}/campaign/vote`, {
+      const token = getToken();
+      const res = await fetch(`${API_BASE_URL}/campaign/vote`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           slot_id: slotId,
           product_id: slot.product?.id,
         }),
       });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.slots) {
+          setCampaign((prev) => (prev ? { ...prev, slots: data.slots } : prev));
+        }
+        if (data.user_voted_slot !== undefined) {
+          setUserVotedSlot(data.user_voted_slot);
+        }
+      } else if (res.status === 401) {
+        // Token expired or invalid
+        if (typeof openLoginModal === "function") {
+          openLoginModal("login");
+        }
+      }
     } catch (err) {
       console.error("Vote failed:", err);
     }
@@ -138,51 +176,48 @@ const InteractiveCampaignBanner = () => {
         className="relative overflow-hidden rounded-3xl shadow-2xl border-2 border-[#8B0000]/40 flex flex-col lg:flex-row transition-all duration-300 select-none bg-stone-950"
         style={{ minHeight: `${campaign.banner_height || 320}px` }}
       >
-        {/* ── LEFT PROMOTIONAL SECTION (~28% width) — CENTERED & PROJECT ROYAL MAROON PALETTE ── */}
-        <div className="relative w-full lg:w-[28%] xl:w-[26%] bg-gradient-to-br from-[#78081f] via-[#8B0000] to-[#520010] p-6 sm:p-7 flex flex-col items-center justify-center text-center text-white flex-shrink-0 z-10 border-b-2 lg:border-b-0 lg:border-r-2 border-rose-300/25">
-          {/* Subtle elegant ambient glow */}
-          <div className="absolute top-0 right-0 w-36 h-36 bg-rose-500/20 rounded-full blur-2xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-28 h-28 bg-black/30 rounded-full blur-xl pointer-events-none" />
-
-          {/* Left Custom Image overlay if uploaded */}
+        {/* ── LEFT PROMOTIONAL SECTION (~28% width) — CLEAN WHITE BACKGROUND WITH CRISP TYPOGRAPHY ── */}
+        <div className="relative w-full lg:w-[28%] xl:w-[26%] bg-white p-6 sm:p-7 flex flex-col items-center justify-center text-center flex-shrink-0 z-10 border-b-2 lg:border-b-0 lg:border-r-2 border-slate-200 shadow-inner overflow-hidden">
+          {/* Custom Left Image if uploaded by admin */}
           {campaign.left_image && (
             <img
               src={resolveImageUrl(campaign.left_image)}
-              alt="Promo background"
-              className="absolute inset-0 w-full h-full object-cover object-center mix-blend-overlay opacity-30 pointer-events-none"
+              alt=""
+              onError={(e) => {
+                e.target.style.display = "none";
+              }}
+              className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
             />
           )}
 
           {/* Centered Promo Text Block */}
           <div className="relative z-10 flex flex-col items-center justify-center space-y-1 w-full">
-            <p className="text-rose-200/95 font-semibold text-xs sm:text-sm tracking-widest uppercase">
-              {campaign.title || "Up to"}
+            <p className="text-slate-500 font-bold text-xs sm:text-sm tracking-widest uppercase">
+              {campaign.title || "UP TO"}
             </p>
 
-            {/* Centered Large Discount Text */}
+            {/* Large Discount Headline */}
             <h2
-              className="text-4xl sm:text-5xl xl:text-[3.1rem] font-serif font-black tracking-tight leading-none text-white drop-shadow-[0_2px_5px_rgba(0,0,0,0.5)] my-1"
+              className="text-4xl sm:text-5xl xl:text-[3.2rem] font-serif font-black tracking-tight leading-none my-1"
+              style={{ color: campaign.text_color || "#111827" }}
             >
               {campaign.discount_text || "30% OFF"}
             </h2>
 
-            <p className="text-rose-100/90 text-xs sm:text-sm font-medium pt-1 drop-shadow-xs whitespace-pre-line max-w-[240px] leading-relaxed">
-              {campaign.subtitle || "on first order\n*Only on Nari Pehnawa"}
+            <p className="text-slate-600 text-xs sm:text-sm font-medium pt-1 whitespace-pre-line max-w-[240px] leading-relaxed">
+              {campaign.subtitle || "on first order • Only on Nari Pehnawa"}
             </p>
 
-            {/* Centered CTA Button */}
+            {/* High-conversion CTA Button */}
             <div className="pt-4 w-full flex flex-col items-center">
               <button
                 type="button"
                 onClick={() => handleCtaClick(campaign.cta_link)}
-                className="inline-flex items-center justify-center gap-2 bg-white hover:bg-rose-50 text-[#8B0000] font-black text-xs sm:text-sm px-6 py-2.5 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 group cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 bg-[#8B0000] hover:bg-[#6e0000] text-white font-black text-xs sm:text-sm px-6 py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 group cursor-pointer"
               >
                 <span>{campaign.cta_text || "Explore Deals"}</span>
-                <ArrowRight className="w-4 h-4 text-[#8B0000] group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />
               </button>
-              <p className="text-[9px] text-rose-200/60 mt-2.5 font-mono tracking-wider">
-                *T&amp;C Apply • Limited Period Offer
-              </p>
             </div>
           </div>
         </div>
@@ -193,17 +228,22 @@ const InteractiveCampaignBanner = () => {
           <div className="absolute top-[-20%] right-[-10%] w-72 h-72 rounded-full bg-rose-500/10 blur-3xl pointer-events-none" />
           <div className="absolute bottom-[-20%] left-[-10%] w-72 h-72 rounded-full bg-black/40 blur-3xl pointer-events-none" />
 
-          {/* Section Header Hint for Customer Rating & Voting */}
-          <div className="relative z-10 flex items-center justify-between gap-2 mb-3.5 px-1">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-rose-300 animate-pulse" />
-              <span className="text-xs sm:text-sm font-bold text-rose-200 uppercase tracking-wider font-serif">
-                Pick Any 1 Of 4 — Vote For Your Favorite Look
+          {/* Centered Section Header */}
+          <div className="relative z-10 flex flex-col items-center justify-center mb-4 text-center">
+            <div className="inline-flex items-center justify-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+              <span className="text-xs sm:text-sm font-serif font-bold text-rose-100 uppercase tracking-widest drop-shadow">
+                PICK ANY 1 OF 4 — VOTE FOR YOUR FAVORITE LOOK
               </span>
+              <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
             </div>
-            <span className="text-[11px] text-rose-200/60 hidden sm:inline-block font-sans">
-              1 Vote Per Look
-            </span>
+
+            {/* Login feedback tip if guest tries to vote */}
+            {authTip && (
+              <span className="mt-1.5 inline-block text-[11px] font-semibold text-amber-300 bg-black/60 px-3 py-0.5 rounded-full border border-amber-300/40 animate-bounce">
+                Please log in to cast your vote!
+              </span>
+            )}
           </div>
 
           {/* 4 Cards Grid */}
@@ -211,7 +251,7 @@ const InteractiveCampaignBanner = () => {
             {slots.map((slot) => {
               const product = slot.product || {};
               const slotId = slot.slot_id;
-              const isVoted = Boolean(votedSlots[slotId]);
+              const isVoted = userVotedSlot === slotId;
               const isJustVoted = justVotedSlot === slotId;
               const imgSrc = resolveImageUrl(slot.custom_image || product.image, DEFAULT_HERO_FALLBACK);
 
@@ -220,17 +260,17 @@ const InteractiveCampaignBanner = () => {
                   key={slotId}
                   className="group relative flex flex-col items-center transition-all duration-300 hover:-translate-y-1.5"
                 >
-                  {/* Card Container with Arched Top Frame — Pure Image Only, No Overlays */}
+                  {/* Card Container with Arched Top Frame — Pure Image Only */}
                   <div
                     onClick={() => product.id && navigate(`/product/${product.id}`)}
-                    className="w-full relative rounded-t-[38px] rounded-b-2xl overflow-hidden border-2 border-rose-300/40 hover:border-rose-300/80 transition-all duration-500 shadow-xl bg-stone-900 cursor-pointer"
+                    className="w-full relative rounded-2xl overflow-hidden border-2 border-rose-300/40 hover:border-rose-300/80 transition-all duration-500 shadow-xl bg-stone-900 cursor-pointer"
                     title={product.name ? `View ${product.name}` : "View product"}
                   >
                     {/* Pure Product Photo with Arched Top */}
                     <div className="relative h-[180px] sm:h-[205px] md:h-[220px] w-full overflow-hidden bg-stone-900">
                       <img
                         src={imgSrc}
-                        alt={product.name || `Look #${slotId + 1}`}
+                        alt=""
                         className="w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-108"
                         onError={(e) => {
                           e.target.onerror = null;
@@ -247,11 +287,11 @@ const InteractiveCampaignBanner = () => {
                         type="button"
                         onClick={(e) => e.stopPropagation()}
                         className="w-full max-w-[155px] bg-emerald-600 text-white font-bold text-[11px] sm:text-xs py-2 px-3 rounded-full shadow-md border border-emerald-400 flex items-center justify-center gap-1.5 cursor-default"
-                        title="You have rated this look"
+                        title="You voted for this look"
                       >
                         <Check className="w-3.5 h-3.5 text-white" />
                         <span>Rated</span>
-                        <span className="text-[10px] opacity-85">
+                        <span className="text-[10px] opacity-90">
                           ({(slot.votes || 0).toLocaleString("en-IN")})
                         </span>
                       </button>

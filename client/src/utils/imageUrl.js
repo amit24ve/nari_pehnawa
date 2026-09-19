@@ -42,6 +42,9 @@ export const resolveImageUrl = (img, fallback = DEFAULT_FALLBACK_IMAGE) => {
     cleanPath = `/${cleanPath}`;
   }
 
+  // Clean duplicate /api prefixes
+  cleanPath = cleanPath.replace(/^\/api\/api\//, "/api/");
+
   // If starts with /uploads/ without /api, map to /api/uploads/ for robust proxying
   if (cleanPath.startsWith("/uploads/")) {
     cleanPath = `/api${cleanPath}`;

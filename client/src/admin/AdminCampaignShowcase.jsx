@@ -40,13 +40,14 @@ const AdminCampaignShowcase = () => {
     is_active: true,
     title: "Up to",
     discount_text: "30% OFF",
-    subtitle: "on first order • *Only on Nari Pehnawa",
-    badge_text: "SPECIAL FESTIVE OFFER",
+    subtitle: "on first order • Only on Nari Pehnawa",
+    badge_text: "",
     cta_text: "Explore Deals",
     cta_link: "/category/sale",
     left_image: "",
     full_banner_image: "",
     banner_height: 320,
+    text_color: "#111827",
     slots: [
       { slot_id: 0, tag: DEFAULT_TAGS[0], product_id: "", custom_image: "", votes: 182, rating: 4.8 },
       { slot_id: 1, tag: DEFAULT_TAGS[1], product_id: "", custom_image: "", votes: 147, rating: 4.8 },
@@ -116,7 +117,7 @@ const AdminCampaignShowcase = () => {
       }
 
       const data = await res.json();
-      const fullUrl = `${API_BASE}${data.url}`;
+      const fullUrl = data.url;
 
       if (type === "left") {
         setCampaign((prev) => ({ ...prev, left_image: fullUrl }));
@@ -260,29 +261,33 @@ const AdminCampaignShowcase = () => {
         </span>
 
         <div className="rounded-3xl overflow-hidden shadow-xl border-2 border-[#8B0000]/40 flex flex-col md:flex-row bg-stone-950 min-h-[260px]">
-          {/* Left Preview — Centered Royal Maroon Palette */}
-          <div className="w-full md:w-[28%] bg-gradient-to-br from-[#78081f] via-[#8B0000] to-[#520010] p-5 text-white flex flex-col items-center justify-center text-center relative overflow-hidden">
+          {/* Left Preview — Clean White Background */}
+          <div className="w-full md:w-[28%] bg-white p-5 text-slate-800 flex flex-col items-center justify-center text-center relative overflow-hidden border-b-2 md:border-b-0 md:border-r-2 border-slate-200">
             {campaign.left_image && (
               <img
                 src={resolveImageUrl(campaign.left_image)}
-                alt="Left promo"
-                className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30 pointer-events-none"
+                alt=""
+                onError={(e) => { e.target.style.display = "none"; }}
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none"
               />
             )}
             <div className="relative z-10 flex flex-col items-center justify-center w-full">
-              <p className="text-rose-200/90 text-xs font-semibold tracking-wider uppercase">
-                {campaign.title || "Up to"}
+              <p className="text-slate-500 text-xs font-bold tracking-wider uppercase">
+                {campaign.title || "UP TO"}
               </p>
-              <h3 className="text-3xl font-serif font-black text-white leading-tight drop-shadow my-0.5">
+              <h3
+                className="text-3xl font-serif font-black leading-tight my-1"
+                style={{ color: campaign.text_color || "#111827" }}
+              >
                 {campaign.discount_text || "30% OFF"}
               </h3>
-              <p className="text-rose-100/90 text-[11px] mt-0.5 whitespace-pre-line max-w-[200px] leading-relaxed">
+              <p className="text-slate-600 text-[11px] mt-0.5 whitespace-pre-line max-w-[200px] leading-relaxed">
                 {campaign.subtitle}
               </p>
               <div className="mt-3">
-                <span className="inline-flex items-center gap-1.5 bg-white text-[#8B0000] text-[11px] font-black px-4 py-1.5 rounded-full shadow hover:bg-rose-50 cursor-pointer">
+                <span className="inline-flex items-center gap-1.5 bg-[#8B0000] text-white text-[11px] font-black px-4 py-1.5 rounded-full shadow hover:bg-[#6e0000] cursor-pointer">
                   <span>{campaign.cta_text || "Explore Deals"}</span>
-                  <ArrowRight className="w-3 h-3 text-[#8B0000]" />
+                  <ArrowRight className="w-3 h-3 text-white" />
                 </span>
               </div>
             </div>
@@ -290,11 +295,11 @@ const AdminCampaignShowcase = () => {
 
           {/* Right Preview */}
           <div className="flex-1 bg-gradient-to-r from-[#4A0019] via-[#350012] to-[#20000A] p-4 flex flex-col justify-center">
-            <div className="flex items-center justify-between mb-2.5 px-1">
-              <span className="text-xs font-bold text-rose-200 uppercase font-serif">
-                Pick Any 1 Of 4 — Vote For Your Favorite Look
+            <div className="flex items-center justify-center mb-3 px-1 text-center">
+              <span className="text-xs font-bold text-rose-100 uppercase font-serif flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                PICK ANY 1 OF 4 — VOTE FOR YOUR FAVORITE LOOK
               </span>
-              <span className="text-[10px] text-rose-200/60">1 Vote Per Look</span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -305,10 +310,10 @@ const AdminCampaignShowcase = () => {
                 return (
                   <div key={slot.slot_id} className="flex flex-col items-center">
                     {/* Pure Arched Image Card */}
-                    <div className="w-full rounded-t-3xl rounded-b-xl overflow-hidden border-2 border-rose-300/40 relative bg-stone-900 shadow-md">
+                    <div className="w-full rounded-2xl overflow-hidden border-2 border-rose-300/40 relative bg-stone-900 shadow-md">
                       <div className="h-32 w-full bg-stone-800">
                         {imgSrc ? (
-                          <img src={resolveImageUrl(imgSrc)} alt="preview" className="w-full h-full object-cover object-top" />
+                          <img src={resolveImageUrl(imgSrc)} alt="" className="w-full h-full object-cover object-top" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-slate-400 text-[10px]">
                             No product
@@ -396,18 +401,38 @@ const AdminCampaignShowcase = () => {
                 type="text"
                 value={campaign.discount_text || ""}
                 onChange={(e) => setCampaign({ ...campaign, discount_text: e.target.value })}
-                placeholder="35% OFF or BUY 1 GET 1 FREE"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-[#8B0000] focus:border-[#0891b2] outline-none"
+                placeholder="30% OFF or BUY 1 GET 1 FREE"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold focus:border-[#0891b2] outline-none"
+                style={{ color: campaign.text_color || "#111827" }}
               />
             </div>
 
+            <div>
+              <label className="text-xs font-semibold text-slate-600 block mb-1">Discount Text Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={campaign.text_color || "#111827"}
+                  onChange={(e) => setCampaign({ ...campaign, text_color: e.target.value })}
+                  className="w-9 h-9 p-0.5 rounded-lg border border-slate-200 cursor-pointer bg-white"
+                />
+                <input
+                  type="text"
+                  value={campaign.text_color || "#111827"}
+                  onChange={(e) => setCampaign({ ...campaign, text_color: e.target.value })}
+                  placeholder="#111827"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono outline-none"
+                />
+              </div>
+            </div>
+
             <div className="sm:col-span-2">
-              <label className="text-xs font-semibold text-slate-600 block mb-1">Subtitle / T&amp;C Note</label>
+              <label className="text-xs font-semibold text-slate-600 block mb-1">Subtitle Note</label>
               <textarea
                 rows={2}
                 value={campaign.subtitle || ""}
                 onChange={(e) => setCampaign({ ...campaign, subtitle: e.target.value })}
-                placeholder="on first order • *Only on Nari Pehnawa"
+                placeholder="on first order • Only on Nari Pehnawa"
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:border-[#0891b2] outline-none"
               />
             </div>
