@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, HTTPException, Query, Depends, BackgroundTasks, Request
 from typing import List, Optional
 from pydantic import BaseModel
@@ -115,11 +116,34 @@ def get_products(
         query = {}
 
         if category:
-            query["category"] = {"$regex": category, "$options": "i"}
+            cat_clean = category.strip()
+            categories_col = db["categories"]
+            matched_cat = categories_col.find_one({
+                "$or": [
+                    {"name": {"$regex": f"^{re.escape(cat_clean)}$", "$options": "i"}},
+                    {"link": {"$regex": f"{re.escape(cat_clean)}", "$options": "i"}},
+                    {"name": {"$regex": re.escape(cat_clean), "$options": "i"}}
+                ]
+            })
+
+            terms = [re.escape(cat_clean)]
+            if matched_cat and matched_cat.get("name"):
+                terms.append(re.escape(matched_cat["name"]))
+
+            words = [re.escape(w) for w in re.split(r'[\s\-_(),]+', cat_clean) if w]
+            if words:
+                terms.append(r".*?".join(words))
+
+            combined_pattern = "|".join(f"(?:{t})" for t in set(terms))
+            query["category"] = {"$regex": combined_pattern, "$options": "i"}
+
         if on_sale is not None:
             query["on_sale"] = on_sale
         if is_new is not None:
-            query["is_new"] = is_new
+            if is_new:
+                query["$or"] = [{"is_new": True}, {"is_new": {"$exists": False}}]
+            else:
+                query["is_new"] = False
         if min_price is not None or max_price is not None:
             query["price"] = {}
             if min_price is not None:
@@ -127,10 +151,15 @@ def get_products(
             if max_price is not None:
                 query["price"]["$lte"] = max_price
         if search:
+            search_clean = search.strip()
+            escaped_search = re.escape(search_clean)
+            search_words = [re.escape(w) for w in re.split(r'[\s\-_(),]+', search_clean) if w]
+            search_pattern = r".*?".join(search_words) if search_words else escaped_search
             query["$or"] = [
-                {"name": {"$regex": search, "$options": "i"}},
-                {"description": {"$regex": search, "$options": "i"}},
-                {"tags": {"$regex": search, "$options": "i"}}
+                {"name": {"$regex": search_pattern, "$options": "i"}},
+                {"description": {"$regex": search_pattern, "$options": "i"}},
+                {"category": {"$regex": search_pattern, "$options": "i"}},
+                {"tags": {"$regex": search_pattern, "$options": "i"}}
             ]
 
         cursor = products_collection.find(query).sort(sort_by, sort_order).skip(skip).limit(limit)

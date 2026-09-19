@@ -263,13 +263,12 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
       try {
         let url;
         if (slug === "new-arrivals") {
-          url = `${API_BASE_URL}/products/?is_new=true&limit=100`;
+          url = `${API_BASE_URL}/products/?is_new=true&limit=100&sort_by=created_at&sort_order=-1`;
         } else if (slug === "sale") {
           url = `${API_BASE_URL}/products/?on_sale=true&limit=100`;
         } else {
-          const categoryKeyword = slug.replace(/-/g, " ");
           url = `${API_BASE_URL}/products/?category=${encodeURIComponent(
-            categoryKeyword,
+            slug,
           )}&limit=100`;
         }
 

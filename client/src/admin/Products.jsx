@@ -359,7 +359,7 @@ const Products = () => {
                 images: orderedImages,
                 brand: formData.brand || "Nari Pehnawa",
                 on_sale: formData.discount ? parseInt(formData.discount) > 0 : false,
-                is_new: false,
+                is_new: true,
                 in_stock: totalStock > 0,
                 sizes: parsedSizes,
                 size_stock: Object.keys(aggregatedSizeStock).length > 0 ? aggregatedSizeStock : {},
