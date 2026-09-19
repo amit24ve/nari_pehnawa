@@ -119,7 +119,7 @@ def get_product_review_stats(product_id: str):
                 if img and img not in all_images:
                     all_images.append(img)
                     
-        avg_rating = round(sum(r.get("rating", 5) for r in approved) / total_reviews, 1) if total_reviews > 0 else 5.0
+        avg_rating = round(sum(r.get("rating", 5) for r in approved) / total_reviews, 1) if total_reviews > 0 else 0.0
         
         percentages = {}
         for star in [5, 4, 3, 2, 1]:
@@ -185,6 +185,23 @@ def update_review(review_id: str, review_update: ReviewUpdate, current_user: dic
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def _sync_product_rating(db, product_id: str):
+    if not product_id or product_id == "unknown":
+        return
+    approved = list(db["reviews"].find({"product_id": product_id, "status": "approved"}))
+    total_count = len(approved)
+    avg_rating = round(sum(r.get("rating", 5) for r in approved) / total_count, 1) if total_count > 0 else 0.0
+    prod_q = {"_id": ObjectId(product_id)} if ObjectId.is_valid(product_id) else {"_id": product_id}
+    db["products"].update_one(prod_q, {
+        "$set": {
+            "rating": avg_rating,
+            "review_count": total_count,
+            "reviews_count": total_count,
+            "total_reviews": total_count
+        }
+    })
+
+
 @router.patch("/{review_id}/approve")
 def approve_review(review_id: str, current_user: dict = Depends(require_admin)):
     """Approve a review (Admin only)"""
@@ -199,21 +216,8 @@ def approve_review(review_id: str, current_user: dict = Depends(require_admin)):
         if not result:
             raise HTTPException(status_code=404, detail="Review not found")
         
-        # Synchronize product rating & count in products collection
         product_id = result.get("product_id")
-        if product_id and product_id != "unknown":
-            approved = list(reviews_collection.find({"product_id": product_id, "status": "approved"}))
-            total_count = len(approved)
-            if total_count > 0:
-                avg_rating = round(sum(r.get("rating", 5) for r in approved) / total_count, 1)
-                prod_q = {"_id": ObjectId(product_id)} if ObjectId.is_valid(product_id) else {"_id": product_id}
-                db["products"].update_one(prod_q, {
-                    "$set": {
-                        "rating": avg_rating,
-                        "reviews_count": total_count,
-                        "total_reviews": total_count
-                    }
-                })
+        _sync_product_rating(db, product_id)
 
         result["_id"] = str(result["_id"])
         return result
@@ -236,6 +240,10 @@ def reject_review(review_id: str, current_user: dict = Depends(require_admin)):
         )
         if not result:
             raise HTTPException(status_code=404, detail="Review not found")
+        
+        product_id = result.get("product_id")
+        _sync_product_rating(db, product_id)
+
         result["_id"] = str(result["_id"])
         return result
     except HTTPException:
@@ -250,9 +258,14 @@ def delete_review(review_id: str, current_user: dict = Depends(require_admin)):
     db = get_database()
     reviews_collection = db["reviews"]
     try:
+        review_doc = reviews_collection.find_one({"_id": ObjectId(review_id)})
         result = reviews_collection.delete_one({"_id": ObjectId(review_id)})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Review not found")
+        
+        if review_doc:
+            _sync_product_rating(db, review_doc.get("product_id"))
+
         return {"message": "Review deleted successfully"}
     except HTTPException:
         raise

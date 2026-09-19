@@ -242,6 +242,26 @@ def get_product(product_id: str, request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/{product_id}/view")
+def increment_product_view(product_id: str):
+    """Increment product view count (called when customer views product detail page)"""
+    db = get_database()
+    products_collection = db["products"]
+    try:
+        result = products_collection.find_one_and_update(
+            _build_product_query(product_id),
+            {"$inc": {"viewers_count": 1}},
+            return_document=True
+        )
+        if not result:
+            raise HTTPException(status_code=404, detail="Product not found")
+        return {"viewers_count": result.get("viewers_count", 1)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.put("/{product_id}", response_model=Product)
 def update_product(product_id: str, product: ProductUpdate, current_user: dict = Depends(require_admin)):
     """Update a product (Admin only)"""

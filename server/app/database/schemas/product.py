@@ -44,6 +44,14 @@ class ProductBase(BaseModel):
     deal_type: Optional[str] = None
     buy_qty: Optional[int] = None
     get_free_qty: Optional[int] = None
+    is_returnable: bool = True
+    return_policy: Optional[str] = "Easy 15-Day Returns"
+    occasion: Optional[str] = "Festive, Casual, Office Wear"
+    country_of_origin: Optional[str] = "India 🇮🇳"
+    wash_care: Optional[str] = "Hand Wash or Gentle Machine Wash in Cold Water"
+    specifications: Optional[Dict[str, str]] = {}
+    offer_code: Optional[str] = None
+    offer_text: Optional[str] = None
 
 
 class ProductCreate(ProductBase):
@@ -89,6 +97,14 @@ class ProductUpdate(BaseModel):
     deal_type: Optional[str] = None
     buy_qty: Optional[int] = None
     get_free_qty: Optional[int] = None
+    is_returnable: Optional[bool] = None
+    return_policy: Optional[str] = None
+    occasion: Optional[str] = None
+    country_of_origin: Optional[str] = None
+    wash_care: Optional[str] = None
+    specifications: Optional[Dict[str, str]] = None
+    offer_code: Optional[str] = None
+    offer_text: Optional[str] = None
 
 
 class Product(ProductBase):

@@ -38,6 +38,27 @@ def validate_coupon(
     return result
 
 
+@router.get("/public-active")
+def get_public_active_coupons():
+    """Get list of active public coupons/offers for banners and product pages (No auth required)"""
+    db = get_database()
+    coupons_collection = db["coupons"]
+    try:
+        coupons = list(coupons_collection.find({"is_active": True}).sort("discount_value", -1).limit(5))
+        result = []
+        for c in coupons:
+            result.append({
+                "code": c.get("code", ""),
+                "description": c.get("description", ""),
+                "discount_type": c.get("discount_type", "percentage"),
+                "discount_value": c.get("discount_value", 10),
+                "min_order_value": c.get("min_order_value", 0),
+            })
+        return result
+    except Exception:
+        return []
+
+
 # ── Admin: coupon CRUD ────────────────────────────────────────────────────────
 
 

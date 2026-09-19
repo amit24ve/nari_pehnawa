@@ -121,8 +121,16 @@ const ProductPage = () => {
   const [qText, setQText] = useState("");
   const [qSubmitted, setQSubmitted] = useState(false);
 
-  // Frequently Bought Together Bundle
-  const [bundleChecked, setBundleChecked] = useState({ bottom: true, dupatta: true });
+  // Dynamic viewers & Urgency counters
+  const [viewersCount, setViewersCount] = useState(null);
+
+  // Dynamic coupons
+  const [activeCoupon, setActiveCoupon] = useState(null);
+  const [copiedCoupon, setCopiedCoupon] = useState(false);
+
+  // Frequently Bought Together Dynamic Bundle
+  const [bundleProducts, setBundleProducts] = useState([]);
+  const [selectedBundleMap, setSelectedBundleMap] = useState({});
 
   // Recently Viewed Products
   const [recentlyViewed, setRecentlyViewed] = useState([]);
@@ -134,7 +142,7 @@ const ProductPage = () => {
     }
   }, [user, pendingCheckout]);
 
-  /* ── Load Product Data, Reviews & Recently Viewed ── */
+  /* ── Load Product Data, Reviews & Urgency Counters ── */
   useEffect(() => {
     setLoading(true);
     setError(null);
@@ -165,25 +173,63 @@ const ProductPage = () => {
           setSelectedColor(normalized.colors[0]);
         }
 
-        // Save to Recently Viewed in localStorage
+        // Save to Recently Viewed in localStorage (with clean real data)
         try {
           const rawRV = localStorage.getItem(RECENTLY_VIEWED_KEY);
           let list = rawRV ? JSON.parse(rawRV) : [];
-          list = list.filter((item) => item.id !== normalized.id);
+          list = (Array.isArray(list) ? list : []).filter((item) => item && item.id !== normalized.id);
           list.unshift({
             id: normalized.id,
             name: normalized.name,
             price: normalized.price,
             original_price: normalized.original_price,
             discount: normalized.discount,
-            image: normalized.image,
+            image: normalized.image || (normalized.images && normalized.images[0]) || FALLBACK_IMG,
             category: normalized.category,
+            rating: normalized.rating || 0.0,
+            review_count: normalized.review_count || 0
           });
           localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(list.slice(0, 10)));
         } catch (e) {}
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
+
+    // Record view & fetch dynamic live viewers count from DB
+    fetch(`${API_BASE_URL}/products/${productId}/view`, { method: "POST" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.viewers_count !== undefined) {
+          setViewersCount(data.viewers_count);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch active coupons dynamically for promotion banner
+    fetch(`${API_BASE_URL}/coupons/public-active`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((c) => {
+        const top = Array.isArray(c) ? c[0] : c;
+        if (top && top.code) setActiveCoupon(top);
+      })
+      .catch(() => {});
+
+    // Fetch catalog products for Frequently Bought Together bundle
+    fetch(`${API_BASE_URL}/products/?limit=12`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        const list = (Array.isArray(data) ? data : [])
+          .map((p) => ({ ...p, id: p._id || p.id }))
+          .filter((p) => p.id !== productId);
+        const topBundleItems = list.slice(0, 2);
+        setBundleProducts(topBundleItems);
+        const initialMap = {};
+        topBundleItems.forEach((p) => {
+          initialMap[p.id] = true;
+        });
+        setSelectedBundleMap(initialMap);
+      })
+      .catch(() => {});
 
     // Fetch approved customer reviews for product dynamically from backend API
     fetch(`${API_BASE_URL}/reviews/product/${productId}`)
@@ -202,13 +248,23 @@ const ProductPage = () => {
       .catch(() => {});
   }, [productId]);
 
-  // Load Recently Viewed list from localStorage
+  // Load Recently Viewed list from localStorage and purge stale mock entries
   useEffect(() => {
     try {
       const rawRV = localStorage.getItem(RECENTLY_VIEWED_KEY);
       if (rawRV) {
-        const list = JSON.parse(rawRV).filter((item) => item.id !== productId);
-        setRecentlyViewed(list);
+        const parsed = JSON.parse(rawRV);
+        // Retain only valid real store items, removing mock test kurtis
+        const valid = (Array.isArray(parsed) ? parsed : []).filter(
+          (item) =>
+            item &&
+            item.id &&
+            item.id !== productId &&
+            !item.name?.toLowerCase().includes("denim kurti") &&
+            !item.name?.toLowerCase().includes("anniversary anarkali")
+        );
+        setRecentlyViewed(valid);
+        localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(valid.slice(0, 10)));
       }
     } catch (e) {}
   }, [productId]);
@@ -350,13 +406,15 @@ const ProductPage = () => {
         "availability": product.in_stock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
         "itemCondition": "https://schema.org/NewCondition"
       },
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": product.rating || 4.8,
-        "reviewCount": product.review_count || 128
-      }
+      ...((reviewStats?.total_reviews > 0 || product.review_count > 0) ? {
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": reviewStats?.total_reviews > 0 ? reviewStats.average_rating : (product.rating || 5.0),
+          "reviewCount": reviewStats?.total_reviews > 0 ? reviewStats.total_reviews : (product.review_count || 1)
+        }
+      } : {})
     };
-  }, [product, images, sku]);
+  }, [product, images, sku, reviewStats]);
 
   if (loading) {
     return (
@@ -511,11 +569,11 @@ const ProductPage = () => {
             <div className="bg-amber-50/80 rounded-xl p-3 border border-amber-200/60 flex items-center justify-between gap-2 flex-wrap text-xs text-amber-900 font-medium w-full">
               <div className="flex items-center gap-1.5">
                 <Flame className="w-4 h-4 text-amber-600 animate-pulse" />
-                <span><strong>{product.viewers_count || 24} people</strong> viewing right now</span>
+                <span><strong>{viewersCount ?? product.viewers_count ?? 1} people</strong> viewing right now</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock className="w-4 h-4 text-amber-600" />
-                <span><strong>{product.sold_24h || 18} sold</strong> in last 24 hrs</span>
+                <span><strong>{product.sold_24h ?? 0} sold</strong> in last 24 hrs</span>
               </div>
             </div>
           </div>
@@ -534,16 +592,31 @@ const ProductPage = () => {
 
               {/* Ratings & Wishlist count */}
               <div className="flex items-center gap-3 flex-wrap text-xs">
-                <div className="flex items-center gap-1 bg-emerald-700 text-white font-bold px-2 py-0.5 rounded">
-                  <span>{(reviewStats?.total_reviews > 0 ? reviewStats.average_rating : (product.rating || 4.8)).toFixed(1)}</span>
-                  <Star className="w-3 h-3 fill-white text-white" />
+                <div className={`flex items-center gap-1 font-bold px-2 py-0.5 rounded ${
+                  (reviewStats?.total_reviews > 0 || (product.review_count || 0) > 0)
+                    ? "bg-emerald-700 text-white"
+                    : "bg-gray-200 text-gray-700"
+                }`}>
+                  <span>
+                    {(reviewStats?.total_reviews > 0
+                      ? reviewStats.average_rating
+                      : (product.rating || 0.0)
+                    ).toFixed(1)}
+                  </span>
+                  <Star className="w-3 h-3 fill-current" />
                 </div>
                 <span className="text-gray-500 font-medium">
-                  {(reviewStats?.total_reviews > 0 ? reviewStats.total_reviews : (product.review_count || product.reviews_count || 128)).toLocaleString("en-IN")} Verified Ratings
+                  {(reviewStats?.total_reviews > 0
+                    ? reviewStats.total_reviews
+                    : (product.review_count || product.reviews_count || 0)
+                  ).toLocaleString("en-IN")}{" "}
+                  {(reviewStats?.total_reviews > 0 || (product.review_count || 0) > 0)
+                    ? "Verified Ratings"
+                    : "Reviews • Be the first to review"}
                 </span>
                 <span className="text-gray-300">|</span>
                 <span className="text-gray-500 flex items-center gap-1">
-                  <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" /> {product.wishlist_count || 450}+ Wishlisted
+                  <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" /> {product.wishlist_count || 0} Wishlisted
                 </span>
               </div>
             </div>
@@ -590,23 +663,39 @@ const ProductPage = () => {
               </div>
               <p className="text-[11px] text-gray-500 font-medium">Inclusive of all taxes. Free delivery on orders above ₹999.</p>
 
-              {/* Active Coupons Banner */}
-              <div className="pt-2 border-t border-gray-200/60 flex items-center justify-between gap-2 text-xs flex-wrap">
-                <div className="flex items-center gap-1.5 text-amber-900 font-semibold">
-                  <Tag className="w-4 h-4 text-amber-600" />
-                  <span>Use Coupon <strong>FESTIVE10</strong> for extra 10% OFF</span>
-                </div>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText("FESTIVE10");
-                    setCopiedLink(true);
-                    setTimeout(() => setCopiedLink(false), 2000);
-                  }}
-                  className="text-[11px] text-[#8B0000] font-bold underline hover:text-[#6B0000]"
-                >
-                  {copiedLink ? "Copied!" : "Copy Code"}
-                </button>
-              </div>
+              {/* Dynamic Active Coupon Banner */}
+              {(() => {
+                const couponCode = product.offer_code || activeCoupon?.code;
+                const couponDesc =
+                  product.offer_text ||
+                  (activeCoupon
+                    ? `Use Coupon ${activeCoupon.code} for extra ${
+                        activeCoupon.discount_type === "percentage"
+                          ? `${activeCoupon.discount_value}%`
+                          : `₹${activeCoupon.discount_value}`
+                      } OFF`
+                    : null);
+                if (!couponCode) return null;
+                return (
+                  <div className="pt-2 border-t border-gray-200/60 flex items-center justify-between gap-2 text-xs flex-wrap">
+                    <div className="flex items-center gap-1.5 text-amber-900 font-semibold">
+                      <Tag className="w-4 h-4 text-amber-600" />
+                      <span>{couponDesc || <>Use Coupon <strong>{couponCode}</strong> for special discount</>}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(couponCode);
+                        setCopiedCoupon(true);
+                        setTimeout(() => setCopiedCoupon(false), 2000);
+                      }}
+                      className="text-[11px] text-[#8B0000] font-bold underline hover:text-[#6B0000]"
+                    >
+                      {copiedCoupon ? "Copied!" : "Copy Code"}
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Size Selector with Stock Badges */}
@@ -802,7 +891,12 @@ const ProductPage = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
               {[
                 [ShieldCheck, "Premium Quality"],
-                [RotateCcw, "Easy 15-Day Returns"],
+                [
+                  RotateCcw,
+                  product.is_returnable === false
+                    ? (product.return_policy || "Non-Returnable (Final Sale)")
+                    : (product.return_policy || "Easy 15-Day Returns")
+                ],
                 [CreditCard, "Secure Payments"],
                 [Truck, "Shiprocket Delivery"],
               ].map(([Icon, label]) => (
@@ -858,7 +952,7 @@ const ProductPage = () => {
                     <table className="w-full text-sm">
                       <tbody>
                         <tr className="border-b border-gray-100">
-                          <td className="py-2.5 pr-4 font-semibold text-gray-700 w-36 align-top">Fabric</td>
+                          <td className="py-2.5 pr-4 font-semibold text-gray-700 w-44 align-top">Fabric</td>
                           <td className="py-2.5 text-gray-600">{product.fabric || "Cotton Blend"}</td>
                         </tr>
                         <tr className="border-b border-gray-100">
@@ -875,20 +969,41 @@ const ProductPage = () => {
                         </tr>
                         <tr className="border-b border-gray-100">
                           <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Occasion</td>
-                          <td className="py-2.5 text-gray-600">Festive, Casual, Office Wear</td>
+                          <td className="py-2.5 text-gray-600">{product.occasion || "Festive, Casual, Office Wear"}</td>
                         </tr>
                         <tr className="border-b border-gray-100">
                           <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Country of Origin</td>
-                          <td className="py-2.5 text-gray-600">India 🇮🇳</td>
+                          <td className="py-2.5 text-gray-600">{product.country_of_origin || "India 🇮🇳"}</td>
                         </tr>
                         <tr className="border-b border-gray-100">
                           <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">HSN Code</td>
                           <td className="py-2.5 text-gray-600">{product.hsn_code || "621133"}</td>
                         </tr>
-                        <tr>
+                        <tr className="border-b border-gray-100">
                           <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Wash & Care</td>
-                          <td className="py-2.5 text-gray-600">Hand Wash or Gentle Machine Wash in Cold Water</td>
+                          <td className="py-2.5 text-gray-600">{product.wash_care || "Hand Wash or Gentle Machine Wash in Cold Water"}</td>
                         </tr>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Return & Exchange</td>
+                          <td className="py-2.5 text-gray-600">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
+                              product.is_returnable === false
+                                ? "bg-rose-100 text-rose-800"
+                                : "bg-emerald-100 text-emerald-800"
+                            }`}>
+                              {product.is_returnable === false
+                                ? (product.return_policy || "Non-Returnable (Final Sale)")
+                                : (product.return_policy || "Easy 15-Day Returns")}
+                            </span>
+                          </td>
+                        </tr>
+                        {/* Custom specifications from Admin if configured */}
+                        {Array.isArray(product.specifications) && product.specifications.map((spec, idx) => (
+                          <tr key={idx} className="border-b border-gray-100 last:border-b-0">
+                            <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">{spec.name || spec.key || spec.title}</td>
+                            <td className="py-2.5 text-gray-600">{spec.value}</td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
@@ -899,61 +1014,121 @@ const ProductPage = () => {
           </div>
 
           {/* Frequently Bought Together Bundle */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs space-y-4">
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5 text-[#8B0000]" /> Frequently Bought Together
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center pt-2">
-              
-              {/* Product 1 */}
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <img src={images[0] || FALLBACK_IMG} alt={product.name} className="w-14 h-16 object-cover rounded-lg" />
-                <div className="text-xs">
-                  <p className="font-bold text-gray-900 line-clamp-1">{product.name}</p>
-                  <p className="text-[#8B0000] font-bold">₹{product.price}</p>
+          {bundleProducts.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs space-y-4">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-[#8B0000]" /> Frequently Bought Together
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center pt-2">
+                
+                {/* Main Product */}
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                  <div className="relative shrink-0">
+                    <img
+                      src={images[0] || FALLBACK_IMG}
+                      alt={product.name}
+                      className="w-14 h-16 object-cover rounded-lg"
+                    />
+                    <span className="absolute -top-1.5 -left-1.5 bg-[#8B0000] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                      Main
+                    </span>
+                  </div>
+                  <div className="text-xs min-w-0">
+                    <p className="font-bold text-gray-900 truncate">{product.name}</p>
+                    <p className="text-[#8B0000] font-bold">₹{product.price}</p>
+                  </div>
                 </div>
+
+                {/* Companion Products from Store */}
+                {bundleProducts.map((bundleItem) => {
+                  const isChecked = selectedBundleMap[bundleItem.id] !== false;
+                  return (
+                    <div
+                      key={bundleItem.id}
+                      className={`flex items-center gap-3 p-3 rounded-xl border transition-colors cursor-pointer ${
+                        isChecked ? "bg-amber-50/40 border-amber-300" : "bg-gray-50 border-gray-200 opacity-60"
+                      }`}
+                      onClick={() =>
+                        setSelectedBundleMap((prev) => ({
+                          ...prev,
+                          [bundleItem.id]: !isChecked,
+                        }))
+                      }
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {}}
+                        className="rounded text-[#8B0000] focus:ring-[#8B0000] h-4 w-4 shrink-0"
+                      />
+                      <img
+                        src={bundleItem.image || (bundleItem.images && bundleItem.images[0]) || FALLBACK_IMG}
+                        alt={bundleItem.name}
+                        className="w-14 h-16 object-cover rounded-lg shrink-0"
+                      />
+                      <div className="text-xs min-w-0 flex-1">
+                        <p className="font-bold text-gray-900 truncate">{bundleItem.name}</p>
+                        <p className="text-[#8B0000] font-bold">₹{bundleItem.price}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+
               </div>
 
-              {/* Product 2: Matching Palazzo */}
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <img src="https://images.pexels.com/photos/2659787/pexels-photo-2659787.jpeg?auto=compress&cs=tinysrgb&w=300" alt="Matching Cotton Palazzo" className="w-14 h-16 object-cover rounded-lg" />
-                <div className="text-xs">
-                  <p className="font-bold text-gray-900 line-clamp-1">Matching Cotton Palazzo</p>
-                  <p className="text-[#8B0000] font-bold">₹699</p>
-                </div>
-              </div>
+              {/* Bundle Pricing & Add to Cart */}
+              {(() => {
+                const selectedItems = bundleProducts.filter(
+                  (item) => selectedBundleMap[item.id] !== false
+                );
+                const companionTotal = selectedItems.reduce((sum, item) => sum + (item.price || 0), 0);
+                const rawTotal = (product.price || 0) + companionTotal;
+                const bundleSavings = selectedItems.length > 0 ? Math.round(rawTotal * 0.10) : 0;
+                const bundleFinal = rawTotal - bundleSavings;
 
-              {/* Product 3: Chanderi Dupatta */}
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <img src="https://images.pexels.com/photos/28512776/pexels-photo-28512776.jpeg?auto=compress&cs=tinysrgb&w=300" alt="Chanderi Dupatta" className="w-14 h-16 object-cover rounded-lg" />
-                <div className="text-xs">
-                  <p className="font-bold text-gray-900 line-clamp-1">Chanderi Dupatta</p>
-                  <p className="text-[#8B0000] font-bold">₹499</p>
-                </div>
-              </div>
-
+                return (
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100 flex-wrap gap-3">
+                    <div>
+                      <p className="text-xs text-gray-500">
+                        Bundle Price ({1 + selectedItems.length} {1 + selectedItems.length === 1 ? "Item" : "Items"}):
+                      </p>
+                      <p className="text-xl font-extrabold text-gray-900">
+                        ₹{bundleFinal.toLocaleString("en-IN")}{" "}
+                        {bundleSavings > 0 && (
+                          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded ml-1">
+                            Save ₹{bundleSavings.toLocaleString("en-IN")} (10% Bundle OFF)
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await handleAddToCart(false);
+                        for (const item of selectedItems) {
+                          await addToCart({
+                            product_id: item.id,
+                            name: item.name,
+                            price: item.price,
+                            image: item.image || (item.images && item.images[0]) || FALLBACK_IMG,
+                            size: item.sizes?.[0] || "Free Size",
+                            color: item.colors?.[0] || "",
+                            quantity: 1,
+                          });
+                        }
+                        setAddedMsg(`Added Bundle (${1 + selectedItems.length} items) to Cart!`);
+                        setTimeout(() => setAddedMsg(""), 2500);
+                      }}
+                      className="px-6 py-3 bg-[#8B0000] hover:bg-[#6B0000] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors shadow-md flex items-center gap-2"
+                    >
+                      <ShoppingBag className="w-4 h-4" />
+                      Add Bundle to Cart
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
-
-            <div className="flex items-center justify-between pt-3 border-t border-gray-100 flex-wrap gap-3">
-              <div>
-                <p className="text-xs text-gray-500">Bundle Price (3 Items):</p>
-                <p className="text-xl font-extrabold text-gray-900">
-                  ₹{(product.price + 699 + 499 - 250).toLocaleString("en-IN")}{" "}
-                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Save ₹250</span>
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  handleAddToCart(false);
-                  setAddedMsg("Added Complete 3-Piece Bundle to Cart!");
-                  setTimeout(() => setAddedMsg(""), 2500);
-                }}
-                className="px-6 py-3 bg-[#8B0000] hover:bg-[#6B0000] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors shadow-md"
-              >
-                Add 3-Piece Set to Cart
-              </button>
-            </div>
-          </div>
+          )}
 
           {/* Customer Reviews & Photo Gallery */}
           <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs space-y-6">
@@ -970,15 +1145,24 @@ const ProductPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
               <div className="text-center md:border-r border-gray-100 md:pr-6">
                 <span className="text-5xl font-extrabold text-gray-900">
-                  {(reviewStats?.total_reviews > 0 ? reviewStats.average_rating : (product.rating || 4.8)).toFixed(1)}
+                  {(reviewStats?.total_reviews > 0 ? reviewStats.average_rating : (product.rating || 0.0)).toFixed(1)}
                 </span>
                 <div className="flex justify-center gap-1 my-2">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    <Star
+                      key={i}
+                      className={`w-4 h-4 ${
+                        i < Math.round(reviewStats?.total_reviews > 0 ? reviewStats.average_rating : (product.rating || 0))
+                          ? "fill-yellow-400 text-yellow-400"
+                          : "fill-gray-200 text-gray-200"
+                      }`}
+                    />
                   ))}
                 </div>
                 <p className="text-xs text-gray-500 font-medium">
-                  {reviewStats?.total_reviews > 0 ? `${Math.round(((reviewStats.distribution?.[5] || 0) + (reviewStats.distribution?.[4] || 0)) / reviewStats.total_reviews * 100)}% of customers recommend this item` : "96% of customers recommend this kurti"}
+                  {reviewStats?.total_reviews > 0
+                    ? `${Math.round(((reviewStats.distribution?.[5] || 0) + (reviewStats.distribution?.[4] || 0)) / reviewStats.total_reviews * 100)}% of customers recommend this item`
+                    : "No reviews yet. Be the first to review!"}
                 </p>
               </div>
 
@@ -986,7 +1170,7 @@ const ProductPage = () => {
                 {[5, 4, 3, 2, 1].map((stars) => {
                   const pct = reviewStats?.percentages
                     ? (reviewStats.percentages[stars] || 0)
-                    : (stars === 5 ? 82 : stars === 4 ? 12 : stars === 3 ? 4 : stars === 2 ? 1 : 1);
+                    : 0;
                   return (
                     <div key={stars} className="flex items-center gap-3">
                       <span className="w-8 text-gray-600 font-semibold">{stars} ★</span>

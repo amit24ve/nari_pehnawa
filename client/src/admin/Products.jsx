@@ -108,7 +108,18 @@ const Products = () => {
         delivery_charge: "",
         pickup_location: "Home",
         warehouse_stock: { "Home": 0, "home-1": 0 },
-        warehouse_size_stock: { "Home": {}, "home-1": {} }
+        warehouse_size_stock: { "Home": {}, "home-1": {} },
+        is_returnable: true,
+        return_policy: "Easy 15-Day Returns",
+        pattern: "",
+        sleeve_type: "",
+        fit_type: "Regular Comfort Fit",
+        occasion: "Festive, Casual, Office Wear",
+        country_of_origin: "India 🇮🇳",
+        hsn_code: "621133",
+        wash_care: "Hand Wash or Gentle Machine Wash in Cold Water",
+        offer_code: "",
+        offer_text: ""
     };
 
     const [formData, setFormData] = useState(emptyForm);
@@ -365,6 +376,17 @@ const Products = () => {
                 size_stock: Object.keys(aggregatedSizeStock).length > 0 ? aggregatedSizeStock : {},
                 colors: parsedColors,
                 fabric: formData.fabric || null,
+                pattern: formData.pattern || null,
+                sleeve_type: formData.sleeve_type || null,
+                fit_type: formData.fit_type || null,
+                occasion: formData.occasion || null,
+                country_of_origin: formData.country_of_origin || "India 🇮🇳",
+                hsn_code: formData.hsn_code || "621133",
+                wash_care: formData.wash_care || null,
+                is_returnable: formData.is_returnable !== false,
+                return_policy: formData.return_policy || "Easy 15-Day Returns",
+                offer_code: formData.offer_code || null,
+                offer_text: formData.offer_text || null,
                 delivery_charge: formData.delivery_charge !== "" ? parseFloat(formData.delivery_charge) : 0.0,
                 pickup_location: formData.pickup_location || "Home",
                 warehouse_stock: formData.warehouse_stock || {},
@@ -539,7 +561,18 @@ const Products = () => {
             delivery_charge: product.delivery_charge !== undefined && product.delivery_charge !== null ? product.delivery_charge : "",
             pickup_location: product.pickup_location || pickupLocations[0]?.pickup_location || "Home",
             warehouse_stock: whStock,
-            warehouse_size_stock: whSizeStock
+            warehouse_size_stock: whSizeStock,
+            is_returnable: product.is_returnable !== false,
+            return_policy: product.return_policy || "Easy 15-Day Returns",
+            pattern: product.pattern || "",
+            sleeve_type: product.sleeve_type || "",
+            fit_type: product.fit_type || "Regular Comfort Fit",
+            occasion: product.occasion || "Festive, Casual, Office Wear",
+            country_of_origin: product.country_of_origin || "India 🇮🇳",
+            hsn_code: product.hsn_code || "621133",
+            wash_care: product.wash_care || "Hand Wash or Gentle Machine Wash in Cold Water",
+            offer_code: product.offer_code || "",
+            offer_text: product.offer_text || ""
         });
         setShowEditModal(true);
     };
@@ -1728,6 +1761,147 @@ const Products = () => {
                                         className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs transition"
                                         placeholder="e.g. S,M,L,XL,XXL"
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="block text-slate-700 font-bold mb-1.5">Returnable Product?</label>
+                                    <select
+                                        value={formData.is_returnable ? "yes" : "no"}
+                                        onChange={(e) => setFormData({ ...formData, is_returnable: e.target.value === "yes" })}
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 cursor-pointer"
+                                    >
+                                        <option value="yes">Yes — Returnable</option>
+                                        <option value="no">No — Non-Returnable (Final Sale)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-slate-700 font-bold mb-1.5">Return Policy Badge Text</label>
+                                    <input
+                                        type="text"
+                                        value={formData.return_policy}
+                                        onChange={(e) => setFormData({ ...formData, return_policy: e.target.value })}
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs transition"
+                                        placeholder="e.g. Easy 15-Day Returns or Non-Returnable"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* ── Product Specifications Matrix ── */}
+                            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
+                                <div>
+                                    <span className="text-cyan-700 font-extrabold text-sm uppercase tracking-wide flex items-center gap-1.5">
+                                        ✨ Specifications Matrix (Detailed Attributes)
+                                    </span>
+                                    <p className="text-xs text-slate-500 mt-1">
+                                        These attributes power the specifications table on the live product detail page.
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="block text-slate-700 font-bold mb-1.5 text-xs">Pattern / Work</label>
+                                        <input
+                                            type="text"
+                                            value={formData.pattern}
+                                            onChange={(e) => setFormData({ ...formData, pattern: e.target.value })}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
+                                            placeholder="e.g. Floral Print, Embroidered"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-slate-700 font-bold mb-1.5 text-xs">Sleeve Style</label>
+                                        <input
+                                            type="text"
+                                            value={formData.sleeve_type}
+                                            onChange={(e) => setFormData({ ...formData, sleeve_type: e.target.value })}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
+                                            placeholder="e.g. Sleeveless, Full Sleeve, 3/4 Sleeves"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-slate-700 font-bold mb-1.5 text-xs">Fit Type</label>
+                                        <input
+                                            type="text"
+                                            value={formData.fit_type}
+                                            onChange={(e) => setFormData({ ...formData, fit_type: e.target.value })}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
+                                            placeholder="e.g. Regular Comfort Fit, Flared"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-slate-700 font-bold mb-1.5 text-xs">Occasion</label>
+                                        <input
+                                            type="text"
+                                            value={formData.occasion}
+                                            onChange={(e) => setFormData({ ...formData, occasion: e.target.value })}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
+                                            placeholder="e.g. Festive, Casual, Office Wear"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-slate-700 font-bold mb-1.5 text-xs">Country of Origin</label>
+                                        <input
+                                            type="text"
+                                            value={formData.country_of_origin}
+                                            onChange={(e) => setFormData({ ...formData, country_of_origin: e.target.value })}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
+                                            placeholder="e.g. India 🇮🇳"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-slate-700 font-bold mb-1.5 text-xs">HSN Code</label>
+                                        <input
+                                            type="text"
+                                            value={formData.hsn_code}
+                                            onChange={(e) => setFormData({ ...formData, hsn_code: e.target.value })}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
+                                            placeholder="e.g. 621133"
+                                        />
+                                    </div>
+                                    <div className="sm:col-span-2 lg:col-span-3">
+                                        <label className="block text-slate-700 font-bold mb-1.5 text-xs">Wash & Care Instructions</label>
+                                        <input
+                                            type="text"
+                                            value={formData.wash_care}
+                                            onChange={(e) => setFormData({ ...formData, wash_care: e.target.value })}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
+                                            placeholder="e.g. Hand Wash or Gentle Machine Wash in Cold Water"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── Product Festival Offer / Coupon ── */}
+                            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
+                                <div>
+                                    <span className="text-cyan-700 font-extrabold text-sm uppercase tracking-wide flex items-center gap-1.5">
+                                        🏷️ Product Special Coupon / Offer Code (Optional)
+                                    </span>
+                                    <p className="text-xs text-slate-500 mt-1">
+                                        Set a specific promo code or festival discount that customers can copy on this product page.
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-slate-700 font-bold mb-1.5 text-xs">Offer / Coupon Code</label>
+                                        <input
+                                            type="text"
+                                            value={formData.offer_code}
+                                            onChange={(e) => setFormData({ ...formData, offer_code: e.target.value.toUpperCase() })}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 font-mono font-bold transition"
+                                            placeholder="e.g. FESTIVE10, SALE20"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-slate-700 font-bold mb-1.5 text-xs">Offer Banner Description</label>
+                                        <input
+                                            type="text"
+                                            value={formData.offer_text}
+                                            onChange={(e) => setFormData({ ...formData, offer_text: e.target.value })}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
+                                            placeholder="e.g. Use Coupon FESTIVE10 for extra 10% OFF"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
