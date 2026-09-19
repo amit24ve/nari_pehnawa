@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Heart, Star, Flame, Zap } from "lucide-react";
+import { resolveImageUrl, DEFAULT_FALLBACK_IMAGE } from "../utils/imageUrl";
 
 // Organic Pebble fluid curve shapes inspired by Image 2
 const pebbleShapes = [
@@ -96,12 +97,11 @@ const ProductCard = ({
 
                 {/* Product Photo */}
                 <img
-                    src={product.image}
+                    src={resolveImageUrl(product.image, DEFAULT_FALLBACK_IMAGE)}
                     alt={product.name}
                     onError={(e) => {
                         e.target.onerror = null;
-                        e.target.src =
-                            "https://images.pexels.com/photos/5704849/pexels-photo-5704849.jpeg?auto=compress&cs=tinysrgb&w=600";
+                        e.target.src = DEFAULT_FALLBACK_IMAGE;
                     }}
                     className={`w-full h-[270px] sm:h-[290px] object-cover transition-transform duration-700 group-hover:scale-105 ${
                         isHovered ? "scale-105" : ""

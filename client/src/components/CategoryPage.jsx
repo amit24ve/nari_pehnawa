@@ -21,14 +21,9 @@ import {
 } from "lucide-react";
 import { useWishlist } from "../context/WishlistProvider";
 import useSEO from "../hooks/useSEO";
+import { resolveImageUrl, DEFAULT_HERO_FALLBACK, DEFAULT_FALLBACK_IMAGE } from "../utils/imageUrl";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
-
-const resolveImageUrl = (img) => {
-  if (!img) return "";
-  if (img.startsWith("http://") || img.startsWith("https://") || img.startsWith("data:")) return img;
-  return `${API_BASE_URL}${img.startsWith("/") ? "" : "/"}${img}`;
-};
 
 // Organic Pebble fluid curve shapes matching homepage cards
 const pebbleShapes = [
@@ -99,12 +94,11 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0 }) 
         </button>
 
         <img
-          src={product.image}
+          src={resolveImageUrl(product.image, DEFAULT_FALLBACK_IMAGE)}
           alt={product.name}
           onError={(e) => {
             e.target.onerror = null;
-            e.target.src =
-              "https://images.pexels.com/photos/5704849/pexels-photo-5704849.jpeg?auto=compress&cs=tinysrgb&w=600";
+            e.target.src = DEFAULT_FALLBACK_IMAGE;
           }}
           className={`w-full h-[260px] sm:h-[290px] object-cover transition-transform duration-700 group-hover:scale-105 ${
               isHovered ? "scale-105" : ""
@@ -467,18 +461,28 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
       >
         <style>{`@media(min-width:768px){.cat-hero{height:540px!important;}}`}</style>
 
+        {/* Breadcrumb — Top-left floating badge */}
+        <div className="absolute top-4 left-4 md:left-8 z-20 flex items-center gap-1.5 text-xs text-white/90 bg-black/40 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20 shadow-md">
+          <Link to="/" className="hover:text-amber-300 transition-colors">
+            Home
+          </Link>
+          <span className="text-white/40">/</span>
+          <span className="text-white font-medium">
+            {categoryInfo?.name || displayName}
+          </span>
+        </div>
+
         {/* Background image */}
-        {(categoryInfo?.image || (slug === "sale" ? flashSale?.banner_image : null)) && (
-          <img
-            src={resolveImageUrl(categoryInfo?.image || flashSale?.banner_image)}
-            alt={categoryInfo?.name || (slug === "sale" ? (flashSale?.title || "Festive Flash Sale") : displayName)}
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ objectPosition: "center top" }}
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
-          />
-        )}
+        <img
+          src={resolveImageUrl(categoryInfo?.image || (slug === "sale" ? flashSale?.banner_image : null), DEFAULT_HERO_FALLBACK)}
+          alt={categoryInfo?.name || (slug === "sale" ? (flashSale?.title || "Festive Flash Sale") : displayName)}
+          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
+          style={{ objectPosition: "center top" }}
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = DEFAULT_HERO_FALLBACK;
+          }}
+        />
 
         {/* Dark gradient overlay */}
         <div
@@ -486,100 +490,91 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
           style={{
             background: slug === "sale"
               ? "linear-gradient(to top, rgba(10,15,28,0.92) 0%, rgba(10,15,28,0.6) 50%, rgba(0,0,0,0.4) 100%)"
-              : "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.2) 100%)",
+              : "linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.2) 100%)",
           }}
         />
 
         {/* Decorative accents */}
         <div
-          className="absolute top-6 right-10 w-40 h-40 rounded-full blur-3xl"
+          className="absolute top-6 right-10 w-40 h-40 rounded-full blur-3xl pointer-events-none"
           style={{ background: "rgba(255,255,255,0.05)" }}
         />
         <div
-          className="absolute -bottom-10 -left-10 w-60 h-40 rounded-full blur-3xl"
+          className="absolute -bottom-10 -left-10 w-60 h-40 rounded-full blur-3xl pointer-events-none"
           style={{ background: "rgba(139,0,0,0.2)" }}
         />
 
-        {/* ─ Main content ─ */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 pb-8">
-          {/* Pill badge */}
-          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/25 backdrop-blur-sm rounded-full px-5 py-1.5 mb-4">
-            <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
-            <span className="text-white/90 text-xs font-semibold tracking-[0.2em] uppercase">
-              {loading
-                ? "Loading…"
-                : `${displayProducts.length} Styles Available`}
-            </span>
-          </div>
-
-          {/* Heading */}
-          <h1
-            className="text-white font-bold tracking-tight drop-shadow-lg mb-3 inline-flex items-center justify-center flex-wrap gap-2 text-center"
-            style={{ fontSize: "clamp(1.8rem, 5vw, 3.5rem)", lineHeight: 1.15 }}
-          >
-            <NariHeadingDecoration className="w-10 h-10 md:w-14 md:h-14" />
-            <span>{categoryInfo?.name || (slug === "sale" ? (flashSale?.title || "Festive Flash Sale") : displayName)}</span>
-            <NariHeadingDecoration flip={true} className="w-10 h-10 md:w-14 md:h-14" />
-          </h1>
-
-          {/* Tagline / Subtitle */}
-          {slug === "sale" ? (
-            <div className="space-y-3 max-w-xl mx-auto">
-              <p className="text-amber-200 text-sm md:text-base font-medium">
-                {categoryInfo?.tagline || flashSale?.subtitle || "Exclusive Limited-Time Discounts on Authentic Handcrafted Styles"}
-              </p>
-
-              {/* Tagline / Subtitle */}
-
-              {/* Live Countdown Timer (if active sale has end time) */}
-              {countdown.isLive && (
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-black/40 backdrop-blur-md border border-amber-300/40 shadow-lg text-white">
-                  <span className="text-amber-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                    <span>⏳</span> Sale Ends In:
-                  </span>
-                  <div className="flex items-center gap-1.5 font-mono font-bold text-sm md:text-base text-amber-300">
-                    <span className="bg-[#8B0000] px-2 py-0.5 rounded-lg border border-amber-300/30">
-                      {String(countdown.hours).padStart(2, "0")}h
-                    </span>
-                    <span>:</span>
-                    <span className="bg-[#8B0000] px-2 py-0.5 rounded-lg border border-amber-300/30">
-                      {String(countdown.minutes).padStart(2, "0")}m
-                    </span>
-                    <span>:</span>
-                    <span className="bg-[#8B0000] px-2 py-0.5 rounded-lg border border-amber-300/30 text-white animate-pulse">
-                      {String(countdown.seconds).padStart(2, "0")}s
-                    </span>
-                  </div>
-                </div>
-              )}
+        {/* ─ Main content — Starts 50px from bottom ─ */}
+        <div className="absolute inset-0 flex flex-col items-center justify-end text-center px-4 pb-[50px] z-10 pointer-events-none">
+          <div className="pointer-events-auto flex flex-col items-center">
+            {/* Pill badge */}
+            <div className="inline-flex items-center gap-2 bg-white/15 border border-white/25 backdrop-blur-md rounded-full px-5 py-1.5 mb-3 shadow-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              <span className="text-white/95 text-xs font-semibold tracking-[0.2em] uppercase">
+                {loading
+                  ? "Curating Styles…"
+                  : displayProducts.length > 0
+                  ? `${displayProducts.length} Styles Available`
+                  : "Exclusive Designer Collection"}
+              </span>
             </div>
-          ) : categoryInfo?.tagline ? (
-            <p className="text-white/75 text-sm md:text-base max-w-lg font-light">
-              {categoryInfo.tagline}
-            </p>
-          ) : (
-            <p className="text-white/60 text-sm">
-              Curated collection just for you
-            </p>
-          )}
 
-          {/* CTA button */}
-          <div className="mt-5 flex gap-3">
-            <span className="inline-block bg-white text-[#8B0000] text-xs font-bold px-5 py-2.5 rounded-full shadow-lg tracking-wide">
-              {slug === "sale" ? "Shop All Sale Deals ↓" : "Explore Collection"}
-            </span>
+            {/* Heading */}
+            <h1
+              className="text-white font-bold tracking-tight drop-shadow-xl mb-2.5 inline-flex items-center justify-center flex-wrap gap-2 text-center font-serif"
+              style={{ fontSize: "clamp(1.7rem, 4.5vw, 3.2rem)", lineHeight: 1.15 }}
+            >
+              <NariHeadingDecoration className="w-8 h-8 md:w-12 md:h-12" />
+              <span>{categoryInfo?.name || (slug === "sale" ? (flashSale?.title || "Festive Flash Sale") : displayName)}</span>
+              <NariHeadingDecoration flip={true} className="w-8 h-8 md:w-12 md:h-12" />
+            </h1>
+
+            {/* Tagline / Subtitle */}
+            {slug === "sale" ? (
+              <div className="space-y-2.5 max-w-xl mx-auto">
+                <p className="text-amber-200 text-xs sm:text-sm md:text-base font-medium drop-shadow">
+                  {categoryInfo?.tagline || flashSale?.subtitle || "Exclusive Limited-Time Discounts on Authentic Handcrafted Styles"}
+                </p>
+
+                {/* Live Countdown Timer (if active sale has end time) */}
+                {countdown.isLive && (
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-2xl bg-black/50 backdrop-blur-md border border-amber-300/40 shadow-lg text-white">
+                    <span className="text-amber-400 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1">
+                      <span>⏳</span> Sale Ends In:
+                    </span>
+                    <div className="flex items-center gap-1.5 font-mono font-bold text-xs sm:text-sm text-amber-300">
+                      <span className="bg-[#8B0000] px-2 py-0.5 rounded-lg border border-amber-300/30">
+                        {String(countdown.hours).padStart(2, "0")}h
+                      </span>
+                      <span>:</span>
+                      <span className="bg-[#8B0000] px-2 py-0.5 rounded-lg border border-amber-300/30">
+                        {String(countdown.minutes).padStart(2, "0")}m
+                      </span>
+                      <span>:</span>
+                      <span className="bg-[#8B0000] px-2 py-0.5 rounded-lg border border-amber-300/30 text-white animate-pulse">
+                        {String(countdown.seconds).padStart(2, "0")}s
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : categoryInfo?.tagline ? (
+              <p className="text-white/85 text-xs sm:text-sm md:text-base max-w-lg font-light drop-shadow">
+                {categoryInfo.tagline}
+              </p>
+            ) : (
+              <p className="text-white/70 text-xs sm:text-sm drop-shadow">
+                Curated collection handcrafted with love
+              </p>
+            )}
+
+            {/* CTA button */}
+            <div className="mt-4 flex gap-3">
+              <span className="inline-block bg-white text-[#8B0000] text-xs font-bold px-6 py-2 rounded-full shadow-lg tracking-wide hover:bg-amber-50 transition-all cursor-pointer">
+                {slug === "sale" ? "Shop All Sale Deals ↓" : "Explore Collection"}
+              </span>
+            </div>
           </div>
-        </div>
-
-        {/* Breadcrumb */}
-        <div className="absolute bottom-3 left-4 md:left-8 flex items-center gap-1.5 text-xs text-white/50">
-          <Link to="/" className="hover:text-white transition-colors">
-            Home
-          </Link>
-          <span>/</span>
-          <span className="text-white/80 font-medium">
-            {categoryInfo?.name || displayName}
-          </span>
         </div>
       </div>
 

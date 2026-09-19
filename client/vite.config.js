@@ -12,7 +12,22 @@ export default defineConfig({
     allowedHosts: [
       'naripehnawa.com',
       'www.naripehnawa.com'
-    ]
+    ],
+    proxy: {
+      '/uploads': {
+        target: 'http://127.0.0.1:7100',
+        changeOrigin: true,
+      },
+      '/api/uploads': {
+        target: 'http://127.0.0.1:7100',
+        changeOrigin: true,
+      },
+      '/api': {
+        target: 'http://127.0.0.1:7100',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      }
+    }
   },
 
   preview: {
@@ -21,6 +36,21 @@ export default defineConfig({
     allowedHosts: [
       'naripehnawa.com',
       'www.naripehnawa.com'
-    ]
+    ],
+    proxy: {
+      '/uploads': {
+        target: 'http://127.0.0.1:7100',
+        changeOrigin: true,
+      },
+      '/api/uploads': {
+        target: 'http://127.0.0.1:7100',
+        changeOrigin: true,
+      },
+      '/api': {
+        target: 'http://127.0.0.1:7100',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      }
+    }
   }
 })

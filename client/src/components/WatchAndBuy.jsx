@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Loader2
 } from "lucide-react";
+import { resolveImageUrl, DEFAULT_FALLBACK_IMAGE } from "../utils/imageUrl";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
@@ -223,8 +224,8 @@ const WatchAndBuy = () => {
                     {/* Video Preview */}
                     <video
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                      src={video.video_url || video.videoUrl}
-                      poster={video.thumbnail}
+                      src={resolveImageUrl(video.video_url || video.videoUrl)}
+                      poster={resolveImageUrl(video.thumbnail, DEFAULT_FALLBACK_IMAGE)}
                       autoPlay
                       loop
                       muted
@@ -311,9 +312,9 @@ const WatchAndBuy = () => {
               loop
               playsInline
               muted={isMuted}
-              poster={activeReel.thumbnail}
+              poster={resolveImageUrl(activeReel.thumbnail, DEFAULT_FALLBACK_IMAGE)}
             >
-              <source src={activeReel.video_url || activeReel.videoUrl} type="video/mp4" />
+              <source src={resolveImageUrl(activeReel.video_url || activeReel.videoUrl)} type="video/mp4" />
             </video>
 
             {/* Top Reel Header Overlay */}

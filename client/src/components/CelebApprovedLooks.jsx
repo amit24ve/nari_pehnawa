@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Heart, Loader2 } from "lucide-react";
 import { SectionHeading } from "./NariHeadingDecoration";
+import { resolveImageUrl, DEFAULT_FALLBACK_IMAGE } from "../utils/imageUrl";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
@@ -117,8 +118,12 @@ const CelebApprovedLooks = () => {
                   {/* Image Card */}
                   <div className="relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 bg-gray-100 border border-gray-100">
                     <img
-                      src={look.image}
+                      src={resolveImageUrl(look.image, DEFAULT_FALLBACK_IMAGE)}
                       alt={look.name}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = DEFAULT_FALLBACK_IMAGE;
+                      }}
                       className="w-full h-[370px] object-cover group-hover:scale-105 transition-transform duration-700"
                     />
 

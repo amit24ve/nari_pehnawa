@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, ArrowRight } from "lucide-react";
 import { SectionHeading } from "./NariHeadingDecoration";
+import { resolveImageUrl, DEFAULT_HERO_FALLBACK } from "../utils/imageUrl";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
@@ -42,8 +43,8 @@ const Categories = () => {
   };
 
   const getCategoryImage = (cat) => {
-    if (cat.image && cat.image.trim() !== "") return cat.image;
-    return "https://images.pexels.com/photos/3622608/pexels-photo-3622608.jpeg?auto=compress&cs=tinysrgb&w=600";
+    if (cat.image && cat.image.trim() !== "") return resolveImageUrl(cat.image, DEFAULT_HERO_FALLBACK);
+    return DEFAULT_HERO_FALLBACK;
   };
 
   if (!loading && categories.length === 0) {
@@ -90,7 +91,8 @@ const Categories = () => {
                     alt={category.name}
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     onError={(e) => {
-                      e.target.src = "https://images.pexels.com/photos/3622608/pexels-photo-3622608.jpeg?auto=compress&cs=tinysrgb&w=600";
+                      e.target.onerror = null;
+                      e.target.src = DEFAULT_HERO_FALLBACK;
                     }}
                   />
 

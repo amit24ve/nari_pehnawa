@@ -43,6 +43,7 @@ import ProductCard from "./ProductCard";
 import ImageZoomModal from "./ImageZoomModal";
 import CheckoutModal from "./CheckoutModal";
 import useSEO from "../hooks/useSEO";
+import { resolveImageUrl, DEFAULT_FALLBACK_IMAGE } from "../utils/imageUrl";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 const FALLBACK_IMG = "https://images.pexels.com/photos/5704849/pexels-photo-5704849.jpeg?auto=compress&cs=tinysrgb&w=600";
@@ -498,7 +499,8 @@ const ProductPage = () => {
     }));
   };
 
-  const images = product?.images?.length > 0 ? product.images : [product?.image].filter(Boolean);
+  const rawImages = product?.images?.length > 0 ? product.images : [product?.image].filter(Boolean);
+  const images = rawImages.map(img => resolveImageUrl(img, FALLBACK_IMG));
   const catSlug = slugify(product?.category || "");
   const discount = product?.discount || 0;
   const sku = `NP-${(product?.category || "KRT").slice(0, 3).toUpperCase()}-${(product?.id || "101").slice(-5).toUpperCase()}`;

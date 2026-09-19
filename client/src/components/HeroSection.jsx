@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NariHeadingDecoration } from "./NariHeadingDecoration";
+import { resolveImageUrl, DEFAULT_HERO_FALLBACK } from "../utils/imageUrl";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
@@ -72,6 +73,19 @@ const HeroSection = () => {
   const next = useCallback(() => go(current + 1), [current, go]);
   const prev = useCallback(() => go(current - 1), [current, go]);
 
+  // Preload adjacent images into browser memory to eliminate any loading flicker
+  useEffect(() => {
+    if (!slides.length) return;
+    const nextIdx = (current + 1) % slides.length;
+    const prevIdx = (current - 1 + slides.length) % slides.length;
+    [slides[current]?.image, slides[nextIdx]?.image, slides[prevIdx]?.image].forEach((src) => {
+      if (src) {
+        const preImg = new Image();
+        preImg.src = resolveImageUrl(src, DEFAULT_HERO_FALLBACK);
+      }
+    });
+  }, [current, slides]);
+
   // Auto-advance every 5.5 s
   useEffect(() => {
     const t = setInterval(next, 5500);
@@ -84,23 +98,73 @@ const HeroSection = () => {
         className="relative w-full"
         style={{ height: "clamp(280px, calc(40.14vw - 8px), 580px)" }}
       >
-        {slides.map((slide, i) => (
-          <div
-            key={slide.id || i}
-            className="absolute inset-0 transition-opacity duration-700"
-            style={{ opacity: i === current ? 1 : 0, zIndex: i === current ? 1 : 0 }}
-          >
-            {/* Background image */}
-            <img
-              src={slide.image}
-              alt={slide.alt || ""}
-              className="w-full h-full object-cover object-top"
-              loading={i === 0 ? "eager" : "lazy"}
-            />
+        {slides.map((slide, i) => {
+          const resolvedSrc = resolveImageUrl(slide.image, DEFAULT_HERO_FALLBACK);
+          const hasText = Boolean(slide.title || slide.subtitle || (slide.cta_text && slide.cta_link && slide.cta_link !== "/"));
 
+          return (
+            <div
+              key={slide.id || i}
+              className="absolute inset-0 transition-opacity duration-700 bg-stone-900"
+              style={{ opacity: i === current ? 1 : 0, zIndex: i === current ? 1 : 0 }}
+            >
+              {/* Background image */}
+              <img
+                src={resolvedSrc}
+                alt={slide.alt || slide.title || "Nari Pehnawa"}
+                className="w-full h-full object-cover object-top transition-transform duration-1000 ease-out"
+                loading={i === 0 ? "eager" : "lazy"}
+                decoding={i === 0 ? "sync" : "async"}
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = DEFAULT_HERO_FALLBACK;
+                }}
+              />
 
-          </div>
-        ))}
+              {/* Gradient overlay for readability if slide has text */}
+              {hasText && (
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background:
+                      "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.05) 100%)",
+                  }}
+                />
+              )}
+
+              {/* Text overlay — positioned exactly 50px from bottom as requested */}
+              {hasText && i === current && (
+                <div className="absolute inset-0 flex flex-col items-center justify-end pb-[50px] px-6 text-center z-10 pointer-events-none">
+                  <div className="pointer-events-auto max-w-2xl">
+                    {slide.title && (
+                      <h2
+                        className="text-white font-bold drop-shadow-lg mb-2 leading-tight inline-flex items-center justify-center gap-2 flex-wrap text-center font-serif"
+                        style={{ fontSize: "clamp(1.3rem, 3.5vw, 2.5rem)" }}
+                      >
+                        <NariHeadingDecoration className="w-7 h-7 md:w-10 md:h-10" />
+                        <span>{slide.title}</span>
+                        <NariHeadingDecoration flip={true} className="w-7 h-7 md:w-10 md:h-10" />
+                      </h2>
+                    )}
+                    {slide.subtitle && (
+                      <p className="text-white/90 text-xs md:text-sm max-w-xl mb-3 font-light drop-shadow">
+                        {slide.subtitle}
+                      </p>
+                    )}
+                    {slide.cta_text && slide.cta_link && (
+                      <Link
+                        to={slide.cta_link}
+                        className="inline-block bg-white text-[#8B0000] text-xs md:text-sm font-bold px-6 py-2 rounded-full shadow-lg tracking-wide hover:bg-amber-50 hover:scale-105 transition-all"
+                      >
+                        {slide.cta_text}
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
 
         {/* Arrow buttons */}
         <button

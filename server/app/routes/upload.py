@@ -54,6 +54,40 @@ async def upload_image(
             detail=f"File too large. Maximum size is {MAX_SIZE_MB} MB.",
         )
 
+    is_image = file.content_type in {"image/jpeg", "image/png", "image/webp", "image/avif"}
+    
+    if is_image:
+        try:
+            import io
+            from PIL import Image, ImageOps
+            
+            img = Image.open(io.BytesIO(content))
+            img = ImageOps.exif_transpose(img)
+            
+            # Downscale if excessively large (e.g. raw 4K/6K camera upload)
+            max_dimension = 2560
+            if img.width > max_dimension or img.height > max_dimension:
+                img.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
+                
+            filename = f"{uuid.uuid4().hex}.webp"
+            dest = UPLOAD_DIR / filename
+            
+            if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+                img.save(dest, "WEBP", quality=85, method=6)
+            else:
+                img = img.convert("RGB")
+                img.save(dest, "WEBP", quality=85, method=6)
+                
+            file_size_kb = round(dest.stat().st_size / 1024, 1)
+            return {
+                "url": f"/api/uploads/{filename}",
+                "filename": filename,
+                "size_kb": file_size_kb,
+            }
+        except Exception as e:
+            # Fallback to direct write if Pillow cannot process
+            pass
+
     # Derive extension from mime type (safer than trusting filename)
     ext_map = {
         "image/jpeg": "jpg",
@@ -74,7 +108,7 @@ async def upload_image(
         f.write(content)
 
     return {
-        "url": f"/uploads/{filename}",
+        "url": f"/api/uploads/{filename}",
         "filename": filename,
         "size_kb": round(len(content) / 1024, 1),
     }
@@ -112,7 +146,7 @@ async def upload_multiple_images(
         dest = UPLOAD_DIR / filename
         with open(dest, "wb") as f:
             f.write(content)
-        saved_urls.append(f"/uploads/{filename}")
+        saved_urls.append(f"/api/uploads/{filename}")
 
     return {"urls": saved_urls}
 
