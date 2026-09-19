@@ -56,6 +56,8 @@ import UserCoins from "./user/CoinsWallet";
 import UserOrders from "./user/Orders";
 import UserSettings from "./user/Settings";
 
+import InteractiveCampaignBanner from "./components/InteractiveCampaignBanner";
+
 function HomePage() {
     useSEO(
         "Nari Pehnawa | Traditional Ka Tadka | Authentic Women Ethnic Wear, Kurtis & Sarees",
@@ -64,8 +66,8 @@ function HomePage() {
     return (
         <>
             <HeroSection />
-            <FestiveEventBanner />
             <Categories />
+            <InteractiveCampaignBanner />
             <FeaturedProducts />
             <HomeCategorySections />
             <WatchAndBuy />

@@ -72,7 +72,7 @@ const Categories = () => {
       ) : (
         /* Scrolling Container */
         <div className="relative w-full">
-          <div className="flex animate-scroll-left space-x-6 px-4 pb-4">
+          <div className="flex animate-scroll-left space-x-4 sm:space-x-5 px-4 pb-4">
             {displayList.map((category, index) => {
               const catLink = getCategoryLink(category);
               const catImg = getCategoryImage(category);
@@ -82,14 +82,15 @@ const Categories = () => {
               return (
                 <div
                   key={`${category.id || category._id || index}-${index}`}
-                  className="flex-shrink-0 w-[280px] md:w-[310px] h-[410px] relative group cursor-pointer rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] bg-black"
+                  className="flex-shrink-0 w-[200px] sm:w-[220px] md:w-[240px] h-[260px] sm:h-[280px] md:h-[295px] relative group cursor-pointer rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1.5 bg-stone-900 border border-stone-200/80 hover:border-[#8B0000]"
                   onClick={() => navigate(catLink)}
+                  title={`View ${category.name} collection`}
                 >
-                  {/* 100% Clear Category Background Image */}
+                  {/* Category Image */}
                   <img
                     src={catImg}
                     alt={category.name}
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
                     onError={(e) => {
                       e.target.onerror = null;
                       e.target.src = DEFAULT_HERO_FALLBACK;
@@ -97,33 +98,27 @@ const Categories = () => {
                   />
 
                   {/* Gradient Overlay for Text Legibility at Bottom */}
-                  <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-25 pointer-events-none"></div>
+                  <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/90 via-black/45 to-transparent z-10 pointer-events-none transition-opacity duration-300 group-hover:opacity-95" />
 
                   {/* Content Container */}
-                  <div className="absolute bottom-0 left-0 right-0 z-30 p-5 text-center transform translate-y-1 group-hover:translate-y-0 transition-transform duration-300">
+                  <div className="absolute bottom-0 left-0 right-0 z-20 p-3.5 sm:p-4 text-center transform translate-y-0.5 group-hover:translate-y-0 transition-transform duration-300">
                     {/* Tagline */}
-                    <p className="text-white text-xs md:text-sm text-center font-medium drop-shadow-md opacity-90 group-hover:opacity-100 transition-opacity duration-300 italic mb-2">
+                    <p className="text-amber-100/90 text-[11px] sm:text-xs text-center font-medium drop-shadow-md italic mb-1.5 line-clamp-1">
                       {catTagline}
                     </p>
 
                     {/* Category Name Badge */}
-                    <div className="flex justify-center mb-3">
+                    <div className="flex justify-center">
                       <div
-                        className="text-white text-xs font-bold py-2 px-5 rounded-full text-center border shadow-lg tracking-wider uppercase truncate max-w-full"
+                        className="text-white text-xs sm:text-[13px] font-bold py-1.5 px-4 rounded-full text-center border shadow-md tracking-wider uppercase truncate max-w-full font-serif backdrop-blur-xs transition-transform duration-300 group-hover:scale-105"
                         style={{
                           backgroundColor: borderColor,
-                          borderColor: "rgba(255,255,255,0.4)",
+                          borderColor: "rgba(255,255,255,0.35)",
                         }}
                       >
                         {category.name}
                       </div>
                     </div>
-
-                    {/* Shop Now Button */}
-                    <button className="w-full bg-white/95 hover:bg-white text-gray-900 text-xs font-bold py-2.5 rounded-xl transition-colors duration-300 border border-white shadow-md flex items-center justify-center gap-1.5">
-                      <span>EXPLORE PRODUCTS</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-[#8B0000]" />
-                    </button>
                   </div>
                 </div>
               );

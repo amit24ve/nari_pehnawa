@@ -1,4 +1,6 @@
 from pathlib import Path
+import logging
+import threading
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,6 +32,8 @@ from app.routes.celeb_looks import router as celeb_looks_router
 from app.routes.inquiries import router as inquiries_router
 from app.routes.brand import router as brand_router
 from app.routes.coins import router as coins_router
+from app.routes.referrals import router as referrals_router
+from app.routes.campaign import router as campaign_router
 
 app = FastAPI(
     title="Nari Pehnawa API",
@@ -49,6 +53,25 @@ app.add_middleware(
 )
 
 connect_to_database()
+
+
+@app.on_event("startup")
+def start_referral_settlement():
+    from app.database import get_database
+    from app.services.referral_service import ensure_indexes, settle_due, reconcile_reversals
+
+    def run():
+        while True:
+            try:
+                db = get_database()
+                ensure_indexes(db)
+                settle_due(db)
+                reconcile_reversals(db)
+            except Exception:
+                logging.exception("Referral settlement failed; will retry")
+            threading.Event().wait(1800)
+
+    threading.Thread(target=run, name="referral-settlement", daemon=True).start()
 
 
 
@@ -113,6 +136,8 @@ app.include_router(returns_router)
 app.include_router(exchange_router)
 app.include_router(brand_router)
 app.include_router(coins_router)
+app.include_router(referrals_router)
+app.include_router(campaign_router)
 
 # Serve uploaded images as static files
 Path("uploads").mkdir(exist_ok=True)

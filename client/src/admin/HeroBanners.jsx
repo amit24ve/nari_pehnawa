@@ -17,6 +17,7 @@ import {
   Heart
 } from "lucide-react";
 import CategoryProductLinkPicker from "./CategoryProductLinkPicker";
+import AdminCampaignShowcase from "./AdminCampaignShowcase";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
@@ -745,6 +746,17 @@ const HeroBanners = () => {
           <Heart className="w-4 h-4" />
           Celeb Approved Looks
         </button>
+        <button
+          onClick={() => setActiveTab("campaign-showcase")}
+          className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-xs md:text-sm font-semibold transition-all ${
+            activeTab === "campaign-showcase"
+              ? "bg-[#0891b2] text-white shadow-sm"
+              : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-amber-300" />
+          Campaign &amp; Votes
+        </button>
       </div>
 
       {/* ── TAB 1: HOMEPAGE SLIDERS ── */}
@@ -1016,6 +1028,9 @@ const HeroBanners = () => {
           </div>
         )
       )}
+
+      {/* ── TAB 5: INTERACTIVE CAMPAIGN & VOTING SHOWCASE ── */}
+      {activeTab === "campaign-showcase" && <AdminCampaignShowcase />}
 
       {/* ── MODAL: HOMEPAGE SLIDE ── */}
       {showSlideModal && (
