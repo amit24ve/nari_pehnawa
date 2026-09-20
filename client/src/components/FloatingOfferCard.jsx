@@ -30,41 +30,32 @@ const FloatingOfferCard = () => {
   useEffect(() => {
     let isMounted = true;
 
-    // Try fetching flash sale first, fallback to active campaign
-    fetch(`${API_BASE_URL}/admin/flash-sale`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((flash) => {
-        if (!isMounted) return;
-        if (flash && (flash.is_active || flash.banner_image || flash.deal_text)) {
-          setOfferData((prev) => ({
-            ...prev,
-            title: flash.title || prev.title,
-            deal_text: flash.deal_text || "BUY 1 GET 1 FREE",
-            image: flash.banner_image || prev.image,
-            link: "/category/sale"
-          }));
-          return;
-        }
+    // Fetch product / campaign / flash sale data
+    Promise.all([
+      fetch(`${API_BASE_URL}/admin/flash-sale`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch(`${API_BASE_URL}/campaign/active`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch(`${API_BASE_URL}/products/?limit=1`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([flash, camp, prods]) => {
+      if (!isMounted) return;
 
-        // Fallback to campaign slots
-        return fetch(`${API_BASE_URL}/campaign/active`)
-          .then((r) => (r.ok ? r.json() : null))
-          .then((camp) => {
-            if (!isMounted || !camp) return;
-            const topSlot = camp.slots?.[0]?.product;
-            const img = camp.left_image || topSlot?.image || camp.full_banner_image;
-            if (img) {
-              setOfferData((prev) => ({
-                ...prev,
-                title: camp.title || prev.title,
-                deal_text: camp.discount_text || prev.deal_text,
-                image: img,
-                link: camp.cta_link || "/category/sale"
-              }));
-            }
-          });
-      })
-      .catch(() => {});
+      const fallbackProdImg = (Array.isArray(prods) && prods[0]?.image) ? prods[0].image : "";
+      const campImg = camp?.left_image || camp?.slots?.[0]?.product?.image || camp?.full_banner_image || "";
+      const finalImage = (flash?.banner_image && flash.banner_image.trim()) || campImg || fallbackProdImg;
+
+      const deal =
+        flash?.deal_text ||
+        (flash?.deal_type === "buy5get2" ? "BUY 5 GET 2 FREE" : "") ||
+        camp?.discount_text ||
+        "BUY 5 GET 2 FREE";
+
+      setOfferData((prev) => ({
+        ...prev,
+        title: flash?.title || camp?.title || prev.title,
+        deal_text: deal,
+        image: finalImage || prev.image,
+        link: camp?.cta_link || "/category/sale"
+      }));
+    });
 
     return () => {
       isMounted = false;
@@ -96,44 +87,38 @@ const FloatingOfferCard = () => {
 
   return (
     <>
-      {/* ── 100px x 100px FLOATING CARD (BOTTOM-LEFT) ── */}
+      {/* ── 100px x 100px FLOATING CARD (BOTTOM-LEFT) - ZERO BADGES, CLEAN DESIGN ── */}
       <div
         className="fixed bottom-5 left-5 sm:bottom-6 sm:left-6 z-40 group pointer-events-auto"
         style={{ width: "100px", height: "100px" }}
       >
-        {/* Glowing Pulsing Ring */}
-        <div className="absolute -inset-1.5 bg-gradient-to-r from-amber-400 via-rose-500 to-amber-500 rounded-2xl blur-sm opacity-75 group-hover:opacity-100 transition duration-500 animate-pulse pointer-events-none" />
+        {/* Subtle Ambient Gold Halo */}
+        <div className="absolute -inset-1 bg-amber-400/50 rounded-2xl blur-sm opacity-60 group-hover:opacity-100 transition duration-300 pointer-events-none" />
 
-        {/* 100px x 100px Card Container */}
+        {/* 100px x 100px Card Body */}
         <div
           onClick={() => setShowModal(true)}
-          className="relative w-[100px] h-[100px] rounded-2xl overflow-hidden shadow-2xl border-2 border-amber-400/90 bg-gradient-to-br from-[#4A0019] via-[#8B0000] to-[#2D0A14] cursor-pointer flex flex-col justify-between p-1.5 transition-transform duration-300 group-hover:scale-105 active:scale-95"
-          title="Click to view Exclusive Festive Offer!"
+          className="relative w-[100px] h-[100px] rounded-2xl overflow-hidden shadow-2xl border-2 border-amber-400 bg-slate-950 cursor-pointer flex flex-col justify-end transition-transform duration-300 group-hover:scale-105 active:scale-95"
+          title="Click to view Festive Offer"
         >
-          {/* Background Product / Festive Image */}
-          {offerData.image && (
+          {/* Background Real Product / Festive Outfit Image */}
+          {offerData.image ? (
             <img
               src={resolveImageUrl(offerData.image, DEFAULT_FALLBACK_IMAGE)}
-              alt="Exclusive Offer"
-              className="absolute inset-0 w-full h-full object-cover object-center opacity-85 group-hover:scale-110 transition-transform duration-500"
+              alt="Festive Offer"
+              className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-500"
             />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-[#4A0019] via-[#8B0000] to-[#2D0A14]" />
           )}
 
-          {/* Luxury Gradient Tint */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/30 pointer-events-none" />
+          {/* Contrast Gradient on Bottom */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
 
-          {/* Top Mini Badge */}
-          <div className="relative z-10 flex items-center justify-between w-full">
-            <span className="inline-flex items-center gap-0.5 bg-amber-400 text-slate-950 font-black text-[8px] uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
-              <Flame className="w-2.5 h-2.5 fill-current" />
-              HOT
-            </span>
-          </div>
-
-          {/* Bottom Deal Label */}
-          <div className="relative z-10 text-center">
-            <p className="text-[9px] font-black text-white leading-tight uppercase drop-shadow font-mono tracking-tighter truncate bg-black/60 backdrop-blur-sm rounded py-0.5 px-1 border border-white/20">
-              {offerData.deal_text || "BUY 1 GET 1"}
+          {/* Bottom Pure Text Deal Label - Clean, High Legibility, No Clutter */}
+          <div className="relative z-10 w-full p-1 bg-black/75 backdrop-blur-sm border-t border-white/15 text-center">
+            <p className="text-[9px] font-black text-amber-300 uppercase leading-tight tracking-tight font-mono truncate">
+              {offerData.deal_text || "BUY 5 GET 2 FREE"}
             </p>
           </div>
         </div>
@@ -152,16 +137,16 @@ const FloatingOfferCard = () => {
       {/* ── EXCLUSIVE OFFER LUXURY MODAL ── */}
       {showModal && (
         <div
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
           onClick={() => setShowModal(false)}
         >
           <div
-            className="relative w-full max-w-md bg-gradient-to-b from-[#2E0B16] via-[#1F070E] to-[#120006] text-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-amber-400/40 overflow-hidden"
+            className="relative w-full max-w-md bg-gradient-to-b from-[#250610] via-[#1A030A] to-[#100105] text-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-amber-400/40 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Background Ambient Flares */}
-            <div className="absolute -top-20 -right-20 w-48 h-48 rounded-full bg-amber-500/20 blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-20 -left-20 w-48 h-48 rounded-full bg-rose-600/25 blur-3xl pointer-events-none" />
+            {/* Ambient Flares */}
+            <div className="absolute -top-20 -right-20 w-48 h-48 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-20 -left-20 w-48 h-48 rounded-full bg-rose-600/20 blur-3xl pointer-events-none" />
 
             {/* Modal Close Button */}
             <button
@@ -172,21 +157,13 @@ const FloatingOfferCard = () => {
               <X className="w-4 h-4" />
             </button>
 
-            {/* Header Badge */}
-            <div className="flex items-center justify-center mb-3">
-              <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black text-xs uppercase px-3.5 py-1 rounded-full shadow-lg">
-                <Sparkles className="w-3.5 h-3.5 fill-current animate-spin" />
-                EXCLUSIVE FESTIVE PRIVILEGE
-              </span>
-            </div>
-
-            {/* Title & Subtitle */}
-            <div className="text-center space-y-1.5 mb-4">
+            {/* Title & Subtitle - Clean without generic badges */}
+            <div className="text-center space-y-1 mb-5 pt-1">
               <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow">
                 {offerData.title || "Grand Festive Sale"}
               </h3>
               <p className="text-xs sm:text-sm text-amber-200/90 font-medium">
-                Handcrafted Anarkali Kurtis, Chikankari & Designer Ethnic Wear
+                Authentic Handcrafted Kurtis, Suits & Saree Collection
               </p>
             </div>
 

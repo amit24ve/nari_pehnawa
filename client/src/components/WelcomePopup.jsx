@@ -174,74 +174,36 @@ const WelcomePopup = () => {
               style={{ background: "linear-gradient(to bottom, transparent, #d4af37, transparent)" }}
             />
 
-            {/* Top badge */}
-            <div className="absolute top-3 sm:top-5 left-4 sm:left-5 right-5 flex justify-start">
-              <div
-                className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold"
-                style={{
-                  background: "rgba(212,175,55,0.15)",
-                  border: "1px solid rgba(212,175,55,0.5)",
-                  color: "#f0d060",
-                  backdropFilter: "blur(8px)",
-                  letterSpacing: "0.08em",
-                }}
-              >
-                <Sparkles className="w-3 h-3" />
-                EXCLUSIVE OFFER
-              </div>
-            </div>
+            {/* Bottom text overlay - Redesigned cleanly without clutter or badges */}
+            <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-7 bg-gradient-to-t from-black/95 via-black/60 to-transparent">
+              <div className="space-y-1.5">
+                <div className="flex items-baseline gap-2">
+                  <span
+                    className="text-4xl sm:text-6xl font-black leading-none drop-shadow-lg"
+                    style={{ color: "#d4af37", fontFamily: "Georgia, serif" }}
+                  >
+                    10%
+                  </span>
+                  <span
+                    className="text-xl sm:text-3xl font-black text-white tracking-wider drop-shadow-md"
+                    style={{ fontFamily: "Georgia, serif" }}
+                  >
+                    OFF
+                  </span>
+                </div>
 
-            {/* Bottom text overlay */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
-              {/* Discount callout */}
-              <div className="mb-1.5 sm:mb-3 flex sm:block items-baseline gap-2">
-                <span
-                  className="text-3xl sm:text-5xl font-black leading-none"
-                  style={{ color: "#d4af37", fontFamily: "Georgia, serif" }}
-                >
-                  10%
-                </span>
-                <span
-                  className="text-sm sm:text-base font-bold text-white/90"
-                  style={{ fontSize: "0.85rem" }}
-                >
-                  OFF
-                </span>
-                <p className="text-white/70 text-[10px] sm:text-xs sm:mt-0.5 font-light tracking-wider">
+                <div
+                  className="w-14 h-0.5 my-2"
+                  style={{ background: "linear-gradient(to right, #d4af37, transparent)" }}
+                />
+
+                <p className="text-white font-bold text-xs sm:text-sm uppercase tracking-widest drop-shadow-md">
                   YOUR FIRST ORDER
                 </p>
-              </div>
 
-              {/* Tagline + trust badges — hidden on very short mobile banner to save space */}
-              <div className="hidden sm:block">
-                <div
-                  className="w-10 h-px mb-3"
-                  style={{ background: "#d4af37" }}
-                />
-                <p
-                  className="text-white font-light leading-snug text-sm"
-                  style={{ fontFamily: "Georgia, serif", fontStyle: "italic" }}
-                >
-                  Where tradition meets<br />
-                  <span className="font-semibold text-white not-italic">
-                    timeless elegance
-                  </span>
+                <p className="text-amber-100/90 text-xs font-medium drop-shadow-sm pt-0.5">
+                  Authentic Kurtis, Suits & Ethnic Wear
                 </p>
-                <div className="flex gap-2 flex-wrap mt-4">
-                  {["Premium Fabric", "Easy Returns", "Free Ship ₹999+"].map((b) => (
-                    <span
-                      key={b}
-                      className="text-[9px] font-semibold uppercase tracking-wider px-2 py-1 rounded"
-                      style={{
-                        background: "rgba(255,255,255,0.1)",
-                        color: "rgba(255,255,255,0.7)",
-                        border: "1px solid rgba(255,255,255,0.15)",
-                      }}
-                    >
-                      {b}
-                    </span>
-                  ))}
-                </div>
               </div>
             </div>
           </div>
