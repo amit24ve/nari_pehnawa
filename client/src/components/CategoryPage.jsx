@@ -504,25 +504,13 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
           style={{ background: "rgba(139,0,0,0.2)" }}
         />
 
-        {/* ─ Main content — Starts 50px from bottom ─ */}
-        <div className="absolute inset-0 flex flex-col items-center justify-end text-center px-4 pb-[50px] z-10 pointer-events-none">
-          <div className="pointer-events-auto flex flex-col items-center">
-            {/* Pill badge */}
-            <div className="inline-flex items-center gap-2 bg-white/15 border border-white/25 backdrop-blur-md rounded-full px-5 py-1.5 mb-3 shadow-md">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-              <span className="text-white/95 text-xs font-semibold tracking-[0.2em] uppercase">
-                {loading
-                  ? "Curating Styles…"
-                  : displayProducts.length > 0
-                  ? `${displayProducts.length} Styles Available`
-                  : "Exclusive Designer Collection"}
-              </span>
-            </div>
-
+        {/* ─ Main content — Perfectly centered vertically and horizontally ─ */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10 pointer-events-none">
+          <div className="pointer-events-auto flex flex-col items-center max-w-3xl mx-auto">
             {/* Heading */}
             <h1
-              className="text-white font-bold tracking-tight drop-shadow-xl mb-2.5 inline-flex items-center justify-center flex-wrap gap-2 text-center font-serif"
-              style={{ fontSize: "clamp(1.7rem, 4.5vw, 3.2rem)", lineHeight: 1.15 }}
+              className="text-white font-bold tracking-tight drop-shadow-xl mb-3 inline-flex items-center justify-center flex-wrap gap-2 text-center font-serif"
+              style={{ fontSize: "clamp(1.8rem, 4.8vw, 3.4rem)", lineHeight: 1.15 }}
             >
               <NariHeadingDecoration className="w-8 h-8 md:w-12 md:h-12" />
               <span>{categoryInfo?.name || (slug === "sale" ? (flashSale?.title || "Festive Flash Sale") : displayName)}</span>

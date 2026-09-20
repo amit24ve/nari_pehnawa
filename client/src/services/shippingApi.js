@@ -171,7 +171,14 @@ export const shippingApi = {
     }),
 
   /** Public: customer-facing order tracking information */
-  trackPublic: (orderId) => request(`/shipping/track-public/${orderId}`),
+  trackPublic: (query, contact = "", pincode = "") => {
+    const cleanQ = encodeURIComponent(query || "lookup");
+    const params = new URLSearchParams();
+    if (contact) params.append("contact", contact);
+    if (pincode) params.append("pincode", pincode);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return request(`/shipping/track-public/${cleanQ}${qs}`);
+  },
 };
 
 export default shippingApi;

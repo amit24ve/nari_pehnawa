@@ -37,54 +37,83 @@ class ShippingRepository:
 
         return await asyncio.to_thread(_fetch)
 
-    async def find_order_by_any_identifier(self, identifier: str) -> Optional[dict]:
-        clean_id = str(identifier).strip()
+    async def find_order_by_any_identifier(self, identifier: str, contact: Optional[str] = None, pincode: Optional[str] = None) -> Optional[dict]:
+        clean_id = str(identifier or "").strip()
+        clean_contact = str(contact or "").strip()
+        clean_pincode = str(pincode or "").strip()
+
         def _fetch():
-            # 1. Try by ObjectId
-            try:
-                doc = self.orders.find_one({"_id": ObjectId(clean_id)})
-                if doc:
-                    return doc
-            except Exception:
-                pass
+            doc = None
+            if clean_id:
+                # 1. Try by ObjectId
+                try:
+                    doc = self.orders.find_one({"_id": ObjectId(clean_id)})
+                except Exception:
+                    pass
 
-            # 2. Try by order_number (e.g. NP-1002, 1002, #1002)
-            variations = [
-                clean_id,
-                clean_id.lstrip("#"),
-                f"NP-{clean_id}",
-                clean_id.replace("NP-", "")
-            ]
-            for v in variations:
-                doc = self.orders.find_one({"order_number": {"$regex": f"^{v}$", "$options": "i"}})
-                if doc:
-                    return doc
+                # 2. Try by order_number (e.g. NP-1002, 1002, #1002)
+                if not doc:
+                    variations = [
+                        clean_id,
+                        clean_id.lstrip("#"),
+                        f"NP-{clean_id}",
+                        clean_id.replace("NP-", "")
+                    ]
+                    for v in variations:
+                        doc = self.orders.find_one({"order_number": {"$regex": f"^{v}$", "$options": "i"}})
+                        if doc:
+                            break
 
-            # 3. Try by AWB
-            doc = self.orders.find_one({"shipping.awb": clean_id})
-            if doc:
-                return doc
+                # 3. Try by AWB
+                if not doc:
+                    doc = self.orders.find_one({"shipping.awb": clean_id})
 
-            # 4. Try by shipment_id or shiprocket_order_id
-            try:
-                int_id = int(clean_id)
-            except Exception:
-                int_id = None
+                # 4. Try by shipment_id or shiprocket_order_id
+                if not doc:
+                    try:
+                        int_id = int(clean_id)
+                    except Exception:
+                        int_id = None
 
-            q = [
-                {"shipping.shipment_id": clean_id},
-                {"shipping.shiprocket_order_id": clean_id}
-            ]
-            if int_id is not None:
-                q.extend([
-                    {"shipping.shipment_id": int_id},
-                    {"shipping.shiprocket_order_id": int_id}
-                ])
-            doc = self.orders.find_one({"$or": q})
-            if doc:
-                return doc
+                    q = [
+                        {"shipping.shipment_id": clean_id},
+                        {"shipping.shiprocket_order_id": clean_id}
+                    ]
+                    if int_id is not None:
+                        q.extend([
+                            {"shipping.shipment_id": int_id},
+                            {"shipping.shiprocket_order_id": int_id}
+                        ])
+                    doc = self.orders.find_one({"$or": q})
 
-            return None
+            # If no doc found by ID yet, but contact or pincode was supplied, find by contact & pincode
+            if not doc and (clean_contact or clean_pincode):
+                filter_conds = []
+                if clean_contact:
+                    phone_clean = clean_contact.replace("+91", "").replace(" ", "").strip()
+                    filter_conds.append({
+                        "$or": [
+                            {"customer_email": {"$regex": f"^{clean_contact}$", "$options": "i"}},
+                            {"email": {"$regex": f"^{clean_contact}$", "$options": "i"}},
+                            {"shipping_address.email": {"$regex": f"^{clean_contact}$", "$options": "i"}},
+                            {"customer_phone": {"$regex": phone_clean}},
+                            {"phone": {"$regex": phone_clean}},
+                            {"shipping_address.phone": {"$regex": phone_clean}},
+                        ]
+                    })
+                if clean_pincode:
+                    filter_conds.append({
+                        "$or": [
+                            {"shipping_address.postal_code": {"$regex": f"^{clean_pincode}$"}},
+                            {"shipping_address.zip": {"$regex": f"^{clean_pincode}$"}},
+                            {"shipping_address.pincode": {"$regex": f"^{clean_pincode}$"}},
+                            {"pincode": {"$regex": f"^{clean_pincode}$"}},
+                        ]
+                    })
+                if filter_conds:
+                    doc = self.orders.find_one({"$and": filter_conds})
+
+            return doc
 
         return await asyncio.to_thread(_fetch)
 

@@ -170,7 +170,19 @@ function MainLayout() {
                         element={<CategoryPage />}
                     />
                     <Route
+                        path="/order-tracking"
+                        element={<PublicOrderTracking />}
+                    />
+                    <Route
                         path="/order-tracking/:orderId"
+                        element={<PublicOrderTracking />}
+                    />
+                    <Route
+                        path="/track-order"
+                        element={<PublicOrderTracking />}
+                    />
+                    <Route
+                        path="/track-order/:orderId"
                         element={<PublicOrderTracking />}
                     />
 

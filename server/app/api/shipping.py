@@ -904,29 +904,70 @@ async def bulk_sync_shipments(
 @router.get("/track-public/{query}")
 async def track_shipment_public(
     query: str,
+    contact: Optional[str] = None,
+    pincode: Optional[str] = None,
     sr: ShiprocketService = Depends(get_shiprocket_service),
     repo: ShippingRepository = Depends(get_shipping_repository),
 ):
     """
     Unified public order & shipment tracking endpoint.
-    Supports MongoDB Order ID, Order Number (NP-1002), Shiprocket AWB, or Shipment ID.
+    Supports MongoDB Order ID, Order Number (NP-1002), Shiprocket AWB, Shipment ID,
+    as well as mobile number / email and pincode verification.
     No authorization required. Returns customer-safe normalized tracking details.
     """
-    clean_query = query.strip()
-    order = await repo.find_order_by_any_identifier(clean_query)
+    clean_query = (query or "").strip()
+    if clean_query.lower() in ("search", "lookup", "none", "null", "all"):
+        clean_query = ""
+
+    order = await repo.find_order_by_any_identifier(clean_query, contact=contact, pincode=pincode)
 
     if order:
         shipping = order.get("shipping", {}) or {}
         awb = shipping.get("awb")
+        shipping_addr = order.get("shipping_address") or {}
+        customer_name = (
+            (shipping_addr.get("full_name") if isinstance(shipping_addr, dict) else "")
+            or order.get("customer_name")
+            or "Customer"
+        )
+
+        items_summary = []
+        for itm in order.get("items", []) or []:
+            items_summary.append({
+                "product_name": itm.get("product_name") or itm.get("name") or "Ethnic Wear",
+                "quantity": itm.get("quantity", 1),
+                "price": itm.get("price", 0),
+                "size": itm.get("size"),
+                "color": itm.get("color"),
+                "image": itm.get("image") or ""
+            })
+
+        order_status = str(order.get("status", "processing")).lower()
+        can_cancel = order_status in ("pending", "confirmed", "paid", "processing") and not awb
+        can_return = order_status in ("delivered", "completed")
+
+        base_res = {
+            "order_id": str(order.get("_id")),
+            "order_number": order.get("order_number") or str(order.get("_id")),
+            "customer_name": customer_name,
+            "created_at": order.get("created_at"),
+            "payment_method": order.get("payment_method") or "Prepaid",
+            "total_amount": float(order.get("total_amount") or 0),
+            "order_status": order_status,
+            "items": items_summary,
+            "can_cancel": can_cancel,
+            "can_return": can_return,
+            "pincode": (shipping_addr.get("postal_code") or shipping_addr.get("zip") or shipping_addr.get("pincode") or "") if isinstance(shipping_addr, dict) else "",
+        }
 
         if not awb:
-            return {
-                "order_number": order.get("order_number") or str(order.get("_id")),
+            base_res.update({
                 "current_status": "Order Placed / Processing",
                 "shipment_status": "new",
-                "courier_name": shipping.get("courier_name") or "Standard Courier",
+                "courier_name": shipping.get("courier_name") or "Shiprocket Courier Partner",
                 "tracking_history": []
-            }
+            })
+            return base_res
 
         try:
             raw = await sr.track_by_awb(awb)
@@ -954,10 +995,43 @@ async def track_shipment_public(
             }
             if mapped_status in order_status_map:
                 await repo.update_order_status(str(order["_id"]), order_status_map[mapped_status])
+                base_res["order_status"] = order_status_map[mapped_status]
                 
-            return {
-                "order_number": order.get("order_number") or str(order.get("_id")),
+            base_res.update({
                 "awb": awb,
+                "current_status": summary["current_status"],
+                "shipment_status": mapped_status,
+                "courier_name": summary.get("courier_name"),
+                "estimated_delivery": summary.get("estimated_delivery"),
+                "delivered_date": summary.get("delivered_date"),
+                "tracking_url": summary.get("tracking_url"),
+                "tracking_history": summary.get("tracking_history")
+            })
+            return base_res
+        except Exception:
+            # Fallback to local stored info
+            base_res.update({
+                "awb": awb,
+                "current_status": shipping.get("current_status", "In Transit"),
+                "shipment_status": shipping.get("shipment_status", "shipped"),
+                "courier_name": shipping.get("courier_name") or "Shiprocket Courier Partner",
+                "estimated_delivery": shipping.get("estimated_delivery"),
+                "delivered_date": shipping.get("delivered_date"),
+                "tracking_url": shipping.get("tracking_url"),
+                "tracking_history": []
+            })
+            return base_res
+
+    # If order is not directly matched in DB, attempt direct Shiprocket lookup by AWB / Shipment ID
+    if clean_query:
+        try:
+            raw = await sr.track_by_awb(clean_query)
+            summary = build_tracking_summary(clean_query, raw)
+            mapped_status = map_shiprocket_status(summary["current_status"])
+            return {
+                "order_number": clean_query,
+                "awb": clean_query,
+                "customer_name": "Customer",
                 "current_status": summary["current_status"],
                 "shipment_status": mapped_status,
                 "courier_name": summary.get("courier_name"),
@@ -967,36 +1041,9 @@ async def track_shipment_public(
                 "tracking_history": summary.get("tracking_history")
             }
         except Exception:
-            # Fallback to local stored info
-            return {
-                "order_number": order.get("order_number") or str(order.get("_id")),
-                "awb": awb,
-                "current_status": shipping.get("current_status", "In Transit"),
-                "shipment_status": shipping.get("shipment_status", "shipped"),
-                "courier_name": shipping.get("courier_name"),
-                "estimated_delivery": shipping.get("estimated_delivery"),
-                "delivered_date": shipping.get("delivered_date"),
-                "tracking_url": shipping.get("tracking_url"),
-                "tracking_history": []
-            }
+            pass
 
-    # If order is not directly matched in DB, attempt direct Shiprocket lookup by AWB / Shipment ID
-    try:
-        raw = await sr.track_by_awb(clean_query)
-        summary = build_tracking_summary(clean_query, raw)
-        mapped_status = map_shiprocket_status(summary["current_status"])
-        return {
-            "order_number": clean_query,
-            "awb": clean_query,
-            "current_status": summary["current_status"],
-            "shipment_status": mapped_status,
-            "courier_name": summary.get("courier_name"),
-            "estimated_delivery": summary.get("estimated_delivery"),
-            "delivered_date": summary.get("delivered_date"),
-            "tracking_url": summary.get("tracking_url"),
-            "tracking_history": summary.get("tracking_history")
-        }
-    except Exception:
-        pass
-
-    raise HTTPException(status_code=404, detail=f"No order or shipment found for '{clean_query}'. Please check your Order ID or Shiprocket AWB.")
+    detail_msg = f"No order or shipment found for '{clean_query or contact or pincode}'."
+    if contact or pincode:
+        detail_msg = f"No order found matching the provided details. Please check your Order ID, Mobile/Email, or Pincode."
+    raise HTTPException(status_code=404, detail=detail_msg)

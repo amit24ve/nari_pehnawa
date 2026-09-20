@@ -229,4 +229,5 @@ def session_response(flow):
     if not user or user.get("role", "customer") != "customer" or user.get("is_admin") or user.get("status", "active") != "active" or user.get("is_active") is False:
         raise HTTPException(403, "This account cannot sign in. Please contact support.")
     token = create_access_token({"sub": str(user["_id"]), "email": user["email"], "role": "customer"})
-    return JSONResponse({"access_token": token, "token_type": "bearer"}, headers=NO_CACHE)
+    from app.services.mobile_session_service import issue_refresh
+    return JSONResponse({"access_token": token, "refresh_token": issue_refresh(get_database(), user["_id"]), "token_type": "bearer"}, headers=NO_CACHE)

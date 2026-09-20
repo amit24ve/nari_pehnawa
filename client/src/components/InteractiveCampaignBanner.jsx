@@ -10,15 +10,27 @@ const VOTED_STORAGE_KEY = "nari_campaign_user_voted_slot";
 const getToken = () =>
   localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
 
+const getVisitorId = () => {
+  try {
+    let vid = localStorage.getItem("nari_visitor_id");
+    if (!vid) {
+      vid = "v_" + Math.random().toString(36).substring(2, 10) + "_" + Date.now().toString(36);
+      localStorage.setItem("nari_visitor_id", vid);
+    }
+    return vid;
+  } catch (_) {
+    return "v_guest";
+  }
+};
+
 const InteractiveCampaignBanner = () => {
   const navigate = useNavigate();
-  const { user, openLoginModal } = useAuth();
+  const { user } = useAuth();
 
   const [campaign, setCampaign] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userVotedSlot, setUserVotedSlot] = useState(null);
   const [justVotedSlot, setJustVotedSlot] = useState(null);
-  const [authTip, setAuthTip] = useState(false);
 
   // Load user voted slot from localStorage as fast fallback
   useEffect(() => {
@@ -30,10 +42,14 @@ const InteractiveCampaignBanner = () => {
     } catch (e) {}
   }, []);
 
-  // Fetch active campaign from server with auth header if available
+  // Fetch active campaign from server with visitor id and optional auth header
   useEffect(() => {
     const token = getToken();
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const visitorId = getVisitorId();
+    const headers = {
+      "X-Visitor-Id": visitorId,
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    };
 
     fetch(`${API_BASE_URL}/campaign/active`, { headers })
       .then((r) => (r.ok ? r.json() : null))
@@ -57,16 +73,6 @@ const InteractiveCampaignBanner = () => {
   const handleVote = async (e, slot) => {
     e.stopPropagation();
     const slotId = slot.slot_id;
-
-    // REQUIRE LOGIN: if not logged in, prompt user to login
-    if (!user) {
-      setAuthTip(true);
-      setTimeout(() => setAuthTip(false), 3500);
-      if (typeof openLoginModal === "function") {
-        openLoginModal("login");
-      }
-      return;
-    }
 
     // If already voted for this exact slot, do nothing
     if (userVotedSlot === slotId) return;
@@ -98,14 +104,16 @@ const InteractiveCampaignBanner = () => {
       return { ...prev, slots: updated };
     });
 
-    // Send vote to server
+    // Send vote to server with visitor ID & optional token
     try {
       const token = getToken();
+      const visitorId = getVisitorId();
       const res = await fetch(`${API_BASE_URL}/campaign/vote`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "X-Visitor-Id": visitorId,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           slot_id: slotId,
@@ -120,11 +128,6 @@ const InteractiveCampaignBanner = () => {
         }
         if (data.user_voted_slot !== undefined) {
           setUserVotedSlot(data.user_voted_slot);
-        }
-      } else if (res.status === 401) {
-        // Token expired or invalid
-        if (typeof openLoginModal === "function") {
-          openLoginModal("login");
         }
       }
     } catch (err) {
@@ -176,9 +179,14 @@ const InteractiveCampaignBanner = () => {
         className="relative overflow-hidden rounded-3xl shadow-2xl border-2 border-[#8B0000]/40 flex flex-col lg:flex-row transition-all duration-300 select-none bg-stone-950"
         style={{ minHeight: `${campaign.banner_height || 320}px` }}
       >
-        {/* ── LEFT PROMOTIONAL SECTION (~28% width) — WALL-ART FRAMED PLAQUE TEMPLATE ── */}
-        <div className="relative w-full lg:w-[28%] xl:w-[27%] bg-gradient-to-b from-[#FFFDF9] via-[#FAF6F0] to-[#FFF2F4] p-4 sm:p-6 flex flex-col items-center justify-center text-center flex-shrink-0 z-10 border-b-2 lg:border-b-0 lg:border-r-2 border-[#8B0000]/20 shadow-inner overflow-hidden min-h-[290px]">
-          {/* Custom Left Background Image if uploaded by admin */}
+        {/* ── LEFT PROMOTIONAL SECTION — DYNAMIC BACKGROUND, CUSTOMIZABLE TYPOGRAPHY & CENTERED LAYOUT ── */}
+        <div
+          className="relative w-full lg:w-[30%] xl:w-[28%] p-6 sm:p-8 flex flex-col items-center justify-center text-center flex-shrink-0 z-10 border-b-2 lg:border-b-0 lg:border-r-2 border-slate-200/80 shadow-inner overflow-hidden transition-colors duration-300"
+          style={{
+            backgroundColor: campaign.left_bg_color || "#ffffff",
+          }}
+        >
+          {/* Custom Left Image if uploaded by admin */}
           {campaign.left_image && (
             <>
               <img
@@ -189,61 +197,76 @@ const InteractiveCampaignBanner = () => {
                 }}
                 className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
               />
-              <div className="absolute inset-0 bg-stone-900/30 backdrop-blur-[2px] pointer-events-none" />
+              <div className="absolute inset-0 bg-white/60 backdrop-blur-[0.5px] pointer-events-none" />
             </>
           )}
 
-          {/* Wall-Art Framed Plaque (Border Box with Inset Frame & Corner Ticks) */}
-          <div className="relative z-10 w-full max-w-[285px] p-4 sm:p-5 rounded-2xl bg-white/95 backdrop-blur-md shadow-xl border-2 border-[#8B0000]/25 transition-all duration-300 flex flex-col items-center justify-center text-center">
-            {/* Inner Hairline Wall-Art Frame with Corner Accents */}
-            <div className="w-full border border-dashed border-[#8B0000]/30 rounded-xl p-3 sm:p-4 flex flex-col items-center justify-center relative">
-              {/* Corner decorative wall-art ticks */}
-              <span className="absolute -top-1 -left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-[#8B0000]" />
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-[#8B0000]" />
-              <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-b-2 border-l-2 border-[#8B0000]" />
-              <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-b-2 border-r-2 border-[#8B0000]" />
+          {/* Centered Promo Text Block */}
+          <div className="relative z-10 flex flex-col items-center justify-center text-center w-full my-auto space-y-1.5">
+            {/* Pre-Headline: CUSTOMER'S CHOICE (Bold, uppercase, 4-6px smaller than headline) */}
+            <p
+              className="font-black uppercase tracking-wider leading-tight drop-shadow-xs"
+              style={{
+                fontSize: `${campaign.title_font_size || 32}px`,
+                color: campaign.title_color || campaign.text_color || "#111827",
+              }}
+            >
+              {campaign.title || "CUSTOMER'S CHOICE"}
+            </p>
 
-              {/* Pre-Headline with Elegant Spaced Rules */}
-              <div className="flex items-center justify-center gap-2 w-full mb-1">
-                <span className="h-[1px] w-5 sm:w-7 bg-[#8B0000]/35" />
-                <p className="text-[#8B0000] font-serif font-black text-[10px] sm:text-xs tracking-[0.22em] uppercase">
-                  {campaign.title || "VOTE & WIN"}
-                </p>
-                <span className="h-[1px] w-5 sm:w-7 bg-[#8B0000]/35" />
-              </div>
+            {/* Main Headline: WHICH LOOK DO YOU LOVE? (Large, Bold & Italic) */}
+            <h2
+              className={`font-serif font-black tracking-tight leading-tight my-1 drop-shadow-xs ${
+                campaign.discount_italic !== false ? "italic" : ""
+              }`}
+              style={{
+                fontSize: `${campaign.discount_font_size || 36}px`,
+                color: campaign.text_color || "#8B0000",
+              }}
+            >
+              {campaign.discount_text || "WHICH LOOK DO YOU LOVE?"}
+            </h2>
 
-              {/* Dedicated Border Box For Highlight Text */}
-              <div className="w-full my-1.5 py-2 px-3 rounded-lg border-2 border-stone-900/15 bg-gradient-to-b from-stone-50/90 to-stone-100/90 shadow-inner flex items-center justify-center">
-                <h2
-                  className="text-2xl sm:text-3xl xl:text-[2.65rem] font-serif font-black tracking-tight leading-none text-center"
-                  style={{ color: campaign.text_color || "#111827" }}
-                >
-                  {campaign.discount_text || "TOP LOOK"}
-                </h2>
-              </div>
+            {/* Subtitle */}
+            <p
+              className="text-xs sm:text-sm font-medium pt-1 whitespace-pre-line max-w-[260px] leading-relaxed drop-shadow-xs opacity-90"
+              style={{
+                color: campaign.subtitle_color || "#4B5563",
+              }}
+            >
+              {campaign.subtitle || "Vote for your favorite festive look • Help us pick the trending style!"}
+            </p>
 
-              {/* Subtitle / Note */}
-              <p className="text-stone-600 text-[11px] sm:text-xs font-medium pt-1 whitespace-pre-line max-w-[210px] leading-relaxed">
-                {campaign.subtitle || "Pick your favorite ethnic style & get rewards"}
-              </p>
-
-              {/* High-conversion Wall-Art Action Button */}
-              <div className="pt-3 w-full flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => handleCtaClick(campaign.cta_link)}
-                  className="inline-flex items-center justify-center gap-2 bg-[#6E1624] hover:bg-[#8B0000] text-white font-bold text-[11px] sm:text-xs px-5 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 group cursor-pointer"
-                >
-                  <span>{campaign.cta_text || "Explore Deals"}</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </button>
-              </div>
+            {/* High-conversion Centered CTA Button */}
+            <div className="pt-4 w-full flex flex-col items-center justify-center">
+              <button
+                type="button"
+                onClick={() => handleCtaClick(campaign.cta_link)}
+                className="inline-flex items-center justify-center gap-2 font-black text-xs sm:text-sm px-7 py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 group cursor-pointer border border-transparent hover:border-amber-300/40"
+                style={{
+                  backgroundColor: campaign.cta_bg_color || "#8B0000",
+                  color: campaign.cta_text_color || "#ffffff",
+                }}
+              >
+                <span>{campaign.cta_text || "Vote Now"}</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
             </div>
           </div>
         </div>
 
-        {/* ── RIGHT INTERACTIVE 4-CARDS SHOWCASE (~72% width) ── */}
-        <div className="relative flex-1 bg-gradient-to-r from-[#4A0019] via-[#350012] to-[#20000A] p-4 sm:p-6 flex flex-col justify-center overflow-hidden">
+        {/* ── RIGHT INTERACTIVE 4-CARDS SHOWCASE (~70% width) ── */}
+        <div 
+          className={`relative flex-1 p-4 sm:p-6 flex flex-col justify-center overflow-hidden ${
+            campaign.right_bg_theme === "noir"
+              ? "bg-gradient-to-r from-[#18181B] via-[#0F0F12] to-[#09090B]"
+              : campaign.right_bg_theme === "gold"
+              ? "bg-gradient-to-r from-[#2A1B0A] via-[#1E1307] to-[#120B04]"
+              : campaign.right_bg_theme === "rose"
+              ? "bg-gradient-to-r from-[#3D0C1E] via-[#2A0815] to-[#17040B]"
+              : "bg-gradient-to-r from-[#4A0019] via-[#350012] to-[#20000A]"
+          }`}
+        >
           {/* Subtle atmospheric flares */}
           <div className="absolute top-[-20%] right-[-10%] w-72 h-72 rounded-full bg-rose-500/10 blur-3xl pointer-events-none" />
           <div className="absolute bottom-[-20%] left-[-10%] w-72 h-72 rounded-full bg-black/40 blur-3xl pointer-events-none" />
@@ -253,20 +276,13 @@ const InteractiveCampaignBanner = () => {
             <div className="inline-flex items-center justify-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
               <span className="text-xs sm:text-sm font-serif font-bold text-rose-100 uppercase tracking-widest drop-shadow">
-                PICK ANY 1 OF 4 — VOTE FOR YOUR FAVORITE LOOK
+                PICK YOUR FAVORITE LOOK — VOTE FOR WHAT YOU LOVE
               </span>
               <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
             </div>
-
-            {/* Login feedback tip if guest tries to vote */}
-            {authTip && (
-              <span className="mt-1.5 inline-block text-[11px] font-semibold text-amber-300 bg-black/60 px-3 py-0.5 rounded-full border border-amber-300/40 animate-bounce">
-                Please log in to cast your vote!
-              </span>
-            )}
           </div>
 
-          {/* 4 Cards Grid */}
+          {/* 4 Cards Grid - Pure Look Photo + Vote Action (NO star ratings, NO tags) */}
           <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
             {slots.map((slot) => {
               const product = slot.product || {};
@@ -300,7 +316,7 @@ const InteractiveCampaignBanner = () => {
                     </div>
                   </div>
 
-                  {/* Dedicated "Rate Now" Button Underneath the Card */}
+                  {/* Dedicated "Vote" Button Underneath the Card */}
                   <div className="mt-2.5 text-center w-full flex justify-center">
                     {isVoted ? (
                       <button
@@ -310,7 +326,7 @@ const InteractiveCampaignBanner = () => {
                         title="You voted for this look"
                       >
                         <Check className="w-3.5 h-3.5 text-white" />
-                        <span>Rated</span>
+                        <span>Voted</span>
                         <span className="text-[10px] opacity-90">
                           ({(slot.votes || 0).toLocaleString("en-IN")})
                         </span>
@@ -320,14 +336,14 @@ const InteractiveCampaignBanner = () => {
                         type="button"
                         onClick={(e) => handleVote(e, slot)}
                         className="w-full max-w-[155px] bg-white hover:bg-rose-50 text-[#8B0000] font-black text-[11px] sm:text-xs py-2 px-3 rounded-full shadow-md hover:shadow-lg border border-rose-200/90 flex items-center justify-center gap-1.5 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
-                        title="Click to Vote / Rate this look"
+                        title="Click to Vote for this look"
                       >
                         <Heart
                           className={`w-3.5 h-3.5 text-[#8B0000] fill-[#8B0000] ${
                             isJustVoted ? "scale-150 animate-ping" : ""
                           }`}
                         />
-                        <span>Rate Now</span>
+                        <span>Vote</span>
                         <span className="text-[10px] font-semibold text-rose-800/80">
                           ({(slot.votes || 0).toLocaleString("en-IN")})
                         </span>

@@ -118,6 +118,8 @@ def create_return_request(payload: ReturnCreate, current_user: dict = Depends(ge
         "updated_at": datetime.now(),
     }
     result = db["returns"].insert_one(doc)
+    from app.services.referral_service import try_reverse_for_order
+    try_reverse_for_order(db, payload.order_id)
     return {"return_id": str(result.inserted_id), "status": "requested"}
 
 

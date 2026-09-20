@@ -645,6 +645,8 @@ def update_order_status(order_id: str, status_data: dict, current_user: dict = D
 
         # Restore inventory and reverse reward coins if this transition cancels/returns the order
         if status in ("cancelled", "returned", "refunded") and previous_status not in ("cancelled", "returned", "refunded"):
+            from app.services.referral_service import try_reverse_for_order
+            try_reverse_for_order(db, order_id)
             stock_items = _stock_items_from_order(result)
             if stock_items:
                 InventoryService(db).restore_stock_for_order(

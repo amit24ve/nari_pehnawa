@@ -468,6 +468,7 @@ def change_password(password_data: PasswordChange, current_user: dict = Depends(
             {"_id": ObjectId(user_id)},
             {"$set": {"password_hash": new_password_hash}}
         )
+        db["mobile_refresh_sessions"].delete_many({"user_id": str(user_id)})
         
         return {"message": "Password changed successfully"}
     except HTTPException:

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Search,
@@ -261,6 +261,26 @@ const Navbar = () => {
   const fashionCats = (Array.isArray(categories) ? categories : [])
     .filter((c) => c.is_active !== false && !isSpecialNav(c))
     .sort((a, b) => (Number(a.display_order) || 0) - (Number(b.display_order) || 0));
+
+  const getDeptMeta = (dept) => {
+    const d = (dept || "").toLowerCase();
+    if (d.includes("jewel")) return { icon: "✨", label: dept || "Jewellery" };
+    if (d.includes("foot") || d.includes("shoe")) return { icon: "👠", label: dept || "Footwear" };
+    if (d.includes("access") || d.includes("bag") || d.includes("clutch")) return { icon: "👜", label: dept || "Accessories" };
+    return { icon: "👗", label: dept || "Fashion" };
+  };
+
+  const departmentGroups = useMemo(() => {
+    const groups = {};
+    fashionCats.forEach((cat) => {
+      const dept = cat.department || "Clothing";
+      if (!groups[dept]) groups[dept] = [];
+      groups[dept].push(cat);
+    });
+    return groups;
+  }, [fashionCats]);
+
+  const departmentKeys = Object.keys(departmentGroups);
 
   return (
     <header
@@ -583,6 +603,19 @@ const Navbar = () => {
                 </button>
               )}
 
+              {/* Track Order Direct Link */}
+              <Link
+                to="/track-order"
+                className="relative hidden md:flex flex-col items-center gap-1 px-3 py-2 text-gray-600 hover:text-[#8B0000] transition-colors"
+                aria-label="Track Order"
+                title="Track Shipment / Order Status"
+              >
+                <Truck className="w-7 h-7" />
+                <span className="text-[11px] font-semibold tracking-wide leading-none">
+                  Track
+                </span>
+              </Link>
+
               {/* Wishlist — fixed link to /wishlist */}
               <Link
                 to="/wishlist"
@@ -647,11 +680,6 @@ const Navbar = () => {
           className="flex items-center h-[38px] overflow-x-auto scrollbar-none"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
         >
-          {/* ── Fashion group ── */}
-          <span className="flex-shrink-0 px-3 h-full flex items-center text-[9px] font-black text-[#8B0000] uppercase tracking-[0.15em] whitespace-nowrap bg-[#8B0000]/5">
-            Fashion
-          </span>
-
           <Link
             to="/new-arrivals"
             className="flex-shrink-0 flex items-center gap-1.5 px-3 h-full text-[11px] font-bold tracking-[0.08em] whitespace-nowrap text-[#8B0000] hover:bg-[#8B0000]/5 transition-all"
@@ -660,19 +688,43 @@ const Navbar = () => {
             NEW ARRIVALS
           </Link>
 
-          {fashionCats.map((cat) => (
-            <Link
-              key={cat._id || cat.id}
-              to={buildCategoryPath(cat)}
-              className="flex-shrink-0 flex items-center px-3 h-full text-[11px] font-bold tracking-[0.08em] whitespace-nowrap text-gray-600 hover:text-[#8B0000] hover:bg-[#8B0000]/5 transition-all"
-            >
-              {cat.name.toUpperCase()}
-            </Link>
-          ))}
+          {departmentKeys.length <= 1 ? (
+            fashionCats.map((cat) => (
+              <Link
+                key={cat._id || cat.id}
+                to={buildCategoryPath(cat)}
+                className="flex-shrink-0 flex items-center px-3 h-full text-[11px] font-bold tracking-[0.08em] whitespace-nowrap text-gray-600 hover:text-[#8B0000] hover:bg-[#8B0000]/5 transition-all"
+              >
+                {cat.name.toUpperCase()}
+              </Link>
+            ))
+          ) : (
+            departmentKeys.map((deptName) => {
+              const cats = departmentGroups[deptName] || [];
+              const meta = getDeptMeta(deptName);
+              return (
+                <React.Fragment key={deptName}>
+                  <span className="flex-shrink-0 px-2.5 h-full flex items-center gap-1 text-[9px] font-black text-[#8B0000] uppercase tracking-[0.14em] whitespace-nowrap bg-[#8B0000]/5 border-l border-gray-100">
+                    <span>{meta.icon}</span>
+                    <span>{deptName.toUpperCase()}</span>
+                  </span>
+                  {cats.map((cat) => (
+                    <Link
+                      key={cat._id || cat.id}
+                      to={buildCategoryPath(cat)}
+                      className="flex-shrink-0 flex items-center px-3 h-full text-[11px] font-bold tracking-[0.08em] whitespace-nowrap text-gray-600 hover:text-[#8B0000] hover:bg-[#8B0000]/5 transition-all"
+                    >
+                      {cat.name.toUpperCase()}
+                    </Link>
+                  ))}
+                </React.Fragment>
+              );
+            })
+          )}
 
           <Link
             to="/category/sale"
-            className="flex-shrink-0 flex items-center gap-1.5 px-3 h-full text-[11px] font-bold tracking-[0.08em] whitespace-nowrap text-amber-700 hover:text-red-700 hover:bg-red-50 transition-all"
+            className="flex-shrink-0 flex items-center gap-1.5 px-3 h-full text-[11px] font-bold tracking-[0.08em] whitespace-nowrap text-amber-700 hover:text-red-700 hover:bg-red-50 transition-all border-l border-gray-100"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-red-600 flex-shrink-0 animate-pulse" />
             MEGA SALE
@@ -795,7 +847,7 @@ const Navbar = () => {
                 >
                   <ChevronRight className="w-4 h-4 rotate-180" />
                   {mobileSubmenu === "new-arrivals" && "New Arrivals"}
-                  {mobileSubmenu === "category" && "Women's Fashion"}
+                  {mobileSubmenu === "category" && "Categories"}
                 </button>
               ) : (
                 <img
@@ -911,7 +963,7 @@ const Navbar = () => {
 
                     {/* TRACK ORDER */}
                     <Link
-                      to="/user/orders"
+                      to="/track-order"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="flex items-center gap-2.5 px-5 py-3.5 text-sm font-bold uppercase tracking-wide text-[#8B0000] border-b border-gray-100 hover:bg-[#fff5f5] transition-colors"
                     >
@@ -1031,23 +1083,35 @@ const Navbar = () => {
                     </nav>
                   )}
 
-                  {/* Category → Direct list of Women's Fashion Categories */}
+                  {/* Category → Direct list of Categories grouped by department */}
                   {mobileSubmenu === "category" && (
-                    <nav>
-                      {fashionCats.map((cat) => (
-                        <Link
-                          key={cat._id || cat.id}
-                          to={buildCategoryPath(cat)}
-                          onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            setMobileSubmenu(null);
-                          }}
-                          className="flex items-center justify-between px-5 py-3.5 text-sm font-semibold text-gray-700 border-b border-gray-100 hover:bg-[#fff5f5] hover:text-[#8B0000] transition-colors"
-                        >
-                          {cat.name}
-                          <ChevronRight className="w-4 h-4 text-gray-400" />
-                        </Link>
-                      ))}
+                    <nav className="divide-y divide-gray-100">
+                      {departmentKeys.map((deptName) => {
+                        const cats = departmentGroups[deptName] || [];
+                        const meta = getDeptMeta(deptName);
+                        return (
+                          <div key={deptName} className="py-1">
+                            <div className="px-4 py-2 bg-gray-50 text-[10px] font-black text-[#8B0000] uppercase tracking-wider flex items-center gap-1.5">
+                              <span>{meta.icon}</span>
+                              <span>{deptName}</span>
+                            </div>
+                            {cats.map((cat) => (
+                              <Link
+                                key={cat._id || cat.id}
+                                to={buildCategoryPath(cat)}
+                                onClick={() => {
+                                  setIsMobileMenuOpen(false);
+                                  setMobileSubmenu(null);
+                                }}
+                                className="flex items-center justify-between px-5 py-3 text-sm font-semibold text-gray-700 hover:bg-[#fff5f5] hover:text-[#8B0000] transition-colors"
+                              >
+                                <span>{cat.name}</span>
+                                <ChevronRight className="w-4 h-4 text-gray-400" />
+                              </Link>
+                            ))}
+                          </div>
+                        );
+                      })}
                       {fashionCats.length === 0 && (
                         <p className="px-5 py-6 text-sm text-gray-400 text-center">
                           No categories available

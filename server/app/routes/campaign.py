@@ -5,7 +5,7 @@ Powers the interactive 4-card promotional campaign banner matching the design.
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Header
 from jose import jwt
 from pydantic import BaseModel
 
@@ -41,16 +41,25 @@ class SlotConfig(BaseModel):
 
 class CampaignUpdate(BaseModel):
     is_active: bool = True
-    title: str = "Up to"
+    title: str = "UP TO"
     discount_text: str = "30% OFF"
     subtitle: str = "on first order • Only on Nari Pehnawa"
     badge_text: str = ""
     cta_text: str = "Explore Deals"
     cta_link: str = "/category/sale"
     left_image: Optional[str] = ""
+    left_bg_color: Optional[str] = "#ffffff"
+    title_font_size: Optional[int] = 32
+    discount_font_size: Optional[int] = 38
+    discount_italic: Optional[bool] = True
+    title_color: Optional[str] = "#111827"
+    subtitle_color: Optional[str] = "#4B5563"
+    cta_bg_color: Optional[str] = "#8B0000"
+    cta_text_color: Optional[str] = "#ffffff"
     full_banner_image: Optional[str] = ""
     banner_height: int = 320
     text_color: Optional[str] = "#111827"
+    right_bg_theme: Optional[str] = "maroon"
     slots: List[SlotConfig] = []
 
 
@@ -79,15 +88,24 @@ def _ensure_default_campaign(db) -> dict:
         default_doc = {
             "key": "active_campaign",
             "is_active": True,
-            "title": "Up to",
-            "discount_text": "35% OFF",
-            "subtitle": "on first order • *Only on Nari Pehnawa",
-            "badge_text": "SPECIAL FESTIVE OFFER",
+            "title": "UP TO",
+            "discount_text": "30% OFF",
+            "subtitle": "on first order • Only on Nari Pehnawa",
+            "badge_text": "",
             "cta_text": "Explore Deals",
             "cta_link": "/category/sale",
             "left_image": "",
+            "left_bg_color": "#ffffff",
+            "title_font_size": 32,
+            "discount_font_size": 38,
+            "discount_italic": True,
+            "title_color": "#111827",
+            "subtitle_color": "#4B5563",
+            "cta_bg_color": "#8B0000",
+            "cta_text_color": "#ffffff",
             "full_banner_image": "",
             "banner_height": 320,
+            "text_color": "#8B0000",
             "slots": slots,
             "created_at": datetime.now(),
             "updated_at": datetime.now(),
@@ -98,7 +116,10 @@ def _ensure_default_campaign(db) -> dict:
 
 
 @router.get("/active")
-def get_active_campaign(request: Request):
+def get_active_campaign(
+    request: Request,
+    x_visitor_id: Optional[str] = Header(None, alias="X-Visitor-Id"),
+):
     """Public endpoint to get the active campaign with populated products and votes."""
     db = get_database()
     campaign = _ensure_default_campaign(db)
@@ -108,11 +129,19 @@ def get_active_campaign(request: Request):
 
     slots = campaign.get("slots", [])
 
-    # Check optional logged-in user
+    # Check optional logged-in user or guest visitor
     user_id = _get_optional_user_id(request)
+    visitor_id = x_visitor_id.strip() if x_visitor_id else None
     user_voted_slot = None
+
+    queries = []
     if user_id:
-        existing_vote = db["campaign_votes"].find_one({"user_id": str(user_id)})
+        queries.append({"user_id": str(user_id)})
+    if visitor_id:
+        queries.append({"visitor_id": visitor_id})
+
+    if queries:
+        existing_vote = db["campaign_votes"].find_one({"$or": queries})
         if existing_vote:
             user_voted_slot = existing_vote.get("slot_id")
 
@@ -166,16 +195,25 @@ def get_active_campaign(request: Request):
 
     return {
         "is_active": True,
-        "title": campaign.get("title", "Up to"),
+        "title": campaign.get("title", "UP TO"),
         "discount_text": campaign.get("discount_text", "30% OFF"),
         "subtitle": campaign.get("subtitle", "on first order • Only on Nari Pehnawa"),
         "badge_text": campaign.get("badge_text", ""),
         "cta_text": campaign.get("cta_text", "Explore Deals"),
         "cta_link": campaign.get("cta_link", "/category/sale"),
         "left_image": campaign.get("left_image", ""),
+        "left_bg_color": campaign.get("left_bg_color", "#ffffff"),
+        "title_font_size": campaign.get("title_font_size", 32),
+        "discount_font_size": campaign.get("discount_font_size", 38),
+        "discount_italic": campaign.get("discount_italic", True),
+        "title_color": campaign.get("title_color", "#111827"),
+        "subtitle_color": campaign.get("subtitle_color", "#4B5563"),
+        "cta_bg_color": campaign.get("cta_bg_color", "#8B0000"),
+        "cta_text_color": campaign.get("cta_text_color", "#ffffff"),
         "full_banner_image": campaign.get("full_banner_image", ""),
         "banner_height": campaign.get("banner_height", 320),
         "text_color": campaign.get("text_color", "#111827"),
+        "right_bg_theme": campaign.get("right_bg_theme", "maroon"),
         "user_voted_slot": user_voted_slot,
         "slots": populated_slots,
     }
@@ -185,12 +223,18 @@ def get_active_campaign(request: Request):
 def vote_campaign_product(
     data: VoteRequest,
     request: Request,
-    current_user: dict = Depends(get_current_user),
+    x_visitor_id: Optional[str] = Header(None, alias="X-Visitor-Id"),
 ):
-    """Voting endpoint: Requires user login. Enforces exactly ONE choice among the 4 slots."""
+    """Voting endpoint: Supports both guest visitors and logged in users. Enforces exactly ONE choice among the 4 slots."""
     db = get_database()
     campaign = _ensure_default_campaign(db)
-    user_id = str(current_user["id"])
+
+    user_id = _get_optional_user_id(request)
+    visitor_id = x_visitor_id.strip() if x_visitor_id else None
+    if not user_id and not visitor_id:
+        client_ip = request.client.host if request.client else "unknown"
+        visitor_id = f"ip_{client_ip}"
+
     new_slot_id = data.slot_id
 
     slots = campaign.get("slots", [])
@@ -198,7 +242,13 @@ def vote_campaign_product(
     if new_slot_id not in slot_map:
         raise HTTPException(status_code=404, detail="Slot not found")
 
-    existing_vote = db["campaign_votes"].find_one({"user_id": user_id})
+    queries = []
+    if user_id:
+        queries.append({"user_id": str(user_id)})
+    if visitor_id:
+        queries.append({"visitor_id": visitor_id})
+
+    existing_vote = db["campaign_votes"].find_one({"$or": queries}) if queries else None
 
     if existing_vote:
         old_slot_id = existing_vote.get("slot_id")
@@ -218,21 +268,32 @@ def vote_campaign_product(
         new_idx = slot_map[new_slot_id]
         slots[new_idx]["votes"] = slots[new_idx].get("votes", 0) + 1
 
+        update_fields = {"slot_id": new_slot_id, "updated_at": datetime.now()}
+        if user_id:
+            update_fields["user_id"] = str(user_id)
+        if visitor_id:
+            update_fields["visitor_id"] = visitor_id
+
         db["campaign_votes"].update_one(
             {"_id": existing_vote["_id"]},
-            {"$set": {"slot_id": new_slot_id, "updated_at": datetime.now()}}
+            {"$set": update_fields}
         )
     else:
-        # First vote by this user
+        # First vote by this user or guest
         new_idx = slot_map[new_slot_id]
         slots[new_idx]["votes"] = slots[new_idx].get("votes", 0) + 1
 
-        db["campaign_votes"].insert_one({
-            "user_id": user_id,
+        doc = {
             "slot_id": new_slot_id,
             "product_id": data.product_id,
             "created_at": datetime.now(),
-        })
+        }
+        if user_id:
+            doc["user_id"] = str(user_id)
+        if visitor_id:
+            doc["visitor_id"] = visitor_id
+
+        db["campaign_votes"].insert_one(doc)
 
     # Save updated slots back to campaign_showcase
     db["campaign_showcase"].update_one(

@@ -116,6 +116,8 @@ def create_exchange_request(payload: ExchangeCreate, current_user: dict = Depend
         "updated_at": datetime.now(),
     }
     result = db["exchanges"].insert_one(doc)
+    from app.services.referral_service import try_reverse_for_order
+    try_reverse_for_order(db, payload.order_id)
     return {"exchange_id": str(result.inserted_id), "status": "requested"}
 
 

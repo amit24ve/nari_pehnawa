@@ -32,12 +32,39 @@ const WatchAndBuy = () => {
   const [loading, setLoading] = useState(true);
   const [activeReelIndex, setActiveReelIndex] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
-  const [likedReels, setLikedReels] = useState({});
+  const [likedReels, setLikedReels] = useState(() => {
+    try {
+      const saved = localStorage.getItem("nari_liked_reels");
+      return saved ? JSON.parse(saved) : {};
+    } catch (_) {
+      return {};
+    }
+  });
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
 
+  const getVisitorId = () => {
+    try {
+      let vid = localStorage.getItem("nari_visitor_id");
+      if (!vid) {
+        vid = "v_" + Math.random().toString(36).substring(2, 10) + "_" + Date.now().toString(36);
+        localStorage.setItem("nari_visitor_id", vid);
+      }
+      return vid;
+    } catch (_) {
+      return "v_guest";
+    }
+  };
+
   useEffect(() => {
-    fetch(`${API_BASE_URL}/reels/?active_only=true`)
+    const visitorId = getVisitorId();
+    const token = localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
+    const headers = {
+      "X-Visitor-Id": visitorId,
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    };
+
+    fetch(`${API_BASE_URL}/reels/?active_only=true`, { headers })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load reels");
         return res.json();
@@ -54,6 +81,87 @@ const WatchAndBuy = () => {
         setVideoProducts([]);
       })
       .finally(() => setLoading(false));
+  }, []);
+
+  // Real-time live like synchronization across devices (WebSocket + lightweight polling)
+  useEffect(() => {
+    let ws = null;
+    let reconnectTimeout = null;
+    let isUnmounted = false;
+
+    const connectWs = () => {
+      if (isUnmounted) return;
+      try {
+        const wsUrl = API_BASE_URL.replace(/^http/, "ws") + "/reels/ws";
+        ws = new WebSocket(wsUrl);
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data && data.type === "reel_like" && data.reel_id) {
+              setVideoProducts((prev) =>
+                prev.map((v) => {
+                  const vid = v.id || v._id;
+                  if (vid === data.reel_id) {
+                    return { ...v, likes: data.likes };
+                  }
+                  return v;
+                })
+              );
+            }
+          } catch (_) {}
+        };
+
+        ws.onclose = () => {
+          if (!isUnmounted) {
+            reconnectTimeout = setTimeout(connectWs, 3000);
+          }
+        };
+
+        ws.onerror = () => {
+          try {
+            ws.close();
+          } catch (_) {}
+        };
+      } catch (_) {}
+    };
+
+    connectWs();
+
+    // 3-second lightweight polling fallback so backgrounded/mobile browsers stay 100% in sync
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/reels/likes-sync`);
+        if (res.ok) {
+          const likesMap = await res.json();
+          if (likesMap && typeof likesMap === "object") {
+            setVideoProducts((prev) => {
+              let changed = false;
+              const next = prev.map((v) => {
+                const vid = v.id || v._id;
+                if (likesMap[vid] !== undefined && likesMap[vid] !== v.likes) {
+                  changed = true;
+                  return { ...v, likes: likesMap[vid] };
+                }
+                return v;
+              });
+              return changed ? next : prev;
+            });
+          }
+        }
+      } catch (_) {}
+    }, 3000);
+
+    return () => {
+      isUnmounted = true;
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (pollInterval) clearInterval(pollInterval);
+      if (ws) {
+        try {
+          ws.close();
+        } catch (_) {}
+      }
+    };
   }, []);
 
   const openReelModal = (index) => {
@@ -78,8 +186,64 @@ const WatchAndBuy = () => {
     }
   };
 
-  const toggleLike = (reelId) => {
-    setLikedReels((prev) => ({ ...prev, [reelId]: !prev[reelId] }));
+  const toggleLike = async (reelId) => {
+    if (!reelId) return;
+    const isCurrentlyLiked = !!likedReels[reelId];
+    const newLikedState = !isCurrentlyLiked;
+
+    // 1. Immediately persist to state & localStorage
+    const nextLikedMap = { ...likedReels, [reelId]: newLikedState };
+    setLikedReels(nextLikedMap);
+    try {
+      localStorage.setItem("nari_liked_reels", JSON.stringify(nextLikedMap));
+    } catch (_) {}
+
+    // 2. Optimistically update count in videoProducts list
+    setVideoProducts((prev) =>
+      prev.map((v) => {
+        const vid = v.id || v._id;
+        if (vid === reelId) {
+          const curLikes = Math.max(0, Number(v.likes || 0));
+          return {
+            ...v,
+            likes: newLikedState ? curLikes + 1 : Math.max(0, curLikes - 1)
+          };
+        }
+        return v;
+      })
+    );
+
+    // 3. Send to backend with visitor ID and optional token
+    try {
+      const token = localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
+      const visitorId = getVisitorId();
+      const headers = {
+        "Content-Type": "application/json",
+        "X-Visitor-Id": visitorId,
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      };
+      const res = await fetch(`${API_BASE_URL}/reels/${reelId}/like`, {
+        method: "POST",
+        headers
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && typeof data.likes === "number") {
+          // Sync exact server count
+          setVideoProducts((prev) =>
+            prev.map((v) => {
+              const vid = v.id || v._id;
+              if (vid === reelId) {
+                return { ...v, likes: data.likes };
+              }
+              return v;
+            })
+          );
+        }
+      }
+    } catch (e) {
+      console.error("Error toggling like:", e);
+    }
   };
 
   // Keyboard navigation & History popstate (Back button / swipe back)
@@ -243,7 +407,7 @@ const WatchAndBuy = () => {
                     {/* Views Count */}
                     <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 z-10 border border-white/20">
                       <Eye className="w-3.5 h-3.5 text-[#d4af37]" />
-                      {video.views || "1.2L"}
+                      {video.views ? `${video.views}` : "0"}
                     </div>
 
                     {/* Bottom Embedded Product Overlay Card */}
@@ -323,6 +487,12 @@ const WatchAndBuy = () => {
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
                 Nari Pehnawa Reels
               </div>
+              {activeReel.views && activeReel.views !== "0" && (
+                <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 text-white text-xs font-semibold shadow-md">
+                  <Eye className="w-3.5 h-3.5 text-[#d4af37]" />
+                  <span>{activeReel.views} views</span>
+                </div>
+              )}
             </div>
 
             {/* Right Side Action Sidebar (Like, Mute, Share, Up/Down Nav) */}
@@ -330,7 +500,7 @@ const WatchAndBuy = () => {
               {/* Like Button */}
               <button
                 onClick={() => toggleLike(activeReel.id || activeReel._id)}
-                className="flex flex-col items-center gap-1 group"
+                className="flex flex-col items-center gap-1 group cursor-pointer"
               >
                 <div className={`w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md border transition ${
                   likedReels[activeReel.id || activeReel._id] ? "bg-red-600 border-red-500 text-white shadow-lg shadow-red-600/30" : "bg-black/40 border-white/30 text-white hover:bg-black/60"
@@ -338,7 +508,7 @@ const WatchAndBuy = () => {
                   <Heart className={`w-5 h-5 ${likedReels[activeReel.id || activeReel._id] ? "fill-white" : ""}`} />
                 </div>
                 <span className="text-[10px] text-white font-semibold shadow-text">
-                  {((activeReel.likes || 1200) + (likedReels[activeReel.id || activeReel._id] ? 1 : 0)).toLocaleString("en-IN")}
+                  {Math.max(0, Number(activeReel.likes || 0)).toLocaleString("en-IN")}
                 </span>
               </button>
 

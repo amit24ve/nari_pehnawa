@@ -75,6 +75,13 @@ def create_product(product: ProductCreate, background_tasks: BackgroundTasks, cu
 
     try:
         product_data = product.model_dump()
+        if not product_data.get("department") and product_data.get("category"):
+            matched_cat = db["categories"].find_one({"name": {"$regex": f"^{re.escape(product_data['category'])}$", "$options": "i"}})
+            if matched_cat and matched_cat.get("department"):
+                product_data["department"] = matched_cat["department"]
+            else:
+                product_data["department"] = "Clothing"
+
         result = products_collection.insert_one(product_data)
         product_data["_id"] = str(result.inserted_id)
         
@@ -100,6 +107,7 @@ def get_products(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=5000),
     category: Optional[str] = None,
+    department: Optional[str] = None,
     on_sale: Optional[bool] = None,
     is_new: Optional[bool] = None,
     min_price: Optional[float] = None,
@@ -162,6 +170,19 @@ def get_products(
                 {"tags": {"$regex": search_pattern, "$options": "i"}}
             ]
 
+        if department:
+            dept_clean = department.strip()
+            dept_cats = [c["name"] for c in db["categories"].find({"department": {"$regex": f"^{re.escape(dept_clean)}$", "$options": "i"}}, {"name": 1})]
+            dept_clauses = [
+                {"department": {"$regex": f"^{re.escape(dept_clean)}$", "$options": "i"}}
+            ]
+            if dept_cats:
+                dept_clauses.append({"category": {"$in": dept_cats}})
+            if "$or" in query:
+                query = {"$and": [query, {"$or": dept_clauses}]}
+            else:
+                query["$or"] = dept_clauses
+
         cursor = products_collection.find(query).sort(sort_by, sort_order).skip(skip).limit(limit)
         products = list(cursor)
 
@@ -178,6 +199,7 @@ def get_products(
 def get_product_count(
     request: Request,
     category: Optional[str] = None,
+    department: Optional[str] = None,
     on_sale: Optional[bool] = None,
     is_new: Optional[bool] = None,
     min_price: Optional[float] = None,
@@ -209,6 +231,19 @@ def get_product_count(
                 {"description": {"$regex": search, "$options": "i"}},
                 {"tags": {"$regex": search, "$options": "i"}}
             ]
+
+        if department:
+            dept_clean = department.strip()
+            dept_cats = [c["name"] for c in db["categories"].find({"department": {"$regex": f"^{re.escape(dept_clean)}$", "$options": "i"}}, {"name": 1})]
+            dept_clauses = [
+                {"department": {"$regex": f"^{re.escape(dept_clean)}$", "$options": "i"}}
+            ]
+            if dept_cats:
+                dept_clauses.append({"category": {"$in": dept_cats}})
+            if "$or" in query:
+                query = {"$and": [query, {"$or": dept_clauses}]}
+            else:
+                query["$or"] = dept_clauses
 
         count = products_collection.count_documents(query)
         return {"count": count}
@@ -299,6 +334,11 @@ def update_product(product_id: str, product: ProductUpdate, current_user: dict =
         update_data = {k: v for k, v in product.model_dump().items() if v is not None}
         if not update_data:
             raise HTTPException(status_code=400, detail="No fields to update")
+
+        if "category" in update_data and not update_data.get("department"):
+            matched_cat = db["categories"].find_one({"name": {"$regex": f"^{re.escape(update_data['category'])}$", "$options": "i"}})
+            if matched_cat and matched_cat.get("department"):
+                update_data["department"] = matched_cat["department"]
 
         result = products_collection.find_one_and_update(
             _build_product_query(product_id),

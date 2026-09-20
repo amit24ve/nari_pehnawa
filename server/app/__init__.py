@@ -32,7 +32,9 @@ from app.routes.celeb_looks import router as celeb_looks_router
 from app.routes.inquiries import router as inquiries_router
 from app.routes.brand import router as brand_router
 from app.routes.coins import router as coins_router
+from app.routes.mobile_sessions import router as mobile_sessions_router
 from app.routes.referrals import router as referrals_router
+from app.routes.department import router as department_router
 from app.routes.campaign import router as campaign_router
 
 app = FastAPI(
@@ -46,7 +48,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*","https://naripehnawa.com:7100", "https://www.naripehnawa.com:7100"],
+    allow_origins=["*", "https://naripehnawa.com:7100", "https://www.naripehnawa.com:7100"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -72,7 +74,6 @@ def start_referral_settlement():
             threading.Event().wait(1800)
 
     threading.Thread(target=run, name="referral-settlement", daemon=True).start()
-
 
 
 @app.on_event("shutdown")
@@ -136,7 +137,9 @@ app.include_router(returns_router)
 app.include_router(exchange_router)
 app.include_router(brand_router)
 app.include_router(coins_router)
+app.include_router(mobile_sessions_router)
 app.include_router(referrals_router)
+app.include_router(department_router)
 app.include_router(campaign_router)
 
 # Serve uploaded images as static files

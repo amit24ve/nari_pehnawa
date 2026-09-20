@@ -5,6 +5,7 @@ from datetime import datetime
 
 class CategoryBase(BaseModel):
     name: str
+    department: Optional[str] = "Clothing"
     tagline: Optional[str] = None
     image: str
     link: str
@@ -19,6 +20,7 @@ class CategoryCreate(CategoryBase):
 
 class CategoryUpdate(BaseModel):
     name: Optional[str] = None
+    department: Optional[str] = None
     tagline: Optional[str] = None
     image: Optional[str] = None
     link: Optional[str] = None

@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import List, Optional
 from app.database.schemas.category import Category, CategoryCreate, CategoryUpdate
@@ -16,6 +17,7 @@ def create_category(category: CategoryCreate, current_user: dict = Depends(requi
     categories_collection = db["categories"]
     try:
         category_data = category.model_dump()
+        category_data["department"] = category_data.get("department") or "Clothing"
         result = categories_collection.insert_one(category_data)
         category_data["_id"] = str(result.inserted_id)
         clear_api_cache()
@@ -26,17 +28,35 @@ def create_category(category: CategoryCreate, current_user: dict = Depends(requi
 
 @router.get("/", response_model=List[Category])
 @cache_response(expire_seconds=300)
-def get_categories(request: Request, is_active: Optional[bool] = None):
+def get_categories(request: Request, is_active: Optional[bool] = None, department: Optional[str] = None):
     db = get_database()
     categories_collection = db["categories"]
     try:
         query = {}
         if is_active is not None:
             query["is_active"] = is_active
+        if department:
+            dept_regex = {"$regex": f"^{re.escape(department)}$", "$options": "i"}
+            if department.strip().lower() == "clothing":
+                dept_clause = [
+                    {"department": dept_regex},
+                    {"department": {"$exists": False}},
+                    {"department": None},
+                    {"department": ""}
+                ]
+                if "$or" in query:
+                    query = {"$and": [query, {"$or": dept_clause}]}
+                else:
+                    query["$or"] = dept_clause
+            else:
+                query["department"] = dept_regex
         cursor = categories_collection.find(query).sort("display_order", 1)
         categories = list(cursor)
         for category in categories:
             category["_id"] = str(category["_id"])
+            category.setdefault("department", "Clothing")
+            if not category.get("department"):
+                category["department"] = "Clothing"
         return categories
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -53,6 +73,9 @@ def get_category(category_id: str, request: Request):
         if not category:
             raise HTTPException(status_code=404, detail="Category not found")
         category["_id"] = str(category["_id"])
+        category.setdefault("department", "Clothing")
+        if not category.get("department"):
+            category["department"] = "Clothing"
         return category
     except HTTPException:
         raise
@@ -77,6 +100,9 @@ def update_category(category_id: str, category: CategoryUpdate, current_user: di
         if not result:
             raise HTTPException(status_code=404, detail="Category not found")
         result["_id"] = str(result["_id"])
+        result.setdefault("department", "Clothing")
+        if not result.get("department"):
+            result["department"] = "Clothing"
         clear_api_cache()
         return result
     except HTTPException:

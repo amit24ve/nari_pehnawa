@@ -290,7 +290,8 @@ const HeroBanners = () => {
     price: "",
     original_price: "",
     product_link: "/category/anarkali-kurtis",
-    views: "1.2L",
+    views: "0",
+    likes: 0,
     order: 1,
     is_active: true
   };
@@ -382,21 +383,39 @@ const HeroBanners = () => {
     setReelSubmitting(true);
     setError(null);
     try {
-      const reelId = editingReel._id || editingReel.id;
+      const reelId = editingReel ? (editingReel._id || editingReel.id) : null;
       const url = editingReel ? `${API_BASE}/reels/${reelId}` : `${API_BASE}/reels/`;
       const method = editingReel ? "PUT" : "POST";
+      const payload = {
+        title: reelForm.title.trim(),
+        video_url: reelForm.video_url.trim(),
+        thumbnail: reelForm.thumbnail?.trim() || "/placeholder-reel.webp",
+        price: Number(reelForm.price) || 0,
+        original_price: reelForm.original_price ? Number(reelForm.original_price) : null,
+        product_link: reelForm.product_link || "/category/anarkali-kurtis",
+        views: reelForm.views ? String(reelForm.views).trim() : "0",
+        likes: (reelForm.likes !== "" && reelForm.likes !== undefined && !isNaN(reelForm.likes)) ? Math.max(0, parseInt(reelForm.likes, 10)) : 0,
+        order: Number(reelForm.order) || 0,
+        is_active: reelForm.is_active !== false,
+      };
       const res = await fetch(url, {
         method,
         headers: authHeaders(),
-        body: JSON.stringify({
-          ...reelForm,
-          price: Number(reelForm.price) || 0,
-          original_price: reelForm.original_price ? Number(reelForm.original_price) : null,
-          order: Number(reelForm.order) || 0
-        })
+        body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error("Failed to save reel video");
-      setSuccess("Watch & Buy reel saved!");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        let errMsg = "Failed to save reel video";
+        if (typeof errData.detail === "string") {
+          errMsg = errData.detail;
+        } else if (Array.isArray(errData.detail)) {
+          errMsg = errData.detail.map(d => d.msg || `${d.loc?.join('.')}: ${d.type}`).join(", ");
+        } else if (errData.message) {
+          errMsg = errData.message;
+        }
+        throw new Error(errMsg);
+      }
+      setSuccess(editingReel ? "Watch & Buy reel updated successfully!" : "Watch & Buy reel created successfully!");
       setShowReelModal(false);
       setReelForm(initialReelState);
       setEditingReel(null);
@@ -417,7 +436,8 @@ const HeroBanners = () => {
       price: reel.price || "",
       original_price: reel.original_price || "",
       product_link: reel.product_link || "/category/anarkali-kurtis",
-      views: reel.views || "1.2L",
+      views: reel.views || "0",
+      likes: reel.likes ?? 0,
       order: reel.order || 0,
       is_active: reel.is_active !== false
     });
@@ -1325,23 +1345,35 @@ const HeroBanners = () => {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Category / Product Link</label>
+                <CategoryProductLinkPicker
+                  value={reelForm.product_link}
+                  onChange={(val) => setReelForm({ ...reelForm, product_link: val })}
+                  placeholder="/category/anarkali-kurtis"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">Category / Product Link</label>
-                  <CategoryProductLinkPicker
-                    value={reelForm.product_link}
-                    onChange={(val) => setReelForm({ ...reelForm, product_link: val })}
-                    placeholder="/category/anarkali-kurtis"
-                  />
-                </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1">Display Views</label>
                   <input
                     type="text"
-                    value={reelForm.views}
+                    value={reelForm.views ?? "0"}
                     onChange={(e) => setReelForm({ ...reelForm, views: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0891b2]"
-                    placeholder="2.4L"
+                    placeholder="e.g. 500 or 1.2K"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Likes Count</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={reelForm.likes ?? 0}
+                    onChange={(e) => setReelForm({ ...reelForm, likes: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0891b2]"
+                    placeholder="0"
                   />
                 </div>
               </div>

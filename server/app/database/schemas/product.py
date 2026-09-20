@@ -12,6 +12,7 @@ class ProductBase(BaseModel):
     image: str
     images: Optional[List[str]] = []
     category: str
+    department: Optional[str] = None
     sub_category: Optional[str] = None
     description: Optional[str] = None
     highlights: Optional[List[str]] = []
@@ -67,6 +68,7 @@ class ProductUpdate(BaseModel):
     image: Optional[str] = None
     images: Optional[List[str]] = None
     category: Optional[str] = None
+    department: Optional[str] = None
     sub_category: Optional[str] = None
     description: Optional[str] = None
     highlights: Optional[List[str]] = None

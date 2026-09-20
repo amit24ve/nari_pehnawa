@@ -36,13 +36,24 @@ const DEFAULT_WAREHOUSES = [
     { id: 2, pickup_location: "home-1", city: "Allahabad", state: "Uttar Pradesh", pin_code: "211006", is_primary_location: false }
 ];
 
+const PRESET_DEPARTMENTS = [
+    { id: "Clothing", label: "Clothing / Ethnic", icon: "👗" },
+    { id: "Jewellery", label: "Jewellery", icon: "✨" },
+    { id: "Footwear", label: "Footwear / Shoes", icon: "👠" },
+    { id: "Accessories", label: "Bags & Accessories", icon: "👜" },
+];
+
 const Products = () => {
     const [activeTab, setActiveTab] = useState("products"); // "products" | "inventory" | "brands"
 
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [filterDepartment, setFilterDepartment] = useState("all");
     const [filterCategory, setFilterCategory] = useState("all");
+    const [quickAddCatOpen, setQuickAddCatOpen] = useState(false);
+    const [quickCatName, setQuickCatName] = useState("");
+    const [quickCatLoading, setQuickCatLoading] = useState(false);
     const [sortBy, setSortBy] = useState("name");
     const [products, setProducts] = useState([]);
     const [totalProducts, setTotalProducts] = useState(0);
@@ -90,6 +101,20 @@ const Products = () => {
         }
     };
 
+    // Departments states (Dynamic from Backend API)
+    const [departmentsList, setDepartmentsList] = useState([]);
+    const fetchDepartments = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/departments/`);
+            if (res.ok) {
+                const data = await res.json();
+                setDepartmentsList(Array.isArray(data) ? data : []);
+            }
+        } catch (err) {
+            console.error("Error fetching departments:", err);
+        }
+    };
+
     const emptyForm = {
         title: "",
         description: "",
@@ -98,6 +123,7 @@ const Products = () => {
         discount: "",
         stock: "0",
         category: "",
+        department: "Clothing",
         image: "",
         images: [],
         sku: "",
@@ -292,6 +318,7 @@ const Products = () => {
         fetchProducts();
         fetchBrands();
         fetchCategories();
+        fetchDepartments();
     }, []);
 
     // Inline stock editing
@@ -366,6 +393,7 @@ const Products = () => {
                 discount: formData.discount ? parseInt(formData.discount) : null,
                 stock_quantity: totalStock,
                 category: formData.category || "",
+                department: formData.department || (categoriesList.find(c => c.name === formData.category)?.department || "Clothing"),
                 image: primaryImage,
                 images: orderedImages,
                 brand: formData.brand || "Nari Pehnawa",
@@ -551,6 +579,7 @@ const Products = () => {
             discount: product.discount || "",
             stock: (product.stock ?? product.stock_quantity ?? 0).toString(),
             category: product.category || "",
+            department: product.department || (categoriesList.find(c => c.name === product.category)?.department || "Clothing"),
             image: primaryImg,
             images: allImgs,
             sku: product.sku || "",
@@ -702,22 +731,40 @@ const Products = () => {
         }
     };
 
+    const availableDepartments = departmentsList.length > 0
+        ? departmentsList.map(d => d.name)
+        : Array.from(
+            new Set([
+                "Clothing",
+                "Jewellery",
+                "Footwear",
+                "Accessories",
+                ...categoriesList.map((c) => c.department).filter(Boolean),
+                ...products.map((p) => p.department).filter(Boolean),
+            ])
+        );
+
     // Filter, Sort, Pagination computation
     const filteredProducts = products.filter((product) => {
         const q = searchQuery.toLowerCase().trim();
+        const prodDept = product.department || (categoriesList.find(c => c.name?.toLowerCase() === product.category?.toLowerCase())?.department || "Clothing");
+        const matchesDepartment = filterDepartment === "all" || prodDept.toLowerCase() === filterDepartment.toLowerCase();
         const matchesCategory = filterCategory === "all" || product.category === filterCategory;
-        if (!q) return matchesCategory;
+
+        if (!matchesDepartment || !matchesCategory) return false;
+        if (!q) return true;
 
         const matchesSearch = 
             (product.title || "").toLowerCase().includes(q) || 
             (product.sku || "").toLowerCase().includes(q) ||
             (product.category || "").toLowerCase().includes(q) ||
+            prodDept.toLowerCase().includes(q) ||
             (product.brand || "").toLowerCase().includes(q) ||
             (product.fabric || "").toLowerCase().includes(q) ||
             (product.pickup_location || "").toLowerCase().includes(q) ||
             (product.tags || []).some(t => String(t).toLowerCase().includes(q));
 
-        return matchesSearch && matchesCategory;
+        return matchesSearch;
     });
 
     const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -1041,7 +1088,46 @@ const Products = () => {
 
             {/* TAB: PRODUCTS */}
             {activeTab === "products" && (
-                <div className="space-y-6">
+                <div className="space-y-4">
+                    {/* Department Filter Pills */}
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                        <button
+                            type="button"
+                            onClick={() => { setFilterDepartment("all"); setFilterCategory("all"); setCurrentPage(1); }}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                                filterDepartment === "all"
+                                    ? "bg-cyan-400 text-black shadow-sm font-black"
+                                    : "bg-[#111827] text-gray-400 hover:text-white border border-gray-800"
+                            }`}
+                        >
+                            All Departments ({products.length})
+                        </button>
+                        {(departmentsList.length > 0 ? departmentsList : availableDepartments.map(d => ({ name: d, icon: "📁" }))).map((dept) => {
+                            const deptName = dept.name || dept;
+                            const count = products.filter((p) => {
+                                const d = p.department || (categoriesList.find(c => c.name?.toLowerCase() === p.category?.toLowerCase())?.department || "Clothing");
+                                return d.toLowerCase() === deptName.toLowerCase();
+                            }).length;
+                            const isSelected = filterDepartment.toLowerCase() === deptName.toLowerCase();
+                            return (
+                                <button
+                                    key={dept.id || dept._id || deptName}
+                                    type="button"
+                                    onClick={() => { setFilterDepartment(deptName); setFilterCategory("all"); setCurrentPage(1); }}
+                                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                                        isSelected
+                                            ? "bg-cyan-400 text-black shadow-sm font-black"
+                                            : "bg-[#111827] text-gray-400 hover:text-white border border-gray-800"
+                                    }`}
+                                >
+                                    <span>{dept.icon || "📁"}</span>
+                                    <span>{deptName}</span>
+                                    <span className="text-[10px] opacity-75">({count})</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
                     {/* Filters */}
                     <div className="bg-gradient-to-br from-[#111827] to-[#1a2332] border border-gray-800/50 rounded-2xl p-4 shadow-lg">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1063,13 +1149,34 @@ const Products = () => {
                                     onChange={(e) => { setFilterCategory(e.target.value); setCurrentPage(1); }}
                                     className="w-full pl-10 pr-4 py-2.5 bg-[#0b1220] border border-gray-800 rounded-xl text-xs text-gray-200 focus:outline-none focus:border-cyan-400 cursor-pointer"
                                 >
-                                    <option value="all" className="bg-slate-900 text-white">All Categories ({totalProducts})</option>
+                                    <option value="all" className="bg-slate-900 text-white">
+                                        {filterDepartment === "all" ? `All Categories (${totalProducts})` : `All ${filterDepartment} Categories`}
+                                    </option>
                                     {categoriesList && categoriesList.length > 0 ? (
-                                        categoriesList.map((cat) => (
-                                            <option key={cat._id || cat.id} value={cat.name} className="bg-slate-900 text-white">
-                                                {cat.name}
-                                            </option>
-                                        ))
+                                        (() => {
+                                            const groups = {};
+                                            const relevantCats = filterDepartment === "all" 
+                                                ? categoriesList 
+                                                : categoriesList.filter(c => (c.department || "Clothing").toLowerCase() === filterDepartment.toLowerCase());
+
+                                            relevantCats.forEach((cat) => {
+                                                const dept = cat.department || "Clothing";
+                                                if (!groups[dept]) groups[dept] = [];
+                                                groups[dept].push(cat);
+                                            });
+                                            return Object.entries(groups).map(([dept, cats]) => (
+                                                <optgroup key={dept} label={`📂 ${dept.toUpperCase()}`} className="bg-slate-800 text-cyan-300 font-bold">
+                                                    {cats.map((cat) => {
+                                                        const count = products.filter(p => (p.category || "").toLowerCase() === (cat.name || "").toLowerCase()).length;
+                                                        return (
+                                                            <option key={cat._id || cat.id} value={cat.name} className="bg-slate-900 text-white font-normal">
+                                                                {cat.name} ({count})
+                                                            </option>
+                                                        );
+                                                    })}
+                                                </optgroup>
+                                            ));
+                                        })()
                                     ) : null}
                                 </select>
                             </div>
@@ -1093,7 +1200,7 @@ const Products = () => {
                     {/* Product Table */}
                     <div className="bg-gradient-to-br from-[#111827] to-[#1a2332] border border-gray-800/50 rounded-2xl shadow-lg overflow-hidden">
                         <div className="overflow-x-auto">
-                            <table className="w-full border-collapse text-left text-xs">
+                            <table className="w-full border-collapse text-left text-xs min-w-[950px]">
                                 <thead className="bg-[#0b1220]/60 text-gray-400 font-semibold border-b border-gray-800/80">
                                     <tr>
                                         <th className="py-4 px-6">Product</th>
@@ -1107,9 +1214,10 @@ const Products = () => {
                                 </thead>
                                 <tbody className="divide-y divide-gray-800/40 text-gray-200">
                                     {paginatedProducts.map((p, idx) => (
-                                        <tr key={idx} className="hover:bg-gray-800/20 transition">
+                                        <tr key={p.id || p._id || idx} className="hover:bg-gray-800/20 transition">
+                                            {/* 1. Product */}
                                             <td className="py-3.5 px-6">
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-3 min-w-[200px]">
                                                     <div className="w-10 h-10 bg-[#0b1220] border border-gray-800 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
                                                         {p.image ? (
                                                             <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
@@ -1118,9 +1226,9 @@ const Products = () => {
                                                         )}
                                                     </div>
                                                     <div>
-                                                        <div className="font-semibold text-white truncate max-w-[200px]">{p.title}</div>
+                                                        <div className="font-semibold text-white truncate max-w-[220px]" title={p.title}>{p.title}</div>
                                                         <div className="flex items-center gap-1.5 flex-wrap mt-0.5 text-[10px] text-gray-500">
-                                                            <span>{p.brand}</span>
+                                                            <span className="text-gray-400 font-medium">{p.brand || "Nari Pehnawa"}</span>
                                                             {p.pickup_location && (
                                                                 <span className="px-1.5 py-0.5 rounded bg-cyan-950/40 text-cyan-400 border border-cyan-800/40 text-[9px] font-semibold">
                                                                     📍 {p.pickup_location}
@@ -1130,10 +1238,36 @@ const Products = () => {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="py-3.5 px-6 font-mono text-gray-400">{p.sku}</td>
-                                            <td className="py-3.5 px-6 text-gray-300">{p.category}</td>
-                                            <td className="py-3.5 px-6 font-bold text-white font-mono">₹{p.price.toLocaleString()}</td>
-                                            <td className="py-3.5 px-6 font-mono text-gray-300">
+
+                                            {/* 2. SKU */}
+                                            <td className="py-3.5 px-6 font-mono text-xs text-gray-400 font-medium whitespace-nowrap">
+                                                {p.sku || "—"}
+                                            </td>
+
+                                            {/* 3. Category & Department */}
+                                            <td className="py-3.5 px-6">
+                                                <div className="flex flex-col gap-1 items-start min-w-[120px]">
+                                                    <span className="text-gray-200 font-semibold">{p.category || "Uncategorized"}</span>
+                                                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-700/50 whitespace-nowrap">
+                                                        {p.department || (categoriesList.find(c => c.name?.toLowerCase() === p.category?.toLowerCase())?.department || "Clothing")}
+                                                    </span>
+                                                </div>
+                                            </td>
+
+                                            {/* 4. Price */}
+                                            <td className="py-3.5 px-6 whitespace-nowrap font-mono">
+                                                <div className="font-bold text-white text-xs">
+                                                    ₹{Number(p.price || 0).toLocaleString()}
+                                                </div>
+                                                {p.original_price && Number(p.original_price) > Number(p.price) && (
+                                                    <div className="text-[10px] text-gray-500 line-through">
+                                                        ₹{Number(p.original_price).toLocaleString()}
+                                                    </div>
+                                                )}
+                                            </td>
+
+                                            {/* 5. Stock */}
+                                            <td className="py-3.5 px-6 font-mono text-gray-300 whitespace-nowrap">
                                                 <div className="font-bold text-white">{p.stock} units</div>
                                                 {p.warehouse_stock && Object.keys(p.warehouse_stock).length > 0 && (
                                                     <div className="text-[10px] text-gray-400 font-sans mt-0.5">
@@ -1141,8 +1275,14 @@ const Products = () => {
                                                     </div>
                                                 )}
                                             </td>
-                                            <td className="py-3.5 px-6">{getStockBadge(p.stock)}</td>
-                                            <td className="py-3.5 px-6 text-right">
+
+                                            {/* 6. Status */}
+                                            <td className="py-3.5 px-6 whitespace-nowrap">
+                                                {getStockBadge(p.stock)}
+                                            </td>
+
+                                            {/* 7. Actions */}
+                                            <td className="py-3.5 px-6 text-right whitespace-nowrap">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button
                                                         onClick={() => setSharingProduct(p)}
@@ -1152,7 +1292,7 @@ const Products = () => {
                                                         <Share2 className="w-4 h-4" />
                                                     </button>
                                                     <button
-                                                        onClick={() => window.open(`/product/${p.id}`, "_blank")}
+                                                        onClick={() => window.open(`/product/${p.id || p._id}`, "_blank")}
                                                         className="p-2 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 rounded-xl transition cursor-pointer"
                                                         title="View Product"
                                                     >
@@ -1166,7 +1306,7 @@ const Products = () => {
                                                         <Edit2 className="w-4 h-4" />
                                                     </button>
                                                     <button
-                                                        onClick={() => handleDelete(p.id)}
+                                                        onClick={() => handleDelete(p.id || p._id)}
                                                         className="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-500/30 rounded-xl transition cursor-pointer"
                                                         title="Delete Product"
                                                     >
@@ -1531,24 +1671,170 @@ const Products = () => {
 
                                 <div>
                                     <label className="block text-slate-700 font-bold mb-1.5 flex items-center justify-between">
-                                        <span>Category <span className="text-cyan-600 font-extrabold">*</span></span>
-                                        <span className="text-[10px] text-cyan-700 font-normal">Dynamic ({categoriesList.length} Available)</span>
+                                        <span>Department / Main Section <span className="text-cyan-600 font-extrabold">*</span></span>
+                                        <span className="text-[10px] text-cyan-700 font-normal">Organize Product Line</span>
                                     </label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                                        {(departmentsList.length > 0 ? departmentsList : PRESET_DEPARTMENTS.map(p => ({ id: p.id, name: p.label, icon: p.icon }))).map((dept) => {
+                                            const deptName = dept.name || dept.id;
+                                            const isSelected = (formData.department || "Clothing").toLowerCase() === deptName.toLowerCase();
+                                            return (
+                                                <button
+                                                    key={dept.id || dept._id || deptName}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const targetDept = deptName;
+                                                        const validCat = categoriesList.find(c => (c.department || "Clothing").toLowerCase() === targetDept.toLowerCase() && c.name === formData.category);
+                                                        setFormData({
+                                                            ...formData,
+                                                            department: targetDept,
+                                                            category: validCat ? formData.category : ""
+                                                        });
+                                                    }}
+                                                    className={`py-2 px-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                                                        isSelected
+                                                            ? "bg-cyan-50 border-cyan-500 text-cyan-900 shadow-sm ring-1 ring-cyan-400 font-black"
+                                                            : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                                                    }`}
+                                                >
+                                                    <span>{dept.icon || "📁"}</span>
+                                                    <span className="truncate">{deptName}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={formData.department || ""}
+                                        onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                                        placeholder="Or type custom department (e.g., Watches, Kids, Beauty...)"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 font-medium mb-1"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-slate-700 font-bold mb-1.5 flex items-center justify-between">
+                                        <span>Category <span className="text-cyan-600 font-extrabold">*</span></span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-cyan-700 font-normal">
+                                                In {formData.department || "Clothing"}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setQuickAddCatOpen(!quickAddCatOpen)}
+                                                className="text-[11px] font-bold text-cyan-700 hover:text-cyan-900 underline cursor-pointer"
+                                            >
+                                                {quickAddCatOpen ? "Cancel" : "+ New Category"}
+                                            </button>
+                                        </div>
+                                    </label>
+
+                                    {quickAddCatOpen && (
+                                        <div className="mb-2.5 p-2.5 bg-cyan-50/80 border border-cyan-200 rounded-xl flex items-center gap-2 animate-fadeIn">
+                                            <input
+                                                type="text"
+                                                value={quickCatName}
+                                                onChange={(e) => setQuickCatName(e.target.value)}
+                                                placeholder={`New category for ${formData.department || 'Clothing'}...`}
+                                                className="flex-1 bg-white border border-cyan-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-cyan-500"
+                                            />
+                                            <button
+                                                type="button"
+                                                disabled={!quickCatName.trim() || quickCatLoading}
+                                                onClick={async () => {
+                                                    if (!quickCatName.trim()) return;
+                                                    setQuickCatLoading(true);
+                                                    try {
+                                                        const targetDept = formData.department?.trim() || "Clothing";
+                                                        const res = await fetch(`${API_BASE_URL}/categories/`, {
+                                                            method: "POST",
+                                                            headers: {
+                                                                "Content-Type": "application/json",
+                                                                Authorization: `Bearer ${getToken()}`
+                                                            },
+                                                            body: JSON.stringify({
+                                                                name: quickCatName.trim(),
+                                                                department: targetDept,
+                                                                image: "/placeholder.jpg",
+                                                                link: `/category/${quickCatName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+                                                                is_active: true
+                                                            })
+                                                        });
+                                                        if (res.ok) {
+                                                            const newCat = await res.json();
+                                                            await fetchCategories();
+                                                            setFormData({
+                                                                ...formData,
+                                                                category: newCat.name,
+                                                                department: targetDept
+                                                            });
+                                                            setQuickCatName("");
+                                                            setQuickAddCatOpen(false);
+                                                        } else {
+                                                            const err = await res.json().catch(() => ({}));
+                                                            alert(err.detail || "Failed to create category");
+                                                        }
+                                                    } catch (err) {
+                                                        alert(`Error creating category: ${err.message}`);
+                                                    } finally {
+                                                        setQuickCatLoading(false);
+                                                    }
+                                                }}
+                                                className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-xs font-bold transition disabled:opacity-50 cursor-pointer"
+                                            >
+                                                {quickCatLoading ? "Saving..." : "Save & Select"}
+                                            </button>
+                                        </div>
+                                    )}
+
                                     <select
                                         required
                                         value={formData.category}
-                                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                        onChange={(e) => {
+                                            const selectedCatName = e.target.value;
+                                            const matchedCat = categoriesList.find(c => c.name === selectedCatName);
+                                            setFormData({
+                                                ...formData,
+                                                category: selectedCatName,
+                                                department: matchedCat?.department || formData.department || "Clothing"
+                                            });
+                                        }}
                                         className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 cursor-pointer"
                                     >
                                         <option value="" className="bg-white text-slate-500">── Select Category ──</option>
                                         {categoriesList && categoriesList.length > 0 ? (
-                                            categoriesList.map((cat) => (
-                                                <option key={cat._id || cat.id} value={cat.name} className="bg-white text-slate-900">
-                                                    {cat.name}
-                                                </option>
-                                            ))
+                                            (() => {
+                                                const currentDept = (formData.department || "Clothing").toLowerCase();
+                                                const deptCats = categoriesList.filter(c => (c.department || "Clothing").toLowerCase() === currentDept);
+                                                const otherCats = categoriesList.filter(c => (c.department || "Clothing").toLowerCase() !== currentDept);
+                                                
+                                                return (
+                                                    <>
+                                                        <optgroup label={`📁 ${formData.department?.toUpperCase() || 'CLOTHING'} CATEGORIES`} className="bg-slate-100 text-cyan-900 font-bold">
+                                                            {deptCats.length > 0 ? (
+                                                                deptCats.map((cat) => (
+                                                                    <option key={cat._id || cat.id} value={cat.name} className="bg-white text-slate-800 font-medium">
+                                                                        {cat.name}
+                                                                    </option>
+                                                                ))
+                                                            ) : (
+                                                                <option disabled value="" className="bg-white text-slate-400">No categories in {formData.department} yet (Click "+ New Category" above)</option>
+                                                            )}
+                                                        </optgroup>
+                                                        {otherCats.length > 0 && (
+                                                            <optgroup label="📂 OTHER DEPARTMENTS" className="bg-slate-100 text-slate-500 font-bold">
+                                                                {otherCats.map((cat) => (
+                                                                    <option key={cat._id || cat.id} value={cat.name} className="bg-white text-slate-600 font-normal">
+                                                                        {cat.name} ({cat.department || "Clothing"})
+                                                                    </option>
+                                                                ))}
+                                                            </optgroup>
+                                                        )}
+                                                    </>
+                                                );
+                                            })()
                                         ) : (
-                                            <option disabled className="bg-white text-slate-400">No categories found in Admin</option>
+                                            <option disabled className="bg-white text-slate-400">No categories found (Click "+ New Category" to create)</option>
                                         )}
                                         {/* Retain current product category if not in fetched list */}
                                         {formData.category && !categoriesList.some(c => c.name?.toLowerCase() === formData.category?.toLowerCase()) && (

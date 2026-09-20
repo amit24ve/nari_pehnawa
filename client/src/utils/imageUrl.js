@@ -42,13 +42,25 @@ export const resolveImageUrl = (img, fallback = DEFAULT_FALLBACK_IMAGE) => {
     cleanPath = `/${cleanPath}`;
   }
 
-  // Clean duplicate /api prefixes
-  cleanPath = cleanPath.replace(/^\/api\/api\//, "/api/");
+  // Clean any multiple /api/ prefixes
+  while (cleanPath.startsWith("/api/api/")) {
+    cleanPath = cleanPath.replace("/api/api/", "/api/");
+  }
 
   // If starts with /uploads/ without /api, map to /api/uploads/ for robust proxying
   if (cleanPath.startsWith("/uploads/")) {
     cleanPath = `/api${cleanPath}`;
   }
 
-  return `${API_BASE}${cleanPath}`;
+  // If API_BASE is relative ("/api") and cleanPath already starts with "/api/", return directly
+  const base = (API_BASE || "").trim().replace(/\/+$/, "");
+  if (base === "/api" || base === "") {
+    return cleanPath;
+  }
+
+  if (base.endsWith("/api") && cleanPath.startsWith("/api/")) {
+    cleanPath = cleanPath.substring(4);
+  }
+
+  return `${base}${cleanPath}`;
 };

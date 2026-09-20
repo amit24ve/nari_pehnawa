@@ -3,6 +3,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, EmailStr
 from app.database import get_database
 from app.security import verify_password, create_access_token
+from app.services.mobile_session_service import issue_refresh
 from typing import Optional
 from datetime import datetime
 from urllib.parse import urlencode
@@ -212,6 +213,7 @@ def forgot_password_reset(request: ForgotPasswordResetRequest):
         {"email": request.email},
         {"$set": {"password_hash": get_password_hash(request.new_password)}}
     )
+    db["mobile_refresh_sessions"].delete_many({"user_id": str(user["_id"])})
 
     return {
         "success": True,
@@ -263,6 +265,7 @@ def login(request: LoginRequest):
 
     return {
         "access_token": token,
+        "refresh_token": issue_refresh(db, user["_id"]) if user.get("role", "customer") == "customer" else None,
         "token_type": "bearer",
         "user": user_out
     }
@@ -324,6 +327,7 @@ def register(request: RegisterRequest):
 
     return {
         "access_token": token,
+        "refresh_token": issue_refresh(db, result.inserted_id),
         "token_type": "bearer",
         "user": user_out
     }

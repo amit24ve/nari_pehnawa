@@ -22,8 +22,16 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:71
 const getToken = () =>
     localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
 
+export const PRESET_DEPARTMENTS = [
+    { id: "Clothing", label: "Clothing / Ethnic", icon: "👗" },
+    { id: "Jewellery", label: "Jewellery", icon: "✨" },
+    { id: "Footwear", label: "Footwear / Shoes", icon: "👠" },
+    { id: "Accessories", label: "Bags & Clutches", icon: "👜" },
+];
+
 const emptyForm = {
     name: "",
+    department: "Clothing",
     tagline: "",
     image: "",
     link: "",
@@ -71,14 +79,117 @@ const Categories = () => {
     };
 
     const [searchTerm, setSearchTerm] = useState("");
+    const [filterDepartment, setFilterDepartment] = useState("all");
+    const [customDeptInput, setCustomDeptInput] = useState(false);
     const [sortBy, setSortBy] = useState("name");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
 
-    const filteredCategories = categories.filter(cat => 
-        cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (cat.tagline || "").toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Dynamic Departments State (Live CRUD from Backend)
+    const [departments, setDepartments] = useState([]);
+    const [showDeptModal, setShowDeptModal] = useState(false);
+    const [editingDept, setEditingDept] = useState(null);
+    const [deptForm, setDeptForm] = useState({ name: "", icon: "📁", display_order: 1 });
+    const [deptSubmitting, setDeptSubmitting] = useState(false);
+    const [deptError, setDeptError] = useState(null);
+    const [deptSuccess, setDeptSuccess] = useState(null);
+
+    const fetchDepartments = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/departments/`);
+            if (res.ok) {
+                const data = await res.json();
+                setDepartments(Array.isArray(data) ? data : []);
+            }
+        } catch (e) {
+            console.error("Failed to fetch departments", e);
+        }
+    };
+
+    const handleSaveDepartment = async (e) => {
+        e.preventDefault();
+        const trimmed = deptForm.name?.trim();
+        if (!trimmed) {
+            setDeptError("Department name is required");
+            return;
+        }
+        setDeptSubmitting(true);
+        setDeptError(null);
+        setDeptSuccess(null);
+        try {
+            const token = getToken();
+            const url = editingDept
+                ? `${API_BASE_URL}/departments/${editingDept.id || editingDept._id}`
+                : `${API_BASE_URL}/departments/`;
+            const method = editingDept ? "PUT" : "POST";
+            const res = await fetch(url, {
+                method,
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    name: trimmed,
+                    icon: deptForm.icon || "📁",
+                    display_order: Number(deptForm.display_order) || 0
+                })
+            });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.detail || "Failed to save department");
+            }
+            setDeptSuccess(editingDept ? `Department updated & all categories/products synced to "${trimmed}"!` : `Department "${trimmed}" created successfully!`);
+            setDeptForm({ name: "", icon: "📁", display_order: departments.length + 1 });
+            setEditingDept(null);
+            await fetchDepartments();
+            await fetchCategories();
+            window.dispatchEvent(new Event("categoriesUpdated"));
+        } catch (err) {
+            setDeptError(err.message);
+        } finally {
+            setDeptSubmitting(false);
+        }
+    };
+
+    const handleDeleteDepartment = async (dept) => {
+        if (!window.confirm(`Delete department "${dept.name}"? Any linked categories and products will be moved to Clothing.`)) return;
+        try {
+            const token = getToken();
+            const res = await fetch(`${API_BASE_URL}/departments/${dept.id || dept._id}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.detail || "Failed to delete department");
+            }
+            await fetchDepartments();
+            await fetchCategories();
+            window.dispatchEvent(new Event("categoriesUpdated"));
+        } catch (err) {
+            alert(err.message);
+        }
+    };
+
+    const availableDepartments = departments.length > 0 
+        ? departments.map(d => d.name)
+        : Array.from(
+            new Set([
+                "Clothing",
+                "Jewellery",
+                "Footwear",
+                "Accessories",
+                ...categories.map((c) => c.department).filter(Boolean),
+            ])
+        );
+
+    const filteredCategories = categories.filter(cat => {
+        const matchesSearch = cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (cat.tagline || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (cat.department || "").toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesDept = filterDepartment === "all" || (cat.department || "Clothing").toLowerCase() === filterDepartment.toLowerCase();
+        return matchesSearch && matchesDept;
+    });
 
     const sortedCategories = [...filteredCategories].sort((a, b) => {
         if (sortBy === "name") return a.name.localeCompare(b.name);
@@ -91,9 +202,9 @@ const Categories = () => {
 
     const handleExportCSV = () => {
         let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Category ID,Name,Tagline,Link,Display Order,Active\n";
+        csvContent += "Category ID,Department,Name,Tagline,Link,Display Order,Active\n";
         filteredCategories.forEach(cat => {
-            csvContent += `"${cat.id || cat._id}","${cat.name}","${cat.tagline || ''}","${cat.link || ''}",${cat.display_order || 0},"${cat.is_active ? 'Yes' : 'No'}"\n`;
+            csvContent += `"${cat.id || cat._id}","${cat.department || 'Clothing'}","${cat.name}","${cat.tagline || ''}","${cat.link || ''}",${cat.display_order || 0},"${cat.is_active ? 'Yes' : 'No'}"\n`;
         });
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
@@ -106,6 +217,7 @@ const Categories = () => {
 
     useEffect(() => {
         fetchCategories();
+        fetchDepartments();
     }, []);
 
     const fetchCategories = async () => {
@@ -177,8 +289,9 @@ const Categories = () => {
             const method = editingCategory ? "PUT" : "POST";
 
             const payload = {
-                name: formData.name,
-                tagline: formData.tagline || null,
+                name: formData.name.trim(),
+                department: formData.department?.trim() || "Clothing",
+                tagline: formData.tagline?.trim() || null,
                 image: formData.image || "",
                 link:
                     formData.link ||
@@ -217,6 +330,7 @@ const Categories = () => {
             setShowModal(false);
             setEditing(null);
             setFormData(emptyForm);
+            setCustomDeptInput(false);
         } catch (e) {
             setError(e.message);
         } finally {
@@ -225,8 +339,10 @@ const Categories = () => {
     };
 
     const handleEdit = (cat) => {
+        const catDept = cat.department || "Clothing";
         setFormData({
             name: cat.name || "",
+            department: catDept,
             tagline: cat.tagline || "",
             image: cat.image || "",
             link: cat.link || "",
@@ -235,6 +351,7 @@ const Categories = () => {
             is_active: cat.is_active ?? true,
         });
         setEditing(cat);
+        setCustomDeptInput(!PRESET_DEPARTMENTS.some(p => p.id.toLowerCase() === catDept.toLowerCase()));
         setImgError(false);
         setImgTab("url");
         setShowModal(true);
@@ -266,9 +383,14 @@ const Categories = () => {
         }
     };
 
-    const openAdd = () => {
+    const openAdd = (presetDept = null) => {
+        const targetDept = presetDept || (filterDepartment !== "all" ? filterDepartment : "Clothing");
         setEditing(null);
-        setFormData(emptyForm);
+        setFormData({
+            ...emptyForm,
+            department: targetDept,
+        });
+        setCustomDeptInput(!PRESET_DEPARTMENTS.some(p => p.id.toLowerCase() === targetDept.toLowerCase()));
         setImgError(false);
         setImgTab("url");
         setShowModal(true);
@@ -292,6 +414,97 @@ const Categories = () => {
                     className="flex items-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-black px-4 py-2.5 rounded-xl text-sm font-extrabold shadow-md transition-all duration-200 cursor-pointer"
                 >
                     <Plus className="w-4 h-4 stroke-[2.5]" /> Add Category
+                </button>
+            </div>
+
+            {/* Department Filter Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                <button
+                    type="button"
+                    onClick={() => { setFilterDepartment("all"); setCurrentPage(1); }}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                        filterDepartment === "all"
+                            ? "bg-cyan-400 text-black shadow-sm font-black"
+                            : "bg-[#111827] text-gray-400 hover:text-white border border-gray-800"
+                    }`}
+                >
+                    All Departments ({categories.length})
+                </button>
+                {(departments.length > 0 ? departments : availableDepartments.map(d => ({ name: d, icon: "📁", id: d }))).map((dept) => {
+                    const deptName = dept.name || dept;
+                    const count = categories.filter((c) => (c.department || "Clothing").toLowerCase() === deptName.toLowerCase()).length;
+                    const isSelected = filterDepartment.toLowerCase() === deptName.toLowerCase();
+                    return (
+                        <div key={dept.id || dept._id || deptName} className="flex items-center flex-shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => { setFilterDepartment(deptName); setCurrentPage(1); }}
+                                className={`px-3 py-1.5 rounded-l-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                                    isSelected
+                                        ? "bg-cyan-400 text-black shadow-sm font-black"
+                                        : "bg-[#111827] text-gray-400 hover:text-white border-y border-l border-gray-800"
+                                }`}
+                            >
+                                <span>{dept.icon || "📁"}</span>
+                                <span>{deptName}</span>
+                                <span className="text-[10px] opacity-75">({count})</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const match = departments.find(d => (d.name || "").toLowerCase() === deptName.toLowerCase()) || {
+                                        name: deptName,
+                                        icon: dept.icon || "📁",
+                                        display_order: 1
+                                    };
+                                    setEditingDept(match);
+                                    setDeptForm({
+                                        name: match.name,
+                                        icon: match.icon || "📁",
+                                        display_order: match.display_order ?? 1
+                                    });
+                                    setDeptError(null);
+                                    setDeptSuccess(null);
+                                    setShowDeptModal(true);
+                                }}
+                                title={`Edit / Rename ${deptName}`}
+                                className={`px-2 py-1.5 rounded-r-xl border-y border-r transition-all cursor-pointer ${
+                                    isSelected
+                                        ? "bg-cyan-400 text-black border-cyan-400 hover:bg-cyan-300"
+                                        : "bg-[#111827] text-gray-500 hover:text-cyan-400 border-gray-800 hover:bg-gray-800"
+                                }`}
+                            >
+                                <Edit2 className="w-3 h-3" />
+                            </button>
+                        </div>
+                    );
+                })}
+                <button
+                    type="button"
+                    onClick={() => {
+                        setEditingDept(null);
+                        setDeptForm({ name: "", icon: "📁", display_order: (departments.length || 4) + 1 });
+                        setDeptError(null);
+                        setDeptSuccess(null);
+                        setShowDeptModal(true);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer bg-cyan-950/40 text-cyan-300 border border-cyan-800/60 hover:bg-cyan-900/50 flex-shrink-0"
+                >
+                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" /> New Department
+                </button>
+                <button
+                    type="button"
+                    onClick={() => {
+                        setEditingDept(null);
+                        setDeptError(null);
+                        setDeptSuccess(null);
+                        setShowDeptModal(true);
+                    }}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer bg-slate-800 hover:bg-slate-700 text-gray-300 border border-slate-700 flex-shrink-0"
+                    title="Manage, reorder, or rename all departments"
+                >
+                    <span>⚙️ Manage</span>
                 </button>
             </div>
 
@@ -346,21 +559,28 @@ const Categories = () => {
                 <div className="flex items-center justify-center py-16">
                     <Loader2 className="w-8 h-8 text-[#d4af37] animate-spin" />
                 </div>
-            ) : categories.length === 0 ? (
-                <div className="text-center py-16">
-                    <FolderOpen className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                    <p className="text-gray-400 text-lg mb-2">
-                        No categories yet
+            ) : filteredCategories.length === 0 ? (
+                <div className="text-center py-16 bg-[#111827] border border-gray-800/60 rounded-2xl p-8">
+                    <FolderOpen className="w-16 h-16 text-cyan-500/40 mx-auto mb-4" />
+                    <p className="text-white text-lg font-bold mb-1">
+                        {filterDepartment === "all" ? "No categories found" : `No categories in "${filterDepartment}" yet`}
                     </p>
-                    <p className="text-gray-600 text-sm">
-                        Create your first category and it will appear in the
-                        navbar!
+                    <p className="text-gray-400 text-xs max-w-md mx-auto mb-5">
+                        {filterDepartment === "all" 
+                            ? "Create your first category and it will appear dynamically in the navbar!"
+                            : `Add your first subcategory under ${filterDepartment} (for example: ${
+                                filterDepartment.toLowerCase().includes('jewel') ? 'Necklaces, Bangles, Earrings' :
+                                filterDepartment.toLowerCase().includes('foot') ? 'Juttis, Heels, Flats' :
+                                filterDepartment.toLowerCase().includes('access') ? 'Clutches, Handbags, Belts' :
+                                'Tops, Sets, Wear'
+                            }).`}
                     </p>
                     <button
-                        onClick={openAdd}
-                        className="mt-4 px-6 py-2.5 bg-[#d4af37] text-[#0f1724] rounded-lg font-semibold text-sm"
+                        onClick={() => openAdd(filterDepartment !== "all" ? filterDepartment : "Clothing")}
+                        className="px-5 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold rounded-xl text-xs flex items-center gap-2 mx-auto transition cursor-pointer shadow-md"
                     >
-                        Create First Category
+                        <Plus className="w-4 h-4 stroke-[2.5]" />
+                        {filterDepartment === "all" ? "Create First Category" : `Add Category to ${filterDepartment}`}
                     </button>
                 </div>
             ) : (
@@ -410,10 +630,13 @@ const Categories = () => {
                                     </span>
                                 </div>
 
-                                {/* Order badge */}
-                                <div className="absolute top-2.5 left-2.5">
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/50 text-gray-300">
+                                {/* Order & Department badges */}
+                                <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 max-w-[65%]">
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/60 text-gray-300 flex-shrink-0">
                                         #{cat.display_order || 0}
+                                    </span>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-950/85 text-cyan-300 border border-cyan-500/40 backdrop-blur-md truncate shadow-sm">
+                                        {cat.department || "Clothing"}
                                     </span>
                                 </div>
 
@@ -548,6 +771,67 @@ const Categories = () => {
                         </div>
 
                         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                            {/* Department / Super Category */}
+                            <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
+                                        Department / Main Section <span className="text-cyan-600 font-extrabold">*</span>
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setEditingDept(null);
+                                            setDeptForm({ name: "", icon: "📁", display_order: (departments.length || 4) + 1 });
+                                            setDeptError(null);
+                                            setDeptSuccess(null);
+                                            setShowDeptModal(true);
+                                        }}
+                                        className="text-xs text-cyan-700 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                                    >
+                                        <Plus className="w-3 h-3 stroke-[2.5]" /> New Department
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                                    {(departments.length > 0 ? departments : PRESET_DEPARTMENTS.map(p => ({ name: p.id, icon: p.icon }))).map((dept) => {
+                                        const deptName = dept.name || dept.id;
+                                        const isSelected = !customDeptInput && (formData.department || "Clothing").toLowerCase() === deptName.toLowerCase();
+                                        return (
+                                            <button
+                                                key={dept.id || dept._id || deptName}
+                                                type="button"
+                                                onClick={() => {
+                                                    setCustomDeptInput(false);
+                                                    setFormData({ ...formData, department: deptName });
+                                                }}
+                                                className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                                                    isSelected
+                                                        ? "bg-cyan-50 border-cyan-500 text-cyan-900 shadow-sm ring-1 ring-cyan-400"
+                                                        : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                                                }`}
+                                            >
+                                                <span>{dept.icon || "📁"}</span>
+                                                <span className="truncate">{deptName}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="text"
+                                        value={formData.department}
+                                        onChange={(e) => {
+                                            setCustomDeptInput(true);
+                                            setFormData({ ...formData, department: e.target.value });
+                                        }}
+                                        placeholder="Or type custom department name (e.g., Watches, Kids, Beauty...)"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 font-medium"
+                                    />
+                                </div>
+                                <p className="text-[11px] text-slate-500 mt-1">
+                                    Grouping: Choose Clothing, Jewellery, Footwear, Bags, or create any new department. Products and store navigation organize by this.
+                                </p>
+                            </div>
+
                             {/* Name */}
                             <InputField label="Category Name" required>
                                 <input
@@ -868,6 +1152,192 @@ const Categories = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ── MODAL: MANAGE DEPARTMENTS (FULL DYNAMIC CRUD & CASCADE RENAME) ── */}
+            {showDeptModal && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+                    <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xl">🗂️</span>
+                                <div>
+                                    <h3 className="font-bold text-base text-slate-900">
+                                        {editingDept ? `Edit / Rename "${editingDept.name}"` : "Manage Store Departments"}
+                                    </h3>
+                                    <p className="text-xs text-slate-500">
+                                        Renaming cascades across all categories &amp; products automatically.
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowDeptModal(false);
+                                    setEditingDept(null);
+                                    setDeptError(null);
+                                    setDeptSuccess(null);
+                                }}
+                                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200 transition cursor-pointer"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 overflow-y-auto space-y-5">
+                            {deptError && (
+                                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-xl text-xs font-semibold">
+                                    ⚠️ {deptError}
+                                </div>
+                            )}
+                            {deptSuccess && (
+                                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2.5 rounded-xl text-xs font-semibold">
+                                    ✅ {deptSuccess}
+                                </div>
+                            )}
+
+                            {/* Form to Create or Edit Department */}
+                            <form onSubmit={handleSaveDepartment} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                                        {editingDept ? `Edit Department Name & Icon` : "+ Add New Department"}
+                                    </span>
+                                    {editingDept && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setEditingDept(null);
+                                                setDeptForm({ name: "", icon: "📁", display_order: departments.length + 1 });
+                                                setDeptError(null);
+                                                setDeptSuccess(null);
+                                            }}
+                                            className="text-xs text-cyan-600 font-bold hover:underline cursor-pointer"
+                                        >
+                                            Switch to Add New
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div className="sm:col-span-2">
+                                        <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                            Department Name *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={deptForm.name}
+                                            onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })}
+                                            placeholder="e.g. Jewellery, Footwear, Bags..."
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-500 font-medium"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                            Display Order
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={deptForm.display_order}
+                                            onChange={(e) => setDeptForm({ ...deptForm, display_order: e.target.value })}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-500"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Emoji Quick Picker */}
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                        Choose Department Icon / Emoji: <span className="text-base ml-1">{deptForm.icon || "📁"}</span>
+                                    </label>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {["👗", "✨", "👠", "👜", "💍", "🥻", "👑", "🕶️", "💎", "👡", "🛍️", "🌸", "🎀", "💄", "🧣", "🧸"].map(emoji => (
+                                            <button
+                                                key={emoji}
+                                                type="button"
+                                                onClick={() => setDeptForm({ ...deptForm, icon: emoji })}
+                                                className={`w-8 h-8 rounded-lg text-sm flex items-center justify-center border transition cursor-pointer ${
+                                                    deptForm.icon === emoji ? "bg-cyan-100 border-cyan-500 scale-110 shadow-sm" : "bg-white border-slate-200 hover:bg-slate-100"
+                                                }`}
+                                            >
+                                                {emoji}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end gap-2 pt-2">
+                                    <button
+                                        type="submit"
+                                        disabled={deptSubmitting}
+                                        className="px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl text-xs font-extrabold shadow-sm cursor-pointer disabled:opacity-50 transition"
+                                    >
+                                        {deptSubmitting ? "Saving..." : editingDept ? "Save & Rename Everywhere" : "Add Department"}
+                                    </button>
+                                </div>
+                            </form>
+
+                            {/* Existing Departments List */}
+                            <div>
+                                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                    Configured Departments ({departments.length})
+                                </h4>
+                                <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
+                                    {departments.map((d) => (
+                                        <div key={d.id || d._id || d.name} className="flex items-center justify-between p-3 bg-white hover:bg-slate-50 transition">
+                                            <div className="flex items-center gap-2.5">
+                                                <span className="text-xl w-7 text-center">{d.icon || "📁"}</span>
+                                                <div>
+                                                    <div className="font-bold text-xs text-slate-800 flex items-center gap-2">
+                                                        <span>{d.name}</span>
+                                                        <span className="text-[10px] text-slate-400 font-mono">order #{d.display_order ?? 0}</span>
+                                                    </div>
+                                                    <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
+                                                        <span>{d.category_count ?? 0} categories</span>
+                                                        <span>•</span>
+                                                        <span>{d.product_count ?? 0} products</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setEditingDept(d);
+                                                        setDeptForm({
+                                                            name: d.name,
+                                                            icon: d.icon || "📁",
+                                                            display_order: d.display_order ?? 0
+                                                        });
+                                                        setDeptError(null);
+                                                        setDeptSuccess(null);
+                                                    }}
+                                                    className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition"
+                                                    title="Rename / Edit Department"
+                                                >
+                                                    <Edit2 className="w-3.5 h-3.5" /> Edit
+                                                </button>
+                                                {d.name.toLowerCase() !== "clothing" && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteDepartment(d)}
+                                                        className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold cursor-pointer transition"
+                                                        title="Delete Department"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
