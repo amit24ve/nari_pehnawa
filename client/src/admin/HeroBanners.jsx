@@ -427,7 +427,7 @@ const HeroBanners = () => {
     }
   };
 
-  const handleEditReelClick = (reel) => {
+  const handleEditReelClick = async (reel) => {
     setEditingReel(reel);
     setReelForm({
       title: reel.title || "",
@@ -444,6 +444,24 @@ const HeroBanners = () => {
     setReelVideoTab("upload");
     setReelThumbTab("upload");
     setShowReelModal(true);
+
+    // Live engagement fetch to ensure fresh view and like counts
+    try {
+      const reelId = reel.id || reel._id;
+      if (reelId) {
+        const res = await fetch(`${API_BASE}/reels/${reelId}/engagement`, {
+          headers: authHeaders(),
+        });
+        if (res.ok) {
+          const eng = await res.json();
+          setReelForm((prev) => ({
+            ...prev,
+            views: eng.views !== undefined ? String(eng.views) : prev.views,
+            likes: eng.likes !== undefined ? eng.likes : prev.likes,
+          }));
+        }
+      }
+    } catch (_) {}
   };
 
   const handleDeleteReel = async (id) => {

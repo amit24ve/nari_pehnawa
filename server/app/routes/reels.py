@@ -37,6 +37,17 @@ class ReelConnectionManager:
         for d in dead:
             self.disconnect(d)
 
+    async def broadcast_view(self, reel_id: str, views: str):
+        message = {"type": "reel_view", "reel_id": reel_id, "views": views}
+        dead = []
+        for connection in list(self.active_connections):
+            try:
+                await connection.send_json(message)
+            except Exception:
+                dead.append(connection)
+        for d in dead:
+            self.disconnect(d)
+
 
 reel_ws_manager = ReelConnectionManager()
 
@@ -106,24 +117,15 @@ def _fmt(doc: dict) -> dict:
 
 
 @router.get("/", response_model=List[ReelOut])
-@cache_response(expire_seconds=300)
 def get_reels(request: Request, active_only: bool = True):
     db = get_database()
     query = {"is_active": True} if active_only else {}
     collection = db["watch_buy_reels"]
     reels = list(collection.find(query).sort("order", 1))
 
-    # Calculate real-time total likes including organic likes
-    try:
-        pipeline = [{"$group": {"_id": "$reel_id", "count": {"$sum": 1}}}]
-        like_counts = {str(doc["_id"]): doc["count"] for doc in db["reel_likes"].aggregate(pipeline)}
-    except Exception:
-        like_counts = {}
-
     for r in reels:
-        rid = str(r["_id"])
-        base_likes = max(0, int(r.get("likes") or 0))
-        r["likes"] = base_likes + like_counts.get(rid, 0)
+        r["likes"] = max(0, int(r.get("likes") or 0))
+        r["views"] = str(r.get("views") or "0")
 
     return [_fmt(r) for r in reels]
 
@@ -140,8 +142,7 @@ def _reel_or_404(db, reel_id: str) -> ObjectId:
 
 def _engagement(db, reel_id: str, user_id: Optional[str] = None, visitor_id: Optional[str] = None) -> dict:
     reel = db["watch_buy_reels"].find_one({"_id": ObjectId(reel_id)}) or {}
-    organic_likes = db["reel_likes"].count_documents({"reel_id": reel_id})
-    base_likes = max(0, int(reel.get("likes") or 0))
+    current_likes = max(0, int(reel.get("likes") or 0))
 
     liked = False
     queries = []
@@ -154,7 +155,8 @@ def _engagement(db, reel_id: str, user_id: Optional[str] = None, visitor_id: Opt
 
     return {
         "reel_id": reel_id,
-        "likes": base_likes + organic_likes,
+        "likes": current_likes,
+        "views": str(reel.get("views") or "0"),
         "comments": db["reel_comments"].count_documents({"reel_id": reel_id}),
         "liked": liked,
     }
@@ -190,21 +192,17 @@ def get_my_reel_engagement(
 
 @router.get("/likes-sync")
 def get_reels_likes_sync():
-    """Lightweight real-time sync endpoint returning current likes map for all active reels."""
+    """Lightweight real-time sync endpoint returning current likes and views map for all active reels."""
     db = get_database()
-    reels = list(db["watch_buy_reels"].find({"is_active": True}, {"_id": 1, "likes": 1}))
-    try:
-        pipeline = [{"$group": {"_id": "$reel_id", "count": {"$sum": 1}}}]
-        organic_map = {str(doc["_id"]): doc["count"] for doc in db["reel_likes"].aggregate(pipeline)}
-    except Exception:
-        organic_map = {}
+    reels = list(db["watch_buy_reels"].find({"is_active": True}, {"_id": 1, "likes": 1, "views": 1}))
 
     likes_map = {}
+    views_map = {}
     for r in reels:
         rid = str(r["_id"])
-        base_likes = max(0, int(r.get("likes") or 0))
-        likes_map[rid] = base_likes + organic_map.get(rid, 0)
-    return likes_map
+        likes_map[rid] = max(0, int(r.get("likes") or 0))
+        views_map[rid] = str(r.get("views") or "0")
+    return {"likes": likes_map, "views": views_map}
 
 
 @router.websocket("/ws")
@@ -218,6 +216,35 @@ async def reel_websocket_endpoint(websocket: WebSocket):
         reel_ws_manager.disconnect(websocket)
 
 
+@router.post("/{reel_id}/view")
+async def record_reel_view(reel_id: str):
+    """Increment reel view count in MongoDB and broadcast to live viewers."""
+    db = get_database()
+    oid = _reel_or_404(db, reel_id)
+    reel = db["watch_buy_reels"].find_one({"_id": oid}) or {}
+
+    cur_views_str = str(reel.get("views") or "0")
+    try:
+        cur_num = int("".join([c for c in cur_views_str if c.isdigit()]) or "0")
+    except Exception:
+        cur_num = 0
+    new_views_num = cur_num + 1
+    new_views_str = str(new_views_num)
+
+    db["watch_buy_reels"].update_one(
+        {"_id": oid},
+        {"$set": {"views": new_views_str}}
+    )
+    clear_api_cache()
+
+    try:
+        await reel_ws_manager.broadcast_view(reel_id, new_views_str)
+    except Exception:
+        pass
+
+    return {"reel_id": reel_id, "views": new_views_str}
+
+
 @router.post("/{reel_id}/like")
 async def toggle_reel_like(
     reel_id: str,
@@ -225,7 +252,7 @@ async def toggle_reel_like(
     x_visitor_id: Optional[str] = Header(None, alias="X-Visitor-Id"),
 ):
     db = get_database()
-    _reel_or_404(db, reel_id)
+    oid = _reel_or_404(db, reel_id)
 
     user = _get_optional_user(request)
     user_id = str(user.get("id")) if user else None
@@ -246,6 +273,14 @@ async def toggle_reel_like(
     if existing:
         db["reel_likes"].delete_one({"_id": existing["_id"]})
         liked = False
+        db["watch_buy_reels"].update_one(
+            {"_id": oid},
+            {"$inc": {"likes": -1}}
+        )
+        db["watch_buy_reels"].update_one(
+            {"_id": oid, "likes": {"$lt": 0}},
+            {"$set": {"likes": 0}}
+        )
     else:
         doc = {
             "reel_id": reel_id,
@@ -257,6 +292,10 @@ async def toggle_reel_like(
             doc["visitor_id"] = visitor_id
         db["reel_likes"].insert_one(doc)
         liked = True
+        db["watch_buy_reels"].update_one(
+            {"_id": oid},
+            {"$inc": {"likes": 1}}
+        )
 
     # Invalidate cached GET /reels so subsequent requests receive the new like count
     try:

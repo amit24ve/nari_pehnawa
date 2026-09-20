@@ -11,6 +11,7 @@ import VisitorTracker from "./components/VisitorTracker";
 import CookieConsent from "./components/CookieConsent";
 import HeroSection from "./components/HeroSection";
 import FestiveEventBanner from "./components/FestiveEventBanner";
+import FloatingOfferCard from "./components/FloatingOfferCard";
 import Categories from "./components/Categories";
 import FeaturedProducts from "./components/FeaturedProducts";
 import HomeCategorySections from "./components/HomeCategorySections";
@@ -67,6 +68,7 @@ function HomePage() {
         <>
             <HeroSection />
             <Categories />
+            <FestiveEventBanner />
             <InteractiveCampaignBanner />
             <FeaturedProducts />
             <HomeCategorySections />
@@ -207,6 +209,7 @@ function MainLayout() {
             </div>
             <Footer />
             <AIChatbot />
+            <FloatingOfferCard />
         </div>
     );
 }

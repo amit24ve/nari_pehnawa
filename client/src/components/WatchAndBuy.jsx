@@ -108,6 +108,16 @@ const WatchAndBuy = () => {
                   return v;
                 })
               );
+            } else if (data && data.type === "reel_view" && data.reel_id) {
+              setVideoProducts((prev) =>
+                prev.map((v) => {
+                  const vid = v.id || v._id;
+                  if (vid === data.reel_id) {
+                    return { ...v, views: data.views };
+                  }
+                  return v;
+                })
+              );
             }
           } catch (_) {}
         };
@@ -133,21 +143,31 @@ const WatchAndBuy = () => {
       try {
         const res = await fetch(`${API_BASE_URL}/reels/likes-sync`);
         if (res.ok) {
-          const likesMap = await res.json();
-          if (likesMap && typeof likesMap === "object") {
-            setVideoProducts((prev) => {
-              let changed = false;
-              const next = prev.map((v) => {
-                const vid = v.id || v._id;
-                if (likesMap[vid] !== undefined && likesMap[vid] !== v.likes) {
-                  changed = true;
-                  return { ...v, likes: likesMap[vid] };
-                }
-                return v;
-              });
-              return changed ? next : prev;
+          const syncData = await res.json();
+          const likesMap = syncData?.likes || {};
+          const viewsMap = syncData?.views || {};
+          setVideoProducts((prev) => {
+            let changed = false;
+            const next = prev.map((v) => {
+              const vid = v.id || v._id;
+              let itemUpdated = false;
+              let updated = { ...v };
+              if (likesMap[vid] !== undefined && likesMap[vid] !== v.likes) {
+                updated.likes = likesMap[vid];
+                itemUpdated = true;
+              }
+              if (viewsMap[vid] !== undefined && String(viewsMap[vid]) !== String(v.views)) {
+                updated.views = viewsMap[vid];
+                itemUpdated = true;
+              }
+              if (itemUpdated) {
+                changed = true;
+                return updated;
+              }
+              return v;
             });
-          }
+            return changed ? next : prev;
+          });
         }
       } catch (_) {}
     }, 3000);
@@ -163,6 +183,37 @@ const WatchAndBuy = () => {
       }
     };
   }, []);
+
+  const viewedReelsRef = useRef(new Set());
+
+  // Automatically count view when active reel changes or opens
+  useEffect(() => {
+    if (activeReelIndex === null || !videoProducts[activeReelIndex]) return;
+    const curReel = videoProducts[activeReelIndex];
+    const reelId = curReel.id || curReel._id;
+    if (!reelId || viewedReelsRef.current.has(reelId)) return;
+
+    viewedReelsRef.current.add(reelId);
+
+    fetch(`${API_BASE_URL}/reels/${reelId}/view`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Visitor-Id": getVisitorId(),
+      }
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.views) {
+          setVideoProducts((prev) =>
+            prev.map((v) =>
+              (v.id || v._id) === reelId ? { ...v, views: data.views } : v
+            )
+          );
+        }
+      })
+      .catch(() => {});
+  }, [activeReelIndex, videoProducts]);
 
   const openReelModal = (index) => {
     setActiveReelIndex(index);
@@ -404,10 +455,18 @@ const WatchAndBuy = () => {
                       <Play className="w-3 h-3 fill-white text-white" /> WATCH REEL
                     </div>
 
-                    {/* Views Count */}
-                    <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 z-10 border border-white/20">
-                      <Eye className="w-3.5 h-3.5 text-[#d4af37]" />
-                      {video.views ? `${video.views}` : "0"}
+                    {/* Views & Likes Count */}
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 z-10">
+                      <div className="bg-black/60 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-white/20">
+                        <Eye className="w-3.5 h-3.5 text-[#d4af37]" />
+                        {video.views ? `${video.views}` : "0"}
+                      </div>
+                      {video.likes !== undefined && Number(video.likes) > 0 && (
+                        <div className="bg-black/60 backdrop-blur-sm text-white text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1 border border-white/20">
+                          <Heart className="w-3.5 h-3.5 fill-red-500 text-red-500" />
+                          {video.likes}
+                        </div>
+                      )}
                     </div>
 
                     {/* Bottom Embedded Product Overlay Card */}
