@@ -15,14 +15,17 @@ const FestiveEventBanner = () => {
             .then((r) => (r.ok ? r.json() : null))
             .then((data) => {
                 if (!isMounted || !data) return;
-                // If active or has banner_image or any sale exists
-                if (data.is_active || data.banner_image || (data.active_sales && data.active_sales.length > 0)) {
+                // Only show if campaign is active and currently live!
+                const isLive = data.is_active && (data.is_currently_live || data.status === "live");
+                const activeSales = Array.isArray(data.active_sales) ? data.active_sales.filter(s => s.is_active && (s.is_currently_live || s.status === "live")) : [];
+
+                if (isLive) {
                     setSale(data);
-                } else if (Array.isArray(data.all_sales) && data.all_sales.length > 0) {
-                    const withBanner = data.all_sales.find((s) => s.banner_image);
-                    setSale(withBanner || data.all_sales[0] || data);
+                } else if (activeSales.length > 0) {
+                    setSale(activeSales[0]);
                 } else {
-                    setSale(data);
+                    // Campaign is PAUSED or INACTIVE in admin - DO NOT SHOW!
+                    setSale(null);
                 }
             })
             .catch(() => {
@@ -108,26 +111,26 @@ const FestiveEventBanner = () => {
                 <div className="relative z-10 w-full h-full max-w-7xl mx-auto px-5 sm:px-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-white">
                     {/* Left: Title, Big Deal Text, Product Subtitle, Countdown */}
                     <div className="space-y-2 max-w-2xl py-2">
-                        {/* Main Sale Title */}
-                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-md leading-tight">
+                        {/* Main Sale Title - Bold */}
+                        <h2 className="text-2xl sm:text-3xl md:text-5xl font-black text-white tracking-tight drop-shadow-md leading-tight">
                             {sale.title || "Grand Festive Flash Sale"}
                         </h2>
 
-                        {/* Special Offer Deal Display - Pure Text, No Card */}
+                        {/* Special Offer Deal Display - Bold, Italic & Font-Serif */}
                         <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-                            <span className="text-xl sm:text-2xl md:text-3xl font-black text-amber-400 tracking-tight drop-shadow-lg font-mono">
+                            <span className="text-2xl sm:text-3xl md:text-4xl font-black italic text-[#FACC15] tracking-tight drop-shadow-lg font-serif">
                                 {dealText}
                             </span>
 
                             {countdown.isLive && (
-                                <span className="text-xs sm:text-sm font-bold text-white/90 bg-black/60 border border-amber-400/40 px-3 py-1 rounded-full backdrop-blur-md">
+                                <span className="text-xs sm:text-sm font-bold text-white/90 bg-black/60 border border-amber-400/40 px-3 py-1 rounded-full backdrop-blur-md italic">
                                     Ends in: {String(countdown.hours).padStart(2, "0")}h {String(countdown.minutes).padStart(2, "0")}m {String(countdown.seconds).padStart(2, "0")}s
                                 </span>
                             )}
                         </div>
 
-                        {/* Product Subtitle aligned with store catalog */}
-                        <p className="text-xs sm:text-sm text-gray-200 font-medium drop-shadow-sm line-clamp-1 sm:line-clamp-2">
+                        {/* Product Subtitle - Italic & Medium */}
+                        <p className="text-xs sm:text-sm md:text-base text-amber-100/90 font-medium italic drop-shadow-sm line-clamp-1 sm:line-clamp-2">
                             {productSubtitle}
                         </p>
                     </div>

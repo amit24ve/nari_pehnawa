@@ -102,9 +102,14 @@ class ReelUpdate(BaseModel):
 
 class ReelOut(ReelBase):
     id: str
+    liked: Optional[bool] = False
 
     class Config:
         populate_by_name = True
+
+
+class ReelLikePayload(BaseModel):
+    action: Optional[str] = None  # "like", "unlike", or None/empty for toggle
 
 
 class ReelCommentCreate(BaseModel):
@@ -117,15 +122,35 @@ def _fmt(doc: dict) -> dict:
 
 
 @router.get("/", response_model=List[ReelOut])
-def get_reels(request: Request, active_only: bool = True):
+def get_reels(
+    request: Request,
+    active_only: bool = True,
+    x_visitor_id: Optional[str] = Header(None, alias="X-Visitor-Id")
+):
     db = get_database()
     query = {"is_active": True} if active_only else {}
     collection = db["watch_buy_reels"]
     reels = list(collection.find(query).sort("order", 1))
 
+    user = _get_optional_user(request)
+    user_id = str(user.get("id")) if user else None
+    visitor_id = x_visitor_id.strip() if x_visitor_id else None
+
+    user_liked_reels = set()
+    queries = []
+    if user_id:
+        queries.append({"user_id": user_id})
+    if visitor_id:
+        queries.append({"visitor_id": visitor_id})
+    if queries:
+        likes_docs = list(db["reel_likes"].find({"$or": queries}, {"reel_id": 1}))
+        user_liked_reels = {str(d.get("reel_id")) for d in likes_docs if d.get("reel_id")}
+
     for r in reels:
+        rid = str(r["_id"])
         r["likes"] = max(0, int(r.get("likes") or 0))
         r["views"] = str(r.get("views") or "0")
+        r["liked"] = (rid in user_liked_reels)
 
     return [_fmt(r) for r in reels]
 
@@ -249,6 +274,7 @@ async def record_reel_view(reel_id: str):
 async def toggle_reel_like(
     reel_id: str,
     request: Request,
+    payload: Optional[ReelLikePayload] = None,
     x_visitor_id: Optional[str] = Header(None, alias="X-Visitor-Id"),
 ):
     db = get_database()
@@ -270,32 +296,64 @@ async def toggle_reel_like(
 
     existing = db["reel_likes"].find_one({"reel_id": reel_id, "$or": queries}) if queries else None
 
-    if existing:
-        db["reel_likes"].delete_one({"_id": existing["_id"]})
-        liked = False
-        db["watch_buy_reels"].update_one(
-            {"_id": oid},
-            {"$inc": {"likes": -1}}
-        )
-        db["watch_buy_reels"].update_one(
-            {"_id": oid, "likes": {"$lt": 0}},
-            {"$set": {"likes": 0}}
-        )
-    else:
-        doc = {
-            "reel_id": reel_id,
-            "created_at": datetime.now()
-        }
-        if user_id:
-            doc["user_id"] = user_id
-        if visitor_id:
-            doc["visitor_id"] = visitor_id
-        db["reel_likes"].insert_one(doc)
+    action = payload.action.lower().strip() if (payload and payload.action) else None
+
+    if action == "like":
+        if not existing:
+            doc = {
+                "reel_id": reel_id,
+                "created_at": datetime.now()
+            }
+            if user_id:
+                doc["user_id"] = user_id
+            if visitor_id:
+                doc["visitor_id"] = visitor_id
+            db["reel_likes"].insert_one(doc)
+            db["watch_buy_reels"].update_one(
+                {"_id": oid},
+                {"$inc": {"likes": 1}}
+            )
         liked = True
-        db["watch_buy_reels"].update_one(
-            {"_id": oid},
-            {"$inc": {"likes": 1}}
-        )
+    elif action == "unlike":
+        if existing:
+            db["reel_likes"].delete_one({"_id": existing["_id"]})
+            db["watch_buy_reels"].update_one(
+                {"_id": oid},
+                {"$inc": {"likes": -1}}
+            )
+            db["watch_buy_reels"].update_one(
+                {"_id": oid, "likes": {"$lt": 0}},
+                {"$set": {"likes": 0}}
+            )
+        liked = False
+    else:
+        # Default toggle
+        if existing:
+            db["reel_likes"].delete_one({"_id": existing["_id"]})
+            liked = False
+            db["watch_buy_reels"].update_one(
+                {"_id": oid},
+                {"$inc": {"likes": -1}}
+            )
+            db["watch_buy_reels"].update_one(
+                {"_id": oid, "likes": {"$lt": 0}},
+                {"$set": {"likes": 0}}
+            )
+        else:
+            doc = {
+                "reel_id": reel_id,
+                "created_at": datetime.now()
+            }
+            if user_id:
+                doc["user_id"] = user_id
+            if visitor_id:
+                doc["visitor_id"] = visitor_id
+            db["reel_likes"].insert_one(doc)
+            liked = True
+            db["watch_buy_reels"].update_one(
+                {"_id": oid},
+                {"$inc": {"likes": 1}}
+            )
 
     # Invalidate cached GET /reels so subsequent requests receive the new like count
     try:

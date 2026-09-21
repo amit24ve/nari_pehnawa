@@ -3,8 +3,9 @@ import {
   Store, IndianRupee, Save, Truck, Plus, Trash2,
   Tag, Flame, Clock, Loader2, X, Download, Info,
   Calendar, CheckCircle, RefreshCw, Zap, Eye, Play, Pause,
-  Image, Upload, Link2
+  Image, Upload, Link2, Sparkles, Check
 } from 'lucide-react';
+import { resolveImageUrl } from '../utils/imageUrl';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://naripehnawa.com:7100';
 
@@ -90,9 +91,99 @@ const Settings = () => {
     }
   };
 
+  /* ── Welcome / Login Popup Modal state ── */
+  const [welcomePopupConfig, setWelcomePopupConfig] = useState({
+    is_enabled: true,
+    image: '',
+    discount_title: '10%',
+    discount_subtitle: 'OFF',
+    order_text: 'YOUR FIRST ORDER',
+    sub_text: 'Authentic Kurtis, Suits & Ethnic Wear',
+  });
+  const [welcomeLoading, setWelcomeLoading] = useState(false);
+  const [welcomeSaving, setWelcomeSaving] = useState(false);
+  const [welcomeImgTab, setWelcomeImgTab] = useState('upload'); // 'upload' | 'url'
+  const [welcomeUploading, setWelcomeUploading] = useState(false);
+  const welcomeFileInputRef = useRef(null);
+
+  const fetchWelcomePopupConfig = async () => {
+    try {
+      setWelcomeLoading(true);
+      const res = await fetch(`${API_BASE}/admin/welcome-popup`);
+      if (res.ok) {
+        const data = await res.json();
+        setWelcomePopupConfig((prev) => ({
+          ...prev,
+          ...data,
+        }));
+      }
+    } catch (e) {
+      console.error("Failed to load welcome popup settings", e);
+    } finally {
+      setWelcomeLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchDeliverySettings();
+    fetchWelcomePopupConfig();
   }, []);
+
+  const handleSaveWelcomePopup = async (e) => {
+    if (e) e.preventDefault();
+    try {
+      setWelcomeSaving(true);
+      const res = await fetch(`${API_BASE}/admin/welcome-popup`, {
+        method: "PUT",
+        headers: authHeaders(),
+        body: JSON.stringify(welcomePopupConfig),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setWelcomePopupConfig((prev) => ({ ...prev, ...updated }));
+        showSuccess();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || "Failed to save Welcome Popup settings");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error saving Welcome Popup settings");
+    } finally {
+      setWelcomeSaving(false);
+    }
+  };
+
+  const handleWelcomeImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setWelcomeUploading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API_BASE}/upload/image`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('neel_token') || localStorage.getItem('token') || ''}`,
+        },
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const url = data.url || data.image_url;
+        if (url) {
+          setWelcomePopupConfig((prev) => ({ ...prev, image: url }));
+        }
+      } else {
+        alert('Failed to upload image');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Image upload failed');
+    } finally {
+      setWelcomeUploading(false);
+    }
+  };
 
   const handleSaveDeliveryRules = async (e) => {
     e.preventDefault();
@@ -439,6 +530,7 @@ const Settings = () => {
 
   const tabs = [
     { id: 'flash_sale', label: '⚡ Flash Sale & Events', icon: Flame },
+    { id: 'welcome_popup', label: '✨ Welcome / Login Popup', icon: Sparkles },
     { id: 'store', label: 'Store Info', icon: Store },
     { id: 'pricing', label: 'Pricing & Delivery', icon: IndianRupee },
     { id: 'coupons', label: 'Coupons & Promo Codes', icon: Tag },
@@ -1603,6 +1695,353 @@ const Settings = () => {
             </div>
           </div>
         </form>
+        </div>
+      )}
+
+      {/* TAB: WELCOME / LOGIN POPUP CUSTOMIZER */}
+      {activeTab === 'welcome_popup' && (
+        <div className="space-y-6">
+          {/* Header & Status Card */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-500" />
+                Welcome &amp; Login Popup Configuration
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Customize the left-side promotional image, discount headline, and captions displayed on the <strong>Welcome / Sign-In Modal</strong>.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl">
+                <input
+                  type="checkbox"
+                  checked={welcomePopupConfig.is_enabled}
+                  onChange={(e) => setWelcomePopupConfig({ ...welcomePopupConfig, is_enabled: e.target.checked })}
+                  className="w-4 h-4 text-[#0891b2] rounded accent-[#0891b2] cursor-pointer"
+                />
+                <span className="text-xs font-bold text-slate-800">
+                  {welcomePopupConfig.is_enabled ? (
+                    <span className="text-emerald-600 flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      Popup Active
+                    </span>
+                  ) : (
+                    <span className="text-slate-400">Popup Paused</span>
+                  )}
+                </span>
+              </label>
+
+              <button
+                type="button"
+                onClick={handleSaveWelcomePopup}
+                disabled={welcomeSaving}
+                className="px-5 py-2 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 shadow-md cursor-pointer disabled:opacity-50"
+              >
+                {welcomeSaving ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <Save className="w-4 h-4 text-black" />}
+                {welcomeSaving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* LEFT 7 COLS: FORM CONTROLS */}
+            <div className="lg:col-span-7 space-y-6">
+              {/* Image Configuration */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                <div className="border-b border-slate-100 pb-3">
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Image className="w-4 h-4 text-[#0891b2]" />
+                    Popup Left Banner Image
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Upload an ethnic wear model or promotional outfit photo.
+                  </p>
+                </div>
+
+                {/* Tab Switcher: Upload vs URL */}
+                <div className="flex border border-slate-200 rounded-xl overflow-hidden bg-slate-50 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setWelcomeImgTab("upload")}
+                    className={`flex-1 py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 rounded-lg transition ${
+                      welcomeImgTab === "upload" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    <Upload className="w-3.5 h-3.5" /> Upload File
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWelcomeImgTab("url")}
+                    className={`flex-1 py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 rounded-lg transition ${
+                      welcomeImgTab === "url" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    <Link2 className="w-3.5 h-3.5" /> Direct Image URL
+                  </button>
+                </div>
+
+                {welcomeImgTab === "upload" ? (
+                  <div
+                    onClick={() => welcomeFileInputRef.current?.click()}
+                    className="border-2 border-dashed border-slate-300 hover:border-[#0891b2] rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer bg-slate-50/50 hover:bg-cyan-50/20 transition group"
+                  >
+                    <input
+                      ref={welcomeFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleWelcomeImageUpload}
+                      className="hidden"
+                    />
+                    {welcomeUploading ? (
+                      <div className="flex flex-col items-center gap-2 py-2">
+                        <Loader2 className="w-6 h-6 text-[#0891b2] animate-spin" />
+                        <span className="text-xs text-slate-600 font-medium">Uploading image to server...</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1.5 text-center">
+                        <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center text-[#0891b2] group-hover:scale-110 transition">
+                          <Upload className="w-5 h-5" />
+                        </div>
+                        <span className="text-xs font-bold text-slate-800 pt-1">Click to upload or drag image here</span>
+                        <span className="text-[11px] text-slate-400">Supports PNG, JPG, WebP (Vertical / Portrait recommended)</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Image URL</label>
+                    <input
+                      type="url"
+                      placeholder="https://example.com/model-photo.jpg"
+                      value={welcomePopupConfig.image || ""}
+                      onChange={(e) => setWelcomePopupConfig({ ...welcomePopupConfig, image: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-xs"
+                    />
+                  </div>
+                )}
+
+                {/* Current Image Preview & Reset */}
+                {welcomePopupConfig.image && (
+                  <div className="flex items-center gap-3 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                    <img
+                      src={resolveImageUrl(welcomePopupConfig.image)}
+                      alt="Thumbnail"
+                      className="w-12 h-14 object-cover rounded-lg border border-slate-200"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-800 truncate">{welcomePopupConfig.image}</p>
+                      <p className="text-[10px] text-emerald-600 font-semibold">Ready &amp; Loaded</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setWelcomePopupConfig({ ...welcomePopupConfig, image: "" })}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                      title="Remove image"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Text & Discount Customization */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                <div className="border-b border-slate-100 pb-3">
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-[#0891b2]" />
+                    Promotional Overlay Texts
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Customize discount numbers, condition, and tagline shown over the image.
+                  </p>
+                </div>
+
+                {/* Quick Presets */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-2">Quick Presets</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { title: "10%", subtitle: "OFF", order: "YOUR FIRST ORDER", sub: "Authentic Kurtis, Suits & Ethnic Wear" },
+                      { title: "15%", subtitle: "OFF", order: "FESTIVE FIRST ORDER", sub: "Handcrafted Luxury Indian Outfits" },
+                      { title: "20%", subtitle: "OFF", order: "LIMITED WELCOME DEAL", sub: "Premium Designer Kurtis & Sarees" },
+                      { title: "FLAT ₹200", subtitle: "OFF", order: "ON ORDERS ABOVE ₹1499", sub: "Exclusive New Member Gift" },
+                    ].map((p, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() =>
+                          setWelcomePopupConfig((prev) => ({
+                            ...prev,
+                            discount_title: p.title,
+                            discount_subtitle: p.subtitle,
+                            order_text: p.order,
+                            sub_text: p.sub,
+                          }))
+                        }
+                        className="text-[11px] font-bold px-3 py-1.5 bg-slate-100 hover:bg-cyan-50 hover:text-cyan-800 hover:border-cyan-200 border border-slate-200 rounded-xl transition cursor-pointer"
+                      >
+                        {p.title} {p.subtitle}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Discount Title (Gold Text)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 10% or FLAT ₹500"
+                      value={welcomePopupConfig.discount_title || ""}
+                      onChange={(e) => setWelcomePopupConfig({ ...welcomePopupConfig, discount_title: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-xs font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Discount Subtitle (White Text)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. OFF"
+                      value={welcomePopupConfig.discount_subtitle || ""}
+                      onChange={(e) => setWelcomePopupConfig({ ...welcomePopupConfig, discount_subtitle: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-xs font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Order / Condition Text
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. YOUR FIRST ORDER"
+                      value={welcomePopupConfig.order_text || ""}
+                      onChange={(e) => setWelcomePopupConfig({ ...welcomePopupConfig, order_text: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-xs font-bold uppercase tracking-wider"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Subtitle / Category Tagline
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Authentic Kurtis, Suits & Ethnic Wear"
+                      value={welcomePopupConfig.sub_text || ""}
+                      onChange={(e) => setWelcomePopupConfig({ ...welcomePopupConfig, sub_text: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891b2] text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleSaveWelcomePopup}
+                    disabled={welcomeSaving}
+                    className="px-6 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold rounded-xl transition cursor-pointer text-xs shadow-md flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {welcomeSaving ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <Save className="w-4 h-4 text-black" />}
+                    {welcomeSaving ? "Saving Settings..." : "Save Popup Settings"}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT 5 COLS: LIVE REALISTIC PREVIEW */}
+            <div className="lg:col-span-5 space-y-4">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <Eye className="w-4 h-4 text-[#0891b2]" /> Live Modal Preview
+                    </h4>
+                    <p className="text-[11px] text-slate-500">Exact live preview of the popup left side</p>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                    welcomePopupConfig.is_enabled ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-500"
+                  }`}>
+                    {welcomePopupConfig.is_enabled ? "● Enabled" : "○ Disabled"}
+                  </span>
+                </div>
+
+                {/* Card mockup */}
+                <div className="relative w-full max-w-sm mx-auto rounded-2xl overflow-hidden shadow-2xl border border-amber-400/30 bg-black aspect-[3/4]">
+                  {/* Model Image */}
+                  <img
+                    src={resolveImageUrl(welcomePopupConfig.image, "/hero_model_1.png")}
+                    alt="Welcome Preview"
+                    className="w-full h-full object-cover object-top"
+                    onError={(e) => {
+                      e.target.src = "https://images.pexels.com/photos/1536619/pexels-photo-1536619.jpeg?auto=compress&cs=tinysrgb&w=600&h=800&dpr=1";
+                    }}
+                  />
+
+                  {/* Gradient Overlay */}
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: `
+                        linear-gradient(to top, rgba(50,0,0,0.95) 0%, rgba(50,0,0,0.45) 45%, transparent 70%),
+                        linear-gradient(to right, rgba(0,0,0,0.25) 0%, transparent 60%)
+                      `,
+                    }}
+                  />
+
+                  {/* Gold vertical bar */}
+                  <div
+                    className="absolute inset-y-0 left-0 w-1"
+                    style={{ background: "linear-gradient(to bottom, transparent, #d4af37, transparent)" }}
+                  />
+
+                  {/* Text Overlay */}
+                  <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-black/95 via-black/60 to-transparent pointer-events-none">
+                    <div className="space-y-1.5">
+                      <div className="flex items-baseline gap-2">
+                        <span
+                          className="text-4xl font-black leading-none drop-shadow-lg"
+                          style={{ color: "#d4af37", fontFamily: "Georgia, serif" }}
+                        >
+                          {welcomePopupConfig.discount_title || "10%"}
+                        </span>
+                        <span
+                          className="text-xl font-black text-white tracking-wider drop-shadow-md"
+                          style={{ fontFamily: "Georgia, serif" }}
+                        >
+                          {welcomePopupConfig.discount_subtitle || "OFF"}
+                        </span>
+                      </div>
+
+                      <div
+                        className="w-12 h-0.5 my-2"
+                        style={{ background: "linear-gradient(to right, #d4af37, transparent)" }}
+                      />
+
+                      <p className="text-white font-bold text-xs uppercase tracking-widest drop-shadow-md">
+                        {welcomePopupConfig.order_text || "YOUR FIRST ORDER"}
+                      </p>
+
+                      <p className="text-amber-100/90 text-[11px] font-medium drop-shadow-sm pt-0.5 line-clamp-2">
+                        {welcomePopupConfig.sub_text || "Authentic Kurtis, Suits & Ethnic Wear"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-400 text-center mt-3">
+                  ✨ Updated instantaneously for all visitors on home/catalog pages.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

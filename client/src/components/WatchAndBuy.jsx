@@ -72,6 +72,14 @@ const WatchAndBuy = () => {
       .then((data) => {
         if (Array.isArray(data)) {
           setVideoProducts(data);
+          const serverLikedMap = {};
+          data.forEach((v) => {
+            const vid = v.id || v._id;
+            if (v.liked) {
+              serverLikedMap[vid] = true;
+            }
+          });
+          setLikedReels((prev) => ({ ...prev, ...serverLikedMap }));
         } else {
           setVideoProducts([]);
         }
@@ -275,17 +283,25 @@ const WatchAndBuy = () => {
       };
       const res = await fetch(`${API_BASE_URL}/reels/${reelId}/like`, {
         method: "POST",
-        headers
+        headers,
+        body: JSON.stringify({ action: newLikedState ? "like" : "unlike" }),
       });
       if (res.ok) {
         const data = await res.json();
         if (data && typeof data.likes === "number") {
-          // Sync exact server count
+          const finalLiked = data.liked !== undefined ? !!data.liked : newLikedState;
+          setLikedReels((prev) => {
+            const upd = { ...prev, [reelId]: finalLiked };
+            try {
+              localStorage.setItem("nari_liked_reels", JSON.stringify(upd));
+            } catch (_) {}
+            return upd;
+          });
           setVideoProducts((prev) =>
             prev.map((v) => {
               const vid = v.id || v._id;
               if (vid === reelId) {
-                return { ...v, likes: data.likes };
+                return { ...v, likes: data.likes, liked: finalLiked };
               }
               return v;
             })

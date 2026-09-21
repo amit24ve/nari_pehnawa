@@ -3,6 +3,8 @@ import { X, Eye, EyeOff, Sparkles, ArrowRight, Lock, Mail } from "lucide-react";
 import { useAuth } from "../context/AuthProvider";
 import { useNavigate } from "react-router-dom";
 
+import { resolveImageUrl } from "../utils/imageUrl";
+
 const STORAGE_KEY = "np_welcome_v2";
 const POPUP_DELAY_MS = 5000;
 const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
@@ -39,9 +41,29 @@ const WelcomePopup = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [popupConfig, setPopupConfig] = useState({
+    is_enabled: true,
+    image: "/hero_model_1.png",
+    discount_title: "10%",
+    discount_subtitle: "OFF",
+    order_text: "YOUR FIRST ORDER",
+    sub_text: "Authentic Kurtis, Suits & Ethnic Wear",
+  });
 
   const { login, openLoginModal } = useAuth();
   const navigate = useNavigate();
+
+  // Load dynamic popup settings from backend
+  useEffect(() => {
+    fetch(`${API_URL}/admin/welcome-popup`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((cfg) => {
+        if (cfg) {
+          setPopupConfig((prev) => ({ ...prev, ...cfg }));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (sessionStorage.getItem(STORAGE_KEY)) return;
@@ -109,46 +131,39 @@ const WelcomePopup = () => {
     }
   };
 
-  if (!visible) return null;
+  if (!visible || !popupConfig.is_enabled) return null;
 
   return (
     <>
       {/* ── Backdrop ── */}
       <div
         className="fixed inset-0 z-[9998] bg-black/70"
-        style={{ backdropFilter: "blur(4px)" }}
+        style={{ backdropFilter: "blur(6px)" }}
         onClick={dismiss}
         aria-hidden="true"
       />
 
-      {/* ── Modal container ── */}
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Welcome to Nari Pehnawa"
-        className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-        style={{ animation: "npPopupIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both" }}
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-300 pointer-events-none"
       >
         <div
-          className="relative w-full overflow-y-auto sm:overflow-hidden flex flex-col sm:flex-row"
+          className="relative w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col sm:flex-row overflow-hidden border border-amber-400/30 pointer-events-auto"
           style={{
-            maxWidth: "780px",
-            maxHeight: "92vh",
-            borderRadius: "16px",
+            background: "#ffffff",
             boxShadow: "0 32px 80px rgba(0,0,0,0.45), 0 0 0 1px rgba(212,175,55,0.18)",
           }}
+          onClick={(e) => e.stopPropagation()}
         >
           {/* ═══════════════════════════════════════════════════
-              LEFT — Fashion image panel with luxury overlay
-              (Compact banner on mobile, full side panel on desktop)
+              LEFT — Fashion image panel with dynamic configuration
           ═══════════════════════════════════════════════════ */}
           <div
-            className="relative sm:w-[44%] flex-shrink-0 h-40 sm:h-auto"
+            className="relative sm:w-[44%] flex-shrink-0 h-44 sm:h-auto"
             style={{ minHeight: undefined }}
           >
-            {/* Actual model image */}
+            {/* Dynamic model / promotional image */}
             <img
-              src="/hero_model_1.png"
+              src={resolveImageUrl(popupConfig.image, "/hero_model_1.png")}
               alt="Nari Pehnawa Collection"
               className="w-full h-full object-cover object-top"
               style={{ display: "block" }}
@@ -162,7 +177,7 @@ const WelcomePopup = () => {
               className="absolute inset-0"
               style={{
                 background: `
-                  linear-gradient(to top,  rgba(80,0,0,0.92) 0%, rgba(80,0,0,0.4) 40%, transparent 70%),
+                  linear-gradient(to top, rgba(50,0,0,0.95) 0%, rgba(50,0,0,0.45) 45%, transparent 70%),
                   linear-gradient(to right, rgba(0,0,0,0.25) 0%, transparent 60%)
                 `,
               }}
@@ -174,7 +189,7 @@ const WelcomePopup = () => {
               style={{ background: "linear-gradient(to bottom, transparent, #d4af37, transparent)" }}
             />
 
-            {/* Bottom text overlay - Redesigned cleanly without clutter or badges */}
+            {/* Bottom text overlay - Dynamic from backend configuration */}
             <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-7 bg-gradient-to-t from-black/95 via-black/60 to-transparent">
               <div className="space-y-1.5">
                 <div className="flex items-baseline gap-2">
@@ -182,13 +197,13 @@ const WelcomePopup = () => {
                     className="text-4xl sm:text-6xl font-black leading-none drop-shadow-lg"
                     style={{ color: "#d4af37", fontFamily: "Georgia, serif" }}
                   >
-                    10%
+                    {popupConfig.discount_title || "10%"}
                   </span>
                   <span
                     className="text-xl sm:text-3xl font-black text-white tracking-wider drop-shadow-md"
                     style={{ fontFamily: "Georgia, serif" }}
                   >
-                    OFF
+                    {popupConfig.discount_subtitle || "OFF"}
                   </span>
                 </div>
 
@@ -198,11 +213,11 @@ const WelcomePopup = () => {
                 />
 
                 <p className="text-white font-bold text-xs sm:text-sm uppercase tracking-widest drop-shadow-md">
-                  YOUR FIRST ORDER
+                  {popupConfig.order_text || "YOUR FIRST ORDER"}
                 </p>
 
                 <p className="text-amber-100/90 text-xs font-medium drop-shadow-sm pt-0.5">
-                  Authentic Kurtis, Suits & Ethnic Wear
+                  {popupConfig.sub_text || "Authentic Kurtis, Suits & Ethnic Wear"}
                 </p>
               </div>
             </div>

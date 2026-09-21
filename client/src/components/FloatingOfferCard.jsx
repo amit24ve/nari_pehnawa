@@ -15,14 +15,15 @@ const FloatingOfferCard = () => {
       return false;
     }
   });
+  const [isActive, setIsActive] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [offerData, setOfferData] = useState({
     title: "Festive Grand Sale",
-    deal_text: "BUY 1 GET 1 FREE",
+    deal_text: "BUY 5 GET 2 FREE",
     coupon_code: "FESTIVE30",
     discount: "30% OFF",
-    image: "/placeholder-product.webp",
+    image: "",
     link: "/category/sale"
   });
 
@@ -38,22 +39,36 @@ const FloatingOfferCard = () => {
     ]).then(([flash, camp, prods]) => {
       if (!isMounted) return;
 
+      const isFlashLive = flash?.is_active && (flash?.is_currently_live || flash?.status === "live");
+      const hasActiveSales = Array.isArray(flash?.active_sales) && flash.active_sales.filter(s => s.is_active).length > 0;
+      const isLiveSale = isFlashLive || hasActiveSales;
+
+      // Hide card completely if sale is paused or inactive in admin
+      if (!isLiveSale) {
+        setIsActive(false);
+        return;
+      }
+
+      setIsActive(true);
+
+      const activeFlash = isFlashLive ? flash : (flash.active_sales.find(s => s.is_active) || flash.active_sales[0]);
       const fallbackProdImg = (Array.isArray(prods) && prods[0]?.image) ? prods[0].image : "";
       const campImg = camp?.left_image || camp?.slots?.[0]?.product?.image || camp?.full_banner_image || "";
-      const finalImage = (flash?.banner_image && flash.banner_image.trim()) || campImg || fallbackProdImg;
+      const finalImage = (activeFlash?.banner_image && activeFlash.banner_image.trim()) || campImg || fallbackProdImg;
 
       const deal =
-        flash?.deal_text ||
-        (flash?.deal_type === "buy5get2" ? "BUY 5 GET 2 FREE" : "") ||
+        activeFlash?.deal_text ||
+        (activeFlash?.deal_type === "buy5get2" ? "BUY 5 GET 2 FREE" : "") ||
+        (activeFlash?.deal_type === "bogo" ? "BUY 1 GET 1 FREE" : "") ||
         camp?.discount_text ||
         "BUY 5 GET 2 FREE";
 
       setOfferData((prev) => ({
         ...prev,
-        title: flash?.title || camp?.title || prev.title,
+        title: activeFlash?.title || camp?.title || prev.title,
         deal_text: deal,
-        image: finalImage || prev.image,
-        link: camp?.cta_link || "/category/sale"
+        image: finalImage,
+        link: "/category/sale"
       }));
     });
 
@@ -83,7 +98,7 @@ const FloatingOfferCard = () => {
     navigate(offerData.link || "/category/sale");
   };
 
-  if (isDismissed) return null;
+  if (!isActive || isDismissed) return null;
 
   return (
     <>

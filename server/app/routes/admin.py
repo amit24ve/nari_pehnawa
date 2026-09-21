@@ -671,3 +671,48 @@ def update_flash_sale_settings(data: dict, current_user: dict = Depends(require_
     }
 
 
+@router.get("/welcome-popup")
+def get_welcome_popup_config():
+    """Fetch public configuration for login / welcome popup left side"""
+    db = get_database()
+    cfg = db["admin_settings"].find_one({"key": "welcome_popup"})
+    if not cfg:
+        return {
+            "is_enabled": True,
+            "image": "/hero_model_1.png",
+            "discount_title": "10%",
+            "discount_subtitle": "OFF",
+            "order_text": "YOUR FIRST ORDER",
+            "sub_text": "Authentic Kurtis, Suits & Ethnic Wear",
+        }
+    if "_id" in cfg:
+        cfg["id"] = str(cfg.pop("_id"))
+    return cfg
+
+
+@router.put("/welcome-popup")
+def update_welcome_popup_config(data: dict, current_user: dict = Depends(require_admin)):
+    """Update login / welcome popup left side configuration (Admin only)"""
+    from app.utils.cache import clear_api_cache
+    db = get_database()
+    update_doc = {
+        "key": "welcome_popup",
+        "is_enabled": bool(data.get("is_enabled", True)),
+        "image": str(data.get("image", "")).strip() or "/hero_model_1.png",
+        "discount_title": str(data.get("discount_title", "10%")).strip(),
+        "discount_subtitle": str(data.get("discount_subtitle", "OFF")).strip(),
+        "order_text": str(data.get("order_text", "YOUR FIRST ORDER")).strip(),
+        "sub_text": str(data.get("sub_text", "Authentic Kurtis, Suits & Ethnic Wear")).strip(),
+        "updated_at": datetime.now(),
+        "updated_by": current_user.get("email", "admin"),
+    }
+    db["admin_settings"].update_one(
+        {"key": "welcome_popup"},
+        {"$set": update_doc},
+        upsert=True
+    )
+    clear_api_cache()
+    return {"success": True, "message": "Welcome popup configuration updated successfully!", "config": update_doc}
+
+
+
