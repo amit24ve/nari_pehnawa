@@ -44,6 +44,7 @@ import ImageZoomModal from "./ImageZoomModal";
 import CheckoutModal from "./CheckoutModal";
 import useSEO from "../hooks/useSEO";
 import { resolveImageUrl, DEFAULT_FALLBACK_IMAGE } from "../utils/imageUrl";
+import { trackViewContent, trackAddToCart, getMetaCatalogId } from "../utils/metaPixel";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 const FALLBACK_IMG = "https://images.pexels.com/photos/5704849/pexels-photo-5704849.jpeg?auto=compress&cs=tinysrgb&w=600";
@@ -90,6 +91,74 @@ const ProductPage = () => {
     product ? `${product.name} | Nari Pehnawa` : "Authentic Women Ethnic Wear | Nari Pehnawa",
     product ? `${product.description || product.name}. Shop original handcrafted Indian ethnic wear at Nari Pehnawa.` : "Handcrafted Anarkali Kurtis, Chikankari Sets, Palazzo Suits, Sarees & Designer Ethnic Wear at Nari Pehnawa."
   );
+
+  // Inject Meta Microdata & Schema.org JSON-LD for Meta Commerce Manager
+  useEffect(() => {
+    if (!product) return;
+    const catalogId = getMetaCatalogId(product);
+    if (!catalogId) return;
+
+    const setMetaTag = (attr, key, content) => {
+      let el = document.querySelector(`meta[${attr}="${key}"]`);
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(attr, key);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    };
+
+    setMetaTag("property", "og:type", "product");
+    setMetaTag("property", "og:title", product.name || "Nari Pehnawa");
+    setMetaTag("property", "og:description", product.description || product.name || "");
+    setMetaTag("property", "og:image", resolveImageUrl(product.image, FALLBACK_IMG));
+    setMetaTag("property", "product:retailer_item_id", catalogId);
+    setMetaTag("property", "product:price:amount", String(product.price || 0));
+    setMetaTag("property", "product:price:currency", "INR");
+    setMetaTag("property", "product:availability", product.in_stock !== false ? "in stock" : "out of stock");
+    setMetaTag("property", "product:condition", "new");
+    setMetaTag("property", "product:brand", product.brand || "Nari Pehnawa");
+
+    const schemaScriptId = "meta-product-jsonld";
+    let scriptEl = document.getElementById(schemaScriptId);
+    if (!scriptEl) {
+      scriptEl = document.createElement("script");
+      scriptEl.id = schemaScriptId;
+      scriptEl.type = "application/ld+json";
+      document.head.appendChild(scriptEl);
+    }
+    scriptEl.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": product.name,
+      "image": [resolveImageUrl(product.image, FALLBACK_IMG)],
+      "description": product.description || product.name,
+      "sku": catalogId,
+      "productID": catalogId,
+      "brand": {
+        "@type": "Brand",
+        "name": product.brand || "Nari Pehnawa"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": window.location.href,
+        "priceCurrency": "INR",
+        "price": product.price,
+        "itemCondition": "https://schema.org/NewCondition",
+        "availability": product.in_stock !== false ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        "seller": {
+          "@type": "Organization",
+          "name": "Nari Pehnawa"
+        }
+      }
+    });
+
+    return () => {
+      if (scriptEl && scriptEl.parentNode) {
+        scriptEl.parentNode.removeChild(scriptEl);
+      }
+    };
+  }, [product]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [related, setRelated] = useState([]);
@@ -171,8 +240,9 @@ const ProductPage = () => {
         return r.json();
       })
       .then((data) => {
-        const normalized = { ...data, id: data._id || data.id };
+        const normalized = { ...data, id: data._id || data.id, meta_catalog_id: data.meta_catalog_id || data.sku || data._id || data.id };
         setProduct(normalized);
+        trackViewContent(normalized);
         setProductWishlistCount(normalized.wishlist_count || 0);
         
         // Auto select first in-stock size

@@ -84,6 +84,7 @@ def create_product(product: ProductCreate, background_tasks: BackgroundTasks, cu
 
         result = products_collection.insert_one(product_data)
         product_data["_id"] = str(result.inserted_id)
+        product_data = _format_product(product_data)
         
         # Trigger background task to send newsletter
         background_tasks.add_task(
@@ -98,6 +99,17 @@ def create_product(product: ProductCreate, background_tasks: BackgroundTasks, cu
         return product_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def _format_product(product: dict) -> dict:
+    if not product:
+        return product
+    p_id = str(product["_id"])
+    product["_id"] = p_id
+    catalog_id = str(product.get("meta_catalog_id") or product.get("sku") or p_id).strip()
+    product["meta_catalog_id"] = catalog_id
+    product["sku"] = str(product.get("sku") or catalog_id).strip()
+    return product
 
 
 @router.get("/", response_model=List[Product])
@@ -186,9 +198,7 @@ def get_products(
         cursor = products_collection.find(query).sort(sort_by, sort_order).skip(skip).limit(limit)
         products = list(cursor)
 
-        for product in products:
-            product["_id"] = str(product["_id"])
-
+        products = [_format_product(p) for p in products]
         return products
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -269,8 +279,7 @@ def get_product(product_id: str, request: Request):
         product = products_collection.find_one(_build_product_query(product_id))
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
-        product["_id"] = str(product["_id"])
-        return product
+        return _format_product(product)
     except HTTPException:
         raise
     except Exception as e:
@@ -347,9 +356,8 @@ def update_product(product_id: str, product: ProductUpdate, current_user: dict =
         )
         if not result:
             raise HTTPException(status_code=404, detail="Product not found")
-        result["_id"] = str(result["_id"])
         clear_api_cache()
-        return result
+        return _format_product(result)
     except HTTPException:
         raise
     except Exception as e:

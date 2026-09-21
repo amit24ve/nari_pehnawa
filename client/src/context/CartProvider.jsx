@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthProvider';
 import { trackCustomEvent } from '../components/VisitorTracker';
+import { trackAddToCart } from '../utils/metaPixel';
 
 const CartContext = createContext(null);
 const API_URL = import.meta.env.VITE_API_URL || 'https://naripehnawa.com:7100';
@@ -105,6 +106,7 @@ export const CartProvider = ({ children }) => {
           body: JSON.stringify(product),
         });
         if (res.ok) {
+          trackAddToCart(product, product.size, product.quantity || 1);
           trackCustomEvent("cart_add", {
             product_id: product.product_id,
             name: product.name,
@@ -120,6 +122,7 @@ export const CartProvider = ({ children }) => {
         return false;
       }
       // Guest
+      trackAddToCart(product, product.size, product.quantity || 1);
       trackCustomEvent("cart_add", {
         product_id: product.product_id,
         name: product.name,

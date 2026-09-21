@@ -12,6 +12,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
 import { trackCustomEvent } from "./VisitorTracker";
+import { trackInitiateCheckout, trackPurchase } from "../utils/metaPixel";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
@@ -25,25 +26,7 @@ const INDIAN_STATES = [
   "Puducherry",
 ];
 
-/**
- * CheckoutModal — shared 3-step checkout (Address -> Payment -> Success)
- * used by both the Cart page and "Buy It Now" on the product page.
- *
- * Handles both payment paths end-to-end:
- *   - Razorpay: creates a Razorpay order on the backend, opens the
- *     Razorpay Checkout widget, verifies the signature server-side, then
- *     the backend creates the app order and automatically triggers the
- *     Shiprocket fulfilment pipeline (create shipment -> AWB -> pickup).
- *   - COD: creates the app order directly; Shiprocket fulfilment is
- *     triggered the same way from the backend.
- *
- * Props:
- *   isOpen, onClose
- *   items        — [{ product_id, name, image, price, quantity, size, color }]
- *   subtotal, discount, shipping, total  — pre-computed numbers to display
- *   couponCode   — optional applied coupon code (string) to store on the order
- *   onOrderPlaced(result, paymentMethod) — called after a successful order
- */
+
 const CheckoutModal = ({
   isOpen,
   onClose,
@@ -96,6 +79,12 @@ const CheckoutModal = ({
       }
     }
   }, [isOpen, user]);
+
+  React.useEffect(() => {
+    if (isOpen && items && items.length > 0) {
+      trackInitiateCheckout(items, total);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -208,6 +197,12 @@ const CheckoutModal = ({
             revenue: result.order?.total_amount || result.total_amount || 0.0,
             order_number: result.order?.order_number || result.order_number || "unknown"
           });
+          trackPurchase({
+            items,
+            total: result.order?.total_amount || result.total_amount || finalPayable || total,
+            order_number: result.order?.order_number || result.order_number,
+            id: result.order_id || result.id
+          });
           setOrderResult(result);
           setStep(3);
           setLoading(false);
@@ -250,6 +245,12 @@ const CheckoutModal = ({
         method: "cod",
         revenue: result.order?.total_amount || result.total_amount || 0.0,
         order_number: result.order?.order_number || result.order_number || "unknown"
+      });
+      trackPurchase({
+        items,
+        total: result.order?.total_amount || result.total_amount || finalPayable || total,
+        order_number: result.order?.order_number || result.order_number,
+        id: result.order_id || result.id
       });
       setOrderResult(result);
       setStep(3);

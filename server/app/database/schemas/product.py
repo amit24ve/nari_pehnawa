@@ -53,6 +53,8 @@ class ProductBase(BaseModel):
     specifications: Optional[Dict[str, str]] = {}
     offer_code: Optional[str] = None
     offer_text: Optional[str] = None
+    sku: Optional[str] = None
+    meta_catalog_id: Optional[str] = None
 
 
 class ProductCreate(ProductBase):
@@ -60,6 +62,8 @@ class ProductCreate(ProductBase):
 
 
 class ProductUpdate(BaseModel):
+    sku: Optional[str] = None
+    meta_catalog_id: Optional[str] = None
     name: Optional[str] = None
     brand: Optional[str] = None
     price: Optional[float] = None

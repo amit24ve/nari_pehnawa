@@ -36,6 +36,7 @@ from app.routes.mobile_sessions import router as mobile_sessions_router
 from app.routes.referrals import router as referrals_router
 from app.routes.department import router as department_router
 from app.routes.campaign import router as campaign_router
+from app.routes.feed import router as feed_router
 
 app = FastAPI(
     title="Nari Pehnawa API",
@@ -141,6 +142,7 @@ app.include_router(mobile_sessions_router)
 app.include_router(referrals_router)
 app.include_router(department_router)
 app.include_router(campaign_router)
+app.include_router(feed_router)
 
 # Serve uploaded images as static files
 Path("uploads").mkdir(exist_ok=True)

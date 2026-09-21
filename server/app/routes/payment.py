@@ -218,6 +218,58 @@ def _record_initial_order_log(db, order_id: str, status: str, reason: str) -> No
     )
 
 
+def _track_capi_purchase(order_data: dict, order_id: str, db, request: Optional[Request] = None):
+    """Background Meta Conversions API (CAPI) Purchase event tracking"""
+    import threading
+
+    def _run():
+        try:
+            from app.services.meta_capi_service import send_meta_capi_event
+            items = order_data.get("items", []) or []
+            content_ids = []
+            for it in items:
+                raw_id = it.get("meta_catalog_id") or it.get("sku") or it.get("product_id") or it.get("id") or it.get("_id")
+                if not raw_id and it.get("name"):
+                    p = db["products"].find_one({"name": it["name"]})
+                    if p:
+                        raw_id = p.get("meta_catalog_id") or p.get("sku") or str(p["_id"])
+                if raw_id:
+                    clean_id = str(raw_id).strip()
+                    if clean_id and clean_id not in ["undefined", "null"]:
+                        content_ids.append(clean_id)
+
+            content_ids = list(dict.fromkeys(content_ids))
+            total_val = float(order_data.get("total_amount") or order_data.get("total") or 0.0)
+            shipping_addr = order_data.get("shipping_address", {}) or {}
+            user_email = order_data.get("customer_email") or shipping_addr.get("email")
+            user_phone = order_data.get("customer_phone") or shipping_addr.get("phone")
+            
+            client_ip = None
+            user_agent = None
+            if request:
+                client_ip = request.client.host if request.client else None
+                user_agent = request.headers.get("user-agent")
+
+            send_meta_capi_event(
+                event_name="Purchase",
+                custom_data={
+                    "content_ids": content_ids,
+                    "value": total_val,
+                    "currency": "INR",
+                    "num_items": len(items),
+                },
+                user_email=user_email,
+                user_phone=user_phone,
+                client_ip=client_ip,
+                user_agent=user_agent,
+                event_id=order_id,
+            )
+        except Exception as exc:
+            print(f"[Meta CAPI] Purchase event logging exception: {exc}")
+
+    threading.Thread(target=_run, daemon=True).start()
+
+
 # ── 1. Create Razorpay order ─────────────────────────────────────────────────
 
 
@@ -531,6 +583,9 @@ def verify_razorpay_payment(data: dict, current_user: dict = Depends(get_current
     # ── Shiprocket (non-blocking) ─────────────────────────────────────────
     _trigger_shiprocket(order_id, order_data, db)
 
+    # ── Meta Conversions API (CAPI) Purchase Event ────────────────────────
+    _track_capi_purchase(order_data, order_id, db)
+
     return {
         "success": True,
         "order_id": order_id,
@@ -790,6 +845,9 @@ def create_cod_order(order_data: dict, current_user: dict = Depends(get_current_
     _send_order_notifications(db, NotificationEvent.ORDER_CONFIRMED, notify_ctx, order_num, current_user.get("id"))
 
     _trigger_shiprocket(order_id, order_data, db)
+
+    # ── Meta Conversions API (CAPI) Purchase Event ────────────────────────
+    _track_capi_purchase(order_data, order_id, db)
 
     return {
         "success": True,
