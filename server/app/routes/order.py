@@ -177,6 +177,10 @@ def get_orders(
         result = []
         
         for order in orders:
+            is_paid = (
+                order.get("payment_status") in ("captured", "completed", "paid")
+                or bool(order.get("razorpay_payment_id"))
+            )
             order_dict = {
                 "id": str(order["_id"]),
                 "order_number": order.get("order_number") or order.get("order_id") or f"ORD-{str(order['_id'])[-6:]}",
@@ -191,7 +195,16 @@ def get_orders(
                 "status": order.get("status", "pending"),
                 "payment_status": order.get("payment_status", "pending"),
                 "payment_method": order.get("payment_method", "N/A"),
+                "payment_id": order.get("razorpay_payment_id") or order.get("payment_id") or "N/A",
+                "razorpay_payment_id": order.get("razorpay_payment_id") or order.get("payment_id") or "N/A",
+                "razorpay_order_id": order.get("razorpay_order_id") or order.get("payment_order_id") or "N/A",
+                "payment_order_id": order.get("razorpay_order_id") or order.get("payment_order_id") or "N/A",
+                "signature_verified": "Verified" if is_paid else ("Pending" if order.get("payment_method") in ("Razorpay", "Online", "razorpay") else "COD Mode"),
                 "shipping_address": order.get("shipping_address", "N/A"),
+                "shipping": order.get("shipping", {}),
+                "staff_assigned": order.get("staff_assigned", "Not Assigned"),
+                "warehouse_assigned": order.get("warehouse_assigned", "Primary"),
+                "notes": order.get("notes", ""),
                 "created_at": order.get("created_at"),
                 "user": None,
                 "items": []
@@ -392,6 +405,10 @@ def get_order(order_id: str, current_user: dict = Depends(get_current_user)):
         if not order:
             raise HTTPException(status_code=404, detail="Order not found")
         
+        is_paid = (
+            order.get("payment_status") in ("captured", "completed", "paid")
+            or bool(order.get("razorpay_payment_id"))
+        )
         order_dict = {
             "id": str(order["_id"]),
             "order_number": order.get("order_number") or order.get("order_id") or f"ORD-{str(order['_id'])[-6:]}",
@@ -406,11 +423,19 @@ def get_order(order_id: str, current_user: dict = Depends(get_current_user)):
             "status": order.get("status", "pending"),
             "payment_status": order.get("payment_status", "pending"),
             "payment_method": order.get("payment_method", "N/A"),
+            "payment_id": order.get("razorpay_payment_id") or order.get("payment_id") or "N/A",
+            "razorpay_payment_id": order.get("razorpay_payment_id") or order.get("payment_id") or "N/A",
+            "razorpay_order_id": order.get("razorpay_order_id") or order.get("payment_order_id") or "N/A",
+            "payment_order_id": order.get("razorpay_order_id") or order.get("payment_order_id") or "N/A",
+            "signature_verified": "Verified" if is_paid else ("Pending" if order.get("payment_method") in ("Razorpay", "Online", "razorpay") else "COD Mode"),
             "shipping_address": order.get("shipping_address", "N/A"),
+            "staff_assigned": order.get("staff_assigned", "Not Assigned"),
+            "warehouse_assigned": order.get("warehouse_assigned", "Primary"),
+            "notes": order.get("notes", ""),
             "created_at": order.get("created_at"),
             "user": None,
             "items": [],
-            "shipping": order.get("shipping"),
+            "shipping": order.get("shipping", {}),
         }
         
         # Get user info

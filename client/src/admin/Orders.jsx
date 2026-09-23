@@ -173,10 +173,10 @@ const Orders = () => {
     courier_name: o.shipping?.courier_name || o.courier_name || null,
     shiprocket_order_id: o.shipping?.shiprocket_order_id || o.shiprocket_order_id || null,
     shipment_id: o.shipping?.shipment_id || o.shipment_id || null,
-    // Razorpay Details
-    payment_id: o.payment_id || o.razorpay_payment_id || "N/A",
+    // Razorpay / Gateway Details
+    payment_id: o.razorpay_payment_id || o.payment_id || "N/A",
     razorpay_order_id: o.razorpay_order_id || o.payment_order_id || "N/A",
-    signature_verified: o.signature_verified || (o.payment_status === "completed" ? "Verified" : "Pending"),
+    signature_verified: o.signature_verified || (["captured", "completed", "paid"].includes((o.payment_status || "").toLowerCase()) || o.razorpay_payment_id ? "Verified" : (o.payment_method === "COD" ? "COD Mode" : "Pending")),
     refund_id: o.refund_id || "N/A",
     refund_status: o.refund_status || "N/A",
   });
