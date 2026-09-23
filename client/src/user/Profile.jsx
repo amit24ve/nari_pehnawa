@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthProvider';
-import { User, Mail, Calendar, Edit2, Save, X, Camera, MapPin, Plus, Trash2, Home, Building, CheckCircle, Smartphone, Lock, Key, ShieldCheck, Loader2 } from 'lucide-react';
+import { User, Mail, Calendar, Edit2, Save, X, Camera, MapPin, Plus, Trash2, Home, Building, CheckCircle, Smartphone, Lock, Key, ShieldCheck, Loader2, Eye, EyeOff } from 'lucide-react';
 
 const INDIAN_STATES = [
     "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana",
@@ -27,6 +27,8 @@ const Profile = () => {
         new_password: '',
         confirm_password: ''
     });
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [passwordLoading, setPasswordLoading] = useState(false);
     const [passwordMsg, setPasswordMsg] = useState({ type: '', text: '' });
 
@@ -722,27 +724,49 @@ const Profile = () => {
                             <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                                 New Password *
                             </label>
-                            <input
-                                type="password"
-                                required
-                                value={passwordForm.new_password}
-                                onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
-                                placeholder="Min. 6 characters"
-                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#8B0000] focus:bg-white"
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showNewPassword ? "text" : "password"}
+                                    required
+                                    value={passwordForm.new_password}
+                                    onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                                    placeholder="Min. 6 characters"
+                                    className="w-full px-4 py-2.5 pr-10 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#8B0000] focus:bg-white"
+                                />
+                                <button
+                                    type="button"
+                                    tabIndex={-1}
+                                    onClick={() => setShowNewPassword(!showNewPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors p-1"
+                                    title={showNewPassword ? "Hide password" : "Show password"}
+                                >
+                                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                            </div>
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                                 Confirm New Password *
                             </label>
-                            <input
-                                type="password"
-                                required
-                                value={passwordForm.confirm_password}
-                                onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
-                                placeholder="Repeat new password"
-                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#8B0000] focus:bg-white"
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    required
+                                    value={passwordForm.confirm_password}
+                                    onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
+                                    placeholder="Repeat new password"
+                                    className="w-full px-4 py-2.5 pr-10 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#8B0000] focus:bg-white"
+                                />
+                                <button
+                                    type="button"
+                                    tabIndex={-1}
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors p-1"
+                                    title={showConfirmPassword ? "Hide password" : "Show password"}
+                                >
+                                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                            </div>
                         </div>
                     </div>
 
