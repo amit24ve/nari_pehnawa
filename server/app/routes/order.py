@@ -307,15 +307,30 @@ def get_my_orders(
     products_collection = db["products"]
     
     try:
-        user_id = current_user.get("id")
+        user_id = str(current_user.get("id") or "")
+        user_email = (current_user.get("email") or "").strip()
         
-        # Build query
-        query = {"user_id": user_id}
+        user_conditions = []
+        if user_id:
+            user_conditions.append({"user_id": user_id})
+            try:
+                user_conditions.append({"user_id": ObjectId(user_id)})
+            except Exception:
+                pass
+        if user_email:
+            user_conditions.append({"customer_email": user_email})
+            user_conditions.append({"email": user_email})
+            user_conditions.append({"shipping_address.email": user_email})
+        
+        base_filter = {"$or": user_conditions} if user_conditions else {"user_id": user_id}
+        
         if status and status != "all":
-            query["status"] = status
+            query = {"$and": [base_filter, {"status": status}]}
+        else:
+            query = base_filter
         
         # Get orders
-        orders = list(orders_collection.find(query).sort("created_at", -1).limit(20))
+        orders = list(orders_collection.find(query).sort("created_at", -1).limit(50))
         
         result = []
         for order in orders:

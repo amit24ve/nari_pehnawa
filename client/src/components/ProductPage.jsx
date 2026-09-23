@@ -1052,7 +1052,7 @@ const ProductPage = () => {
                 onClick={handleBuyNow}
                 className="flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl bg-[#8B0000] text-white font-bold text-sm uppercase tracking-wider hover:bg-[#6B0000] transition-all shadow-md active:scale-98"
               >
-                <Zap className="w-4 h-4" /> Buy It Now
+                <Zap className="w-4 h-4" /> Buy Now
               </button>
             </div>
 

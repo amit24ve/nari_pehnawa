@@ -44,6 +44,21 @@ const Orders = () => {
         }
     };
 
+    const formatAddress = (addr) => {
+        if (!addr) return 'Default Address';
+        if (typeof addr === 'string') return addr;
+        const parts = [
+            addr.full_name,
+            addr.address_line1,
+            addr.address_line2,
+            addr.city,
+            addr.state,
+            addr.postal_code,
+            addr.country
+        ].filter(Boolean);
+        return parts.length > 0 ? parts.join(', ') : 'Default Address';
+    };
+
     const getStatusIcon = (status) => {
         const icons = {
             pending: <Clock className="w-5 h-5" />,
@@ -309,7 +324,7 @@ const Orders = () => {
                                             </div>
                                             <div>
                                                 <p className="text-xs sm:text-sm text-gray-600">Delivery Address</p>
-                                                <p className="font-semibold text-gray-800 text-sm sm:text-base break-words">{order.shipping_address || 'Default Address'}</p>
+                                                <p className="font-semibold text-gray-800 text-sm sm:text-base break-words">{formatAddress(order.shipping_address)}</p>
                                             </div>
                                         </div>
                                     </div>
