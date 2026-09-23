@@ -87,13 +87,9 @@ const Orders = () => {
   const [orderLogs, setOrderLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
 
-  // Return & Refund Tracking State
-  const [returns, setReturns] = useState([
-    { id: "RET-10901", orderId: "o-10934", customer: "Deepa Nair", item: "Printed Kaftan Kurti - Green", reason: "Color difference", amount: 1149, status: "pending", date: "2026-07-15", images: ["https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=100&h=100&fit=crop"], qc_status: "Pending", pickup_status: "Scheduled" },
-    { id: "RET-10902", orderId: "o-10930", customer: "Komal Bhatia", item: "Wooden Wall Shelf", reason: "Damaged on delivery", amount: 1199, status: "approved", date: "2026-07-14", images: [], qc_status: "Passed", pickup_status: "Received" },
-    { id: "RET-10903", orderId: "o-10928", customer: "Megha Gupta", item: "Bandhani Print Kurti", reason: "Size too tight", amount: 949, status: "pending", date: "2026-07-13", images: [], qc_status: "Pending", pickup_status: "Not Initiated" },
-    { id: "RET-10904", orderId: "o-10925", customer: "Sneha Reddy", item: "Royal Blue Silk Saree", reason: "Product not as expected", amount: 5999, status: "rejected", date: "2026-07-12", images: [], qc_status: "Failed", pickup_status: "Received" }
-  ]);
+  // Return & Refund Tracking State (100% Dynamic from /returns/ API)
+  const [returns, setReturns] = useState([]);
+  const [returnsLoading, setReturnsLoading] = useState(false);
 
   const getToken = () =>
     localStorage.getItem("token") || localStorage.getItem("neel_token") || "";
@@ -206,8 +202,52 @@ const Orders = () => {
     }
   };
 
+  const fetchReturns = async () => {
+    try {
+      setReturnsLoading(true);
+      const res = await fetch(`${API_BASE_URL}/returns/`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setReturns(data.map(r => {
+            const rawId = r.id || r._id || "";
+            return {
+              id: rawId ? `RET-${rawId.slice(-6).toUpperCase()}` : "RET-NEW",
+              return_id: rawId,
+              orderId: r.order_number ? `#${r.order_number}` : (r.order_id ? `#ORD-${r.order_id.slice(-6)}` : "N/A"),
+              order_id: r.order_id,
+              customer: r.user_name || r.customer_name || r.customer_email || "Customer",
+              item: r.items && r.items.length > 0
+                ? r.items.map(i => `${i.product_name || i.name || 'Item'} (${i.quantity || 1}x)`).join(", ")
+                : (r.item_name || "Ethnic Wear Outfit"),
+              reason: r.reason || "Customer Return",
+              amount: r.refund_amount || r.amount || 0,
+              status: r.status || "requested",
+              date: r.created_at ? new Date(r.created_at).toISOString().split("T")[0] : "Recent",
+              qc_status: r.qc_status || (r.status === "qc_passed" ? "Passed" : r.status === "qc_failed" ? "Failed" : r.status === "qc_in_progress" ? "In Progress" : "Pending"),
+              pickup_status: r.pickup_status || (r.status === "picked_up" ? "Picked Up" : r.status === "pickup_scheduled" ? "Scheduled" : r.status === "warehouse_received" ? "Warehouse Received" : "Not Initiated"),
+              images: r.images || []
+            };
+          }));
+        } else {
+          setReturns([]);
+        }
+      } else {
+        setReturns([]);
+      }
+    } catch (err) {
+      console.warn("Could not fetch returns:", err);
+      setReturns([]);
+    } finally {
+      setReturnsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchOrders();
+    fetchReturns();
     fetchPickupLocations();
   }, []);
 
@@ -843,15 +883,32 @@ const Orders = () => {
     }
   };
 
-  const handleApproveReturn = (id) => {
-    setReturns(prev => prev.map(r => r.id === id ? { ...r, status: "approved" } : r));
-    alert("Return request approved. Refund processed to customer's wallet/gateway.");
+  const handleReturnAction = async (returnId, action, notes = "") => {
+    try {
+      setActionLoading(true);
+      const res = await fetch(`${API_BASE_URL}/returns/${returnId}/action`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getToken()}`
+        },
+        body: JSON.stringify({ action, notes })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: "Return action failed" }));
+        throw new Error(err.detail || "Action failed");
+      }
+      alert(`Return action '${action}' completed successfully.`);
+      fetchReturns();
+    } catch (e) {
+      alert(`Return Action Error: ${e.message}`);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleRejectReturn = (id) => {
-    setReturns(prev => prev.map(r => r.id === id ? { ...r, status: "rejected" } : r));
-    alert("Return request rejected QC check.");
-  };
+  const handleApproveReturn = (returnId) => handleReturnAction(returnId, "approve");
+  const handleRejectReturn = (returnId) => handleReturnAction(returnId, "reject", "Did not meet return criteria");
 
   const addrString = (a) => {
     if (typeof a === "string") return a;
@@ -1371,70 +1428,128 @@ const Orders = () => {
         </div>
       )}
 
-      {/* TAB: RETURNS */}
+      {/* TAB: RETURNS & QC CHECKING (100% Dynamic) */}
       {!loading && activeTab === "returns" && (
         <div className="space-y-6">
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left text-xs">
-                <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
-                  <tr>
-                    <th className="py-4 px-6">Return Case ID</th>
-                    <th className="py-4 px-6">Order Reference</th>
-                    <th className="py-4 px-6">Customer</th>
-                    <th className="py-4 px-6">Item Details</th>
-                    <th className="py-4 px-6">Refund Amount</th>
-                    <th className="py-4 px-6">Reason &amp; QC Check</th>
-                    <th className="py-4 px-6">Status</th>
-                    <th className="py-4 px-6 text-right">Resolution</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {returns.map((r, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/50 transition">
-                      <td className="py-3.5 px-6 font-mono font-semibold text-slate-800">{r.id}</td>
-                      <td className="py-3.5 px-6 font-mono text-slate-500">{r.orderId}</td>
-                      <td className="py-3.5 px-6 font-semibold text-slate-800">{r.customer}</td>
-                      <td className="py-3.5 px-6 text-slate-650 font-medium">{r.item}</td>
-                      <td className="py-3.5 px-6 font-mono font-bold text-slate-800">₹{r.amount.toLocaleString()}</td>
-                      <td className="py-3.5 px-6">
-                        <div>{r.reason}</div>
-                        <div className="text-[9px] font-bold text-slate-400 mt-0.5">QC: {r.qc_status} • Pickup: {r.pickup_status}</div>
-                      </td>
-                      <td className="py-3.5 px-6">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          r.status === "approved" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
-                          r.status === "rejected" ? "bg-rose-50 text-rose-700 border border-rose-200" :
-                          "bg-amber-50 text-amber-700 border border-amber-200"
-                        }`}>
-                          {r.status}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-6 text-right">
-                        {r.status === "pending" ? (
-                          <div className="flex gap-2 justify-end">
-                            <button
-                              onClick={() => handleApproveReturn(r.id)}
-                              className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl hover:bg-emerald-100 text-[10px] font-bold transition"
-                            >
-                              Approve Refund
-                            </button>
-                            <button
-                              onClick={() => handleRejectReturn(r.id)}
-                              className="px-2.5 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-xl hover:bg-rose-100 text-[10px] font-bold transition"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 italic font-semibold text-[10px]">Resolved</span>
-                        )}
-                      </td>
+            {returnsLoading ? (
+              <div className="p-12 text-center text-slate-500">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto text-amber-500 mb-2" />
+                <p className="text-sm font-semibold">Loading Return &amp; QC Cases...</p>
+              </div>
+            ) : returns.length === 0 ? (
+              <div className="p-12 text-center text-slate-500">
+                <Package className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                <p className="font-semibold text-slate-700 text-sm">No Return or QC Requests Found</p>
+                <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                  When customers submit return requests for delivered orders from their account, they will automatically appear here in real time for review, pickup scheduling, and QC inspection.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left text-xs">
+                  <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                    <tr>
+                      <th className="py-4 px-6">Return Case ID</th>
+                      <th className="py-4 px-6">Order Reference</th>
+                      <th className="py-4 px-6">Customer</th>
+                      <th className="py-4 px-6">Item Details</th>
+                      <th className="py-4 px-6">Refund Amount</th>
+                      <th className="py-4 px-6">Reason &amp; QC Check</th>
+                      <th className="py-4 px-6">Status</th>
+                      <th className="py-4 px-6 text-right">Resolution</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                    {returns.map((r, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/50 transition">
+                        <td className="py-3.5 px-6 font-mono font-semibold text-slate-800">{r.id}</td>
+                        <td className="py-3.5 px-6 font-mono text-slate-500">{r.orderId}</td>
+                        <td className="py-3.5 px-6 font-semibold text-slate-800">{r.customer}</td>
+                        <td className="py-3.5 px-6 text-slate-650 font-medium">{r.item}</td>
+                        <td className="py-3.5 px-6 font-mono font-bold text-slate-800">₹{Number(r.amount || 0).toLocaleString()}</td>
+                        <td className="py-3.5 px-6">
+                          <div>{r.reason}</div>
+                          <div className="text-[9px] font-bold text-slate-400 mt-0.5">QC: {r.qc_status} • Pickup: {r.pickup_status}</div>
+                        </td>
+                        <td className="py-3.5 px-6">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            r.status === "approved" || r.status === "qc_passed" || r.status === "completed" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
+                            r.status === "rejected" || r.status === "qc_failed" ? "bg-rose-50 text-rose-700 border border-rose-200" :
+                            "bg-amber-50 text-amber-700 border border-amber-200"
+                          }`}>
+                            {r.status}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-6 text-right">
+                          {r.status === "requested" || r.status === "under_review" || r.status === "pending" ? (
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                onClick={() => handleApproveReturn(r.return_id)}
+                                disabled={actionLoading}
+                                className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl hover:bg-emerald-100 text-[10px] font-bold transition disabled:opacity-50"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleRejectReturn(r.return_id)}
+                                disabled={actionLoading}
+                                className="px-2.5 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-xl hover:bg-rose-100 text-[10px] font-bold transition disabled:opacity-50"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : r.status === "approved" ? (
+                            <button
+                              onClick={() => handleReturnAction(r.return_id, "schedule_pickup")}
+                              disabled={actionLoading}
+                              className="px-2.5 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl hover:bg-blue-100 text-[10px] font-bold transition disabled:opacity-50"
+                            >
+                              Schedule Pickup
+                            </button>
+                          ) : r.status === "pickup_scheduled" ? (
+                            <button
+                              onClick={() => handleReturnAction(r.return_id, "mark_picked_up")}
+                              disabled={actionLoading}
+                              className="px-2.5 py-1.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-xl hover:bg-purple-100 text-[10px] font-bold transition disabled:opacity-50"
+                            >
+                              Mark Picked Up
+                            </button>
+                          ) : r.status === "picked_up" ? (
+                            <button
+                              onClick={() => handleReturnAction(r.return_id, "mark_received")}
+                              disabled={actionLoading}
+                              className="px-2.5 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl hover:bg-indigo-100 text-[10px] font-bold transition disabled:opacity-50"
+                            >
+                              Receive at Warehouse
+                            </button>
+                          ) : r.status === "warehouse_received" || r.status === "qc_in_progress" ? (
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                onClick={() => handleReturnAction(r.return_id, "qc_pass")}
+                                disabled={actionLoading}
+                                className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl hover:bg-emerald-100 text-[10px] font-bold transition disabled:opacity-50"
+                              >
+                                Pass QC &amp; Refund
+                              </button>
+                              <button
+                                onClick={() => handleReturnAction(r.return_id, "qc_fail", "Failed quality inspection")}
+                                disabled={actionLoading}
+                                className="px-2.5 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-xl hover:bg-rose-100 text-[10px] font-bold transition disabled:opacity-50"
+                              >
+                                Fail QC
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 italic font-semibold text-[10px]">Case Closed</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
