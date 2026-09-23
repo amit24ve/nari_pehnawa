@@ -12,7 +12,7 @@ security = HTTPBearer()
 
 SECRET_KEY = os.getenv("JWT_SECRET", "change_this_secret_for_prod")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 day
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 365 * 10  # 10 years (persistent session until manual logout)
 
 
 def verify_password(plain_password, hashed_password):

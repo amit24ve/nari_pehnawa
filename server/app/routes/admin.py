@@ -187,12 +187,12 @@ def get_delivery_settings():
     setting = settings_col.find_one({"key": "delivery_settings"})
     if not setting:
         return {
-            "free_delivery_order_count": 1,
-            "default_delivery_charge": 50.0
+            "free_delivery_order_count": 3,
+            "default_delivery_charge": 99.0
         }
     return {
-        "free_delivery_order_count": setting.get("free_delivery_order_count", 1),
-        "default_delivery_charge": setting.get("default_delivery_charge", 50.0)
+        "free_delivery_order_count": setting.get("free_delivery_order_count", 3),
+        "default_delivery_charge": setting.get("default_delivery_charge", 99.0)
     }
 
 
@@ -203,8 +203,8 @@ def update_delivery_settings(data: dict, current_user: dict = Depends(require_ad
     db = get_database()
     settings_col = db["settings"]
 
-    free_count = int(data.get("free_delivery_order_count", 1))
-    default_charge = float(data.get("default_delivery_charge", 50.0))
+    free_count = int(data.get("free_delivery_order_count", 3))
+    default_charge = float(data.get("default_delivery_charge", 99.0))
 
     settings_col.update_one(
         {"key": "delivery_settings"},

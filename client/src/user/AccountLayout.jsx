@@ -14,8 +14,9 @@ const tabs = [
 
 const AccountLayout = () => {
     const { user } = useAuth();
+    const token = localStorage.getItem("neel_token") || localStorage.getItem("token");
 
-    if (!user) {
+    if (!user && !token) {
         return <Navigate to="/" replace />;
     }
 

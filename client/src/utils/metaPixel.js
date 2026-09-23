@@ -64,19 +64,31 @@ export const getMetaCatalogIds = (items = []) => {
   return Array.from(new Set(ids));
 };
 
-/**
- * Safely calls fbq on window if available.
- */
-const safeFbq = (trackType, eventName, params = {}) => {
-  if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
-    try {
+export const safeFbq = (trackType, eventName, params = {}) => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    if (typeof window.fbq === 'function') {
       window.fbq(trackType, eventName, params);
       console.log(`🎯 [Meta Pixel] ${trackType} -> ${eventName}:`, params);
-    } catch (err) {
-      console.warn(`[Meta Pixel] Failed to track ${eventName}:`, err);
+    } else {
+      window._fbq = window._fbq || [];
+      window.fbq = window.fbq || function() {
+        if (window.fbq.callMethod) {
+          window.fbq.callMethod.apply(window.fbq, arguments);
+        } else {
+          window.fbq.queue.push(arguments);
+        }
+      };
+      window.fbq.push = window.fbq;
+      window.fbq.loaded = true;
+      window.fbq.version = '2.0';
+      window.fbq.queue = window.fbq.queue || [];
+      window.fbq(trackType, eventName, params);
+      console.log(`🎯 [Meta Pixel (queued)] ${trackType} -> ${eventName}:`, params);
     }
-  } else {
-    console.log(`🎯 [Meta Pixel (queued)] ${trackType} -> ${eventName}:`, params);
+  } catch (err) {
+    console.warn(`[Meta Pixel] Error executing fbq for ${eventName}:`, err);
   }
 };
 

@@ -256,11 +256,15 @@ def login(request: LoginRequest):
     })
 
     # Prepare user response
+    orders_cnt = db["orders"].count_documents({
+        "$or": [{"user_id": str(user.get("_id"))}, {"customer_email": user.get("email")}, {"email": user.get("email")}]
+    })
     user_out = {
         "id": str(user.get('_id')),
         "email": user.get('email'),
         "name": user.get('name'),
-        "role": user.get('role', 'customer')
+        "role": user.get('role', 'customer'),
+        "orders_count": orders_cnt
     }
 
     return {

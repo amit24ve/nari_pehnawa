@@ -689,7 +689,18 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                       onClick={() => {
                         const API_URL =
                           import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
-                        window.location.href = `${API_URL}/auth/google/login`;
+                        const width = 500;
+                        const height = 650;
+                        const left = window.screenX + (window.outerWidth - width) / 2;
+                        const top = window.screenY + (window.outerHeight - height) / 2;
+                        const popup = window.open(
+                          `${API_URL}/auth/google/login`,
+                          "google_oauth_popup",
+                          `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes`
+                        );
+                        if (!popup || popup.closed || typeof popup.closed === "undefined") {
+                          window.location.href = `${API_URL}/auth/google/login`;
+                        }
                       }}
                       className="w-full flex items-center justify-center gap-2.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 py-2.5 px-4 rounded-xl transition-all duration-300 shadow-sm font-semibold text-xs sm:text-sm"
                     >

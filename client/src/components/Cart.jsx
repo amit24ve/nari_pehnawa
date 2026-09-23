@@ -52,8 +52,8 @@ const Cart = () => {
   const [showCheckout, setShowCheckout] = useState(false);
 
   const [deliveryRules, setDeliveryRules] = useState({
-    free_delivery_order_count: 1,
-    default_delivery_charge: 50,
+    free_delivery_order_count: 3,
+    default_delivery_charge: 99,
   });
 
   React.useEffect(() => {
@@ -69,8 +69,8 @@ const Cart = () => {
       .then((res) => res.json())
       .then((data) => {
         setDeliveryRules({
-          free_delivery_order_count: data.free_delivery_order_count ?? 1,
-          default_delivery_charge: data.default_delivery_charge ?? 50,
+          free_delivery_order_count: data.free_delivery_order_count ?? 3,
+          default_delivery_charge: data.default_delivery_charge ?? 99,
         });
       })
       .catch(() => {});

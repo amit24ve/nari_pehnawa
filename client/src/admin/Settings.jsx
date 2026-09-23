@@ -72,8 +72,8 @@ const Settings = () => {
   });
 
   const [deliveryRules, setDeliveryRules] = useState({
-    free_delivery_order_count: 1,
-    default_delivery_charge: 50
+    free_delivery_order_count: 3,
+    default_delivery_charge: 99
   });
 
   const fetchDeliverySettings = async () => {
@@ -82,8 +82,8 @@ const Settings = () => {
       if (res.ok) {
         const data = await res.json();
         setDeliveryRules({
-          free_delivery_order_count: data.free_delivery_order_count ?? 1,
-          default_delivery_charge: data.default_delivery_charge ?? 50
+          free_delivery_order_count: data.free_delivery_order_count ?? 3,
+          default_delivery_charge: data.default_delivery_charge ?? 99
         });
       }
     } catch (e) {

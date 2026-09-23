@@ -29,6 +29,35 @@ const GoogleAuthCallback = () => {
     const token = searchParams.get("token");
     const error = searchParams.get("error");
 
+    // If opened in a popup window, communicate with opener and close
+    if (window.opener && !window.opener.closed) {
+      if (token) {
+        try {
+          window.opener.postMessage({ type: "GOOGLE_AUTH_SUCCESS", token }, window.location.origin);
+          window.close();
+          return;
+        } catch (e) {
+          console.error("Failed to post message to opener", e);
+        }
+      } else if (error) {
+        try {
+          window.opener.postMessage({ type: "GOOGLE_AUTH_ERROR", error }, window.location.origin);
+          window.close();
+          return;
+        } catch (e) {
+          console.error("Failed to post error to opener", e);
+        }
+      }
+    }
+
+    // Check if user is already authenticated (e.g. user pressed Back after signing in)
+    const existingToken = localStorage.getItem("neel_token") || localStorage.getItem("token");
+    const existingUser = localStorage.getItem("neel_admin_user");
+    if (existingToken && existingUser && (error || !token)) {
+      navigate("/", { replace: true });
+      return;
+    }
+
     if (error) {
       setStatus(ERROR_MESSAGES[error] || "Google sign-in failed. Please try again.");
       setTimeout(() => navigate("/", { replace: true }), 2000);
@@ -60,7 +89,7 @@ const GoogleAuthCallback = () => {
             console.error(e);
           }
         }
-        navigate("/user/dashboard", { replace: true });
+        navigate("/", { replace: true });
       } else {
         setStatus(res.message || "Sign-in failed. Redirecting…");
         setTimeout(() => navigate("/", { replace: true }), 1500);

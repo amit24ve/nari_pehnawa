@@ -83,7 +83,18 @@ def create_product(product: ProductCreate, background_tasks: BackgroundTasks, cu
                 product_data["department"] = "Clothing"
 
         result = products_collection.insert_one(product_data)
-        product_data["_id"] = str(result.inserted_id)
+        new_id_str = str(result.inserted_id)
+        product_data["_id"] = new_id_str
+        
+        # Ensure meta_catalog_id & sku are stored in DB
+        catalog_id = str(product_data.get("meta_catalog_id") or product_data.get("sku") or new_id_str).strip()
+        sku_val = str(product_data.get("sku") or catalog_id).strip()
+        products_collection.update_one(
+            {"_id": result.inserted_id},
+            {"$set": {"meta_catalog_id": catalog_id, "sku": sku_val}}
+        )
+        product_data["meta_catalog_id"] = catalog_id
+        product_data["sku"] = sku_val
         product_data = _format_product(product_data)
         
         # Trigger background task to send newsletter

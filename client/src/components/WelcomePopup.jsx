@@ -50,7 +50,7 @@ const WelcomePopup = () => {
     sub_text: "Authentic Kurtis, Suits & Ethnic Wear",
   });
 
-  const { login, openLoginModal } = useAuth();
+  const { user, login, openLoginModal } = useAuth();
   const navigate = useNavigate();
 
   // Load dynamic popup settings from backend
@@ -66,13 +66,19 @@ const WelcomePopup = () => {
   }, []);
 
   useEffect(() => {
-    if (sessionStorage.getItem(STORAGE_KEY)) return;
+    const hasToken = localStorage.getItem("neel_token") || localStorage.getItem("token");
+    if (user || hasToken) {
+      setVisible(false);
+      return;
+    }
+    if (sessionStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY)) return;
     const t = setTimeout(() => setVisible(true), POPUP_DELAY_MS);
     return () => clearTimeout(t);
-  }, []);
+  }, [user]);
 
   const dismiss = useCallback(() => {
     sessionStorage.setItem(STORAGE_KEY, "1");
+    localStorage.setItem(STORAGE_KEY, "1");
     setVisible(false);
   }, []);
 
@@ -131,7 +137,7 @@ const WelcomePopup = () => {
     }
   };
 
-  if (!visible || !popupConfig.is_enabled) return null;
+  if (!visible || !popupConfig.is_enabled || user) return null;
 
   return (
     <>
@@ -407,7 +413,20 @@ const WelcomePopup = () => {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => { window.location.href = `${API_URL}/auth/google/login`; }}
+                  onClick={() => {
+                    const width = 500;
+                    const height = 650;
+                    const left = window.screenX + (window.outerWidth - width) / 2;
+                    const top = window.screenY + (window.outerHeight - height) / 2;
+                    const popup = window.open(
+                      `${API_URL}/auth/google/login`,
+                      "google_oauth_popup",
+                      `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes`
+                    );
+                    if (!popup || popup.closed || typeof popup.closed === "undefined") {
+                      window.location.href = `${API_URL}/auth/google/login`;
+                    }
+                  }}
                   className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-medium border transition-all hover:bg-gray-50"
                   style={{ borderColor: "#e0e0e0", color: "#444" }}
                 >

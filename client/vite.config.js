@@ -14,6 +14,10 @@ export default defineConfig({
       'www.naripehnawa.com'
     ],
     proxy: {
+      '/feed': {
+        target: 'http://127.0.0.1:7100',
+        changeOrigin: true,
+      },
       '/uploads': {
         target: 'http://127.0.0.1:7100',
         changeOrigin: true,
@@ -38,6 +42,10 @@ export default defineConfig({
       'www.naripehnawa.com'
     ],
     proxy: {
+      '/feed': {
+        target: 'http://127.0.0.1:7100',
+        changeOrigin: true,
+      },
       '/uploads': {
         target: 'http://127.0.0.1:7100',
         changeOrigin: true,

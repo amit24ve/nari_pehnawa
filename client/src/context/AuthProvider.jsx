@@ -4,7 +4,18 @@ import { useNavigate } from "react-router-dom";
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(() => {
+        try {
+            const stored = localStorage.getItem("neel_admin_user");
+            const token = localStorage.getItem("neel_token") || localStorage.getItem("token");
+            if (stored && token) {
+                return JSON.parse(stored);
+            }
+        } catch (e) {
+            console.error("Failed to parse stored user", e);
+        }
+        return null;
+    });
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     const [loginNotice, setLoginNotice] = useState("");
     const [loginModalMode, setLoginModalMode] = useState("login"); // "login" | "signup" | "forgot"
@@ -46,8 +57,9 @@ export const AuthProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        const stored = localStorage.getItem("neel_admin_user");
         let token = localStorage.getItem("neel_token") || localStorage.getItem("token");
+        const stored = localStorage.getItem("neel_admin_user");
+
         if (token) {
             localStorage.setItem("neel_token", token);
             localStorage.setItem("token", token);
@@ -57,6 +69,7 @@ export const AuthProvider = ({ children }) => {
                 headers: { Authorization: `Bearer ${token}` }
             }).then(res => {
                 if (res.status === 401) {
+                    // Only log out if token is genuinely rejected as invalid by backend
                     localStorage.removeItem("neel_admin_user");
                     localStorage.removeItem("neel_token");
                     localStorage.removeItem("token");
@@ -73,16 +86,25 @@ export const AuthProvider = ({ children }) => {
                         localStorage.setItem("neel_admin_user", JSON.stringify(u));
                         setUser(u);
                     });
-                } else {
-                    if (stored) setUser(JSON.parse(stored));
                 }
             }).catch(err => {
-                console.error("Token validation error:", err);
-                if (stored) setUser(JSON.parse(stored));
+                // If offline or network issue, maintain logged in state from localStorage
+                console.warn("Session check offline or error, keeping stored session:", err);
             });
-        } else {
-            if (stored) setUser(JSON.parse(stored));
         }
+    }, []);
+
+    // Listen for Google Auth popup response
+    useEffect(() => {
+        const handleMessage = async (event) => {
+            if (event.origin !== window.location.origin) return;
+            if (event.data?.type === "GOOGLE_AUTH_SUCCESS" && event.data?.token) {
+                await loginWithToken(event.data.token);
+                closeLoginModal();
+            }
+        };
+        window.addEventListener("message", handleMessage);
+        return () => window.removeEventListener("message", handleMessage);
     }, []);
 
     const login = async ({ email, password }) => {

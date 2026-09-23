@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { SectionHeading } from "./NariHeadingDecoration";
 import {
@@ -86,10 +86,45 @@ const ProductPage = () => {
 
   // Core Product State
   const [product, setProduct] = useState(null);
+  const trackedProductRef = useRef(null);
+
+  // Reset tracking ref when route changes to another product
+  useEffect(() => {
+    trackedProductRef.current = null;
+  }, [productId]);
+
+  // Dedicated dynamic Meta Pixel ViewContent event tracker for ALL products
+  useEffect(() => {
+    if (!product) return;
+
+    const catalogProductId =
+      product.meta_catalog_id ||
+      product.sku ||
+      product.id ||
+      product._id ||
+      productId;
+
+    if (!catalogProductId) {
+      console.warn("⚠️ [Meta Pixel] Missing Meta Catalog ID for product:", product);
+      return;
+    }
+
+    const cleanId = String(catalogProductId).trim();
+    if (!cleanId || cleanId === "undefined" || cleanId === "null") {
+      console.warn("⚠️ [Meta Pixel] Invalid Meta Catalog ID for product:", product);
+      return;
+    }
+
+    // Deduplicate across re-renders so it fires once per unique product view
+    if (trackedProductRef.current === cleanId) return;
+    trackedProductRef.current = cleanId;
+
+    trackViewContent(product);
+  }, [product, productId]);
 
   useSEO(
-    product ? `${product.name} | Nari Pehnawa` : "Authentic Women Ethnic Wear | Nari Pehnawa",
-    product ? `${product.description || product.name}. Shop original handcrafted Indian ethnic wear at Nari Pehnawa.` : "Handcrafted Anarkali Kurtis, Chikankari Sets, Palazzo Suits, Sarees & Designer Ethnic Wear at Nari Pehnawa."
+    product ? `${product.name} | Nari Pehnawa` : "Luxury Women Ethnic Wear | Nari Pehnawa",
+    product ? `${product.description || product.name}. Shop original handcrafted Indian ethnic wear at Nari Pehnawa.` : "Handcrafted Women's Floral Kurtis, Sleeveless Tops & Designer Ethnic Wear at Nari Pehnawa."
   );
 
   // Inject Meta Microdata & Schema.org JSON-LD for Meta Commerce Manager
@@ -178,6 +213,23 @@ const ProductPage = () => {
   const [showCheckout, setShowCheckout] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  const [deliveryRules, setDeliveryRules] = useState({
+    free_delivery_order_count: 3,
+    default_delivery_charge: 99
+  });
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/admin/settings/delivery`)
+      .then((res) => res.json())
+      .then((data) => {
+        setDeliveryRules({
+          free_delivery_order_count: data.free_delivery_order_count ?? 3,
+          default_delivery_charge: data.default_delivery_charge ?? 99
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   // Delivery Pincode Checker State
   const [pincode, setPincode] = useState("");
@@ -536,7 +588,9 @@ const ProductPage = () => {
       ]
     : [];
   const buyNowSubtotal = buyNowItem[0] ? buyNowItem[0].price * buyNowItem[0].quantity : 0;
-  const buyNowShipping = buyNowSubtotal >= 999 || buyNowSubtotal === 0 ? 0 : 99;
+  const userOrderCount = user?.orders_count || 0;
+  const isFreeDeliveryForUser = userOrderCount < (deliveryRules?.free_delivery_order_count ?? 3);
+  const buyNowShipping = isFreeDeliveryForUser || buyNowSubtotal >= 999 || buyNowSubtotal === 0 ? 0 : (deliveryRules?.default_delivery_charge ?? 99);
   const buyNowTotal = buyNowSubtotal + buyNowShipping;
 
   /* ── PIN Code Servicability Check ── */
@@ -865,7 +919,6 @@ const ProductPage = () => {
                   </>
                 )}
               </div>
-              <p className="text-[11px] text-gray-500 font-medium">Inclusive of all taxes. Free delivery on orders above ₹999.</p>
 
               {/* Dynamic Active Coupon Banner */}
               {(() => {

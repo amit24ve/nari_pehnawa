@@ -24,7 +24,6 @@ const Profile = () => {
 
     // Password State
     const [passwordForm, setPasswordForm] = useState({
-        current_password: '',
         new_password: '',
         confirm_password: ''
     });
@@ -258,14 +257,13 @@ const Profile = () => {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    current_password: passwordForm.current_password || undefined,
                     new_password: passwordForm.new_password
                 })
             });
 
             if (res.ok) {
                 setPasswordMsg({ type: 'success', text: 'Password updated successfully!' });
-                setPasswordForm({ current_password: '', new_password: '', confirm_password: '' });
+                setPasswordForm({ new_password: '', confirm_password: '' });
             } else {
                 const data = await res.json().catch(() => ({}));
                 setPasswordMsg({ type: 'error', text: data.detail || 'Failed to update password' });
@@ -719,18 +717,6 @@ const Profile = () => {
                 )}
 
                 <form onSubmit={handlePasswordChange} className="space-y-4 max-w-lg">
-                    <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                            Current Password (leave blank if Google sign-in)
-                        </label>
-                        <input
-                            type="password"
-                            value={passwordForm.current_password}
-                            onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
-                            placeholder="Enter current password"
-                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#8B0000] focus:bg-white"
-                        />
-                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label className="block text-xs font-semibold text-gray-700 mb-1.5">
