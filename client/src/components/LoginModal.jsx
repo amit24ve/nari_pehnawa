@@ -412,32 +412,17 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                       setOtpSent(false);
                       setOtp("");
                     } else {
-                      // Sign in flow
-                      const loginRes = await fetch(`${API_URL}/auth/login`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          email: email.trim(),
-                          password: password,
-                        }),
-                      });
-                      if (loginRes.ok) {
-                        const data = await loginRes.json();
-                        localStorage.setItem("token", data.access_token);
-                        await login({ email: email.trim(), password: password }); // Update auth context
-                        setLoading(false);
+                      // Sign in flow using centralized auth provider
+                      const result = await login({ email: email.trim(), password: password });
+                      setLoading(false);
+                      if (result.ok) {
                         handleClose();
-
-                        // Redirect based on user role
-                        if (data.user && data.user.role === "admin") {
+                        // Redirect admin users to admin panel, customers stay on page/home
+                        if (result.user && (result.user.role === "admin" || result.user.is_admin)) {
                           navigate("/admin/dashboard");
-                        } else {
-                          navigate("/user/dashboard");
                         }
                       } else {
-                        const d = await loginRes.json().catch(() => ({}));
-                        setError(d.detail || "Invalid email or password");
-                        setLoading(false);
+                        setError(result.message || "Invalid email or password");
                       }
                     }
                   } catch (err) {
