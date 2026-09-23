@@ -199,11 +199,8 @@ class ShiprocketService:
             detail = _safe_json(resp)
             message = detail.get("message") if isinstance(detail, dict) else resp.text[:300]
             logger.error("Shiprocket %s %s failed (%s): %s", method, path, resp.status_code, message)
-            # Let 429/5xx bubble as HTTPStatusError so async_retry can retry them.
-            if resp.status_code in (408, 429, 500, 502, 503, 504):
-                resp.raise_for_status()
             raise ShiprocketAPIError(
-                f"Shiprocket API error on {path}: {message}",
+                f"Shiprocket error: {message}",
                 status_code=resp.status_code,
                 detail=detail,
             )
@@ -213,6 +210,16 @@ class ShiprocketService:
     # ── Orders ───────────────────────────────────────────────────────────────
 
     def _build_order_payload(self, order_id: str, order_data: dict, dimensions: Optional[dict] = None) -> dict:
+        import re
+
+        def _clean_str(val: Optional[str], max_len: int = 190) -> str:
+            if not val:
+                return ""
+            # Strip emojis and non-ascii / weird unicode characters
+            c = re.sub(r'[^\x00-\x7F]+', ' ', str(val))
+            c = re.sub(r'\s+', ' ', c).strip()
+            return c[:max_len]
+
         addr = order_data.get("shipping_address", {}) or {}
         if isinstance(addr, str):
             parts = [p.strip() for p in addr.split(",") if p.strip()]
@@ -220,53 +227,86 @@ class ShiprocketService:
                 "full_name": order_data.get("customer_name") or "Customer",
                 "phone": str(order_data.get("phone") or "").replace("+91", "").strip(),
                 "address_line1": addr[:100],
-                "city": parts[-3] if len(parts) >= 3 else "Mumbai",
-                "state": parts[-2] if len(parts) >= 2 else "Maharashtra",
-                "postal_code": parts[-1] if len(parts) >= 1 and parts[-1].strip().isdigit() else "400053",
+                "city": parts[-3] if len(parts) >= 3 else "Sultanpur",
+                "state": parts[-2] if len(parts) >= 2 else "Uttar Pradesh",
+                "postal_code": parts[-1] if len(parts) >= 1 and parts[-1].strip().isdigit() else "228151",
             }
+        
+        full_name = _clean_str(addr.get("full_name") or order_data.get("customer_name") or "Customer", 45)
+        name_parts = full_name.split(" ", 1)
+        first_name = name_parts[0] if name_parts else "Customer"
+        last_name = name_parts[1] if len(name_parts) > 1 else ""
+
+        clean_phone = re.sub(r'\D', '', str(addr.get("phone") or order_data.get("phone") or ""))
+        if clean_phone.startswith("91") and len(clean_phone) > 10:
+            clean_phone = clean_phone[2:]
+        if len(clean_phone) < 10:
+            clean_phone = "9807429743"
+
+        clean_pincode = re.sub(r'\D', '', str(addr.get("postal_code") or addr.get("pincode") or "228151"))[:6]
+
         items = order_data.get("items", []) or []
         dims = dimensions or {}
 
         order_items = []
         for item in items:
+            raw_pname = item.get("product_name") or item.get("name") or "Ethnic Kurti"
+            clean_pname = _clean_str(raw_pname, 50)
+            raw_sku = item.get("sku") or item.get("product_id") or "SKU-NP"
+            clean_sku = _clean_str(raw_sku, 40)
             order_items.append(
                 {
-                    "name": (item.get("product_name") or "Product")[:200],
-                    "sku": str(item.get("product_id") or "SKU")[:50],
+                    "name": clean_pname or "Designer Kurti",
+                    "sku": clean_sku or "SKU-NP",
                     "units": int(item.get("quantity") or 1),
                     "selling_price": float(item.get("price") or 0),
                     "discount": 0,
                     "tax": 0,
-                    "hsn": item.get("hsn", ""),
+                    "hsn": _clean_str(item.get("hsn") or "", 15),
                 }
             )
 
-        is_prepaid = order_data.get("payment_method") in ("Razorpay", "Online", "razorpay")
+        if not order_items:
+            order_items.append({
+                "name": "Designer Kurti",
+                "sku": "SKU-NP-01",
+                "units": 1,
+                "selling_price": float(order_data.get("total_amount") or 499),
+                "discount": 0,
+                "tax": 0,
+                "hsn": ""
+            })
 
-        return {
+        is_prepaid = order_data.get("payment_method") in ("Razorpay", "Online", "razorpay", "Prepaid")
+
+        payload = {
             "order_id": str(order_id),
             "order_date": datetime.now().strftime("%Y-%m-%d %H:%M"),
             "pickup_location": order_data.get("pickup_location") or shiprocket_pickup_location,
-            "channel_id": shiprocket_channel_id,
-            "billing_customer_name": addr.get("full_name", "Customer"),
-            "billing_last_name": "",
-            "billing_address": addr.get("address_line1", ""),
-            "billing_address_2": addr.get("address_line2", ""),
-            "billing_city": addr.get("city", ""),
-            "billing_pincode": str(addr.get("postal_code", "")),
-            "billing_state": addr.get("state", ""),
-            "billing_country": addr.get("country", "India"),
-            "billing_email": order_data.get("customer_email", "") or addr.get("email", ""),
-            "billing_phone": str(addr.get("phone", "")),
+            "billing_customer_name": first_name,
+            "billing_last_name": last_name,
+            "billing_address": _clean_str(addr.get("address_line1") or "Station Road", 95),
+            "billing_address_2": _clean_str(addr.get("address_line2") or "", 95),
+            "billing_city": _clean_str(addr.get("city") or "Sultanpur", 40),
+            "billing_pincode": clean_pincode,
+            "billing_state": _clean_str(addr.get("state") or "Uttar Pradesh", 40),
+            "billing_country": _clean_str(addr.get("country") or "India", 20),
+            "billing_email": _clean_str(order_data.get("customer_email") or addr.get("email") or "customer@naripehnawa.com", 60),
+            "billing_phone": clean_phone,
             "shipping_is_billing": True,
             "order_items": order_items,
             "payment_method": "Prepaid" if is_prepaid else "COD",
-            "sub_total": float(order_data.get("subtotal", order_data.get("total_amount", 0))),
+            "sub_total": float(order_data.get("subtotal") or order_data.get("total_amount") or 0),
             "length": float(dims.get("length", shiprocket_default_length_cm)),
             "breadth": float(dims.get("breadth", shiprocket_default_breadth_cm)),
             "height": float(dims.get("height", shiprocket_default_height_cm)),
             "weight": float(dims.get("weight", shiprocket_default_weight_kg)),
         }
+
+        if shiprocket_channel_id and str(shiprocket_channel_id).strip() not in ("0", ""):
+            payload["channel_id"] = str(shiprocket_channel_id).strip()
+
+        return payload
 
     async def get_pickup_locations(self) -> list[dict]:
         """GET /settings/company/pickup — list registered pickup addresses."""
