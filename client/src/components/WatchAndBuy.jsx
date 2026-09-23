@@ -96,11 +96,19 @@ const WatchAndBuy = () => {
     let ws = null;
     let reconnectTimeout = null;
     let isUnmounted = false;
+    let retryCount = 0;
+    const MAX_RETRIES = 2;
 
     const connectWs = () => {
-      if (isUnmounted) return;
+      if (isUnmounted || retryCount >= MAX_RETRIES) return;
       try {
-        const wsUrl = API_BASE_URL.replace(/^http/, "ws") + "/reels/ws";
+        // Construct valid secure websocket endpoint
+        let wsHost = API_BASE_URL;
+        if (!wsHost || wsHost.startsWith("/")) {
+          wsHost = window.location.origin;
+        }
+        const wsUrl = wsHost.replace(/^http/, "ws") + "/reels/ws";
+        
         ws = new WebSocket(wsUrl);
 
         ws.onmessage = (event) => {
@@ -131,12 +139,14 @@ const WatchAndBuy = () => {
         };
 
         ws.onclose = () => {
-          if (!isUnmounted) {
-            reconnectTimeout = setTimeout(connectWs, 3000);
+          if (!isUnmounted && retryCount < MAX_RETRIES) {
+            retryCount++;
+            reconnectTimeout = setTimeout(connectWs, 10000);
           }
         };
 
         ws.onerror = () => {
+          retryCount++;
           try {
             ws.close();
           } catch (_) {}
