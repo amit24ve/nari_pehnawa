@@ -67,26 +67,42 @@
 
         <!-- Structured Data / JSON-LD for Google Search & Sitelinks -->
         <script type="application/ld+json">
+        <!-- Structured Data / JSON-LD for Google Search & Sitelinks -->
+        <script type="application/ld+json">
         {
           "@context": "https://schema.org",
-          "@type": "ClothingStore",
+          "@type": ["ClothingStore", "LocalBusiness", "OnlineStore"],
           "name": "Nari Pehnawa",
           "alternateName": ["Nari", "nari", "NARI PEHNAWA", "nari pehnawa", "naripehnawa", "NariPehnawa", "Nari Pehnawa Online", "Nari Pehnawa Boutique"],
           "url": "https://naripehnawa.com",
           "logo": "https://naripehnawa.com/logo.png",
-          "image": "https://naripehnawa.com/logo.png",
-          "description": "Nari Pehnawa offers a premium collection of women's ethnic wear, handcrafted designer kurtis, floral printed tops, and festive outfits.",
+          "image": [
+            "https://naripehnawa.com/logo.png",
+            "https://naripehnawa.com/logo_square.png"
+          ],
+          "description": "Nari Pehnawa (naripehnawa.com) is India's premier boutique for handcrafted Anarkali Kurtis, Chikankari Sets, Palazzo Suits, Sarees & Designer Ethnic Wear.",
           "address": {
             "@type": "PostalAddress",
-            "streetAddress": "Sultanpur",
+            "streetAddress": "Station road, kurebhar",
             "addressLocality": "Sultanpur",
             "addressRegion": "Uttar Pradesh",
             "postalCode": "228151",
             "addressCountry": "IN"
           },
-          "telephone": "+918700012345",
+          "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": 26.2585371,
+            "longitude": 82.0659858
+          },
+          "telephone": "+919807429743",
           "email": "support@naripehnawa.com",
           "priceRange": "₹₹",
+          "openingHoursSpecification": {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+            "opens": "09:00",
+            "closes": "21:00"
+          },
           "sameAs": [
             "https://www.facebook.com/naripehnawa",
             "https://www.instagram.com/naripehnawa",
@@ -109,28 +125,33 @@
           "hasPart": [
             {
               "@type": "WebPage",
-              "name": "Our Story & Founders",
-              "url": "https://naripehnawa.com/owner"
-            },
-            {
-              "@type": "WebPage",
-              "name": "Contact Us & Support",
-              "url": "https://naripehnawa.com/support/contact-us"
-            },
-            {
-              "@type": "WebPage",
-              "name": "About Nari Pehnawa",
-              "url": "https://naripehnawa.com/support/about-us"
-            },
-            {
-              "@type": "WebPage",
               "name": "New Arrivals",
               "url": "https://naripehnawa.com/new-arrivals"
             },
             {
               "@type": "WebPage",
-              "name": "Mega Sale",
+              "name": "Kurtis & Suits",
+              "url": "https://naripehnawa.com/category/kurtis-suits"
+            },
+            {
+              "@type": "WebPage",
+              "name": "Chikankari Kurtis",
+              "url": "https://naripehnawa.com/category/chikankari-kurtis"
+            },
+            {
+              "@type": "WebPage",
+              "name": "Anarkali Sets",
+              "url": "https://naripehnawa.com/category/anarkali-sets"
+            },
+            {
+              "@type": "WebPage",
+              "name": "Festive Mega Sale",
               "url": "https://naripehnawa.com/category/sale"
+            },
+            {
+              "@type": "WebPage",
+              "name": "Our Founders & Story",
+              "url": "https://naripehnawa.com/owner"
             }
           ]
         }
@@ -144,37 +165,37 @@
             {
               "@type": "SiteNavigationElement",
               "position": 1,
-              "name": "Our Story & Founders",
-              "description": "Meet the founders behind Nari Pehnawa & explore our heritage journey.",
-              "url": "https://naripehnawa.com/owner"
-            },
-            {
-              "@type": "SiteNavigationElement",
-              "position": 2,
-              "name": "Contact Us & Help",
-              "description": "Get 24/7 customer support, order tracking & inquiry assistance.",
-              "url": "https://naripehnawa.com/support/contact-us"
-            },
-            {
-              "@type": "SiteNavigationElement",
-              "position": 3,
               "name": "New Arrivals Collection",
               "description": "Explore the latest designer ethnic wear and handcrafted floral kurtis.",
               "url": "https://naripehnawa.com/new-arrivals"
             },
             {
               "@type": "SiteNavigationElement",
-              "position": 4,
+              "position": 2,
+              "name": "Kurtis & Suits",
+              "description": "Shop handcrafted Anarkali, Chikankari & Designer Kurtis.",
+              "url": "https://naripehnawa.com/category/kurtis-suits"
+            },
+            {
+              "@type": "SiteNavigationElement",
+              "position": 3,
               "name": "Mega Sale & Offers",
               "description": "Exclusive discounts and festive offers on women's ethnic wear.",
               "url": "https://naripehnawa.com/category/sale"
             },
             {
               "@type": "SiteNavigationElement",
+              "position": 4,
+              "name": "Our Story & Founders",
+              "description": "Meet the founders behind Nari Pehnawa & explore our heritage journey.",
+              "url": "https://naripehnawa.com/owner"
+            },
+            {
+              "@type": "SiteNavigationElement",
               "position": 5,
-              "name": "About Nari Pehnawa",
-              "description": "Learn about our commitment to authentic Indian ethnic craftsmanship.",
-              "url": "https://naripehnawa.com/support/about-us"
+              "name": "Contact Us & Support",
+              "description": "Get 24/7 customer support, order tracking & inquiry assistance.",
+              "url": "https://naripehnawa.com/support/contact-us"
             }
           ]
         }
