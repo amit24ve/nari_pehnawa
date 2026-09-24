@@ -8,84 +8,105 @@
     <priority>1.0</priority>
   </url>
 
-  <!-- 2. New Arrivals & Best Sellers -->
-  <url>
-    <loc>https://naripehnawa.com/new-arrivals</loc>
-    <lastmod>2026-09-24</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.95</priority>
-  </url>
-
-  <url>
-    <loc>https://naripehnawa.com/category/sale</loc>
-    <lastmod>2026-09-24</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.95</priority>
-  </url>
-
-  <!-- 3. Key Ethnic Wear Categories -->
-  <url>
-    <loc>https://naripehnawa.com/category/kurtis-suits</loc>
-    <lastmod>2026-09-24</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.90</priority>
-  </url>
-
-  <url>
-    <loc>https://naripehnawa.com/category/chikankari-kurtis</loc>
-    <lastmod>2026-09-24</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.90</priority>
-  </url>
-
-  <url>
-    <loc>https://naripehnawa.com/category/anarkali-sets</loc>
-    <lastmod>2026-09-24</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.90</priority>
-  </url>
-
-  <url>
-    <loc>https://naripehnawa.com/category/sarees</loc>
-    <lastmod>2026-09-24</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.90</priority>
-  </url>
-
-  <url>
-    <loc>https://naripehnawa.com/category/festive-wear</loc>
-    <lastmod>2026-09-24</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.90</priority>
-  </url>
-
-  <!-- 4. Founders & Brand Heritage -->
+  <!-- 2. Brand Story, Founders & About Us -->
   <url>
     <loc>https://naripehnawa.com/owner</loc>
     <lastmod>2026-09-24</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.85</priority>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
   </url>
 
   <url>
     <loc>https://naripehnawa.com/support/about-us</loc>
     <lastmod>2026-09-24</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.85</priority>
+    <priority>0.90</priority>
   </url>
 
-  <!-- 5. Support & Order Tracking -->
   <url>
     <loc>https://naripehnawa.com/support/contact-us</loc>
     <lastmod>2026-09-24</lastmod>
     <changefreq>monthly</changefreq>
+    <priority>0.90</priority>
+  </url>
+
+  <!-- 3. Real Active Store Categories (From Admin Panel) -->
+  <url>
+    <loc>https://naripehnawa.com/new-arrivals</loc>
+    <lastmod>2026-09-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.90</priority>
+  </url>
+
+  <url>
+    <loc>https://naripehnawa.com/category/sale</loc>
+    <lastmod>2026-09-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.90</priority>
+  </url>
+
+  <url>
+    <loc>https://naripehnawa.com/category/halter-neck-top</loc>
+    <lastmod>2026-09-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.98</priority>
+  </url>
+
+  <url>
+    <loc>https://naripehnawa.com/category/sleeveless-kurtis</loc>
+    <lastmod>2026-09-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.96</priority>
+  </url>
+
+  <url>
+    <loc>https://naripehnawa.com/category/black-floral-kurtis</loc>
+    <lastmod>2026-09-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://naripehnawa.com/category/full-sleeve-v-neck</loc>
+    <lastmod>2026-09-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- 4. Real Products in Catalog -->
+  <url>
+    <loc>https://naripehnawa.com/product/6aadc34dd787ec46675b39df</loc>
+    <lastmod>2026-09-24</lastmod>
+    <changefreq>daily</changefreq>
     <priority>0.80</priority>
   </url>
 
   <url>
+    <loc>https://naripehnawa.com/product/6aadc6c5d787ec46675b39e3</loc>
+    <lastmod>2026-09-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <url>
+    <loc>https://naripehnawa.com/product/6aadcaa8d787ec46675b3a15</loc>
+    <lastmod>2026-09-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <url>
+    <loc>https://naripehnawa.com/product/6aadccc3d787ec46675b3a18</loc>
+    <lastmod>2026-09-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- 5. Order Tracking & Customer Service -->
+  <url>
     <loc>https://naripehnawa.com/track-order</loc>
     <lastmod>2026-09-24</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.80</priority>
+    <priority>0.75</priority>
   </url>
 </urlset>
