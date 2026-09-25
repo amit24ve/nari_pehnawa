@@ -36,16 +36,11 @@ const WelcomePopup = () => {
       .catch(() => {});
   }, []);
 
-  // Show modal ONLY on first visit
+  // Show modal on website load / refresh
   useEffect(() => {
-    // Check if user already dismissed or saw the welcome offer
-    const alreadyShown =
-      localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
-    if (alreadyShown) return;
-
     if (!config.is_enabled) return;
 
-    const delay = (config.delay_seconds || 3) * 1000;
+    const delay = Math.max(1, config.delay_seconds || 2) * 1000;
     const timer = setTimeout(() => {
       setVisible(true);
     }, delay);
@@ -54,8 +49,6 @@ const WelcomePopup = () => {
   }, [config.is_enabled, config.delay_seconds]);
 
   const dismiss = useCallback(() => {
-    sessionStorage.setItem(STORAGE_KEY, "1");
-    localStorage.setItem(STORAGE_KEY, "1");
     setVisible(false);
   }, []);
 

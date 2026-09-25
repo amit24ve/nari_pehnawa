@@ -284,6 +284,14 @@ async def toggle_reel_like(
     user_id = str(user.get("id")) if user else None
     visitor_id = x_visitor_id.strip() if x_visitor_id else None
 
+    user_info = None
+    if user_id:
+        try:
+            from bson import ObjectId
+            user_info = db["users"].find_one({"_id": ObjectId(user_id)})
+        except Exception:
+            pass
+
     if not user_id and not visitor_id:
         client_ip = request.client.host if request.client else "unknown"
         visitor_id = f"ip_{client_ip}"
@@ -306,6 +314,9 @@ async def toggle_reel_like(
             }
             if user_id:
                 doc["user_id"] = user_id
+                doc["user_name"] = (user_info.get("full_name") or user_info.get("name") or user.get("name") or "Registered Customer") if (user_info or user) else "Registered Customer"
+                doc["user_email"] = (user_info.get("email") or user.get("email")) if (user_info or user) else None
+                doc["user_phone"] = (user_info.get("phone") or user.get("phone")) if (user_info or user) else None
             if visitor_id:
                 doc["visitor_id"] = visitor_id
             db["reel_likes"].insert_one(doc)
@@ -346,6 +357,9 @@ async def toggle_reel_like(
             }
             if user_id:
                 doc["user_id"] = user_id
+                doc["user_name"] = (user_info.get("full_name") or user_info.get("name") or user.get("name") or "Registered Customer") if (user_info or user) else "Registered Customer"
+                doc["user_email"] = (user_info.get("email") or user.get("email")) if (user_info or user) else None
+                doc["user_phone"] = (user_info.get("phone") or user.get("phone")) if (user_info or user) else None
             if visitor_id:
                 doc["visitor_id"] = visitor_id
             db["reel_likes"].insert_one(doc)
@@ -467,3 +481,52 @@ def toggle_reel(reel_id: str, _admin=Depends(require_admin)):
     db["watch_buy_reels"].update_one(filter_q, {"$set": {"is_active": new_state}})
     clear_api_cache()
     return {"success": True, "is_active": new_state}
+
+
+@router.get("/{reel_id}/likers")
+def get_reel_likers(reel_id: str, _admin=Depends(require_admin)):
+    """Admin only: List all users who liked this reel, with profile details & timestamp."""
+    db = get_database()
+    _reel_or_404(db, reel_id)
+
+    likes = list(db["reel_likes"].find({"reel_id": reel_id}).sort("created_at", -1))
+
+    # Fetch users in batch
+    from bson import ObjectId
+    user_ids = []
+    for l in likes:
+        uid = l.get("user_id")
+        if uid and ObjectId.is_valid(uid):
+            user_ids.append(ObjectId(uid))
+
+    users_map = {}
+    if user_ids:
+        for u in db["users"].find({"_id": {"$in": user_ids}}):
+            users_map[str(u["_id"])] = u
+
+    results = []
+    for l in likes:
+        uid = l.get("user_id")
+        u_info = users_map.get(uid, {}) if uid else {}
+        name = l.get("user_name") or u_info.get("full_name") or u_info.get("name") or ("Registered Customer" if uid else "Guest Visitor")
+        email = l.get("user_email") or u_info.get("email") or "—"
+        phone = l.get("user_phone") or u_info.get("phone") or "—"
+        created_at_dt = l.get("created_at")
+        date_str = created_at_dt.strftime("%d %b %Y, %I:%M %p") if isinstance(created_at_dt, datetime) else str(created_at_dt or "N/A")
+
+        results.append({
+            "id": str(l["_id"]),
+            "user_id": uid,
+            "user_name": name,
+            "user_email": email,
+            "user_phone": phone,
+            "visitor_id": l.get("visitor_id"),
+            "is_registered": bool(uid),
+            "liked_at": date_str
+        })
+
+    return {
+        "reel_id": reel_id,
+        "total_likes": len(results),
+        "likers": results
+    }
