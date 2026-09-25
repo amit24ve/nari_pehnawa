@@ -30,6 +30,8 @@ const AdminAnnouncementsModal = () => {
   // Top Bar Announcements state
   const [announcements, setAnnouncements] = useState([]);
   const [loadingAnnouncements, setLoadingAnnouncements] = useState(false);
+  const [topbarEnabled, setTopbarEnabled] = useState(true);
+  const [togglingTopbar, setTogglingTopbar] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null); // null = new, or object
   const [announcementForm, setAnnouncementForm] = useState({
@@ -74,9 +76,10 @@ const AdminAnnouncementsModal = () => {
   const fetchAllData = async () => {
     setLoadingAnnouncements(true);
     try {
-      const [annRes, welRes] = await Promise.all([
+      const [annRes, welRes, topRes] = await Promise.all([
         fetch(`${API_BASE}/announcements/all`, { headers: authHeaders() }),
         fetch(`${API_BASE}/announcements/welcome-modal`),
+        fetch(`${API_BASE}/announcements/topbar-settings`),
       ]);
 
       if (annRes.ok) {
@@ -87,10 +90,32 @@ const AdminAnnouncementsModal = () => {
         const data = await welRes.json();
         if (data) setWelcomeConfig((prev) => ({ ...prev, ...data }));
       }
+      if (topRes.ok) {
+        const topData = await topRes.json();
+        setTopbarEnabled(topData.is_enabled !== false);
+      }
     } catch (e) {
+      
       console.error("Failed to fetch announcements/modal config:", e);
     } finally {
       setLoadingAnnouncements(false);
+    }
+  };
+
+  const handleToggleTopbarMaster = async (enableState) => {
+    setTogglingTopbar(true);
+    try {
+      const res = await fetch(`${API_BASE}/announcements/topbar-settings`, {
+        method: "PUT",
+        headers: authHeaders(),
+        body: JSON.stringify({ is_enabled: enableState }),
+      });
+      if (!res.ok) throw new Error("Failed to update topbar settings");
+      setTopbarEnabled(enableState);
+    } catch (e) {
+      alert(`Update failed: ${e.message}`);
+    } finally {
+      setTogglingTopbar(false);
     }
   };
 
@@ -292,13 +317,35 @@ const AdminAnnouncementsModal = () => {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleOpenCreate}
-            className="px-4 py-2.5 bg-[#580C1F] hover:bg-[#7B1128] text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md cursor-pointer flex-shrink-0"
-          >
-            <Plus className="w-4 h-4 text-[#d4af37]" /> Add New Announcement
-          </button>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2.5 cursor-pointer select-none bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl">
+              <input
+                type="checkbox"
+                checked={topbarEnabled}
+                onChange={(e) => handleToggleTopbarMaster(e.target.checked)}
+                disabled={togglingTopbar}
+                className="w-4 h-4 text-[#580C1F] rounded accent-[#580C1F] cursor-pointer"
+              />
+              <span className="text-xs font-bold text-slate-800">
+                {topbarEnabled ? (
+                  <span className="text-emerald-600 flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    Top Bar Active
+                  </span>
+                ) : (
+                  <span className="text-slate-400">Top Bar Paused</span>
+                )}
+              </span>
+            </label>
+
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              className="px-4 py-2.5 bg-[#580C1F] hover:bg-[#7B1128] text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md cursor-pointer flex-shrink-0"
+            >
+              <Plus className="w-4 h-4 text-[#d4af37]" /> Add New Announcement
+            </button>
+          </div>
         </div>
 
         {/* Live TopBar Preview */}

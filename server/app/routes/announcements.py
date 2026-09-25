@@ -55,49 +55,48 @@ def _format_announcement(doc: dict) -> dict:
     return doc
 
 
+@router.get("/topbar-settings")
+def get_topbar_settings():
+    """Get master top bar settings (is_enabled)"""
+    db = get_database()
+    cfg = db["admin_settings"].find_one({"key": "topbar_settings"})
+    if not cfg:
+        return {"is_enabled": True}
+    return {"is_enabled": bool(cfg.get("is_enabled", True))}
+
+
+@router.put("/topbar-settings")
+def update_topbar_settings(
+    payload: dict,
+    current_user: dict = Depends(require_admin),
+):
+    """Admin endpoint: Toggle master top bar enabled/paused status"""
+    db = get_database()
+    is_enabled = bool(payload.get("is_enabled", True))
+    db["admin_settings"].update_one(
+        {"key": "topbar_settings"},
+        {"$set": {"key": "topbar_settings", "is_enabled": is_enabled, "updated_at": datetime.now()}},
+        upsert=True
+    )
+    clear_api_cache()
+    return {"success": True, "is_enabled": is_enabled}
+
+
 @router.get("/")
 def get_active_announcements():
-    """Public endpoint: Get active top bar announcements sorted by display order"""
+    """Public endpoint: Get active top bar announcements sorted by display order. Returns empty list if top bar is paused."""
     db = get_database()
+    
+    # Check master topbar setting
+    topbar_cfg = db["admin_settings"].find_one({"key": "topbar_settings"})
+    if topbar_cfg and not topbar_cfg.get("is_enabled", True):
+        return []
+
     items = list(
         db["announcements"]
         .find({"is_active": True})
         .sort("display_order", 1)
     )
-    if not items:
-        # Default fallback announcements if none configured
-        return [
-            {
-                "id": "default-1",
-                "text": "🌸 Grand Festive Sale: Flat 10% OFF on First Order",
-                "sub_text": "Use Code: FESTIVE10",
-                "link": "/category/sale",
-                "badge": "FESTIVE",
-                "icon": "✨",
-                "is_active": True,
-                "display_order": 1,
-            },
-            {
-                "id": "default-2",
-                "text": "🚚 Free Express Shipping Pan-India on Orders Above ₹499",
-                "sub_text": "Cash on Delivery Available",
-                "link": "/new-arrivals",
-                "badge": "FREE SHIPPING",
-                "icon": "🎁",
-                "is_active": True,
-                "display_order": 2,
-            },
-            {
-                "id": "default-3",
-                "text": "✨ Pure Craftsmanship: Handcrafted Designer Kurtis & Tops",
-                "sub_text": "Explore New Arrivals",
-                "link": "/category/halter-neck-top",
-                "badge": "NEW",
-                "icon": "👗",
-                "is_active": True,
-                "display_order": 3,
-            },
-        ]
     return [_format_announcement(item) for item in items]
 
 
