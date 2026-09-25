@@ -6,7 +6,6 @@ import {
   Image, Upload, Link2, Sparkles, Check
 } from 'lucide-react';
 import { resolveImageUrl } from '../utils/imageUrl';
-import AdminAnnouncementsModal from './AdminAnnouncementsModal';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://naripehnawa.com:7100';
 
@@ -531,7 +530,6 @@ const Settings = () => {
 
   const tabs = [
     { id: 'flash_sale', label: '⚡ Flash Sale & Events', icon: Flame },
-    { id: 'announcements', label: '📢 Top Bar & Welcome Offer Modal', icon: Sparkles },
     { id: 'store', label: 'Store Info', icon: Store },
     { id: 'pricing', label: 'Pricing & Delivery', icon: IndianRupee },
     { id: 'coupons', label: 'Coupons & Promo Codes', icon: Tag },

@@ -37,6 +37,7 @@ class AnnouncementUpdate(BaseModel):
 
 class WelcomeOfferModalConfig(BaseModel):
     is_enabled: bool = True
+    template_type: str = Field("festive-royal", description="festive-royal | new-launch | flash-sale | welcome-gift | free-shipping")
     banner_image: str = "/nari_post_banner.jpg"
     title: str = "Grand Festive Season Sale"
     subtitle: str = "Flat 10% OFF on Handcrafted Designer Kurtis & Ethnic Wear"
@@ -179,6 +180,7 @@ def get_welcome_offer_modal_config():
     if not cfg:
         return {
             "is_enabled": True,
+            "template_type": "festive-royal",
             "banner_image": "/nari_post_banner.jpg",
             "title": "Grand Festive Season Sale",
             "subtitle": "Flat 10% OFF on Handcrafted Designer Kurtis & Ethnic Wear",
@@ -190,6 +192,7 @@ def get_welcome_offer_modal_config():
             "delay_seconds": 3,
         }
     cfg.pop("_id", None)
+    cfg.setdefault("template_type", "festive-royal")
     return cfg
 
 

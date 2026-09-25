@@ -19,6 +19,9 @@ import {
   ShoppingBag,
   Gift,
   Truck,
+  Flame,
+  Zap,
+  ShieldCheck,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -47,6 +50,7 @@ const AdminAnnouncementsModal = () => {
   // Welcome Offer Modal Config state
   const [welcomeConfig, setWelcomeConfig] = useState({
     is_enabled: true,
+    template_type: "festive-royal",
     banner_image: "/nari_post_banner.jpg",
     title: "Grand Festive Season Sale",
     subtitle: "Flat 10% OFF on Handcrafted Designer Kurtis & Ethnic Wear",
@@ -569,6 +573,7 @@ const AdminAnnouncementsModal = () => {
                   onClick={() =>
                     setWelcomeConfig((prev) => ({
                       ...prev,
+                      template_type: "festive-royal",
                       title: "Grand Festive Season Sale",
                       subtitle: "Flat 10% OFF on Handcrafted Designer Kurtis & Ethnic Wear",
                       discount_badge: "FLAT 10% OFF",
@@ -577,9 +582,13 @@ const AdminAnnouncementsModal = () => {
                       button_link: "/category/sale",
                     }))
                   }
-                  className="px-2.5 py-2.5 bg-white hover:bg-amber-100/70 border border-amber-200 rounded-xl text-[11px] font-bold text-amber-900 transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer"
+                  className={`px-2.5 py-2.5 rounded-xl text-[11px] font-bold transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer border ${
+                    (welcomeConfig.template_type || "festive-royal") === "festive-royal"
+                      ? "bg-amber-100/90 border-[#580C1F] text-[#580C1F] ring-2 ring-[#580C1F]/40 shadow-sm"
+                      : "bg-white hover:bg-amber-50 border-amber-200 text-amber-900"
+                  }`}
                 >
-                  <span>🌸 Festive Sale</span>
+                  <span className="flex items-center gap-1">🌸 Festive Royal</span>
                   <span className="text-[9px] text-slate-500 font-mono font-bold">FESTIVE10</span>
                 </button>
                 <button
@@ -587,6 +596,7 @@ const AdminAnnouncementsModal = () => {
                   onClick={() =>
                     setWelcomeConfig((prev) => ({
                       ...prev,
+                      template_type: "new-launch",
                       title: "New Season Designer Arrivals",
                       subtitle: "Discover Exclusive Pure Cotton & Silk Handcrafted Kurtis",
                       discount_badge: "NEW LAUNCH 15% OFF",
@@ -595,9 +605,13 @@ const AdminAnnouncementsModal = () => {
                       button_link: "/new-arrivals",
                     }))
                   }
-                  className="px-2.5 py-2.5 bg-white hover:bg-amber-100/70 border border-amber-200 rounded-xl text-[11px] font-bold text-amber-900 transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer"
+                  className={`px-2.5 py-2.5 rounded-xl text-[11px] font-bold transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer border ${
+                    welcomeConfig.template_type === "new-launch"
+                      ? "bg-emerald-50 border-emerald-600 text-emerald-950 ring-2 ring-emerald-500/40 shadow-sm"
+                      : "bg-white hover:bg-amber-50 border-amber-200 text-amber-900"
+                  }`}
                 >
-                  <span>✨ New Launch</span>
+                  <span className="flex items-center gap-1">✨ New Launch</span>
                   <span className="text-[9px] text-slate-500 font-mono font-bold">NEWLAUNCH</span>
                 </button>
                 <button
@@ -605,6 +619,7 @@ const AdminAnnouncementsModal = () => {
                   onClick={() =>
                     setWelcomeConfig((prev) => ({
                       ...prev,
+                      template_type: "welcome-gift",
                       title: "Welcome to Nari Pehnawa",
                       subtitle: "Get Flat ₹200 OFF on Your First Purchase Above ₹999",
                       discount_badge: "₹200 WELCOME GIFT",
@@ -613,9 +628,13 @@ const AdminAnnouncementsModal = () => {
                       button_link: "/category/anarkali-kurtis",
                     }))
                   }
-                  className="px-2.5 py-2.5 bg-white hover:bg-amber-100/70 border border-amber-200 rounded-xl text-[11px] font-bold text-amber-900 transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer"
+                  className={`px-2.5 py-2.5 rounded-xl text-[11px] font-bold transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer border ${
+                    welcomeConfig.template_type === "welcome-gift"
+                      ? "bg-purple-50 border-purple-600 text-purple-950 ring-2 ring-purple-500/40 shadow-sm"
+                      : "bg-white hover:bg-amber-50 border-amber-200 text-amber-900"
+                  }`}
                 >
-                  <span>🎁 First Order</span>
+                  <span className="flex items-center gap-1">🎁 First Order</span>
                   <span className="text-[9px] text-slate-500 font-mono font-bold">WELCOME200</span>
                 </button>
                 <button
@@ -623,6 +642,7 @@ const AdminAnnouncementsModal = () => {
                   onClick={() =>
                     setWelcomeConfig((prev) => ({
                       ...prev,
+                      template_type: "flash-sale",
                       title: "Mega Flash Deal: Limited Stock",
                       subtitle: "Up to 40% OFF on Best Selling Ethnic Sets & Kurtas",
                       discount_badge: "UP TO 40% OFF",
@@ -631,9 +651,13 @@ const AdminAnnouncementsModal = () => {
                       button_link: "/category/sale",
                     }))
                   }
-                  className="px-2.5 py-2.5 bg-white hover:bg-amber-100/70 border border-amber-200 rounded-xl text-[11px] font-bold text-amber-900 transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer"
+                  className={`px-2.5 py-2.5 rounded-xl text-[11px] font-bold transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer border ${
+                    welcomeConfig.template_type === "flash-sale"
+                      ? "bg-rose-50 border-rose-600 text-rose-950 ring-2 ring-rose-500/40 shadow-sm"
+                      : "bg-white hover:bg-amber-50 border-amber-200 text-amber-900"
+                  }`}
                 >
-                  <span>⚡ Flash Deal</span>
+                  <span className="flex items-center gap-1">⚡ Flash Deal</span>
                   <span className="text-[9px] text-slate-500 font-mono font-bold">FLASH40</span>
                 </button>
                 <button
@@ -641,6 +665,7 @@ const AdminAnnouncementsModal = () => {
                   onClick={() =>
                     setWelcomeConfig((prev) => ({
                       ...prev,
+                      template_type: "free-shipping",
                       title: "Pan-India Free Express Shipping",
                       subtitle: "Zero Shipping Charges & Cash on Delivery on All Orders Above ₹499",
                       discount_badge: "FREE EXPRESS SHIPPING",
@@ -649,9 +674,13 @@ const AdminAnnouncementsModal = () => {
                       button_link: "/new-arrivals",
                     }))
                   }
-                  className="px-2.5 py-2.5 bg-white hover:bg-amber-100/70 border border-amber-200 rounded-xl text-[11px] font-bold text-amber-900 transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer col-span-2 sm:col-span-1"
+                  className={`px-2.5 py-2.5 rounded-xl text-[11px] font-bold transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer border col-span-2 sm:col-span-1 ${
+                    welcomeConfig.template_type === "free-shipping"
+                      ? "bg-sky-50 border-sky-600 text-sky-950 ring-2 ring-sky-500/40 shadow-sm"
+                      : "bg-white hover:bg-amber-50 border-amber-200 text-amber-900"
+                  }`}
                 >
-                  <span>🚚 Free Shipping</span>
+                  <span className="flex items-center gap-1">🚚 Free Shipping</span>
                   <span className="text-[9px] text-slate-500 font-mono font-bold">FREESHIP</span>
                 </button>
               </div>
@@ -904,60 +933,192 @@ const AdminAnnouncementsModal = () => {
 
           {/* Live Preview (5 Cols) */}
           <div className="lg:col-span-5 flex flex-col justify-center">
-            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Eye className="w-3.5 h-3.5 text-[#0891b2]" /> Live Modal
-              Interactive Preview
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <Eye className="w-3.5 h-3.5 text-[#0891b2]" /> Live Modal Interactive Preview
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 uppercase font-mono">
+                Theme: {welcomeConfig.template_type || "festive-royal"}
+              </span>
             </div>
 
-            <div className="bg-slate-900/90 rounded-3xl p-4 shadow-2xl border border-slate-700 relative overflow-hidden">
-              <div className="relative rounded-2xl overflow-hidden shadow-lg border border-[#d4af37]/50 min-h-[380px] flex flex-col justify-end text-center p-4">
-                {/* Background Image */}
-                <img
-                  src={resolveImageUrl(
-                    welcomeConfig.banner_image,
-                    "/nari_post_banner.jpg"
-                  )}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover object-center"
-                  onError={(e) => {
-                    e.target.src = "/nari_post_banner.jpg";
-                  }}
-                />
+            <div className="bg-slate-950 rounded-3xl p-3 sm:p-4 shadow-2xl border border-slate-800 relative overflow-hidden">
+              {/* 1. Festive Royal Preview */}
+              {(welcomeConfig.template_type || "festive-royal") === "festive-royal" && (
+                <div className="relative rounded-2xl overflow-hidden shadow-lg border-2 border-[#d4af37]/60 bg-gradient-to-br from-[#3d0815] via-[#580C1F] to-[#20040b] min-h-[380px] flex flex-col justify-between text-left p-4 text-white">
+                  <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                    <span className="bg-[#d4af37] text-[#580C1F] font-black text-[9px] px-2 py-0.5 rounded-full uppercase flex items-center gap-1">
+                      <Sparkles className="w-2.5 h-2.5" /> {welcomeConfig.discount_badge || "ROYAL FESTIVE"}
+                    </span>
+                    <span className="text-[9px] text-amber-200/80">Festive Edition</span>
+                  </div>
 
-                {/* Dark Vignette Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/75 to-black/30 pointer-events-none" />
+                  <div className="space-y-2 my-auto py-2">
+                    <h4 className="font-black font-serif text-white text-lg leading-tight">
+                      {welcomeConfig.title || "Grand Festive Season Sale"}
+                    </h4>
+                    <p className="text-[11px] text-amber-100/90 leading-relaxed">
+                      {welcomeConfig.subtitle || "Flat 10% OFF on Handcrafted Designer Kurtis & Ethnic Wear"}
+                    </p>
 
-                {/* Content Overlay */}
-                <div className="relative z-10 space-y-2.5 text-white">
-                  <h4 className="font-black font-serif text-white text-base leading-tight drop-shadow">
-                    {welcomeConfig.title || "Grand Festive Season Sale"}
-                  </h4>
-                  <p className="text-[10px] text-amber-100/90 font-medium line-clamp-2 drop-shadow">
-                    {welcomeConfig.subtitle}
-                  </p>
-
-                  {welcomeConfig.coupon_code && (
-                    <div className="p-2 bg-black/40 backdrop-blur-md border border-dashed border-[#d4af37] rounded-xl flex items-center justify-between px-3">
-                      <div className="text-left">
-                        <div className="text-[8px] font-bold text-amber-200/80">
-                          COUPON
+                    {welcomeConfig.coupon_code && (
+                      <div className="p-2.5 bg-black/40 border border-dashed border-[#d4af37] rounded-xl flex items-center justify-between">
+                        <div>
+                          <div className="text-[8px] font-bold text-[#ffe29a]">COUPON CODE</div>
+                          <div className="text-xs font-black font-mono text-white">{welcomeConfig.coupon_code}</div>
                         </div>
-                        <div className="text-xs font-black text-[#ffe29a] font-mono">
-                          {welcomeConfig.coupon_code}
-                        </div>
+                        <span className="px-2 py-0.5 bg-[#d4af37] text-[#580C1F] text-[9px] font-bold rounded">
+                          COPY
+                        </span>
                       </div>
-                      <span className="px-2 py-0.5 rounded-lg bg-[#d4af37] text-[#580C1F] text-[9px] font-black">
-                        COPY
-                      </span>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
                   <button className="w-full py-2.5 bg-gradient-to-r from-[#d4af37] via-[#f3e5ab] to-[#d4af37] text-[#580C1F] rounded-xl text-xs font-black shadow-lg flex items-center justify-center gap-1">
-                    <ShoppingBag className="w-3.5 h-3.5 text-[#580C1F]" />
-                    {welcomeConfig.button_text || "EXPLORE COLLECTION"}
+                    <span>{welcomeConfig.button_text || "EXPLORE FESTIVE COLLECTION"}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
-              </div>
+              )}
+
+              {/* 2. New Launch Preview */}
+              {welcomeConfig.template_type === "new-launch" && (
+                <div className="relative rounded-2xl overflow-hidden shadow-lg border border-emerald-500/40 min-h-[380px] flex flex-col justify-end text-center p-3">
+                  <img
+                    src={resolveImageUrl(welcomeConfig.banner_image, "/nari_post_banner.jpg")}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover object-center"
+                    onError={(e) => { e.target.src = "/nari_post_banner.jpg"; }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent pointer-events-none" />
+
+                  <div className="relative z-10 backdrop-blur-md bg-slate-950/70 border-t border-emerald-500/30 rounded-t-2xl p-3 space-y-2 text-white">
+                    <span className="inline-block bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">
+                      {welcomeConfig.discount_badge || "NEW LAUNCH 15% OFF"}
+                    </span>
+                    <h4 className="font-black text-white text-base leading-tight">
+                      {welcomeConfig.title || "New Season Designer Arrivals"}
+                    </h4>
+                    <p className="text-[10px] text-slate-300 line-clamp-2">
+                      {welcomeConfig.subtitle}
+                    </p>
+                    {welcomeConfig.coupon_code && (
+                      <div className="flex items-center justify-center gap-1.5 p-1.5 bg-emerald-950/50 border border-emerald-500/40 rounded-lg text-xs font-mono font-bold text-white">
+                        <span className="text-[9px] text-emerald-400">CODE:</span> {welcomeConfig.coupon_code}
+                      </div>
+                    )}
+                    <button className="w-full py-2 bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-1">
+                      <span>{welcomeConfig.button_text || "SHOP NEW ARRIVALS"}</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 3. Flash Sale Preview */}
+              {welcomeConfig.template_type === "flash-sale" && (
+                <div className="relative rounded-2xl overflow-hidden shadow-lg border-2 border-rose-600/70 bg-gradient-to-b from-red-950 via-slate-950 to-black min-h-[380px] flex flex-col justify-between text-center p-4 text-white">
+                  <div className="bg-gradient-to-r from-rose-600 via-amber-500 to-rose-600 text-black py-1 px-3 font-black text-[9px] uppercase tracking-wider rounded-lg flex items-center justify-center gap-1">
+                    <Flame className="w-3 h-3 text-black animate-bounce" /> FLASH DEAL: LIMITED HOURS
+                  </div>
+
+                  <div className="space-y-2 my-auto">
+                    <span className="inline-block px-3 py-1 rounded-full bg-rose-600/20 border border-rose-500 text-rose-300 text-[10px] font-black uppercase">
+                      {welcomeConfig.discount_badge || "UP TO 40% OFF"}
+                    </span>
+                    <h4 className="font-black text-white text-lg uppercase leading-tight">
+                      {welcomeConfig.title || "Mega Flash Deal: Limited Stock"}
+                    </h4>
+                    <p className="text-[10px] text-rose-100/80">
+                      {welcomeConfig.subtitle}
+                    </p>
+                    {welcomeConfig.coupon_code && (
+                      <div className="p-2 bg-red-950/60 border border-dashed border-rose-500 rounded-xl flex items-center justify-between px-3">
+                        <span className="text-[9px] text-rose-300 font-bold uppercase">COUPON: {welcomeConfig.coupon_code}</span>
+                        <span className="px-2 py-0.5 bg-rose-600 text-white text-[9px] font-black rounded">COPY</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <button className="w-full py-2.5 bg-gradient-to-r from-rose-600 to-amber-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg flex items-center justify-center gap-1">
+                    <Zap className="w-3.5 h-3.5 fill-white" />
+                    <span>{welcomeConfig.button_text || "GRAB FLASH DEAL"}</span>
+                  </button>
+                </div>
+              )}
+
+              {/* 4. Welcome Gift Preview */}
+              {welcomeConfig.template_type === "welcome-gift" && (
+                <div className="relative rounded-2xl overflow-hidden shadow-lg border-2 border-purple-400/40 bg-gradient-to-b from-slate-900 via-[#1f1624] to-slate-950 min-h-[380px] flex flex-col justify-between text-center p-4 text-white">
+                  <div className="w-10 h-10 mx-auto rounded-xl bg-gradient-to-br from-purple-500 to-amber-400 p-0.5 flex items-center justify-center">
+                    <div className="w-full h-full bg-slate-900 rounded-xl flex items-center justify-center">
+                      <Gift className="w-5 h-5 text-amber-300" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 my-auto">
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-purple-300">
+                      {welcomeConfig.discount_badge || "EXCLUSIVE FIRST ORDER VOUCHER"}
+                    </div>
+                    <h4 className="font-black text-white text-base">
+                      {welcomeConfig.title || "Welcome to Nari Pehnawa"}
+                    </h4>
+                    <p className="text-[10px] text-purple-100/70">
+                      {welcomeConfig.subtitle}
+                    </p>
+                    {welcomeConfig.coupon_code && (
+                      <div className="p-2 bg-purple-950/40 border border-dashed border-amber-300/60 rounded-xl flex items-center justify-between px-3">
+                        <span className="text-[9px] text-amber-200 font-mono font-bold">VOUCHER: {welcomeConfig.coupon_code}</span>
+                        <span className="px-2 py-0.5 bg-amber-400 text-slate-950 text-[9px] font-black rounded">COPY</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <button className="w-full py-2.5 bg-gradient-to-r from-purple-500 via-pink-500 to-amber-400 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg flex items-center justify-center gap-1">
+                    <span>{welcomeConfig.button_text || "CLAIM WELCOME GIFT"}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* 5. Free Shipping Preview */}
+              {welcomeConfig.template_type === "free-shipping" && (
+                <div className="relative rounded-2xl overflow-hidden shadow-lg border-2 border-sky-400/50 bg-gradient-to-br from-slate-900 via-sky-950 to-slate-950 min-h-[380px] flex flex-col justify-between text-center p-4 text-white">
+                  <div className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-400/40 text-[9px] font-black uppercase">
+                    <Truck className="w-3 h-3 text-sky-400" /> {welcomeConfig.discount_badge || "PAN-INDIA EXPRESS SHIPPING"}
+                  </div>
+
+                  <div className="space-y-2 my-auto">
+                    <h4 className="font-black text-white text-base">
+                      {welcomeConfig.title || "Pan-India Free Express Shipping"}
+                    </h4>
+                    <p className="text-[10px] text-sky-100/80">
+                      {welcomeConfig.subtitle}
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-1.5 text-left text-[9px]">
+                      <div className="p-1.5 bg-sky-950/50 border border-sky-500/30 rounded-lg flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3 text-sky-400 flex-shrink-0" /> Free Shipping
+                      </div>
+                      <div className="p-1.5 bg-sky-950/50 border border-sky-500/30 rounded-lg flex items-center gap-1">
+                        <Check className="w-3 h-3 text-emerald-400 flex-shrink-0" /> Cash on Delivery
+                      </div>
+                    </div>
+
+                    {welcomeConfig.coupon_code && (
+                      <div className="p-1.5 bg-sky-950/60 border border-dashed border-sky-400 rounded-lg flex items-center justify-between px-2.5">
+                        <span className="text-[9px] text-sky-300 font-mono font-bold">CODE: {welcomeConfig.coupon_code}</span>
+                        <span className="px-2 py-0.5 bg-sky-400 text-slate-950 text-[9px] font-bold rounded">COPY</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <button className="w-full py-2.5 bg-gradient-to-r from-sky-400 to-cyan-300 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg flex items-center justify-center gap-1">
+                    <span>{welcomeConfig.button_text || "START SHOPPING NOW"}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
