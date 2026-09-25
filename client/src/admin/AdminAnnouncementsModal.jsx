@@ -260,23 +260,23 @@ const AdminAnnouncementsModal = () => {
     formData.append("file", file);
 
     try {
-      const res = await fetch(`${API_BASE}/upload/`, {
+      const res = await fetch(`${API_BASE}/upload/image`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${
-            localStorage.getItem("neel_token") ||
-            localStorage.getItem("token") ||
-            ""
-          }`,
+          Authorization: `Bearer ${getToken()}`,
         },
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Upload failed");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Image upload failed");
+      }
       const data = await res.json();
       const url = data.url || data.file_url || data.image_url;
       if (url) {
         setWelcomeConfig((prev) => ({ ...prev, banner_image: url }));
+        alert("Banner image uploaded successfully!");
       }
     } catch (e) {
       alert(`Image upload failed: ${e.message}`);
@@ -555,12 +555,81 @@ const AdminAnnouncementsModal = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Form Controls (7 Cols) */}
           <div className="lg:col-span-7 space-y-5">
+            {/* Quick Offer Creation Templates */}
+            <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-700" /> Create from Quick Templates
+                </span>
+                <span className="text-[10px] text-amber-700 font-medium">Click to populate instant layout</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setWelcomeConfig((prev) => ({
+                      ...prev,
+                      title: "Grand Festive Season Sale",
+                      subtitle: "Flat 10% OFF on Handcrafted Designer Kurtis & Ethnic Wear",
+                      coupon_code: "FESTIVE10",
+                      button_text: "EXPLORE COLLECTION",
+                      button_link: "/new-arrivals",
+                    }))
+                  }
+                  className="px-2.5 py-2 bg-white hover:bg-amber-100/70 border border-amber-200 rounded-xl text-[11px] font-bold text-amber-900 transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer"
+                >
+                  <span>🌸 Festive Sale</span>
+                  <span className="text-[9px] text-slate-500 font-mono">FESTIVE10</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setWelcomeConfig((prev) => ({
+                      ...prev,
+                      title: "New Season Collection Launch",
+                      subtitle: "Exclusive 15% OFF on Latest Silk Kurtis & Suit Sets",
+                      coupon_code: "NEWLAUNCH",
+                      button_text: "SHOP NEW ARRIVALS",
+                      button_link: "/new-arrivals",
+                    }))
+                  }
+                  className="px-2.5 py-2 bg-white hover:bg-amber-100/70 border border-amber-200 rounded-xl text-[11px] font-bold text-amber-900 transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer"
+                >
+                  <span>✨ New Launch</span>
+                  <span className="text-[9px] text-slate-500 font-mono">NEWLAUNCH</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setWelcomeConfig((prev) => ({
+                      ...prev,
+                      title: "First Order Special Welcome Offer",
+                      subtitle: "Get Flat ₹200 OFF on Your First Purchase Above ₹999",
+                      coupon_code: "WELCOME200",
+                      button_text: "CLAIM OFFER NOW",
+                      button_link: "/category/sale",
+                    }))
+                  }
+                  className="px-2.5 py-2 bg-white hover:bg-amber-100/70 border border-amber-200 rounded-xl text-[11px] font-bold text-amber-900 transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer"
+                >
+                  <span>🎁 First Order</span>
+                  <span className="text-[9px] text-slate-500 font-mono">WELCOME200</span>
+                </button>
+              </div>
+            </div>
+
             {/* Banner Image Selection */}
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <ImageIcon className="w-4 h-4 text-[#580C1F]" /> Offer Banner
-                Image
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <ImageIcon className="w-4 h-4 text-[#580C1F]" /> Offer Banner Image
+                </label>
+                {welcomeConfig.banner_image && (
+                  <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Image Loaded
+                  </span>
+                )}
+              </div>
 
               <div className="flex border border-slate-200 rounded-xl overflow-hidden bg-white p-1">
                 <button
@@ -572,7 +641,7 @@ const AdminAnnouncementsModal = () => {
                       : "text-slate-500 hover:text-slate-900"
                   }`}
                 >
-                  <Upload className="w-3.5 h-3.5 inline mr-1" /> Upload Image
+                  <Upload className="w-3.5 h-3.5 inline mr-1" /> Upload Image File
                 </button>
                 <button
                   type="button"
@@ -610,7 +679,7 @@ const AdminAnnouncementsModal = () => {
                     <span>
                       {uploadingImg
                         ? "Uploading banner..."
-                        : "Click to upload promotional banner"}
+                        : "Click to choose and upload promotional banner"}
                     </span>
                   </button>
                 </div>
@@ -627,6 +696,34 @@ const AdminAnnouncementsModal = () => {
                   placeholder="/nari_post_banner.jpg or https://..."
                   className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:outline-none focus:border-[#580C1F]"
                 />
+              )}
+
+              {welcomeConfig.banner_image && (
+                <div className="relative h-20 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-between px-3">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={resolveImageUrl(welcomeConfig.banner_image, "/nari_post_banner.jpg")}
+                      alt=""
+                      className="w-24 h-14 object-cover rounded-lg border border-slate-300"
+                      onError={(e) => { e.target.src = "/nari_post_banner.jpg"; }}
+                    />
+                    <div className="text-left">
+                      <div className="text-xs font-bold text-slate-800 truncate max-w-[200px]">
+                        {welcomeConfig.banner_image.split("/").pop()}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-mono">
+                        Active Banner Image
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 transition"
+                  >
+                    Change
+                  </button>
+                </div>
               )}
             </div>
 
