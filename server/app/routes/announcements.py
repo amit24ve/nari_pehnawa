@@ -221,12 +221,12 @@ def update_welcome_offer_modal_config(
 
 class MysteryJarOfferConfig(BaseModel):
     is_enabled: bool = True
-    pill_text: str = Field("Free Mystery Jewelry Jar", description="Text on slider button")
-    pill_subtext: str = Field("Top 5 Daily Orders", description="Short subtext on slider button")
+    pill_text: str = Field("Free Mystery Jewellery Jar", description="Text on slider button")
+    pill_subtext: str = Field("View Gift →", description="Subtext / link on slider button")
     image_url: str = Field("/mystery_jewelry_jar.jpg", description="Jar photo URL")
-    title: str = Field("Free Mystery Jewelry Jar 🎁", description="Modal Title")
-    overlay_text: str = Field("Top 5 Orders of the Day Get a Free Mystery Jewelry Jar!", description="Text displayed directly on image")
-    description: Optional[str] = Field("Place an order today among the top 5 daily orders and receive this surprise handcrafted luxury jewelry jar with your parcel!", description="Modal description")
+    title: str = Field("Free Mystery Jewellery Jar 🎁", description="Modal Title")
+    overlay_text: str = Field("Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!", description="Text displayed directly on image")
+    description: Optional[str] = Field("Receive this handcrafted luxury glass jar with red ribbon, filled with premium surprise jewelry inside with your delivery parcel!", description="Modal description")
     button_text: str = Field("Shop Now & Claim Gift", description="Button text")
     button_link: str = Field("/new-arrivals", description="Button link")
 
@@ -239,12 +239,12 @@ def get_mystery_jar_offer_config():
     if not cfg:
         return {
             "is_enabled": True,
-            "pill_text": "Free Mystery Jewelry Jar",
-            "pill_subtext": "Top 5 Daily Orders",
+            "pill_text": "Free Mystery Jewellery Jar",
+            "pill_subtext": "View Gift →",
             "image_url": "/mystery_jewelry_jar.jpg",
-            "title": "Free Mystery Jewelry Jar 🎁",
-            "overlay_text": "Top 5 Orders of the Day Get a Free Mystery Jewelry Jar!",
-            "description": "Place an order today among the top 5 daily orders and receive this surprise handcrafted luxury jewelry jar with your parcel!",
+            "title": "Free Mystery Jewellery Jar 🎁",
+            "overlay_text": "Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!",
+            "description": "Receive this handcrafted luxury glass jar with red ribbon, filled with premium surprise jewelry inside with your delivery parcel!",
             "button_text": "Shop Now & Claim Gift",
             "button_link": "/new-arrivals",
         }

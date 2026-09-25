@@ -69,12 +69,12 @@ const AdminAnnouncementsModal = () => {
   // Mystery Jewelry Jar Launching Offer Config state
   const [mysteryJarConfig, setMysteryJarConfig] = useState({
     is_enabled: true,
-    pill_text: "Free Mystery Jewelry Jar",
-    pill_subtext: "Top 5 Daily Orders",
+    pill_text: "Free Mystery Jewellery Jar",
+    pill_subtext: "View Gift →",
     image_url: "/mystery_jewelry_jar.jpg",
-    title: "Free Mystery Jewelry Jar 🎁",
-    overlay_text: "Top 5 Orders of the Day Get a Free Mystery Jewelry Jar!",
-    description: "Place an order today among our top 5 daily orders and receive this surprise handcrafted luxury jewelry jar filled with earrings, necklaces, and accessories!",
+    title: "Free Mystery Jewellery Jar 🎁",
+    overlay_text: "Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!",
+    description: "Receive this handcrafted luxury glass jar with red ribbon, filled with premium surprise jewelry inside with your delivery parcel!",
     button_text: "Shop Now & Claim Gift",
     button_link: "/new-arrivals",
   });
@@ -1459,14 +1459,14 @@ const AdminAnnouncementsModal = () => {
               {/* Slider Button Preview */}
               <div className="space-y-1.5">
                 <span className="text-[10px] font-bold text-slate-500 block text-left">Slider Box (Above Dots)</span>
-                <div className="inline-flex items-center gap-2.5 bg-white text-gray-900 border-2 border-amber-300 shadow-md rounded-2xl py-2 px-4">
-                  <span className="text-lg">🎁</span>
-                  <div className="text-left">
-                    <div className="text-xs font-extrabold text-gray-900 leading-tight">
-                      {mysteryJarConfig.pill_text || "Free Mystery Jewelry Jar"}
+                <div className="inline-flex items-center gap-3 bg-white text-gray-900 border border-black/85 shadow-md rounded-2xl py-2 px-4 text-left">
+                  <span className="text-2xl leading-none select-none">🎁</span>
+                  <div>
+                    <div className="text-xs font-black text-gray-900 leading-tight">
+                      {mysteryJarConfig.pill_text || "Free Mystery Jewellery Jar"}
                     </div>
-                    <div className="text-[10px] text-amber-800 font-semibold">
-                      {mysteryJarConfig.pill_subtext || "Top 5 Daily Orders"} • <span className="text-[#8B0000] font-bold">View Gift &rarr;</span>
+                    <div className="text-[11px] text-[#8B0000] font-bold mt-0.5">
+                      <span>View Gift &rarr;</span>
                     </div>
                   </div>
                 </div>
@@ -1475,7 +1475,7 @@ const AdminAnnouncementsModal = () => {
               {/* Compact 200px-style Card Modal Preview */}
               <div className="space-y-1.5 pt-2 border-t border-slate-200">
                 <span className="text-[10px] font-bold text-slate-500 block text-left">Compact Card Modal Preview</span>
-                <div className="max-w-[280px] mx-auto bg-white rounded-2xl overflow-hidden shadow-xl border border-amber-200 text-left">
+                <div className="max-w-[280px] mx-auto bg-white rounded-2xl overflow-hidden shadow-xl border border-black/80 text-left">
                   {/* Image with overlay text */}
                   <div className="relative w-full h-44 bg-black">
                     <img
@@ -1490,7 +1490,7 @@ const AdminAnnouncementsModal = () => {
                         🎁 DAILY TOP 5 ORDERS
                       </div>
                       <h5 className="text-xs font-bold leading-tight drop-shadow">
-                        {mysteryJarConfig.overlay_text || "Top 5 Orders of the Day Get a Free Mystery Jewelry Jar!"}
+                        {mysteryJarConfig.overlay_text || "Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!"}
                       </h5>
                     </div>
                   </div>

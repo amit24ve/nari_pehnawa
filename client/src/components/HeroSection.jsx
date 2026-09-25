@@ -49,12 +49,12 @@ const HeroSection = () => {
   const [showJarModal, setShowJarModal] = useState(false);
   const [jarConfig, setJarConfig] = useState({
     is_enabled: true,
-    pill_text: "Free Mystery Jewelry Jar",
-    pill_subtext: "Top 5 Daily Orders",
+    pill_text: "Free Mystery Jewellery Jar",
+    pill_subtext: "View Gift →",
     image_url: "/mystery_jewelry_jar.jpg",
-    title: "Free Mystery Jewelry Jar 🎁",
-    overlay_text: "Top 5 Orders of the Day Get a Free Mystery Jewelry Jar!",
-    description: "Place an order today among the top 5 daily orders and receive this surprise handcrafted luxury jewelry jar with your parcel!",
+    title: "Free Mystery Jewellery Jar 🎁",
+    overlay_text: "Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!",
+    description: "Receive this handcrafted luxury glass jar with red ribbon, filled with premium surprise jewelry inside with your delivery parcel!",
     button_text: "Shop Now & Claim Gift",
     button_link: "/new-arrivals",
   });
@@ -219,27 +219,24 @@ const HeroSection = () => {
             <ChevronRight className="w-5 h-5" />
           </button>
 
-          {/* ── Rectangular Bottom Offer Box (Positioned right above the dot indicators) ── */}
+          {/* ── Fixed Rectangular Bottom Offer Box (Black border, no zoom, clean gift icon) ── */}
           {jarConfig.is_enabled && (
             <div className="absolute bottom-9 sm:bottom-11 left-1/2 -translate-x-1/2 z-20 pointer-events-auto max-w-[95%] sm:max-w-none">
               <button
                 onClick={() => setShowJarModal(true)}
-                className="group bg-white/95 hover:bg-white text-gray-900 border-2 border-amber-300 shadow-xl backdrop-blur-md rounded-2xl py-2 px-3.5 sm:px-5 flex items-center gap-2.5 sm:gap-3 hover:scale-105 transition-all duration-300 cursor-pointer"
-                title="Click to view Mystery Jewelry Jar offer"
+                className="bg-white hover:bg-neutral-50 text-gray-900 border border-black/85 shadow-md backdrop-blur-md rounded-2xl py-2 px-4 sm:px-5 flex items-center gap-3 cursor-pointer transition-colors duration-200"
+                title="Click to view Mystery Jewellery Jar offer"
               >
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-100 border border-amber-300/80 flex items-center justify-center text-lg sm:text-xl shadow-inner flex-shrink-0">
+                <span className="text-2xl flex-shrink-0 select-none leading-none">
                   🎁
-                </div>
+                </span>
                 <div className="text-left">
-                  <div className="text-xs sm:text-sm font-black text-gray-900 leading-tight tracking-tight">
-                    {jarConfig.pill_text || "Free Mystery Jewelry Jar"}
+                  <div className="text-xs sm:text-[13px] font-black text-gray-900 leading-tight tracking-tight">
+                    {jarConfig.pill_text || "Free Mystery Jewellery Jar"}
                   </div>
-                  <div className="text-[10px] sm:text-[11px] text-amber-800 font-bold flex items-center gap-1 mt-0.5">
-                    <span>{jarConfig.pill_subtext || "Top 5 Daily Orders"}</span>
-                    <span>•</span>
-                    <span className="text-[#8B0000] font-black group-hover:translate-x-0.5 transition-transform">
-                      View Gift &rarr;
-                    </span>
+                  <div className="text-[11px] font-bold text-[#8B0000] flex items-center gap-1 mt-0.5">
+                    <span>View Gift</span>
+                    <span className="text-xs">&rarr;</span>
                   </div>
                 </div>
               </button>
@@ -264,14 +261,14 @@ const HeroSection = () => {
         </div>
       </section>
 
-      {/* ── Compact Card Modal Popup (200px-Style Compact Square Card) ── */}
+      {/* ── Compact Card Modal Popup (Compact Square Card with Full Image & Clear Text) ── */}
       {showJarModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fadeIn">
           {/* Backdrop */}
           <div className="absolute inset-0" onClick={() => setShowJarModal(false)} />
 
           <div
-            className="relative bg-white rounded-3xl max-w-[340px] sm:max-w-[360px] w-full overflow-hidden shadow-2xl border-2 border-amber-300 z-10 animate-scaleUp text-left"
+            className="relative bg-white rounded-3xl max-w-[340px] sm:max-w-[360px] w-full overflow-hidden shadow-2xl border border-black/80 z-10 animate-scaleUp text-left"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
@@ -286,7 +283,7 @@ const HeroSection = () => {
             <div className="relative w-full h-64 sm:h-72 bg-black overflow-hidden group">
               <img
                 src={resolveImageUrl(jarConfig.image_url, "/mystery_jewelry_jar.jpg")}
-                alt="Free Mystery Jewelry Jar"
+                alt="Free Mystery Jewellery Jar"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 onError={(e) => { e.target.src = "/mystery_jewelry_jar.jpg"; }}
               />
@@ -298,7 +295,7 @@ const HeroSection = () => {
                   🎁 DAILY TOP 5 ORDERS
                 </div>
                 <h4 className="text-base sm:text-lg font-black font-serif text-white leading-tight drop-shadow-md">
-                  {jarConfig.overlay_text || "Top 5 Orders of the Day Get a Free Mystery Jewelry Jar!"}
+                  {jarConfig.overlay_text || "Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!"}
                 </h4>
               </div>
             </div>
@@ -306,7 +303,7 @@ const HeroSection = () => {
             {/* Compact Modal Footer Content */}
             <div className="p-4 space-y-3 bg-white">
               <p className="text-xs text-gray-700 leading-relaxed font-medium">
-                {jarConfig.description || "Place an order today among our top 5 daily orders and receive this surprise handcrafted luxury jewelry jar with your parcel!"}
+                {jarConfig.description || "Receive this handcrafted luxury glass jar with red ribbon, filled with premium surprise jewelry inside with your delivery parcel!"}
               </p>
 
               <button
