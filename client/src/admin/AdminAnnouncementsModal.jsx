@@ -559,11 +559,11 @@ const AdminAnnouncementsModal = () => {
             <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-700" /> Create from Quick Templates
+                  <Sparkles className="w-3.5 h-3.5 text-amber-700" /> 5 Pre-Built eCommerce Offer Templates
                 </span>
-                <span className="text-[10px] text-amber-700 font-medium">Click to populate instant layout</span>
+                <span className="text-[10px] text-amber-700 font-semibold">1-Click Apply &amp; Customize</span>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                 <button
                   type="button"
                   onClick={() =>
@@ -571,49 +571,88 @@ const AdminAnnouncementsModal = () => {
                       ...prev,
                       title: "Grand Festive Season Sale",
                       subtitle: "Flat 10% OFF on Handcrafted Designer Kurtis & Ethnic Wear",
+                      discount_badge: "FLAT 10% OFF",
                       coupon_code: "FESTIVE10",
-                      button_text: "EXPLORE COLLECTION",
-                      button_link: "/new-arrivals",
+                      button_text: "EXPLORE FESTIVE COLLECTION",
+                      button_link: "/category/sale",
                     }))
                   }
-                  className="px-2.5 py-2 bg-white hover:bg-amber-100/70 border border-amber-200 rounded-xl text-[11px] font-bold text-amber-900 transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer"
+                  className="px-2.5 py-2.5 bg-white hover:bg-amber-100/70 border border-amber-200 rounded-xl text-[11px] font-bold text-amber-900 transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer"
                 >
                   <span>🌸 Festive Sale</span>
-                  <span className="text-[9px] text-slate-500 font-mono">FESTIVE10</span>
+                  <span className="text-[9px] text-slate-500 font-mono font-bold">FESTIVE10</span>
                 </button>
                 <button
                   type="button"
                   onClick={() =>
                     setWelcomeConfig((prev) => ({
                       ...prev,
-                      title: "New Season Collection Launch",
-                      subtitle: "Exclusive 15% OFF on Latest Silk Kurtis & Suit Sets",
+                      title: "New Season Designer Arrivals",
+                      subtitle: "Discover Exclusive Pure Cotton & Silk Handcrafted Kurtis",
+                      discount_badge: "NEW LAUNCH 15% OFF",
                       coupon_code: "NEWLAUNCH",
                       button_text: "SHOP NEW ARRIVALS",
                       button_link: "/new-arrivals",
                     }))
                   }
-                  className="px-2.5 py-2 bg-white hover:bg-amber-100/70 border border-amber-200 rounded-xl text-[11px] font-bold text-amber-900 transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer"
+                  className="px-2.5 py-2.5 bg-white hover:bg-amber-100/70 border border-amber-200 rounded-xl text-[11px] font-bold text-amber-900 transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer"
                 >
                   <span>✨ New Launch</span>
-                  <span className="text-[9px] text-slate-500 font-mono">NEWLAUNCH</span>
+                  <span className="text-[9px] text-slate-500 font-mono font-bold">NEWLAUNCH</span>
                 </button>
                 <button
                   type="button"
                   onClick={() =>
                     setWelcomeConfig((prev) => ({
                       ...prev,
-                      title: "First Order Special Welcome Offer",
+                      title: "Welcome to Nari Pehnawa",
                       subtitle: "Get Flat ₹200 OFF on Your First Purchase Above ₹999",
+                      discount_badge: "₹200 WELCOME GIFT",
                       coupon_code: "WELCOME200",
-                      button_text: "CLAIM OFFER NOW",
+                      button_text: "CLAIM WELCOME GIFT",
+                      button_link: "/category/anarkali-kurtis",
+                    }))
+                  }
+                  className="px-2.5 py-2.5 bg-white hover:bg-amber-100/70 border border-amber-200 rounded-xl text-[11px] font-bold text-amber-900 transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer"
+                >
+                  <span>🎁 First Order</span>
+                  <span className="text-[9px] text-slate-500 font-mono font-bold">WELCOME200</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setWelcomeConfig((prev) => ({
+                      ...prev,
+                      title: "Mega Flash Deal: Limited Stock",
+                      subtitle: "Up to 40% OFF on Best Selling Ethnic Sets & Kurtas",
+                      discount_badge: "UP TO 40% OFF",
+                      coupon_code: "FLASH40",
+                      button_text: "GRAB FLASH DEAL",
                       button_link: "/category/sale",
                     }))
                   }
-                  className="px-2.5 py-2 bg-white hover:bg-amber-100/70 border border-amber-200 rounded-xl text-[11px] font-bold text-amber-900 transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer"
+                  className="px-2.5 py-2.5 bg-white hover:bg-amber-100/70 border border-amber-200 rounded-xl text-[11px] font-bold text-amber-900 transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer"
                 >
-                  <span>🎁 First Order</span>
-                  <span className="text-[9px] text-slate-500 font-mono">WELCOME200</span>
+                  <span>⚡ Flash Deal</span>
+                  <span className="text-[9px] text-slate-500 font-mono font-bold">FLASH40</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setWelcomeConfig((prev) => ({
+                      ...prev,
+                      title: "Pan-India Free Express Shipping",
+                      subtitle: "Zero Shipping Charges & Cash on Delivery on All Orders Above ₹499",
+                      discount_badge: "FREE EXPRESS SHIPPING",
+                      coupon_code: "FREESHIP",
+                      button_text: "START SHOPPING NOW",
+                      button_link: "/new-arrivals",
+                    }))
+                  }
+                  className="px-2.5 py-2.5 bg-white hover:bg-amber-100/70 border border-amber-200 rounded-xl text-[11px] font-bold text-amber-900 transition flex flex-col items-center gap-1 text-center shadow-xs cursor-pointer col-span-2 sm:col-span-1"
+                >
+                  <span>🚚 Free Shipping</span>
+                  <span className="text-[9px] text-slate-500 font-mono font-bold">FREESHIP</span>
                 </button>
               </div>
             </div>

@@ -44,6 +44,7 @@ import PaymentHistory from "./admin/PaymentHistory";
 import Visitors from "./admin/Visitors";
 import HeroBanners from "./admin/HeroBanners";
 import Inquiries from "./admin/Inquiries";
+import AdminAnnouncementsModal from "./admin/AdminAnnouncementsModal";
 import RequireAuth from "./admin/RequireAuth";
 import { AuthProvider } from "./context/AuthProvider";
 import { WishlistProvider } from "./context/WishlistProvider";
@@ -271,6 +272,10 @@ function App() {
                                     <Route
                                         path="hero"
                                         element={<HeroBanners />}
+                                    />
+                                    <Route
+                                        path="announcements"
+                                        element={<AdminAnnouncementsModal />}
                                     />
                                     <Route
                                         path="inquiries"
