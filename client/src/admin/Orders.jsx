@@ -614,6 +614,21 @@ const Orders = () => {
       day: "2-digit", month: "short", year: "numeric"
     }) : "—";
 
+    const warehouseCode = String(order.warehouse_assigned || selectedPickupLocation || "Home").toLowerCase();
+    const warehouseInfo = warehouseCode.includes("1") || warehouseCode.includes("allahabad") || warehouseCode.includes("prayagraj")
+      ? {
+          name: "Nari Pehnawa Dispatch Hub (Prayagraj / Allahabad)",
+          address: "221/28A/8, Sarvodaya Nagar, New Sohabatia Bagh, Allahpur",
+          city: "Prayagraj / Allahabad, Uttar Pradesh - 211006",
+          contact: "Ritika Singh (+91 9555807961)",
+        }
+      : {
+          name: "Nari Pehnawa Dispatch Hub (Sultanpur)",
+          address: "121a, Baisia, Vidhayak Nagar Chauraha, Guptarganj, Kurebhar",
+          city: "Sultanpur, Uttar Pradesh - 228151",
+          contact: "Pooja Verma (+91 9807429743)",
+        };
+
     const packingSlipHtml = `
       <html>
         <head>
@@ -623,7 +638,7 @@ const Orders = () => {
             .slip-box { max-width: 800px; margin: auto; padding: 30px; border: 1px solid #eee; font-size: 14px; line-height: 24px; }
             .header { display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; }
             .logo { font-size: 24px; font-weight: bold; font-family: Georgia, serif; }
-            .addresses { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 30px; }
+            .addresses { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
             .address-block { background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
             .section-title { font-weight: bold; text-transform: uppercase; font-size: 11px; color: #555; margin-bottom: 8px; }
             .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
@@ -640,17 +655,25 @@ const Orders = () => {
             <div class="header">
               <div>
                 <div class="logo">NARI PEHNAWA</div>
-                <div style="font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #555;">Packing Slip</div>
+                <div style="font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #555;">Courier Dispatch Slip</div>
               </div>
               <div style="text-align: right; font-size: 12px;">
                 Order Number: <strong>${order.order_number || order.orderId}</strong><br>
-                Order Date: ${orderDate}
+                Order Date: ${orderDate}<br>
+                ${order.awb_code ? `AWB: <strong>${order.awb_code}</strong>` : ""}
               </div>
             </div>
 
             <div class="addresses">
               <div class="address-block">
-                <div class="section-title">Shipping Address</div>
+                <div class="section-title">Shipped From (Dispatch Warehouse)</div>
+                <strong>${warehouseInfo.name}</strong><br>
+                ${warehouseInfo.address}<br>
+                ${warehouseInfo.city}<br>
+                Contact: ${warehouseInfo.contact}
+              </div>
+              <div class="address-block">
+                <div class="section-title">Shipped To (Delivery Address)</div>
                 <strong>${order.shipping_address?.full_name || order.customer?.name || "Customer"}</strong><br>
                 ${order.shipping_address?.address_line1 || ""}, ${order.shipping_address?.address_line2 || ""}<br>
                 ${order.shipping_address?.city || ""}, ${order.shipping_address?.state || ""} - ${order.shipping_address?.postal_code || ""}<br>
@@ -1951,7 +1974,10 @@ const Orders = () => {
                             <label className="text-[10px] font-bold text-slate-400 uppercase">Dispatch From Warehouse (Shiprocket)</label>
                             <select
                               value={selectedPickupLocation}
-                              onChange={(e) => setSelectedPickupLocation(e.target.value)}
+                              onChange={(e) => {
+                                setSelectedPickupLocation(e.target.value);
+                                setWarehouseAssigned(e.target.value);
+                              }}
                               className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-[#8B0000] cursor-pointer"
                             >
                               {pickupLocations.map((loc) => (

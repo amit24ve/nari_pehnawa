@@ -81,77 +81,61 @@ const WelcomePopup = () => {
   const bannerSrc = resolveImageUrl(config.banner_image, "/nari_post_banner.jpg");
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/75 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-fadeIn">
       {/* Background click to dismiss */}
       <div className="absolute inset-0" onClick={dismiss} />
 
-      {/* Modal Container */}
+      {/* Modal Container: Full-Image Card with Content Overlay */}
       <div
-        className="relative w-full max-w-lg md:max-w-2xl bg-white rounded-3xl overflow-hidden shadow-2xl border border-[#d4af37]/40 transform transition-all animate-scaleUp z-10"
+        className="relative w-full max-w-md sm:max-w-lg md:max-w-xl min-h-[480px] sm:min-h-[520px] rounded-3xl overflow-hidden shadow-2xl border border-[#d4af37]/50 transform transition-all animate-scaleUp z-10 flex flex-col justify-end text-center group"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Full Card Background Image */}
+        <img
+          src={bannerSrc}
+          alt={config.title || "Offer Banner"}
+          className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+          onError={(e) => {
+            e.target.src = "/nari_post_banner.jpg";
+          }}
+        />
+
+        {/* Cinematic Dark & Luxury Maroon Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/75 to-black/30 pointer-events-none" />
+
         {/* Close Button */}
         <button
           onClick={dismiss}
           aria-label="Close offer modal"
-          className="absolute top-3.5 right-3.5 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-black/60 hover:bg-black text-white hover:scale-110 transition shadow-lg cursor-pointer"
+          className="absolute top-4 right-4 z-30 w-9 h-9 flex items-center justify-center rounded-full bg-black/60 hover:bg-black text-white hover:scale-110 transition shadow-lg cursor-pointer border border-white/20"
         >
           <X className="w-5 h-5" />
         </button>
 
-        {/* Offer Banner Image */}
-        <div className="relative w-full h-56 sm:h-72 md:h-80 bg-gradient-to-br from-[#580C1F] to-[#2E0F15] overflow-hidden group">
-          <img
-            src={bannerSrc}
-            alt={config.title}
-            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
-            onError={(e) => {
-              e.target.src = "/nari_post_banner.jpg";
-            }}
-          />
-
-          {/* Floating Discount Badge */}
-          {config.discount_badge && (
-            <div className="absolute top-4 left-4 z-10 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#d4af37] to-[#f3e5ab] text-[#580C1F] font-black text-xs sm:text-sm tracking-wider uppercase shadow-xl flex items-center gap-1.5 border border-[#580C1F]/20">
-              <Sparkles className="w-3.5 h-3.5 text-[#580C1F]" />
-              {config.discount_badge}
-            </div>
-          )}
-
-          {/* Subtle gradient overlay at bottom */}
-          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/60 to-transparent" />
-        </div>
-
-        {/* Modal Body & Offer Content */}
-        <div className="p-5 sm:p-6 md:p-8 bg-gradient-to-b from-white via-rose-50/20 to-white text-center">
-          {/* Brand Tagline */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#580C1F]/10 text-[#580C1F] text-xs font-bold uppercase tracking-widest mb-2">
-            <span>✨</span>
-            <span>Nari Pehnawa Exclusive</span>
-          </div>
-
+        {/* Modal Overlay Content */}
+        <div className="relative z-20 p-6 sm:p-8 flex flex-col items-center justify-end space-y-4 text-white">
           {/* Title */}
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-snug">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black font-serif text-white tracking-tight leading-snug drop-shadow-lg">
             {config.title || "Grand Festive Season Sale"}
           </h2>
 
           {/* Subtitle */}
-          <p className="mt-1 text-xs sm:text-sm text-gray-600 font-medium max-w-md mx-auto">
+          <p className="text-xs sm:text-sm text-amber-100/90 font-medium max-w-md mx-auto drop-shadow leading-relaxed">
             {config.subtitle || "Flat 10% OFF on Handcrafted Designer Kurtis & Ethnic Wear"}
           </p>
 
           {/* Coupon Code Box */}
           {config.coupon_code && (
-            <div className="mt-4 sm:mt-5 p-3 sm:p-3.5 bg-amber-50/80 border-2 border-dashed border-[#d4af37] rounded-2xl flex items-center justify-between gap-3 max-w-sm mx-auto shadow-inner">
+            <div className="w-full max-w-sm p-3 sm:p-3.5 bg-black/40 backdrop-blur-md border-2 border-dashed border-[#d4af37] rounded-2xl flex items-center justify-between gap-3 shadow-xl">
               <div className="flex items-center gap-2.5 text-left">
-                <div className="w-8 h-8 rounded-lg bg-[#580C1F] text-[#d4af37] flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-[#d4af37] text-[#580C1F] flex items-center justify-center flex-shrink-0 font-bold">
                   <Tag className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                    Coupon Code
+                  <div className="text-[9px] font-bold text-amber-200/80 uppercase tracking-widest">
+                    COUPON CODE
                   </div>
-                  <div className="text-base sm:text-lg font-black text-[#580C1F] tracking-widest">
+                  <div className="text-base sm:text-lg font-black text-[#ffe29a] font-mono tracking-wider">
                     {config.coupon_code}
                   </div>
                 </div>
@@ -159,10 +143,10 @@ const WelcomePopup = () => {
 
               <button
                 onClick={handleCopyCode}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 cursor-pointer shadow ${
+                className={`px-4 py-2 rounded-xl text-xs font-black transition-all duration-200 flex items-center gap-1.5 cursor-pointer shadow-lg ${
                   copied
-                    ? "bg-emerald-600 text-white"
-                    : "bg-[#580C1F] hover:bg-[#7B1128] text-[#ffe29a]"
+                    ? "bg-emerald-500 text-white scale-105"
+                    : "bg-[#d4af37] hover:bg-[#f3e5ab] text-[#580C1F] hover:scale-105"
                 }`}
               >
                 {copied ? (
@@ -181,19 +165,17 @@ const WelcomePopup = () => {
           )}
 
           {/* Action CTA Button */}
-          <div className="mt-5 sm:mt-6">
-            <button
-              onClick={handleAction}
-              className="w-full max-w-sm mx-auto py-3 sm:py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#580C1F] via-[#7B1128] to-[#580C1F] hover:from-[#7B1128] hover:to-[#580C1F] text-[#F7ECE1] font-bold text-sm sm:text-base tracking-wide shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center gap-2 group cursor-pointer hover:scale-[1.02]"
-            >
-              <ShoppingBag className="w-4 h-4 text-[#d4af37]" />
-              <span>{config.button_text || "EXPLORE COLLECTION"}</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
+          <button
+            onClick={handleAction}
+            className="w-full max-w-sm py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#d4af37] via-[#f3e5ab] to-[#d4af37] text-[#580C1F] font-black text-sm sm:text-base tracking-wide shadow-2xl hover:shadow-[0_0_25px_rgba(212,175,55,0.6)] transition-all duration-300 flex items-center justify-center gap-2 group cursor-pointer hover:scale-[1.03]"
+          >
+            <ShoppingBag className="w-4 h-4 text-[#580C1F]" />
+            <span>{config.button_text || "EXPLORE COLLECTION"}</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </button>
 
           {/* Guarantee / Perks Subtext */}
-          <div className="mt-4 flex items-center justify-center gap-4 text-[11px] text-gray-500 font-medium">
+          <div className="pt-1 flex flex-wrap items-center justify-center gap-2.5 sm:gap-4 text-[11px] text-amber-100/70 font-medium">
             <span className="flex items-center gap-1">
               🚚 Free Express Shipping
             </span>
