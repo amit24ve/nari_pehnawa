@@ -219,12 +219,12 @@ const HeroSection = () => {
             <ChevronRight className="w-5 h-5" />
           </button>
 
-          {/* ── Fixed Rectangular Bottom Offer Box (Black border, no zoom, clean gift icon) ── */}
+          {/* ── Fixed Rectangular Bottom Offer Box (Thicker black border, rich shadow, clean gift icon) ── */}
           {jarConfig.is_enabled && (
             <div className="absolute bottom-9 sm:bottom-11 left-1/2 -translate-x-1/2 z-20 pointer-events-auto max-w-[95%] sm:max-w-none">
               <button
                 onClick={() => setShowJarModal(true)}
-                className="bg-white hover:bg-neutral-50 text-gray-900 border border-black/85 shadow-md backdrop-blur-md rounded-2xl py-2 px-4 sm:px-5 flex items-center gap-3 cursor-pointer transition-colors duration-200"
+                className="bg-white hover:bg-neutral-50 text-gray-900 border-2 border-black shadow-[0_12px_28px_rgba(0,0,0,0.28)] backdrop-blur-md rounded-2xl py-2 px-4 sm:px-5 flex items-center gap-3 cursor-pointer transition-colors duration-200"
                 title="Click to view Mystery Jewellery Jar offer"
               >
                 <span className="text-2xl flex-shrink-0 select-none leading-none">
