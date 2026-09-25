@@ -1095,21 +1095,21 @@ const ProductPage = () => {
         </div>
 
         {/* ═══════ FULL-WIDTH KEY HIGHLIGHTS & FABRIC SPECIFICATIONS (COVERS BOTH SIDES ON DESKTOP) ═══════ */}
-        <div className="mt-10 bg-gradient-to-br from-[#FFF9F6] via-white to-amber-50/50 rounded-3xl p-6 sm:p-8 border border-amber-200/80 shadow-xs w-full">
-          <div className="flex items-center gap-2 mb-6 border-b border-amber-200/60 pb-3">
+        <div className="mt-8 sm:mt-10 bg-gradient-to-br from-[#FFF9F6] via-white to-amber-50/60 rounded-2xl sm:rounded-3xl p-4 sm:p-7 md:p-8 border border-amber-200/80 shadow-xs w-full">
+          <div className="flex items-center gap-2 mb-4 sm:mb-6 border-b border-amber-200/60 pb-3">
             <Sparkles className="w-5 h-5 text-[#8B0000]" />
-            <h3 className="text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900">
-              Key Highlights &amp; Fabric Notes
+            <h3 className="text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 font-serif">
+              Key Highlights &amp; Fabric Specifications
             </h3>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-start w-full">
             {/* Left Column: Key Highlights Bullet Points */}
-            <div className="space-y-3.5">
+            <div className="space-y-3">
               <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900/90 flex items-center gap-1.5">
                 <span>✨</span> Design &amp; Craftsmanship Highlights
               </h4>
-              <ul className="text-xs sm:text-sm text-gray-700 space-y-3 leading-relaxed">
+              <ul className="text-xs sm:text-sm text-gray-800 space-y-2.5 leading-relaxed">
                 {(product.highlights && product.highlights.length > 0
                   ? product.highlights
                   : [
@@ -1119,42 +1119,42 @@ const ProductPage = () => {
                       "Versatile Design Ideal for Festive Gatherings, Office & Casual Outings",
                     ]
                 ).map((hl, idx) => (
-                  <li key={idx} className="flex items-start gap-2.5">
-                    <span className="text-[#8B0000] font-bold text-base leading-none mt-0.5">•</span>
-                    <span className="text-gray-800 font-medium">{hl}</span>
+                  <li key={idx} className="flex items-start gap-2.5 bg-white/70 p-2.5 rounded-xl border border-amber-100/80 shadow-2xs">
+                    <span className="text-[#8B0000] font-bold text-sm leading-none mt-0.5">•</span>
+                    <span className="text-gray-900 font-medium">{hl}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
             {/* Right Column: Fabric & Silhouette Matrix */}
-            <div className="space-y-3.5">
+            <div className="space-y-3">
               <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900/90 flex items-center gap-1.5">
-                <span>🧵</span> Fabric &amp; Silhouette Matrix
+                <span>🧵</span> Fabric &amp; Silhouette Details
               </h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                <div className="bg-white rounded-xl p-3 border border-amber-100/90 shadow-xs">
-                  <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Fabric</span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+                <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-amber-200/60 shadow-2xs">
+                  <span className="text-gray-500 block text-[10px] uppercase tracking-wider font-semibold">Fabric</span>
                   <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.fabric || "Cotton Blend"}</span>
                 </div>
-                <div className="bg-white rounded-xl p-3 border border-amber-100/90 shadow-xs">
-                  <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Sleeve Style</span>
+                <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-amber-200/60 shadow-2xs">
+                  <span className="text-gray-500 block text-[10px] uppercase tracking-wider font-semibold">Sleeve Style</span>
                   <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.sleeve_type || "3/4 Sleeves"}</span>
                 </div>
-                <div className="bg-white rounded-xl p-3 border border-amber-100/90 shadow-xs">
-                  <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Pattern</span>
+                <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-amber-200/60 shadow-2xs">
+                  <span className="text-gray-500 block text-[10px] uppercase tracking-wider font-semibold">Pattern</span>
                   <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.pattern || "Floral Print"}</span>
                 </div>
-                <div className="bg-white rounded-xl p-3 border border-amber-100/90 shadow-xs">
-                  <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Fit Type</span>
+                <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-amber-200/60 shadow-2xs">
+                  <span className="text-gray-500 block text-[10px] uppercase tracking-wider font-semibold">Fit Type</span>
                   <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.fit_type || "Comfort Fit"}</span>
                 </div>
-                <div className="bg-white rounded-xl p-3 border border-amber-100/90 shadow-xs">
-                  <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Occasion</span>
+                <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-amber-200/60 shadow-2xs">
+                  <span className="text-gray-500 block text-[10px] uppercase tracking-wider font-semibold">Occasion</span>
                   <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.occasion || "Festive & Casual"}</span>
                 </div>
-                <div className="bg-white rounded-xl p-3 border border-amber-100/90 shadow-xs">
-                  <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Origin</span>
+                <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-amber-200/60 shadow-2xs">
+                  <span className="text-gray-500 block text-[10px] uppercase tracking-wider font-semibold">Origin</span>
                   <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.country_of_origin || "India 🇮🇳"}</span>
                 </div>
               </div>
@@ -1731,6 +1731,38 @@ const ProductPage = () => {
           </div>
         </div>
       )}
+
+      {/* ── Mobile Sticky Bottom Action Bar (Fixed at bottom on Mobile) ── */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 p-2.5 px-4 sm:hidden flex items-center justify-between gap-3 shadow-[0_-4px_16px_rgba(0,0,0,0.1)]">
+        <div className="min-w-0">
+          <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Price</div>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg font-black text-gray-900">
+              ₹{(product.price || 0).toLocaleString("en-IN")}
+            </span>
+            {product.original_price > product.price && (
+              <span className="text-xs text-gray-400 line-through">
+                ₹{product.original_price.toLocaleString("en-IN")}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-1 max-w-[220px]">
+          <button
+            onClick={() => handleAddToCart(false)}
+            className="flex-1 py-2.5 px-2 rounded-xl border border-[#8B0000] text-[#8B0000] font-bold text-xs uppercase tracking-wider hover:bg-[#8B0000] hover:text-white transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
+          >
+            <ShoppingCart className="w-3.5 h-3.5" /> Cart
+          </button>
+          <button
+            onClick={handleBuyNow}
+            className="flex-1 py-2.5 px-2 rounded-xl bg-[#8B0000] text-white font-bold text-xs uppercase tracking-wider hover:bg-[#6B0000] transition-all shadow-md text-center flex items-center justify-center gap-1 cursor-pointer"
+          >
+            <Zap className="w-3.5 h-3.5" /> Buy Now
+          </button>
+        </div>
+      </div>
 
       {/* ── Share Modal ── */}
       {showShareModal && (

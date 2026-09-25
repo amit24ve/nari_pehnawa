@@ -308,7 +308,40 @@ const CheckoutModal = ({
 
         {/* STEP 1: Address */}
         {step === 1 && (
-          <div className="p-5 space-y-4">
+          <div className="p-4 sm:p-5 space-y-4">
+            {/* Items Summary Preview Card */}
+            {items && items.length > 0 && (
+              <div className="bg-amber-50/60 rounded-xl p-3 border border-amber-200/80 space-y-2">
+                <div className="text-[11px] font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1">
+                  <span>🛍️</span> Order Items ({items.reduce((n, i) => n + (i.quantity || 1), 0)})
+                </div>
+                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                  {items.map((it, idx) => (
+                    <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2.5 bg-white p-2 rounded-lg border border-amber-100 shadow-2xs">
+                      <div className="w-14 h-14 sm:w-12 sm:h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 mx-auto sm:mx-0">
+                        <img
+                          src={it.image || it.product_image || "/product_1_sky_bloom.jpg"}
+                          alt={it.name || it.product_name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => { e.target.src = "/product_1_sky_bloom.jpg"; }}
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1 text-center sm:text-left">
+                        <h4 className="text-xs font-bold text-gray-900 truncate">
+                          {it.name || it.product_name}
+                        </h4>
+                        <div className="text-[11px] text-gray-500 flex items-center justify-center sm:justify-start gap-2 mt-0.5">
+                          {it.size && <span>Size: <strong>{it.size}</strong></span>}
+                          <span>Qty: <strong>{it.quantity || 1}</strong></span>
+                          <span className="font-bold text-[#8B0000]">₹{((it.price || 0) * (it.quantity || 1)).toLocaleString("en-IN")}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2 md:col-span-1">
                 <label className="block text-xs font-semibold text-gray-600 mb-1">

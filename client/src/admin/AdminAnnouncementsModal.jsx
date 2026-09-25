@@ -116,6 +116,8 @@ const AdminAnnouncementsModal = () => {
       });
       if (!res.ok) throw new Error("Failed to update topbar settings");
       setTopbarEnabled(enableState);
+      localStorage.setItem("np_topbar_active", String(enableState));
+      window.dispatchEvent(new Event("np_announcements_updated"));
     } catch (e) {
       alert(`Update failed: ${e.message}`);
     } finally {
@@ -146,7 +148,7 @@ const AdminAnnouncementsModal = () => {
       text: "",
       sub_text: "",
       link: "/category/sale",
-      badge: "OFFER",
+      badge: "",
       icon: "✨",
       is_active: true,
       display_order: announcements.length + 1,
@@ -194,6 +196,7 @@ const AdminAnnouncementsModal = () => {
       if (!res.ok) throw new Error("Failed to save announcement");
       setShowAddModal(false);
       fetchAllData();
+      window.dispatchEvent(new Event("np_announcements_updated"));
     } catch (e) {
       alert(e.message || "Error saving announcement");
     }
@@ -213,6 +216,7 @@ const AdminAnnouncementsModal = () => {
             (a.id || a._id) === id ? { ...a, is_active: !a.is_active } : a
           )
         );
+        window.dispatchEvent(new Event("np_announcements_updated"));
       }
     } catch (e) {
       alert("Failed to toggle status");
@@ -230,6 +234,7 @@ const AdminAnnouncementsModal = () => {
       });
       if (res.ok) {
         setAnnouncements((prev) => prev.filter((a) => (a.id || a._id) !== id));
+        window.dispatchEvent(new Event("np_announcements_updated"));
       }
     } catch (e) {
       alert("Failed to delete announcement");
@@ -247,6 +252,8 @@ const AdminAnnouncementsModal = () => {
         body: JSON.stringify(welcomeConfig),
       });
       if (!res.ok) throw new Error("Failed to save welcome modal");
+      localStorage.setItem("np_welcome_modal", JSON.stringify(welcomeConfig));
+      window.dispatchEvent(new Event("np_welcome_modal_updated"));
       alert("Welcome Offer Modal settings updated successfully!");
     } catch (e) {
       alert(e.message || "Error saving welcome modal");
@@ -495,9 +502,6 @@ const AdminAnnouncementsModal = () => {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════
-          SECTION 2: FIRST-VISIT WELCOME OFFER MODAL
-      ═══════════════════════════════════════════════════ */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
           <div>
@@ -950,34 +954,31 @@ const AdminAnnouncementsModal = () => {
             <div className="bg-slate-950 rounded-3xl p-3 sm:p-4 shadow-2xl border border-slate-800 relative overflow-hidden">
               {/* 1. Festive Royal Preview */}
               {(welcomeConfig.template_type || "festive-royal") === "festive-royal" && (
-                <div className="relative rounded-2xl overflow-hidden shadow-lg border-2 border-[#d4af37]/70 bg-gradient-to-br from-[#3d0815] via-[#580C1F] to-[#20040b] min-h-[360px] flex flex-col sm:flex-row text-left text-white">
-                  {/* Left Poster */}
-                  <div className="w-full sm:w-5/12 h-36 sm:h-auto relative overflow-hidden flex-shrink-0 bg-black">
-                    <img
-                      src={resolveImageUrl(welcomeConfig.banner_image, "/nari_post_banner.jpg")}
-                      alt=""
-                      className="w-full h-full object-cover object-center"
-                      onError={(e) => { e.target.src = "/nari_post_banner.jpg"; }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t sm:bg-gradient-to-r from-black/70 sm:from-transparent to-transparent pointer-events-none" />
-                  </div>
+                <div className="relative rounded-2xl overflow-hidden shadow-lg border-2 border-[#d4af37]/80 min-h-[360px] flex flex-col justify-end text-left text-white bg-black">
+                  {/* Full Background Image */}
+                  <img
+                    src={resolveImageUrl(welcomeConfig.banner_image, "/nari_post_banner.jpg")}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover object-left"
+                    onError={(e) => { e.target.src = "/nari_post_banner.jpg"; }}
+                  />
+                  {/* Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#20040b]/95 via-[#20040b]/80 to-transparent pointer-events-none" />
 
-                  {/* Right Text Content */}
-                  <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-2.5">
-                    <div className="space-y-1">
-                      <div className="text-[10px] text-[#ffe29a] font-bold uppercase tracking-wider flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-[#d4af37]" /> Festive Edition
-                      </div>
-                      <h4 className="font-black font-serif text-white text-base leading-tight">
-                        {welcomeConfig.title || "Grand Festive Season Sale"}
-                      </h4>
-                      <p className="text-[10px] text-amber-100/85 leading-relaxed">
-                        {welcomeConfig.subtitle}
-                      </p>
+                  {/* Text Content */}
+                  <div className="relative z-10 p-4 space-y-2">
+                    <div className="text-[10px] text-[#ffe29a] font-bold uppercase tracking-wider flex items-center gap-1 font-serif">
+                      <Sparkles className="w-3 h-3 text-[#d4af37]" /> Royal Festive Edition
                     </div>
+                    <h4 className="font-black font-serif text-white text-base leading-tight drop-shadow">
+                      {welcomeConfig.title || "Grand Festive Season Sale"}
+                    </h4>
+                    <p className="text-[10px] text-amber-100/90 leading-relaxed drop-shadow">
+                      {welcomeConfig.subtitle}
+                    </p>
 
                     {welcomeConfig.coupon_code && (
-                      <div className="p-2 bg-black/50 border border-dashed border-[#d4af37] rounded-xl flex items-center justify-between px-2.5">
+                      <div className="p-2 bg-black/60 backdrop-blur-md border border-dashed border-[#d4af37] rounded-xl flex items-center justify-between px-2.5">
                         <div>
                           <div className="text-[8px] font-bold text-[#ffe29a]">OFFER CODE</div>
                           <div className="text-xs font-black font-mono text-white">{welcomeConfig.coupon_code}</div>

@@ -39,7 +39,7 @@ const WelcomePopup = () => {
   const navigate = useNavigate();
 
   // Load dynamic welcome offer modal settings from backend
-  useEffect(() => {
+  const loadWelcomeConfig = useCallback(() => {
     fetch(`${API_URL}/announcements/welcome-modal?_t=${Date.now()}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((cfg) => {
@@ -49,6 +49,24 @@ const WelcomePopup = () => {
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    loadWelcomeConfig();
+
+    const handleUpdate = () => {
+      loadWelcomeConfig();
+    };
+
+    window.addEventListener("np_welcome_modal_updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+    window.addEventListener("focus", handleUpdate);
+
+    return () => {
+      window.removeEventListener("np_welcome_modal_updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+      window.removeEventListener("focus", handleUpdate);
+    };
+  }, [loadWelcomeConfig]);
 
   // Show modal on website load / refresh
   useEffect(() => {
@@ -94,56 +112,56 @@ const WelcomePopup = () => {
       <div className="absolute inset-0" onClick={dismiss} />
 
       {/* ═══════════════════════════════════════════════════
-          TEMPLATE 1: FESTIVE ROYAL (Side-by-Side Split Gold & Maroon)
+          TEMPLATE 1: FESTIVE ROYAL (Full-Screen Image Backdrop with Left Visibility & Right Text Overlay)
       ═══════════════════════════════════════════════════ */}
       {templateType === "festive-royal" && (
         <div
-          className="relative w-full max-w-lg md:max-w-2xl bg-gradient-to-br from-[#3d0815] via-[#580C1F] to-[#20040b] rounded-3xl overflow-hidden shadow-2xl border-2 border-[#d4af37]/70 transform transition-all animate-scaleUp z-10 flex flex-col md:flex-row text-left group"
+          className="relative w-full max-w-xl md:max-w-2xl min-h-[440px] md:min-h-[480px] bg-black rounded-3xl overflow-hidden shadow-2xl border-2 border-[#d4af37]/80 transform transition-all animate-scaleUp z-10 flex flex-col justify-end md:justify-center text-left group"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Background Full-Screen Image */}
+          <img
+            src={resolveImageUrl(config.banner_image, "/nari_post_banner.jpg")}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover object-left md:object-center group-hover:scale-105 transition-transform duration-700"
+            onError={(e) => { e.target.src = "/nari_post_banner.jpg"; }}
+          />
+
+          {/* Left clear gradient / Right rich text gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-[#20040b]/95 via-[#20040b]/85 to-transparent md:from-transparent md:via-[#20040b]/85 md:to-[#1a0208]/98 pointer-events-none" />
+
           <button
             onClick={dismiss}
-            className="absolute top-3.5 right-3.5 z-30 w-8 h-8 flex items-center justify-center rounded-full bg-black/60 hover:bg-black text-white hover:scale-110 transition shadow-lg cursor-pointer border border-white/20"
+            className="absolute top-3.5 right-3.5 z-30 w-8 h-8 flex items-center justify-center rounded-full bg-black/70 hover:bg-black text-white hover:scale-110 transition shadow-lg cursor-pointer border border-white/20"
           >
             <X className="w-4 h-4" />
           </button>
 
-          {/* Left Poster Image */}
-          <div className="w-full md:w-5/12 h-48 sm:h-56 md:h-auto relative overflow-hidden flex-shrink-0 bg-black">
-            <img
-              src={resolveImageUrl(config.banner_image, "/nari_post_banner.jpg")}
-              alt=""
-              className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
-              onError={(e) => { e.target.src = "/nari_post_banner.jpg"; }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/80 md:from-transparent to-transparent pointer-events-none" />
-          </div>
-
-          {/* Right Content */}
-          <div className="p-5 sm:p-7 flex-1 flex flex-col justify-between space-y-4 text-white">
+          {/* Content (Positioned on the Right on Desktop, Bottom on Mobile) */}
+          <div className="relative z-20 md:ml-auto w-full md:w-7/12 p-6 sm:p-8 space-y-4 text-white">
             <div className="space-y-2">
-              <div className="text-[11px] text-[#ffe29a] font-bold tracking-widest uppercase flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-[#d4af37]" /> Festive Collection Special
+              <div className="text-xs text-[#ffe29a] font-bold tracking-widest uppercase flex items-center gap-1.5 font-serif">
+                <Sparkles className="w-3.5 h-3.5 text-[#d4af37]" /> Royal Festive Edition
               </div>
-              <h2 className="text-xl sm:text-2xl font-black font-serif text-white leading-tight">
+              <h2 className="text-2xl sm:text-3xl font-black font-serif text-white leading-tight drop-shadow-md">
                 {config.title || "Grand Festive Season Sale"}
               </h2>
-              <p className="text-xs text-amber-100/85 leading-relaxed">
+              <p className="text-xs sm:text-sm text-amber-100/90 leading-relaxed drop-shadow">
                 {config.subtitle || "Flat 10% OFF on Handcrafted Designer Kurtis & Ethnic Wear"}
               </p>
             </div>
 
             {/* Coupon Box */}
             {config.coupon_code && (
-              <div className="p-3 bg-black/50 border border-dashed border-[#d4af37] rounded-xl flex items-center justify-between gap-2 shadow-inner">
+              <div className="p-3 bg-black/60 backdrop-blur-md border border-dashed border-[#d4af37] rounded-2xl flex items-center justify-between gap-2 shadow-inner">
                 <div>
                   <div className="text-[9px] text-[#ffe29a] font-bold uppercase tracking-wider">OFFER COUPON CODE</div>
                   <div className="text-base font-mono font-black text-white">{config.coupon_code}</div>
                 </div>
                 <button
                   onClick={handleCopyCode}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                    copied ? "bg-emerald-500 text-white" : "bg-[#d4af37] hover:bg-[#ffe29a] text-[#580C1F]"
+                  className={`px-4 py-2 rounded-xl text-xs font-black transition flex items-center gap-1 cursor-pointer ${
+                    copied ? "bg-emerald-500 text-white" : "bg-gradient-to-r from-[#d4af37] to-[#ffe29a] hover:opacity-95 text-[#580C1F]"
                   }`}
                 >
                   {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -154,13 +172,13 @@ const WelcomePopup = () => {
 
             <button
               onClick={handleAction}
-              className="w-full py-3 bg-gradient-to-r from-[#d4af37] via-[#f3e5ab] to-[#d4af37] text-[#580C1F] font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl shadow-lg hover:shadow-[#d4af37]/40 transition flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.02]"
+              className="w-full py-3.5 bg-gradient-to-r from-[#d4af37] via-[#f3e5ab] to-[#d4af37] text-[#580C1F] font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl shadow-xl hover:shadow-[#d4af37]/40 transition flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.02]"
             >
               <span>{config.button_text || "EXPLORE FESTIVE COLLECTION"}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
-            <div className="flex items-center justify-around text-[10px] text-amber-200/70 pt-1 border-t border-white/10">
+            <div className="flex items-center justify-around text-[10px] text-amber-200/80 pt-1 border-t border-white/10">
               <span>🚚 Free Express Shipping</span>
               <span>•</span>
               <span>💵 Cash On Delivery</span>

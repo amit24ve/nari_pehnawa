@@ -182,6 +182,36 @@ const HeroSection = () => {
           <ChevronRight className="w-5 h-5" />
         </button>
 
+        {/* ── Floating Launching Offer Card / Button (Mystery Jewelry Jar on First 5 Orders) ── */}
+        <div className="absolute top-3.5 right-3.5 sm:top-5 sm:right-5 z-30 pointer-events-auto max-w-[280px] sm:max-w-xs animate-fadeIn">
+          <Link
+            to="/new-arrivals"
+            className="group block bg-gradient-to-br from-[#2b050f]/95 via-[#580C1F]/90 to-[#1b030a]/95 text-white p-2.5 sm:p-3.5 rounded-2xl border border-[#d4af37]/70 shadow-2xl backdrop-blur-md hover:scale-105 hover:border-[#ffe29a] transition-all duration-300"
+          >
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-[#d4af37] via-[#fff1be] to-[#d4af37] p-0.5 flex-shrink-0 shadow-md">
+                <div className="w-full h-full bg-[#580C1F] rounded-[10px] flex items-center justify-center text-base sm:text-lg animate-pulse">
+                  🎁
+                </div>
+              </div>
+              <div className="min-w-0 flex-1 text-left">
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-[#ffe29a] bg-black/40 px-1.5 py-0.5 rounded">
+                    LAUNCHING OFFER
+                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                </div>
+                <h4 className="text-xs sm:text-[13px] font-bold text-white truncate font-serif mt-0.5">
+                  Free Mystery Jewelry Jar ✨
+                </h4>
+                <p className="text-[10px] sm:text-[11px] text-amber-100/85 line-clamp-1">
+                  Top 5 Orders (1 to 5) Get a Gift!
+                </p>
+              </div>
+            </div>
+          </Link>
+        </div>
+
         {/* Dot indicators — no counter */}
         <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
           {slides.map((_, i) => (
