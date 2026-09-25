@@ -215,3 +215,60 @@ def update_welcome_offer_modal_config(
     )
     clear_api_cache()
     return {"success": True, "message": "Welcome offer modal updated successfully!", "config": doc}
+
+
+# ── MYSTERY JEWELRY JAR LAUNCHING OFFER CONFIG ──
+
+class MysteryJarOfferConfig(BaseModel):
+    is_enabled: bool = True
+    pill_text: str = Field("Free Mystery Jewelry Jar", description="Text on slider button")
+    pill_subtext: str = Field("Top 5 Daily Orders", description="Short subtext on slider button")
+    image_url: str = Field("/mystery_jewelry_jar.jpg", description="Jar photo URL")
+    title: str = Field("Free Mystery Jewelry Jar 🎁", description="Modal Title")
+    overlay_text: str = Field("Top 5 Orders of the Day Get a Free Mystery Jewelry Jar!", description="Text displayed directly on image")
+    description: Optional[str] = Field("Place an order today among the top 5 daily orders and receive this surprise handcrafted luxury jewelry jar with your parcel!", description="Modal description")
+    button_text: str = Field("Shop Now & Claim Gift", description="Button text")
+    button_link: str = Field("/new-arrivals", description="Button link")
+
+
+@router.get("/mystery-jar")
+def get_mystery_jar_offer_config():
+    """Public endpoint: Get mystery jewelry jar launching offer settings"""
+    db = get_database()
+    cfg = db["admin_settings"].find_one({"key": "mystery_jar_offer"})
+    if not cfg:
+        return {
+            "is_enabled": True,
+            "pill_text": "Free Mystery Jewelry Jar",
+            "pill_subtext": "Top 5 Daily Orders",
+            "image_url": "/mystery_jewelry_jar.jpg",
+            "title": "Free Mystery Jewelry Jar 🎁",
+            "overlay_text": "Top 5 Orders of the Day Get a Free Mystery Jewelry Jar!",
+            "description": "Place an order today among the top 5 daily orders and receive this surprise handcrafted luxury jewelry jar with your parcel!",
+            "button_text": "Shop Now & Claim Gift",
+            "button_link": "/new-arrivals",
+        }
+    cfg.pop("_id", None)
+    return cfg
+
+
+@router.put("/mystery-jar")
+def update_mystery_jar_offer_config(
+    data: MysteryJarOfferConfig,
+    current_user: dict = Depends(require_admin),
+):
+    """Admin endpoint: Update mystery jewelry jar launching offer settings"""
+    db = get_database()
+    doc = data.dict()
+    doc["key"] = "mystery_jar_offer"
+    doc["updated_at"] = datetime.now()
+    doc["updated_by"] = current_user.get("email", "admin")
+
+    db["admin_settings"].update_one(
+        {"key": "mystery_jar_offer"},
+        {"$set": doc},
+        upsert=True,
+    )
+    clear_api_cache()
+    return {"success": True, "message": "Mystery jar offer settings updated successfully!", "config": doc}
+

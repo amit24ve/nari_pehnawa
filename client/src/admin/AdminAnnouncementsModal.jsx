@@ -66,6 +66,22 @@ const AdminAnnouncementsModal = () => {
   const [uploadingImg, setUploadingImg] = useState(false);
   const fileInputRef = useRef(null);
 
+  // Mystery Jewelry Jar Launching Offer Config state
+  const [mysteryJarConfig, setMysteryJarConfig] = useState({
+    is_enabled: true,
+    pill_text: "Free Mystery Jewelry Jar",
+    pill_subtext: "Top 5 Daily Orders",
+    image_url: "/mystery_jewelry_jar.jpg",
+    title: "Free Mystery Jewelry Jar 🎁",
+    overlay_text: "Top 5 Orders of the Day Get a Free Mystery Jewelry Jar!",
+    description: "Place an order today among our top 5 daily orders and receive this surprise handcrafted luxury jewelry jar filled with earrings, necklaces, and accessories!",
+    button_text: "Shop Now & Claim Gift",
+    button_link: "/new-arrivals",
+  });
+  const [savingJar, setSavingJar] = useState(false);
+  const [uploadingJarImg, setUploadingJarImg] = useState(false);
+  const jarFileInputRef = useRef(null);
+
   // Top Bar preview rotation
   const [previewIndex, setPreviewIndex] = useState(0);
 
@@ -76,14 +92,15 @@ const AdminAnnouncementsModal = () => {
     }`,
   });
 
-  // Fetch Announcements & Welcome Modal config
+  // Fetch Announcements, Welcome Modal, & Mystery Jar config
   const fetchAllData = async () => {
     setLoadingAnnouncements(true);
     try {
-      const [annRes, welRes, topRes] = await Promise.all([
+      const [annRes, welRes, topRes, jarRes] = await Promise.all([
         fetch(`${API_BASE}/announcements/all`, { headers: authHeaders() }),
         fetch(`${API_BASE}/announcements/welcome-modal`),
         fetch(`${API_BASE}/announcements/topbar-settings`),
+        fetch(`${API_BASE}/announcements/mystery-jar`),
       ]);
 
       if (annRes.ok) {
@@ -98,8 +115,11 @@ const AdminAnnouncementsModal = () => {
         const topData = await topRes.json();
         setTopbarEnabled(topData.is_enabled !== false);
       }
+      if (jarRes.ok) {
+        const jarData = await jarRes.json();
+        if (jarData) setMysteryJarConfig((prev) => ({ ...prev, ...jarData }));
+      }
     } catch (e) {
-      
       console.error("Failed to fetch announcements/modal config:", e);
     } finally {
       setLoadingAnnouncements(false);
@@ -293,6 +313,61 @@ const AdminAnnouncementsModal = () => {
       alert(`Image upload failed: ${e.message}`);
     } finally {
       setUploadingImg(false);
+    }
+  };
+
+  // ── MYSTERY JEWELRY JAR LAUNCHING OFFER ACTIONS ──
+  const handleSaveMysteryJar = async (e) => {
+    if (e) e.preventDefault();
+    setSavingJar(true);
+    try {
+      const res = await fetch(`${API_BASE}/announcements/mystery-jar`, {
+        method: "PUT",
+        headers: authHeaders(),
+        body: JSON.stringify(mysteryJarConfig),
+      });
+      if (!res.ok) throw new Error("Failed to save mystery jar settings");
+      localStorage.setItem("np_mystery_jar", JSON.stringify(mysteryJarConfig));
+      window.dispatchEvent(new Event("np_mystery_jar_updated"));
+      alert("Mystery Jewelry Jar Launching Offer updated successfully!");
+    } catch (e) {
+      alert(e.message || "Error saving mystery jar settings");
+    } finally {
+      setSavingJar(false);
+    }
+  };
+
+  const handleJarImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingJarImg(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch(`${API_BASE}/upload/image`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Image upload failed");
+      }
+      const data = await res.json();
+      const url = data.url || data.file_url || data.image_url;
+      if (url) {
+        setMysteryJarConfig((prev) => ({ ...prev, image_url: url }));
+        alert("Jar image uploaded successfully!");
+      }
+    } catch (e) {
+      alert(`Image upload failed: ${e.message}`);
+    } finally {
+      setUploadingJarImg(false);
     }
   };
 
@@ -1162,6 +1237,275 @@ const AdminAnnouncementsModal = () => {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════
+          SECTION 3: MYSTERY JEWELRY JAR LAUNCHING OFFER
+      ═══════════════════════════════════════════════════ */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 text-amber-900 text-xs font-bold uppercase tracking-wider mb-2">
+              <Gift className="w-3.5 h-3.5 text-amber-700" />
+              Launching Offer: Mystery Jewelry Jar
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">
+              Homepage Slider Button &amp; Compact Popup Modal
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Control the rectangular offer box displayed on the homepage slider and the compact gift modal on click.
+            </p>
+          </div>
+
+          {/* Master Offer Toggle */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-slate-700">
+              {mysteryJarConfig.is_enabled ? "Offer Active" : "Offer Paused"}
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                setMysteryJarConfig((prev) => ({
+                  ...prev,
+                  is_enabled: !prev.is_enabled,
+                }))
+              }
+              className={`w-12 h-6 flex items-center rounded-full p-1 transition duration-300 cursor-pointer ${
+                mysteryJarConfig.is_enabled ? "bg-emerald-600" : "bg-slate-300"
+              }`}
+            >
+              <div
+                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition duration-300 ${
+                  mysteryJarConfig.is_enabled ? "translate-x-6" : ""
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Left Form (7 cols) */}
+          <form onSubmit={handleSaveMysteryJar} className="lg:col-span-7 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Slider Box Main Text
+                </label>
+                <input
+                  type="text"
+                  value={mysteryJarConfig.pill_text}
+                  onChange={(e) =>
+                    setMysteryJarConfig({ ...mysteryJarConfig, pill_text: e.target.value })
+                  }
+                  placeholder="Free Mystery Jewelry Jar"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-amber-600"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Slider Box Subtext / Tag
+                </label>
+                <input
+                  type="text"
+                  value={mysteryJarConfig.pill_subtext}
+                  onChange={(e) =>
+                    setMysteryJarConfig({ ...mysteryJarConfig, pill_subtext: e.target.value })
+                  }
+                  placeholder="Top 5 Daily Orders"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-amber-600"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                Modal Heading / Title
+              </label>
+              <input
+                type="text"
+                value={mysteryJarConfig.title}
+                onChange={(e) =>
+                  setMysteryJarConfig({ ...mysteryJarConfig, title: e.target.value })
+                }
+                placeholder="Free Mystery Jewelry Jar 🎁"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-amber-600"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                Image Overlay Text (Displayed on Jar Photo)
+              </label>
+              <input
+                type="text"
+                value={mysteryJarConfig.overlay_text}
+                onChange={(e) =>
+                  setMysteryJarConfig({ ...mysteryJarConfig, overlay_text: e.target.value })
+                }
+                placeholder="Top 5 Orders of the Day Get a Free Mystery Jewelry Jar!"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-amber-600"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                Offer Description / Eligibility Details
+              </label>
+              <textarea
+                rows={2}
+                value={mysteryJarConfig.description}
+                onChange={(e) =>
+                  setMysteryJarConfig({ ...mysteryJarConfig, description: e.target.value })
+                }
+                placeholder="Place an order today among the top 5 daily orders and receive this surprise handcrafted luxury jewelry jar with your parcel!"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-600"
+              />
+            </div>
+
+            {/* Jar Image Upload & Path */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 block">
+                Jewelry Jar Image (Upload or URL)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={mysteryJarConfig.image_url}
+                  onChange={(e) =>
+                    setMysteryJarConfig({ ...mysteryJarConfig, image_url: e.target.value })
+                  }
+                  placeholder="/mystery_jewelry_jar.jpg or image URL"
+                  className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:outline-none focus:border-amber-600"
+                />
+                <button
+                  type="button"
+                  onClick={() => jarFileInputRef.current?.click()}
+                  disabled={uploadingJarImg}
+                  className="px-4 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer flex-shrink-0"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{uploadingJarImg ? "Uploading…" : "Upload Jar"}</span>
+                </button>
+                <input
+                  type="file"
+                  ref={jarFileInputRef}
+                  onChange={handleJarImageUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  CTA Button Text
+                </label>
+                <input
+                  type="text"
+                  value={mysteryJarConfig.button_text}
+                  onChange={(e) =>
+                    setMysteryJarConfig({ ...mysteryJarConfig, button_text: e.target.value })
+                  }
+                  placeholder="Shop Now & Claim Gift"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-amber-600"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  CTA Button Link
+                </label>
+                <input
+                  type="text"
+                  value={mysteryJarConfig.button_link}
+                  onChange={(e) =>
+                    setMysteryJarConfig({ ...mysteryJarConfig, button_link: e.target.value })
+                  }
+                  placeholder="/new-arrivals or /category/anarkali-kurtis"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:outline-none focus:border-amber-600"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={savingJar}
+                className="w-full py-3 bg-[#580C1F] hover:bg-[#7B1128] text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>{savingJar ? "Saving Settings…" : "Save Mystery Jar Offer Settings"}</span>
+              </button>
+            </div>
+          </form>
+
+          {/* Right Live Preview (5 cols) */}
+          <div className="lg:col-span-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                <Eye className="w-3.5 h-3.5" /> Live Preview
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-amber-100 text-amber-900">
+                Slider Box &amp; Card Modal
+              </span>
+            </div>
+
+            <div className="bg-slate-100 rounded-3xl p-4 border border-slate-200 space-y-4 text-center">
+              {/* Slider Button Preview */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold text-slate-500 block text-left">Slider Box (Above Dots)</span>
+                <div className="inline-flex items-center gap-2.5 bg-white text-gray-900 border-2 border-amber-300 shadow-md rounded-2xl py-2 px-4">
+                  <span className="text-lg">🎁</span>
+                  <div className="text-left">
+                    <div className="text-xs font-extrabold text-gray-900 leading-tight">
+                      {mysteryJarConfig.pill_text || "Free Mystery Jewelry Jar"}
+                    </div>
+                    <div className="text-[10px] text-amber-800 font-semibold">
+                      {mysteryJarConfig.pill_subtext || "Top 5 Daily Orders"} • <span className="text-[#8B0000] font-bold">View Gift &rarr;</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Compact 200px-style Card Modal Preview */}
+              <div className="space-y-1.5 pt-2 border-t border-slate-200">
+                <span className="text-[10px] font-bold text-slate-500 block text-left">Compact Card Modal Preview</span>
+                <div className="max-w-[280px] mx-auto bg-white rounded-2xl overflow-hidden shadow-xl border border-amber-200 text-left">
+                  {/* Image with overlay text */}
+                  <div className="relative w-full h-44 bg-black">
+                    <img
+                      src={resolveImageUrl(mysteryJarConfig.image_url, "/mystery_jewelry_jar.jpg")}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.target.src = "/mystery_jewelry_jar.jpg"; }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
+                    <div className="absolute bottom-2 left-2 right-2 text-white">
+                      <div className="text-[9px] font-black uppercase tracking-wider text-[#ffe29a] bg-[#8B0000]/90 px-1.5 py-0.5 rounded inline-block mb-1">
+                        🎁 DAILY TOP 5 ORDERS
+                      </div>
+                      <h5 className="text-xs font-bold leading-tight drop-shadow">
+                        {mysteryJarConfig.overlay_text || "Top 5 Orders of the Day Get a Free Mystery Jewelry Jar!"}
+                      </h5>
+                    </div>
+                  </div>
+
+                  <div className="p-3 space-y-2">
+                    <p className="text-[10px] text-gray-600 line-clamp-2">
+                      {mysteryJarConfig.description}
+                    </p>
+                    <button className="w-full py-2 bg-[#8B0000] text-white rounded-lg text-xs font-bold shadow text-center flex items-center justify-center gap-1">
+                      <span>{mysteryJarConfig.button_text || "Shop Now & Claim Gift"}</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
