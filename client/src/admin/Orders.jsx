@@ -355,6 +355,9 @@ const Orders = () => {
       setWarehouseAssigned(resolvedLoc);
       setSelectedPickupLocation(resolvedLoc);
       fetchLogs(order.orderId);
+      if (detail.awb_code) {
+        fetchTracking(detail.awb_code);
+      }
     } catch {
       setSelectedOrder(order);
       setEditedAddress(order.shippingAddress || {});
@@ -364,6 +367,9 @@ const Orders = () => {
       setWarehouseAssigned(resolvedLoc);
       setSelectedPickupLocation(resolvedLoc);
       fetchLogs(order.orderId);
+      if (order.awb_code) {
+        fetchTracking(order.awb_code);
+      }
     }
     setShowDetailsModal(true);
   };
@@ -406,11 +412,20 @@ const Orders = () => {
   const handleTrackShipment = () =>
     runShippingAction("track", () => fetchTracking(selectedOrder.awb_code));
 
-  const handlePrintLabel = () =>
+  const handlePrintLabel = () => {
+    if (!selectedOrder?.shipment_id) {
+      alert("Shipment has not been registered on Shiprocket yet. Please click 'Generate Shipment & AWB Code' above first.");
+      return;
+    }
     runShippingAction("label", async () => {
       const res = await shippingApi.getLabel(selectedOrder.shipment_id);
-      if (res.label_url) window.open(res.label_url, "_blank", "noopener,noreferrer");
+      if (res.label_url) {
+        window.open(res.label_url, "_blank", "noopener,noreferrer");
+      } else {
+        alert("Shiprocket did not return a label URL. Please check Shiprocket panel.");
+      }
     });
+  };
 
   const handleDownloadInvoice = () =>
     runShippingAction("invoice", async () => {
@@ -1607,39 +1622,66 @@ const Orders = () => {
 
               {/* Visual Order Status Stepper */}
               <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-semibold text-slate-400">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-semibold">
                   {[
-                    { label: "Order Placed", status: "pending", desc: selectedOrder.created_at },
-                    { label: "Processing", status: "processing", desc: "Warehouse confirmation" },
-                    { label: "AWB Generated", status: "pickup_scheduled", desc: selectedOrder.awb_code ? `AWB: ${selectedOrder.awb_code}` : "Awaiting shipment" },
-                    { label: "Shipped", status: "shipped", desc: selectedOrder.courier_name || "Transit" },
-                    { label: "Delivered", status: "delivered", desc: "Handover complete" }
+                    { label: "Order Placed", desc: selectedOrder.created_at || "Order registered" },
+                    { label: "Processing", desc: selectedOrder.warehouse_assigned ? `Warehouse: ${selectedOrder.warehouse_assigned}` : "Stock confirmed" },
+                    { label: "AWB Generated", desc: selectedOrder.awb_code ? `AWB: ${selectedOrder.awb_code}` : "Awaiting AWB" },
+                    { label: "Shipped", desc: selectedOrder.courier_name || (trackingData?.current_status ? String(trackingData.current_status) : "In Transit") },
+                    { label: "Delivered", desc: (selectedOrder.status === "delivered" || selectedOrder.status === "completed" || trackingData?.current_status?.toLowerCase() === "delivered") ? "Handover complete" : "Pending delivery" }
                   ].map((step, idx, arr) => {
-                    const isPassed = (() => {
-                      const orderStatus = selectedOrder.status;
-                      const seq = ["pending", "processing", "pickup_scheduled", "shipped", "delivered"];
-                      const currentIdx = seq.indexOf(orderStatus);
-                      const stepIdx = seq.indexOf(step.status);
-                      return stepIdx <= currentIdx;
-                    })();
+                    const status = (selectedOrder.status || "").toLowerCase();
+                    const hasAwb = Boolean(selectedOrder.awb_code || selectedOrder.tracking_number);
+                    const hasShipment = Boolean(selectedOrder.shipment_id || selectedOrder.shiprocket_order_id || hasAwb);
+                    const isDelivered = status === "delivered" || status === "completed" || trackingData?.current_status?.toLowerCase() === "delivered";
+                    const isShipped = isDelivered || status === "shipped" || status === "in_transit" || status === "out_for_delivery" || Boolean(trackingData?.current_status?.toLowerCase()?.includes("transit")) || Boolean(trackingData?.current_status?.toLowerCase()?.includes("out for delivery"));
+                    const isAwbGenerated = isShipped || hasAwb || ["awb_assigned", "pickup_scheduled", "pickup_queued", "pickup_rescheduled"].includes(status);
+                    const isProcessing = isAwbGenerated || hasShipment || ["processing", "confirmed", "paid", "ready_to_ship"].includes(status);
+                    const isPlaced = status !== "cancelled" && status !== "failed";
+
+                    let isDone = false;
+                    let isCurrent = false;
+
+                    if (idx === 0) {
+                      isDone = isPlaced;
+                      isCurrent = !isProcessing && isPlaced;
+                    } else if (idx === 1) {
+                      isDone = isProcessing;
+                      isCurrent = isProcessing && !isAwbGenerated;
+                    } else if (idx === 2) {
+                      isDone = isAwbGenerated;
+                      isCurrent = isAwbGenerated && !isShipped;
+                    } else if (idx === 3) {
+                      isDone = isShipped;
+                      isCurrent = isShipped && !isDelivered;
+                    } else if (idx === 4) {
+                      isDone = isDelivered;
+                      isCurrent = isDelivered;
+                    }
 
                     return (
                       <React.Fragment key={idx}>
                         <div className="flex items-center gap-3">
-                          <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border transition ${
-                            isPassed 
-                              ? "bg-[#8B0000] border-[#8B0000] text-white" 
+                          <span className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs border transition ${
+                            isDone
+                              ? "bg-emerald-600 border-emerald-600 text-white shadow-sm"
+                              : isCurrent
+                              ? "bg-[#0891b2] border-[#0891b2] text-white ring-4 ring-[#0891b2]/20 animate-pulse"
                               : "bg-slate-50 border-slate-200 text-slate-400"
                           }`}>
-                            {idx + 1}
+                            {isDone ? "✓" : idx + 1}
                           </span>
                           <div>
-                            <span className={`block font-bold ${isPassed ? "text-slate-800" : "text-slate-400"}`}>{step.label}</span>
-                            <span className="text-[10px] text-slate-400 font-medium block mt-0.5">{step.desc}</span>
+                            <span className={`block font-bold ${isDone ? "text-emerald-900 font-black" : isCurrent ? "text-[#0891b2]" : "text-slate-400"}`}>
+                              {step.label}
+                            </span>
+                            <span className={`text-[10px] font-medium block mt-0.5 ${isDone ? "text-emerald-700" : "text-slate-400"}`}>
+                              {step.desc}
+                            </span>
                           </div>
                         </div>
                         {idx < arr.length - 1 && (
-                          <div className={`hidden md:block h-0.5 flex-1 transition ${isPassed ? "bg-[#8B0000]" : "bg-slate-250"}`} />
+                          <div className={`hidden md:block h-1 flex-1 rounded-full transition ${isDone ? "bg-emerald-500" : "bg-slate-200"}`} />
                         )}
                       </React.Fragment>
                     );
@@ -2173,66 +2215,48 @@ const Orders = () => {
 
                   {/* Print Document Center */}
                   <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm text-xs space-y-3">
-                    <h5 className="font-bold text-slate-800 flex items-center gap-1.5"><Printer className="w-4 h-4 text-[#0891b2]" /> Document Print Center</h5>
-                    <div className="space-y-2">
-                      {selectedOrder.shipment_id ? (
-                        <>
-                          <button
-                            onClick={handleDownloadInvoice}
-                            disabled={shippingActionLoading === "invoice"}
-                            className="w-full flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition text-[11px] font-bold text-slate-700 text-left disabled:opacity-50"
-                          >
-                            <span>{shippingActionLoading === "invoice" ? "Fetching Invoice..." : "Print Retail Invoice (Shiprocket)"}</span>
-                            <Printer className="w-3.5 h-3.5 text-slate-400" />
-                          </button>
-
-                          <button
-                            onClick={handlePrintLabel}
-                            disabled={shippingActionLoading === "label"}
-                            className="w-full flex items-center justify-between p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition text-[11px] font-bold text-emerald-700 text-left disabled:opacity-50"
-                          >
-                            <span>{shippingActionLoading === "label" ? "Fetching Label..." : "Print Courier Slip (Shiprocket)"}</span>
-                            <Truck className="w-3.5 h-3.5 text-emerald-500" />
-                          </button>
-
-                          <button
-                            onClick={async () => {
-                              setShippingActionLoading("manifest");
-                              setShippingActionError(null);
-                              try {
-                                const res = await shippingApi.getManifest(selectedOrder.shipment_id);
-                                if (res.manifest_url) {
-                                  window.open(res.manifest_url, "_blank", "noopener,noreferrer");
-                                } else {
-                                  alert("Failed to retrieve manifest URL.");
-                                }
-                              } catch (e) {
-                                setShippingActionError("Manifest Error: " + e.message);
-                              } finally {
-                                setShippingActionLoading(null);
-                              }
-                            }}
-                            disabled={shippingActionLoading === "manifest"}
-                            className="w-full flex items-center justify-between p-2.5 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition text-[11px] font-bold text-blue-700 text-left disabled:opacity-50"
-                          >
-                            <span>{shippingActionLoading === "manifest" ? "Fetching Manifest..." : "Print Manifest (Shiprocket)"}</span>
-                            <FileText className="w-3.5 h-3.5 text-blue-500" />
-                          </button>
-                        </>
-                      ) : (
-                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] text-slate-500 text-center space-y-1.5">
-                          <p className="font-medium">Shiprocket Invoice & Courier Slip are available after order fulfillment.</p>
-                          <p className="text-[9px] text-[#8B0000] font-bold uppercase tracking-wider">Please click "Fulfill Order" under Shipping Actions first</p>
+                    <h5 className="font-bold text-slate-800 flex items-center gap-1.5">
+                      <Printer className="w-4 h-4 text-[#0891b2]" /> Document Print Center
+                    </h5>
+                    <div className="space-y-2.5">
+                      {/* Button 1: Print Official Shipping Label (Shiprocket) */}
+                      <button
+                        onClick={handlePrintLabel}
+                        disabled={shippingActionLoading === "label"}
+                        className="w-full flex items-center justify-between p-3 bg-emerald-50/90 border border-emerald-300 rounded-xl hover:bg-emerald-100 transition text-xs font-bold text-emerald-900 text-left disabled:opacity-50 shadow-xs cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Printer className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
+                          <span>
+                            {shippingActionLoading === "label"
+                              ? "Fetching Shiprocket Label..."
+                              : "Print Shipping Label (Shiprocket)"}
+                          </span>
                         </div>
-                      )}
+                        <span className="px-2 py-0.5 rounded bg-emerald-200/90 text-emerald-800 font-extrabold text-[10px] uppercase">
+                          Official PDF
+                        </span>
+                      </button>
 
+                      {/* Button 2: Print Courier Slip (Nari Pehnawa Dispatch Slip) */}
                       <button
                         onClick={() => handlePrintPackingSlip(selectedOrder)}
-                        className="w-full flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition text-[11px] font-bold text-slate-700 text-left"
+                        className="w-full flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition text-xs font-bold text-slate-800 text-left shadow-xs cursor-pointer group"
                       >
-                        <span>Print Packing Slip (Local)</span>
-                        <FileText className="w-3.5 h-3.5 text-slate-400" />
+                        <div className="flex items-center gap-2">
+                          <Truck className="w-4 h-4 text-[#0891b2] group-hover:scale-110 transition-transform" />
+                          <span>Print Courier Slip (Dispatch Slip)</span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded bg-slate-200 text-slate-700 font-extrabold text-[10px] uppercase">
+                          Courier Slip
+                        </span>
                       </button>
+
+                      {!selectedOrder.shipment_id && !selectedOrder.awb_code && (
+                        <p className="text-[10px] text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200 font-medium leading-relaxed">
+                          💡 <strong>Note:</strong> Official Shiprocket Shipping Label PDF is generated immediately when you click <strong>"Generate Shipment &amp; AWB Code"</strong> above.
+                        </p>
+                      )}
                     </div>
                   </div>
 

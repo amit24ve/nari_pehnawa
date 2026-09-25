@@ -37,6 +37,7 @@ import LoginModal from "./LoginModal";
 import { useAuth } from "../context/AuthProvider";
 import { useWishlist } from "../context/WishlistProvider";
 import { useCart } from "../context/CartProvider";
+import TopBar from "./TopBar";
 
 import { trackCustomEvent } from "./VisitorTracker";
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
@@ -288,6 +289,9 @@ const Navbar = () => {
       className={`fixed top-0 left-0 right-0 z-50 bg-white transition-shadow duration-300 ${isScrolled ? "shadow-[0_2px_20px_rgba(0,0,0,0.10)]" : "shadow-sm"
         }`}
     >
+      {/* ═ TOP OFFER ANNOUNCEMENT SLIDER BAR ═ */}
+      <TopBar />
+
       {/* ══════════════════════════════════════
           MAIN BAR — Logo (left) | Search + SALE Announcement (center) | Icons (right)
       ══════════════════════════════════════ */}

@@ -533,8 +533,16 @@ async def fulfill_order(
     """
     order = await _load_order_or_404(order_id, repo)
     order_data = {k: v for k, v in order.items() if k != "_id"}
-    if pickup_location:
-        order_data["pickup_location"] = pickup_location
+    
+    # Priority: explicit param -> order.warehouse_assigned -> order.pickup_location -> product stock resolution
+    chosen_warehouse = (
+        pickup_location
+        or order.get("warehouse_assigned")
+        or order.get("pickup_location")
+    )
+
+    if chosen_warehouse:
+        order_data["pickup_location"] = str(chosen_warehouse).strip()
     else:
         # Fallback to resolve from products in the order
         items = order_data.get("items", []) or []
@@ -570,6 +578,18 @@ async def fulfill_order(
 
     try:
         result = await sr.fulfill_order(order_id, order_data, repo)
+        
+        # Persist the exact warehouse assigned on the order record
+        final_pickup = order_data.get("pickup_location") or "Home"
+        from bson import ObjectId
+        repo.db["orders"].update_one(
+            {"_id": ObjectId(order_id)},
+            {"$set": {
+                "warehouse_assigned": final_pickup,
+                "pickup_location": final_pickup,
+                "updated_at": datetime.now()
+            }}
+        )
     except ShiprocketAPIError as exc:
         raise HTTPException(status_code=502, detail=str(exc))
 

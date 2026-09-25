@@ -1,80 +1,57 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { X, Eye, EyeOff, Sparkles, ArrowRight, Lock, Mail } from "lucide-react";
-import { useAuth } from "../context/AuthProvider";
+import { X, Sparkles, Copy, Check, ArrowRight, Tag, ShoppingBag, Gift } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
 import { resolveImageUrl } from "../utils/imageUrl";
 
-const STORAGE_KEY = "np_welcome_v2";
-const POPUP_DELAY_MS = 5000;
+const STORAGE_KEY = "np_first_visit_offer_v3";
 const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
-
-/* ── Decorative SVG divider element used inside the modal ── */
-const OrnamentDivider = () => (
-  <div className="flex items-center gap-3 my-5">
-    <div className="flex-1 h-px" style={{ background: "linear-gradient(to right, transparent, #d4af37)" }} />
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <path d="M10 2L11.5 8H18L12.8 11.8L14.8 18L10 14.2L5.2 18L7.2 11.8L2 8H8.5L10 2Z"
-        fill="#d4af37" opacity="0.8" />
-    </svg>
-    <div className="flex-1 h-px" style={{ background: "linear-gradient(to left, transparent, #d4af37)" }} />
-  </div>
-);
-
-/* ── Google SVG icon ── */
-const GoogleIcon = () => (
-  <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-  </svg>
-);
 
 const WelcomePopup = () => {
   const [visible, setVisible] = useState(false);
-  const [mode, setMode] = useState("login"); // "login" | "signup"
-  const [showPwd, setShowPwd] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [popupConfig, setPopupConfig] = useState({
+  const [copied, setCopied] = useState(false);
+  const [config, setConfig] = useState({
     is_enabled: true,
-    image: "/hero_model_1.png",
-    discount_title: "10%",
-    discount_subtitle: "OFF",
-    order_text: "YOUR FIRST ORDER",
-    sub_text: "Authentic Kurtis, Suits & Ethnic Wear",
+    banner_image: "/nari_post_banner.jpg",
+    title: "Grand Festive Season Sale",
+    subtitle: "Flat 10% OFF on Handcrafted Designer Kurtis & Ethnic Wear",
+    coupon_code: "FESTIVE10",
+    discount_badge: "FLAT 10% OFF",
+    button_text: "EXPLORE COLLECTION",
+    button_link: "/new-arrivals",
+    show_on_mobile: true,
+    delay_seconds: 3,
   });
 
-  const { user, login, openLoginModal } = useAuth();
   const navigate = useNavigate();
 
-  // Load dynamic popup settings from backend
+  // Load dynamic welcome offer modal settings from backend
   useEffect(() => {
-    fetch(`${API_URL}/admin/welcome-popup`)
+    fetch(`${API_URL}/announcements/welcome-modal?_t=${Date.now()}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((cfg) => {
         if (cfg) {
-          setPopupConfig((prev) => ({ ...prev, ...cfg }));
+          setConfig((prev) => ({ ...prev, ...cfg }));
         }
       })
       .catch(() => {});
   }, []);
 
+  // Show modal ONLY on first visit
   useEffect(() => {
-    const hasToken = localStorage.getItem("neel_token") || localStorage.getItem("token");
-    if (user || hasToken) {
-      setVisible(false);
-      return;
-    }
-    if (sessionStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY)) return;
-    const t = setTimeout(() => setVisible(true), POPUP_DELAY_MS);
-    return () => clearTimeout(t);
-  }, [user]);
+    // Check if user already dismissed or saw the welcome offer
+    const alreadyShown =
+      localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
+    if (alreadyShown) return;
+
+    if (!config.is_enabled) return;
+
+    const delay = (config.delay_seconds || 3) * 1000;
+    const timer = setTimeout(() => {
+      setVisible(true);
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [config.is_enabled, config.delay_seconds]);
 
   const dismiss = useCallback(() => {
     sessionStorage.setItem(STORAGE_KEY, "1");
@@ -82,401 +59,156 @@ const WelcomePopup = () => {
     setVisible(false);
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    setLoading(true);
+  const handleCopyCode = (e) => {
+    e.stopPropagation();
+    if (!config.coupon_code) return;
+    navigator.clipboard.writeText(config.coupon_code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
 
-    try {
-      if (mode === "signup") {
-        const res = await fetch(`${API_URL}/auth/register`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, name: fullName, password }),
-        });
-        if (!res.ok) {
-          const d = await res.json().catch(() => ({}));
-          setError(d.detail || "Registration failed. Please try again.");
-          return;
-        }
-        setSuccess("Account created! Signing you in…");
-        // Auto-login after signup
-        const loginRes = await fetch(`${API_URL}/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
-        if (loginRes.ok) {
-          const data = await loginRes.json();
-          localStorage.setItem("token", data.access_token);
-          await login({ email, password });
-          dismiss();
-        }
-      } else {
-        const res = await fetch(`${API_URL}/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
-        if (!res.ok) {
-          const d = await res.json().catch(() => ({}));
-          setError(d.detail || "Invalid email or password.");
-          return;
-        }
-        const data = await res.json();
-        localStorage.setItem("token", data.access_token);
-        await login({ email, password });
-        dismiss();
-        if (data.user?.role === "admin") navigate("/admin/dashboard");
-      }
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setLoading(false);
+  const handleAction = () => {
+    dismiss();
+    if (config.button_link) {
+      navigate(config.button_link);
+    } else {
+      navigate("/new-arrivals");
     }
   };
 
-  if (!visible || !popupConfig.is_enabled || user) return null;
+  if (!visible || !config.is_enabled) return null;
+
+  const bannerSrc = resolveImageUrl(config.banner_image, "/nari_post_banner.jpg");
 
   return (
-    <>
-      {/* ── Backdrop ── */}
-      <div
-        className="fixed inset-0 z-[9998] bg-black/70"
-        style={{ backdropFilter: "blur(6px)" }}
-        onClick={dismiss}
-        aria-hidden="true"
-      />
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/75 backdrop-blur-sm animate-fadeIn">
+      {/* Background click to dismiss */}
+      <div className="absolute inset-0" onClick={dismiss} />
 
+      {/* Modal Container */}
       <div
-        className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-300 pointer-events-none"
+        className="relative w-full max-w-lg md:max-w-2xl bg-white rounded-3xl overflow-hidden shadow-2xl border border-[#d4af37]/40 transform transition-all animate-scaleUp z-10"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div
-          className="relative w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col sm:flex-row overflow-hidden border border-amber-400/30 pointer-events-auto"
-          style={{
-            background: "#ffffff",
-            boxShadow: "0 32px 80px rgba(0,0,0,0.45), 0 0 0 1px rgba(212,175,55,0.18)",
-          }}
-          onClick={(e) => e.stopPropagation()}
+        {/* Close Button */}
+        <button
+          onClick={dismiss}
+          aria-label="Close offer modal"
+          className="absolute top-3.5 right-3.5 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-black/60 hover:bg-black text-white hover:scale-110 transition shadow-lg cursor-pointer"
         >
-          {/* ═══════════════════════════════════════════════════
-              LEFT — Fashion image panel with dynamic configuration
-          ═══════════════════════════════════════════════════ */}
-          <div
-            className="relative sm:w-[44%] flex-shrink-0 h-44 sm:h-auto"
-            style={{ minHeight: undefined }}
-          >
-            {/* Dynamic model / promotional image */}
-            <img
-              src={resolveImageUrl(popupConfig.image, "/hero_model_1.png")}
-              alt="Nari Pehnawa Collection"
-              className="w-full h-full object-cover object-top"
-              style={{ display: "block" }}
-              onError={(e) => {
-                e.target.src = "https://images.pexels.com/photos/1536619/pexels-photo-1536619.jpeg?auto=compress&cs=tinysrgb&w=600&h=800&dpr=1";
-              }}
-            />
+          <X className="w-5 h-5" />
+        </button>
 
-            {/* Multi-layer gradient overlay */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background: `
-                  linear-gradient(to top, rgba(50,0,0,0.95) 0%, rgba(50,0,0,0.45) 45%, transparent 70%),
-                  linear-gradient(to right, rgba(0,0,0,0.25) 0%, transparent 60%)
-                `,
-              }}
-            />
+        {/* Offer Banner Image */}
+        <div className="relative w-full h-56 sm:h-72 md:h-80 bg-gradient-to-br from-[#580C1F] to-[#2E0F15] overflow-hidden group">
+          <img
+            src={bannerSrc}
+            alt={config.title}
+            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+            onError={(e) => {
+              e.target.src = "/nari_post_banner.jpg";
+            }}
+          />
 
-            {/* Gold shimmer strip left edge */}
-            <div
-              className="absolute inset-y-0 left-0 w-1"
-              style={{ background: "linear-gradient(to bottom, transparent, #d4af37, transparent)" }}
-            />
-
-            {/* Bottom text overlay - Dynamic from backend configuration */}
-            <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-7 bg-gradient-to-t from-black/95 via-black/60 to-transparent">
-              <div className="space-y-1.5">
-                <div className="flex items-baseline gap-2">
-                  <span
-                    className="text-4xl sm:text-6xl font-black leading-none drop-shadow-lg"
-                    style={{ color: "#d4af37", fontFamily: "Georgia, serif" }}
-                  >
-                    {popupConfig.discount_title || "10%"}
-                  </span>
-                  <span
-                    className="text-xl sm:text-3xl font-black text-white tracking-wider drop-shadow-md"
-                    style={{ fontFamily: "Georgia, serif" }}
-                  >
-                    {popupConfig.discount_subtitle || "OFF"}
-                  </span>
-                </div>
-
-                <div
-                  className="w-14 h-0.5 my-2"
-                  style={{ background: "linear-gradient(to right, #d4af37, transparent)" }}
-                />
-
-                <p className="text-white font-bold text-xs sm:text-sm uppercase tracking-widest drop-shadow-md">
-                  {popupConfig.order_text || "YOUR FIRST ORDER"}
-                </p>
-
-                <p className="text-amber-100/90 text-xs font-medium drop-shadow-sm pt-0.5">
-                  {popupConfig.sub_text || "Authentic Kurtis, Suits & Ethnic Wear"}
-                </p>
-              </div>
+          {/* Floating Discount Badge */}
+          {config.discount_badge && (
+            <div className="absolute top-4 left-4 z-10 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#d4af37] to-[#f3e5ab] text-[#580C1F] font-black text-xs sm:text-sm tracking-wider uppercase shadow-xl flex items-center gap-1.5 border border-[#580C1F]/20">
+              <Sparkles className="w-3.5 h-3.5 text-[#580C1F]" />
+              {config.discount_badge}
             </div>
+          )}
+
+          {/* Subtle gradient overlay at bottom */}
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/60 to-transparent" />
+        </div>
+
+        {/* Modal Body & Offer Content */}
+        <div className="p-5 sm:p-6 md:p-8 bg-gradient-to-b from-white via-rose-50/20 to-white text-center">
+          {/* Brand Tagline */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#580C1F]/10 text-[#580C1F] text-xs font-bold uppercase tracking-widest mb-2">
+            <span>✨</span>
+            <span>Nari Pehnawa Exclusive</span>
           </div>
 
-          {/* ═══════════════════════════════════════════════════
-              RIGHT — Login / Signup panel
-          ═══════════════════════════════════════════════════ */}
-          <div
-            className="flex-1 flex flex-col overflow-y-auto"
-            style={{ backgroundColor: "#fdfaf7" }}
-          >
-            {/* Gold top accent line */}
-            <div
-              className="h-1 w-full flex-shrink-0"
-              style={{ background: "linear-gradient(to right, #8B0000, #d4af37, #8B0000)" }}
-            />
+          {/* Title */}
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-snug">
+            {config.title || "Grand Festive Season Sale"}
+          </h2>
 
-            <div className="flex-1 px-5 sm:px-7 pt-5 sm:pt-7 pb-5 sm:pb-6 flex flex-col justify-between gap-1">
+          {/* Subtitle */}
+          <p className="mt-1 text-xs sm:text-sm text-gray-600 font-medium max-w-md mx-auto">
+            {config.subtitle || "Flat 10% OFF on Handcrafted Designer Kurtis & Ethnic Wear"}
+          </p>
 
-              {/* Header */}
-              <div className="text-center mb-1">
-                <img
-                  src="/logo.png"
-                  alt="Nari Pehnawa"
-                  className="h-8 sm:h-10 w-auto object-contain mx-auto mb-2 sm:mb-3"
-                  onError={(e) => { e.target.style.display = "none"; }}
-                />
-                <h2
-                  className="font-bold mb-1"
-                  style={{ color: "#8B0000", fontSize: "clamp(1.05rem, 4vw, 1.3rem)", fontFamily: "Georgia, serif" }}
-                >
-                  {mode === "login" ? "Welcome Back, Nari ✨" : "Join Nari Pehnawa"}
-                </h2>
-                <p className="text-[11px] sm:text-xs" style={{ color: "#999" }}>
-                  {mode === "login"
-                    ? "Sign in to unlock your exclusive 10% discount"
-                    : "Create your account and claim 10% off instantly"}
-                </p>
-              </div>
-
-              <OrnamentDivider />
-
-              {/* Form */}
-              <form onSubmit={handleSubmit} className="space-y-3 flex-1">
-
-                {mode === "signup" && (
-                  <div className="relative">
-                    <div
-                      className="absolute inset-y-0 left-3 flex items-center pointer-events-none"
-                      style={{ color: "#c0a0a0" }}
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                    <input
-                      type="text"
-                      required
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Full Name"
-                      className="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border focus:outline-none focus:ring-1 transition-all"
-                      style={{
-                        borderColor: "#e8d5d5",
-                        background: "#fff",
-                        color: "#333",
-                        "--tw-ring-color": "#8B0000",
-                      }}
-                    />
-                  </div>
-                )}
-
-                {/* Email */}
-                <div className="relative">
-                  <Mail
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-                    style={{ color: "#c0a0a0" }}
-                  />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email address"
-                    className="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border focus:outline-none focus:ring-1 transition-all"
-                    style={{ borderColor: "#e8d5d5", background: "#fff", color: "#333" }}
-                  />
+          {/* Coupon Code Box */}
+          {config.coupon_code && (
+            <div className="mt-4 sm:mt-5 p-3 sm:p-3.5 bg-amber-50/80 border-2 border-dashed border-[#d4af37] rounded-2xl flex items-center justify-between gap-3 max-w-sm mx-auto shadow-inner">
+              <div className="flex items-center gap-2.5 text-left">
+                <div className="w-8 h-8 rounded-lg bg-[#580C1F] text-[#d4af37] flex items-center justify-center flex-shrink-0">
+                  <Tag className="w-4 h-4" />
                 </div>
-
-                {/* Password */}
-                <div className="relative">
-                  <Lock
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-                    style={{ color: "#c0a0a0" }}
-                  />
-                  <input
-                    type={showPwd ? "text" : "password"}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
-                    className="w-full pl-9 pr-10 py-2.5 text-sm rounded-lg border focus:outline-none focus:ring-1 transition-all"
-                    style={{ borderColor: "#e8d5d5", background: "#fff", color: "#333" }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPwd(!showPwd)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 transition-colors"
-                    style={{ color: showPwd ? "#8B0000" : "#c0a0a0" }}
-                  >
-                    {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-
-                {/* Remember / Forgot */}
-                {mode === "login" && (
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-1.5 cursor-pointer text-xs" style={{ color: "#777" }}>
-                      <input type="checkbox" className="w-3 h-3 accent-[#8B0000] rounded" />
-                      Remember me
-                    </label>
-                    <button 
-                      type="button" 
-                      onClick={() => {
-                        dismiss();
-                        openLoginModal("", null, "forgot");
-                      }}
-                      className="text-xs hover:underline" 
-                      style={{ color: "#8B0000" }}
-                    >
-                      Forgot password?
-                    </button>
+                <div>
+                  <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                    Coupon Code
                   </div>
-                )}
-
-                {/* Error / Success */}
-                {error && (
-                  <p className="text-xs text-center py-2 px-3 rounded-lg"
-                    style={{ color: "#c0392b", background: "#fff5f5", border: "1px solid #fcd0d0" }}>
-                    {error}
-                  </p>
-                )}
-                {success && (
-                  <p className="text-xs text-center py-2 px-3 rounded-lg"
-                    style={{ color: "#16a34a", background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
-                    {success}
-                  </p>
-                )}
-
-                {/* Submit */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-lg font-bold text-sm tracking-wide transition-all hover:shadow-lg disabled:opacity-60"
-                  style={{
-                    background: "linear-gradient(135deg, #8B0000 0%, #a52a2a 100%)",
-                    color: "#fff",
-                    boxShadow: "0 4px 15px rgba(139,0,0,0.3)",
-                  }}
-                >
-                  {loading ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                      </svg>
-                      Please wait…
-                    </span>
-                  ) : (
-                    <>
-                      {mode === "login" ? "Sign In & Claim Offer" : "Create My Account"}
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </form>
-
-              {/* OR divider */}
-              <div className="flex items-center gap-3 my-1">
-                <div className="flex-1 h-px" style={{ backgroundColor: "#eee" }} />
-                <span className="text-xs" style={{ color: "#bbb" }}>OR</span>
-                <div className="flex-1 h-px" style={{ backgroundColor: "#eee" }} />
+                  <div className="text-base sm:text-lg font-black text-[#580C1F] tracking-widest">
+                    {config.coupon_code}
+                  </div>
+                </div>
               </div>
 
-              {/* Google + Skip row */}
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const width = 500;
-                    const height = 650;
-                    const left = window.screenX + (window.outerWidth - width) / 2;
-                    const top = window.screenY + (window.outerHeight - height) / 2;
-                    const popup = window.open(
-                      `${API_URL}/auth/google/login`,
-                      "google_oauth_popup",
-                      `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes`
-                    );
-                    if (!popup || popup.closed || typeof popup.closed === "undefined") {
-                      window.location.href = `${API_URL}/auth/google/login`;
-                    }
-                  }}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-medium border transition-all hover:bg-gray-50"
-                  style={{ borderColor: "#e0e0e0", color: "#444" }}
-                >
-                  <GoogleIcon /> Continue with Google
-                </button>
-                <button
-                  type="button"
-                  onClick={dismiss}
-                  className="flex items-center justify-center px-4 py-2.5 rounded-lg text-xs font-medium border transition-all hover:bg-gray-50"
-                  style={{ borderColor: "#e0e0e0", color: "#888" }}
-                >
-                  Skip
-                </button>
-              </div>
-
-              {/* Toggle mode */}
-              <p className="text-center text-xs mt-2" style={{ color: "#888" }}>
-                {mode === "login" ? "Don't have an account? " : "Already have an account? "}
-                <button
-                  type="button"
-                  onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); setSuccess(""); }}
-                  className="font-bold hover:underline"
-                  style={{ color: "#8B0000" }}
-                >
-                  {mode === "login" ? "Sign Up Free" : "Sign In"}
-                </button>
-              </p>
+              <button
+                onClick={handleCopyCode}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 cursor-pointer shadow ${
+                  copied
+                    ? "bg-emerald-600 text-white"
+                    : "bg-[#580C1F] hover:bg-[#7B1128] text-[#ffe29a]"
+                }`}
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    COPIED!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    COPY CODE
+                  </>
+                )}
+              </button>
             </div>
+          )}
+
+          {/* Action CTA Button */}
+          <div className="mt-5 sm:mt-6">
+            <button
+              onClick={handleAction}
+              className="w-full max-w-sm mx-auto py-3 sm:py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#580C1F] via-[#7B1128] to-[#580C1F] hover:from-[#7B1128] hover:to-[#580C1F] text-[#F7ECE1] font-bold text-sm sm:text-base tracking-wide shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center gap-2 group cursor-pointer hover:scale-[1.02]"
+            >
+              <ShoppingBag className="w-4 h-4 text-[#d4af37]" />
+              <span>{config.button_text || "EXPLORE COLLECTION"}</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
           </div>
 
-          {/* ── Close button (top-right corner of modal) ── */}
-          <button
-            onClick={dismiss}
-            aria-label="Close"
-            className="absolute top-3 right-3 z-20 w-8 h-8 flex items-center justify-center rounded-full transition-all hover:scale-110"
-            style={{ background: "rgba(255,255,255,0.9)", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}
-          >
-            <X className="w-4 h-4" style={{ color: "#444" }} />
-          </button>
+          {/* Guarantee / Perks Subtext */}
+          <div className="mt-4 flex items-center justify-center gap-4 text-[11px] text-gray-500 font-medium">
+            <span className="flex items-center gap-1">
+              🚚 Free Express Shipping
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1">
+              💵 Easy Cash On Delivery
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1">
+              ✨ 100% Authentic Fabric
+            </span>
+          </div>
         </div>
       </div>
-
-      {/* Entry animation keyframe */}
-      <style>{`
-        @keyframes npPopupIn {
-          from { opacity: 0; transform: scale(0.88) translateY(24px); }
-          to   { opacity: 1; transform: scale(1)    translateY(0);    }
-        }
-      `}</style>
-    </>
+    </div>
   );
 };
 
