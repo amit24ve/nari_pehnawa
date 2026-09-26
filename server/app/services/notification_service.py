@@ -484,12 +484,17 @@ class NotificationService:
         phone = self._normalize_phone(to_phone)
         import os
         import json
+        import socket
         import requests
+        import requests.packages.urllib3.util.connection as urllib3_cn
 
         msg91_authkey = os.getenv("MSG91_AUTHKEY", "571630AZ2xbnTitma6aa98569P1")
         flow_template_id = os.getenv("MSG91_ORDER_TEMPLATE_ID") or os.getenv("MSG91_FLOW_TEMPLATE_ID", "")
 
         try:
+            # Force IPv4 socket connection to prevent Error 418
+            urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
+
             headers = {
                 "authkey": msg91_authkey,
                 "content-type": "application/json",

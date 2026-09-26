@@ -49,18 +49,27 @@ def normalize_indian_phone(phone: str) -> str:
     return digits
 
 
+def _msg91_request(method: str, url: str, **kwargs):
+    """Execute MSG91 request with forced IPv4 socket to guarantee 185.211.6.40 whitelist match"""
+    import socket
+    import requests.packages.urllib3.util.connection as urllib3_cn
+    urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
+    return requests.request(method, url, **kwargs)
+
+
 def send_msg91_otp_sms(clean_phone_10: str, otp_code: str):
     """Dispatch SMS OTP via MSG91 API v5 (supports both DLT template_id and Flow API)"""
     import os
-    try:
-        otp_template_id = os.getenv("MSG91_OTP_TEMPLATE_ID", "")
-        flow_template_id = os.getenv("MSG91_FLOW_TEMPLATE_ID", "")
+    auth_key = os.getenv("MSG91_AUTHKEY", MSG91_AUTHKEY)
+    otp_template_id = os.getenv("MSG91_OTP_TEMPLATE_ID", "")
+    flow_template_id = os.getenv("MSG91_FLOW_TEMPLATE_ID", "")
 
-        # If Flow API is preferred for OTP
+    try:
+        # 1. If Flow API is configured
         if flow_template_id and not otp_template_id:
             url = "https://control.msg91.com/api/v5/flow"
             headers = {
-                "authkey": MSG91_AUTHKEY,
+                "authkey": auth_key,
                 "content-type": "application/json",
                 "accept": "application/json"
             }
@@ -75,17 +84,18 @@ def send_msg91_otp_sms(clean_phone_10: str, otp_code: str):
                     }
                 ]
             }
-            res = requests.post(url, headers=headers, json=payload, timeout=8)
+            res = _msg91_request("POST", url, headers=headers, json=payload, timeout=8)
             print(f"DEBUG: MSG91 send Flow OTP to 91{clean_phone_10} status {res.status_code}: {res.text}")
             return res.ok, res.text
 
+        # 2. Standard OTP endpoint with or without template_id
         url = "https://control.msg91.com/api/v5/otp"
         headers = {
-            "authkey": MSG91_AUTHKEY,
+            "authkey": auth_key,
             "content-type": "application/json"
         }
         params = {
-            "authkey": MSG91_AUTHKEY,
+            "authkey": auth_key,
             "mobile": f"91{clean_phone_10}",
             "otp": otp_code,
             "otp_expiry": "10",
@@ -94,7 +104,7 @@ def send_msg91_otp_sms(clean_phone_10: str, otp_code: str):
         if otp_template_id:
             params["template_id"] = otp_template_id
 
-        res = requests.post(url, headers=headers, params=params, json={}, timeout=8)
+        res = _msg91_request("POST", url, headers=headers, params=params, json={}, timeout=8)
         print(f"DEBUG: MSG91 send OTP to 91{clean_phone_10} status {res.status_code}: {res.text}")
         return res.ok, res.text
     except Exception as e:
@@ -104,17 +114,19 @@ def send_msg91_otp_sms(clean_phone_10: str, otp_code: str):
 
 def verify_msg91_otp_sms(clean_phone_10: str, otp_code: str):
     """Verify OTP with MSG91 API v5"""
+    import os
+    auth_key = os.getenv("MSG91_AUTHKEY", MSG91_AUTHKEY)
     try:
         url = "https://control.msg91.com/api/v5/otp/verify"
         headers = {
-            "authkey": MSG91_AUTHKEY
+            "authkey": auth_key
         }
         params = {
-            "authkey": MSG91_AUTHKEY,
+            "authkey": auth_key,
             "mobile": f"91{clean_phone_10}",
             "otp": otp_code
         }
-        res = requests.get(url, headers=headers, params=params, timeout=8)
+        res = _msg91_request("GET", url, headers=headers, params=params, timeout=8)
         print(f"DEBUG: MSG91 verify OTP status {res.status_code}: {res.text}")
         if res.status_code == 200:
             data = res.json()
