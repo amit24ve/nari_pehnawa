@@ -146,6 +146,14 @@ _WHATSAPP_TEMPLATES = {
     NotificationEvent.EXCHANGE_APPROVED: "Your exchange for order {order_number} is approved.",
 }
 
+_SMS_TEMPLATES = {
+    NotificationEvent.ORDER_CONFIRMED: "Dear {customer_name}, your Nari Pehnawa order {order_number} for Rs.{amount} is confirmed! We will prepare and ship it soon. - NARI PEHNAWA",
+    NotificationEvent.PAYMENT_SUCCESS: "Dear {customer_name}, payment for your Nari Pehnawa order {order_number} (Rs.{amount}) is successful. Your order is confirmed. - NARI PEHNAWA",
+    NotificationEvent.ORDER_SHIPPED: "Dear {customer_name}, your Nari Pehnawa order {order_number} has shipped via {courier_name} (AWB: {awb}). - NARI PEHNAWA",
+    NotificationEvent.ORDER_DELIVERED: "Dear {customer_name}, your Nari Pehnawa order {order_number} has been delivered. Thank you for shopping with us! - NARI PEHNAWA",
+    NotificationEvent.ORDER_CANCELLED: "Dear {customer_name}, your Nari Pehnawa order {order_number} has been cancelled. - NARI PEHNAWA",
+}
+
 
 class NotificationService:
     def __init__(self, db: Database):
@@ -350,6 +358,49 @@ class NotificationService:
             self._log(event, "whatsapp", phone, "failed", user_id, order_id, body_preview=text, error=str(exc))
             return False
 
+    # ── SMS (MSG91) ───────────────────────────────────────────────────────
+
+    def send_sms(
+        self,
+        event: NotificationEvent,
+        to_phone: str,
+        context: dict,
+        user_id: Optional[str] = None,
+        order_id: Optional[str] = None,
+    ) -> bool:
+        """Send transactional SMS via MSG91 API."""
+        ctx = self._default_context(context)
+        text = _SMS_TEMPLATES.get(
+            event, "Update on your {company_name} order {order_number}."
+        ).format(**ctx)
+
+        if not to_phone:
+            self._log(event, "sms", "", "failed", user_id, order_id, body_preview=text, error="No recipient phone")
+            return False
+
+        phone = self._normalize_phone(to_phone)
+        import os
+        import requests
+        msg91_authkey = os.getenv("MSG91_AUTHKEY", "571630AZ2xbnTitma6aa98569P1")
+
+        try:
+            url = "https://control.msg91.com/api/v5/otp"
+            headers = {"authkey": msg91_authkey, "content-type": "application/json"}
+            params = {
+                "authkey": msg91_authkey,
+                "mobile": phone,
+                "message": text,
+            }
+            resp = requests.post(url, headers=headers, params=params, json={}, timeout=10)
+            if resp.status_code >= 400:
+                raise RuntimeError(f"MSG91 SMS error {resp.status_code}: {resp.text[:200]}")
+
+            self._log(event, "sms", phone, "sent", user_id, order_id, body_preview=text)
+            return True
+        except Exception as exc:
+            self._log(event, "sms", phone, "failed", user_id, order_id, body_preview=text, error=str(exc))
+            return False
+
     # ── Combined helper ──────────────────────────────────────────────────
 
     def notify(
@@ -361,10 +412,15 @@ class NotificationService:
         user_id: Optional[str] = None,
         order_id: Optional[str] = None,
     ) -> None:
-        """Fire both channels for a lifecycle event. Never raises."""
+        """Fire Email, WhatsApp, and MSG91 SMS for a lifecycle event. Never raises."""
         try:
             if to_email:
                 self.send_email(event, to_email, context, user_id, order_id)
+        except Exception:
+            pass
+        try:
+            if to_phone:
+                self.send_sms(event, to_phone, context, user_id, order_id)
         except Exception:
             pass
         try:

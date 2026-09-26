@@ -440,13 +440,13 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
             ═══════════════════════════════════════════════════ */
             <>
               {/* Brand Logo & Header */}
-              <div className="text-center mb-5">
+              <div className="text-center mb-4">
                 <img
                   src="/logo.png"
                   alt="Nari Pehnawa"
-                  className="h-8 sm:h-9 w-auto mx-auto mb-2.5 object-contain"
+                  className="h-11 sm:h-13 w-auto mx-auto mb-2 object-contain"
                 />
-                <h2 className="text-xl sm:text-2xl font-serif font-black text-gray-900 leading-tight">
+                <h2 className="text-base sm:text-lg font-serif font-bold text-gray-900 leading-tight">
                   {authMode === "phone"
                     ? (phoneOtpSent ? "Verify OTP" : "Login or Sign Up")
                     : authMode === "email"
@@ -455,7 +455,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                     ? "Create Account"
                     : "Reset Password"}
                 </h2>
-                <p className="text-gray-500 text-xs sm:text-[13px] mt-0.5">
+                <p className="text-gray-500 text-xs mt-0.5">
                   {authMode === "phone"
                     ? (phoneOtpSent
                         ? `Enter 6-digit OTP sent to +91 ${phone}`
