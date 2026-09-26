@@ -36,7 +36,7 @@ class PhoneResendOTPRequest(BaseModel):
     phone: str
 
 
-MSG91_AUTHKEY = "571630AZ2xbnTitma6aa98569P1"
+MSG91_AUTHKEY = "571630AXc6Zj6LDxt6ab7ea23P1"
 
 
 def normalize_indian_phone(phone: str) -> str:
