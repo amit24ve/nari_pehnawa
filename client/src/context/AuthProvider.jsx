@@ -184,6 +184,85 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const sendPhoneOtp = async (phone) => {
+        const API_URL =
+            import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
+
+        try {
+            const res = await fetch(`${API_URL}/auth/phone/send-otp`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                return { ok: false, message: data.detail || "Failed to send OTP" };
+            }
+            return { ok: true, data };
+        } catch (err) {
+            return { ok: false, message: err.message };
+        }
+    };
+
+    const resendPhoneOtp = async (phone) => {
+        const API_URL =
+            import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
+
+        try {
+            const res = await fetch(`${API_URL}/auth/phone/resend-otp`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                return { ok: false, message: data.detail || "Failed to resend OTP" };
+            }
+            return { ok: true, data };
+        } catch (err) {
+            return { ok: false, message: err.message };
+        }
+    };
+
+    const verifyPhoneOtp = async ({ phone, otp, name, email }) => {
+        const API_URL =
+            import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
+
+        try {
+            const res = await fetch(`${API_URL}/auth/phone/verify-otp`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone, otp, name, email }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                return { ok: false, message: data.detail || "Failed to verify OTP" };
+            }
+
+            const token = data.access_token;
+            const u = data.user;
+            if (token && u) {
+                localStorage.setItem("neel_token", token);
+                localStorage.setItem("token", token);
+                localStorage.setItem("neel_admin_user", JSON.stringify(u));
+                setUser(u);
+
+                if (u.role === "admin" || u.is_admin) {
+                    navigate("/admin/dashboard");
+                }
+
+                return { ok: true, user: u, is_new_user: data.is_new_user };
+            }
+
+            return { ok: false, message: "Invalid server response" };
+        } catch (err) {
+            return { ok: false, message: err.message };
+        }
+    };
+
     const logout = async () => {
         const API_URL =
             import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
@@ -219,6 +298,9 @@ export const AuthProvider = ({ children }) => {
                 user,
                 login,
                 loginWithToken,
+                sendPhoneOtp,
+                verifyPhoneOtp,
+                resendPhoneOtp,
                 logout,
                 isLoginModalOpen,
                 loginNotice,

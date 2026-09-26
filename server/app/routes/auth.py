@@ -21,6 +21,288 @@ from app.routes import google_mobile
 router.include_router(google_mobile.router)
 
 
+class PhoneSendOTPRequest(BaseModel):
+    phone: str
+
+
+class PhoneVerifyOTPRequest(BaseModel):
+    phone: str
+    otp: str
+    name: Optional[str] = None
+    email: Optional[str] = None
+
+
+class PhoneResendOTPRequest(BaseModel):
+    phone: str
+
+
+MSG91_AUTHKEY = "571630AZ2xbnTitma6aa98569P1"
+
+
+def normalize_indian_phone(phone: str) -> str:
+    """Normalize phone number to 10-digit Indian mobile number"""
+    digits = "".join(c for c in str(phone) if c.isdigit())
+    if len(digits) == 12 and digits.startswith("91"):
+        digits = digits[2:]
+    elif len(digits) == 11 and digits.startswith("0"):
+        digits = digits[1:]
+    return digits
+
+
+def send_msg91_otp_sms(clean_phone_10: str, otp_code: str):
+    """Dispatch SMS OTP via MSG91 API v5"""
+    try:
+        url = "https://control.msg91.com/api/v5/otp"
+        headers = {
+            "authkey": MSG91_AUTHKEY,
+            "content-type": "application/json"
+        }
+        params = {
+            "authkey": MSG91_AUTHKEY,
+            "mobile": f"91{clean_phone_10}",
+            "otp": otp_code,
+            "otp_expiry": "10",
+            "otp_length": str(len(otp_code))
+        }
+        res = requests.post(url, headers=headers, params=params, json={}, timeout=8)
+        print(f"DEBUG: MSG91 send OTP to 91{clean_phone_10} status {res.status_code}: {res.text}")
+        return res.ok, res.text
+    except Exception as e:
+        print(f"ERROR: Failed to call MSG91 OTP API: {e}")
+        return False, str(e)
+
+
+def verify_msg91_otp_sms(clean_phone_10: str, otp_code: str):
+    """Verify OTP with MSG91 API v5"""
+    try:
+        url = "https://control.msg91.com/api/v5/otp/verify"
+        headers = {
+            "authkey": MSG91_AUTHKEY
+        }
+        params = {
+            "authkey": MSG91_AUTHKEY,
+            "mobile": f"91{clean_phone_10}",
+            "otp": otp_code
+        }
+        res = requests.get(url, headers=headers, params=params, timeout=8)
+        print(f"DEBUG: MSG91 verify OTP status {res.status_code}: {res.text}")
+        if res.status_code == 200:
+            data = res.json()
+            if data.get("type") == "success":
+                return True
+        return False
+    except Exception as e:
+        print(f"ERROR: Failed to call MSG91 verify API: {e}")
+        return False
+
+
+@router.post("/phone/send-otp")
+def phone_send_otp(request: PhoneSendOTPRequest):
+    """Send mobile verification OTP via MSG91 for Phone Login / Registration"""
+    import random
+    from datetime import datetime, timedelta
+
+    phone_clean = normalize_indian_phone(request.phone)
+    if not phone_clean or len(phone_clean) != 10:
+        raise HTTPException(
+            status_code=400,
+            detail="Please enter a valid 10-digit Indian mobile number."
+        )
+
+    db = get_database()
+    otps = db["otps"]
+    users = db["users"]
+
+    # Generate 6-digit OTP code
+    otp_code = f"{random.randint(100000, 999999)}"
+    expires_at = datetime.now() + timedelta(minutes=10)
+
+    # Store OTP record in Mongo
+    otps.delete_many({"phone": phone_clean})
+    otps.insert_one({
+        "phone": phone_clean,
+        "otp": otp_code,
+        "expires_at": expires_at,
+        "created_at": datetime.now()
+    })
+
+    # Dispatch via MSG91 SMS API
+    sent_ok, msg91_resp = send_msg91_otp_sms(phone_clean, otp_code)
+
+    # Check if this phone number belongs to existing user
+    user = users.find_one({"$or": [{"phone": phone_clean}, {"phone": f"+91{phone_clean}"}, {"phone": f"91{phone_clean}"}]})
+    is_existing_user = user is not None
+
+    return {
+        "success": True,
+        "message": f"6-digit OTP sent successfully to +91 {phone_clean}",
+        "phone": phone_clean,
+        "is_existing_user": is_existing_user,
+        "name": user.get("name") if user else None
+    }
+
+
+@router.post("/phone/resend-otp")
+def phone_resend_otp(request: PhoneResendOTPRequest):
+    """Resend OTP via MSG91"""
+    import random
+    from datetime import datetime, timedelta
+
+    phone_clean = normalize_indian_phone(request.phone)
+    if not phone_clean or len(phone_clean) != 10:
+        raise HTTPException(status_code=400, detail="Invalid phone number.")
+
+    db = get_database()
+    otps = db["otps"]
+
+    # Generate fresh OTP code
+    otp_code = f"{random.randint(100000, 999999)}"
+    expires_at = datetime.now() + timedelta(minutes=10)
+
+    otps.delete_many({"phone": phone_clean})
+    otps.insert_one({
+        "phone": phone_clean,
+        "otp": otp_code,
+        "expires_at": expires_at,
+        "created_at": datetime.now()
+    })
+
+    # Dispatch via MSG91
+    send_msg91_otp_sms(phone_clean, otp_code)
+
+    return {
+        "success": True,
+        "message": f"Fresh OTP code sent to +91 {phone_clean}"
+    }
+
+
+@router.post("/phone/verify-otp")
+def phone_verify_otp(request: PhoneVerifyOTPRequest):
+    """Verify phone OTP and log in or auto-register user"""
+    from datetime import datetime
+
+    phone_clean = normalize_indian_phone(request.phone)
+    otp_input = request.otp.strip()
+
+    if not phone_clean or len(phone_clean) != 10:
+        raise HTTPException(status_code=400, detail="Invalid phone number.")
+
+    if not otp_input:
+        raise HTTPException(status_code=400, detail="Please enter the OTP code.")
+
+    db = get_database()
+    otps = db["otps"]
+    users = db["users"]
+
+    # 1. Check local Mongo OTP record
+    otp_record = otps.find_one({"phone": phone_clean, "otp": otp_input})
+    is_valid_db = False
+    if otp_record:
+        if otp_record.get("expires_at") and otp_record.get("expires_at") >= datetime.now():
+            is_valid_db = True
+        otps.delete_one({"_id": otp_record["_id"]})
+
+    # 2. Check MSG91 verify API as backup/dual check
+    is_valid_msg91 = False
+    if not is_valid_db:
+        is_valid_msg91 = verify_msg91_otp_sms(phone_clean, otp_input)
+
+    if not is_valid_db and not is_valid_msg91:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP code. Please try again.")
+
+    # OTP is valid! Find or auto-create customer account
+    user = users.find_one({
+        "$or": [
+            {"phone": phone_clean},
+            {"phone": f"+91{phone_clean}"},
+            {"phone": f"91{phone_clean}"}
+        ]
+    })
+
+    is_new_user = False
+    if not user:
+        # Check if email passed exists
+        custom_email = request.email.strip().lower() if (request.email and "@" in request.email) else f"{phone_clean}@naripehnawa.customer"
+        user_by_email = users.find_one({"email": custom_email}) if request.email else None
+        
+        if user_by_email:
+            # Link phone to existing account
+            users.update_one(
+                {"_id": user_by_email["_id"]},
+                {"$set": {"phone": phone_clean, "is_phone_verified": True, "last_login": datetime.now().strftime("%Y-%m-%d")}}
+            )
+            user = users.find_one({"_id": user_by_email["_id"]})
+        else:
+            # Create new user
+            is_new_user = True
+            user_name = request.name.strip() if request.name and request.name.strip() else f"User {phone_clean[-4:]}"
+            new_user_data = {
+                "phone": phone_clean,
+                "email": custom_email,
+                "name": user_name,
+                "role": "customer",
+                "is_admin": False,
+                "status": "active",
+                "auth_provider": "phone_otp",
+                "is_phone_verified": True,
+                "joined_date": datetime.now().strftime("%Y-%m-%d"),
+                "last_login": datetime.now().strftime("%Y-%m-%d"),
+                "orders_count": 0,
+                "created_at": datetime.now()
+            }
+            res = users.insert_one(new_user_data)
+            user = users.find_one({"_id": res.inserted_id})
+    else:
+        # Existing user - update phone verified and last login
+        update_fields = {
+            "phone": phone_clean,
+            "is_phone_verified": True,
+            "last_login": datetime.now().strftime("%Y-%m-%d")
+        }
+        if request.name and request.name.strip() and (user.get("name") in [None, "", f"User {phone_clean[-4:]}"]):
+            update_fields["name"] = request.name.strip()
+        if request.email and "@" in request.email and (not user.get("email") or "@naripehnawa.customer" in user.get("email")):
+            update_fields["email"] = request.email.strip().lower()
+
+        users.update_one({"_id": user["_id"]}, {"$set": update_fields})
+        user = users.find_one({"_id": user["_id"]})
+
+    # Issue JWT token
+    token = create_access_token({
+        "sub": str(user["_id"]),
+        "email": user.get("email", f"{phone_clean}@naripehnawa.customer"),
+        "role": user.get("role", "customer")
+    })
+
+    orders_cnt = db["orders"].count_documents({
+        "$or": [
+            {"user_id": str(user["_id"])},
+            {"customer_email": user.get("email")},
+            {"email": user.get("email")},
+            {"phone": phone_clean},
+            {"customer_phone": phone_clean}
+        ]
+    })
+
+    user_out = {
+        "id": str(user["_id"]),
+        "phone": phone_clean,
+        "email": user.get("email"),
+        "name": user.get("name"),
+        "role": user.get("role", "customer"),
+        "orders_count": orders_cnt
+    }
+
+    return {
+        "success": True,
+        "access_token": token,
+        "refresh_token": issue_refresh(db, user["_id"]) if user.get("role", "customer") == "customer" else None,
+        "token_type": "bearer",
+        "is_new_user": is_new_user,
+        "user": user_out
+    }
+
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
