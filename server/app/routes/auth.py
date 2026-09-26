@@ -163,8 +163,9 @@ def phone_send_otp(request: PhoneSendOTPRequest):
         "created_at": datetime.now()
     })
 
-    # Dispatch via MSG91 SMS API
-    sent_ok, msg91_resp = send_msg91_otp_sms(phone_clean, otp_code)
+    # Dispatch via Unified Indian SMS Provider (Fast2SMS / 2Factor / MSG91)
+    from app.services.sms_service import send_otp_sms
+    sms_res = send_otp_sms(phone_clean, otp_code)
 
     # Check if this phone number belongs to existing user
     user = users.find_one({"$or": [{"phone": phone_clean}, {"phone": f"+91{phone_clean}"}, {"phone": f"91{phone_clean}"}]})
@@ -175,13 +176,14 @@ def phone_send_otp(request: PhoneSendOTPRequest):
         "message": f"6-digit OTP sent successfully to +91 {phone_clean}",
         "phone": phone_clean,
         "is_existing_user": is_existing_user,
-        "name": user.get("name") if user else None
+        "name": user.get("name") if user else None,
+        "sms_provider": sms_res.get("provider", "SMS")
     }
 
 
 @router.post("/phone/resend-otp")
 def phone_resend_otp(request: PhoneResendOTPRequest):
-    """Resend OTP via MSG91"""
+    """Resend OTP via Unified SMS Provider"""
     import random
     from datetime import datetime, timedelta
 
@@ -204,8 +206,9 @@ def phone_resend_otp(request: PhoneResendOTPRequest):
         "created_at": datetime.now()
     })
 
-    # Dispatch via MSG91
-    send_msg91_otp_sms(phone_clean, otp_code)
+    # Dispatch via Unified SMS Provider
+    from app.services.sms_service import send_otp_sms
+    send_otp_sms(phone_clean, otp_code)
 
     return {
         "success": True,
