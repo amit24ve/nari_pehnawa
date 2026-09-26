@@ -1,22 +1,3 @@
-"""
-NotificationService — sends order-lifecycle notifications over Email and
-WhatsApp, and logs every attempt (sent / failed / skipped) to the
-`notifications` collection for auditing and for an admin "notification
-history" view.
-
-Design notes:
-  - If SMTP is not configured (config.smtp_host is empty), email sending is
-    skipped gracefully — the attempt is still logged with
-    status="skipped_no_config" so nothing silently disappears.
-  - Same behaviour for WhatsApp if WHATSAPP_ACCESS_TOKEN is empty.
-  - Sending never raises up into the caller. A notification failure must
-    never break order placement / payment verification / shipment
-    creation. Every send_* method catches its own exceptions and logs them.
-  - Uses stdlib `smtplib` for email (no extra dependency) and `httpx` for
-    the WhatsApp Cloud API call (already a project dependency, used by
-    shiprocket_service.py).
-"""
-
 from __future__ import annotations
 
 import smtplib

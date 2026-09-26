@@ -58,55 +58,50 @@ def _msg91_request(method: str, url: str, **kwargs):
 
 
 def send_msg91_otp_sms(clean_phone_10: str, otp_code: str):
-    """Dispatch SMS OTP via MSG91 API v5 (supports both DLT template_id and Flow API)"""
+    """Dispatch SMS OTP via MSG91 Flow and OTP API with verified template ID"""
     import os
     auth_key = os.getenv("MSG91_AUTHKEY", MSG91_AUTHKEY)
-    otp_template_id = os.getenv("MSG91_OTP_TEMPLATE_ID", "")
-    flow_template_id = os.getenv("MSG91_FLOW_TEMPLATE_ID", "")
+    otp_template_id = os.getenv("MSG91_OTP_TEMPLATE_ID", "6ab7c339fac81f8c28075912")
 
     try:
-        # 1. If Flow API is configured
-        if flow_template_id and not otp_template_id:
-            url = "https://control.msg91.com/api/v5/flow"
-            headers = {
-                "authkey": auth_key,
-                "content-type": "application/json",
-                "accept": "application/json"
-            }
-            payload = {
-                "template_id": flow_template_id,
-                "short_url": "0",
-                "recipients": [
-                    {
-                        "mobiles": f"91{clean_phone_10}",
-                        "otp": otp_code,
-                        "VAR1": otp_code
-                    }
-                ]
-            }
-            res = _msg91_request("POST", url, headers=headers, json=payload, timeout=8)
-            print(f"DEBUG: MSG91 send Flow OTP to 91{clean_phone_10} status {res.status_code}: {res.text}")
-            return res.ok, res.text
-
-        # 2. Standard OTP endpoint with or without template_id
-        url = "https://control.msg91.com/api/v5/otp"
         headers = {
             "authkey": auth_key,
-            "content-type": "application/json"
+            "content-type": "application/json",
+            "accept": "application/json"
         }
+
+        # 1. Primary: Flow API dispatch with template variables
+        flow_url = "https://control.msg91.com/api/v5/flow"
+        flow_payload = {
+            "template_id": otp_template_id,
+            "short_url": "0",
+            "recipients": [
+                {
+                    "mobiles": f"91{clean_phone_10}",
+                    "otp": otp_code,
+                    "OTP": otp_code,
+                    "VAR1": otp_code,
+                    "var": otp_code
+                }
+            ]
+        }
+        res_flow = _msg91_request("POST", flow_url, headers=headers, json=flow_payload, timeout=8)
+        print(f"DEBUG: MSG91 Flow OTP to 91{clean_phone_10} status {res_flow.status_code}: {res_flow.text}")
+
+        # 2. Also register with standard OTP endpoint
+        otp_url = "https://control.msg91.com/api/v5/otp"
         params = {
             "authkey": auth_key,
+            "template_id": otp_template_id,
             "mobile": f"91{clean_phone_10}",
             "otp": otp_code,
             "otp_expiry": "10",
             "otp_length": str(len(otp_code))
         }
-        if otp_template_id:
-            params["template_id"] = otp_template_id
+        res_otp = _msg91_request("POST", otp_url, headers=headers, params=params, json={}, timeout=8)
+        print(f"DEBUG: MSG91 standard OTP to 91{clean_phone_10} status {res_otp.status_code}: {res_otp.text}")
 
-        res = _msg91_request("POST", url, headers=headers, params=params, json={}, timeout=8)
-        print(f"DEBUG: MSG91 send OTP to 91{clean_phone_10} status {res.status_code}: {res.text}")
-        return res.ok, res.text
+        return (res_flow.ok or res_otp.ok), (res_flow.text if res_flow.ok else res_otp.text)
     except Exception as e:
         print(f"ERROR: Failed to call MSG91 OTP API: {e}")
         return False, str(e)
