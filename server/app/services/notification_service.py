@@ -190,6 +190,24 @@ class NotificationService:
 
     # ── Email ────────────────────────────────────────────────────────────
 
+    # ── SMTP Connection Helper ────────────────────────────────────────────
+
+    def _get_smtp_connection(self):
+        """Create SMTP or SMTP_SSL connection with auto port detection."""
+        if not smtp_host:
+            return None
+        if smtp_port == 465:
+            server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=15)
+        else:
+            server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
+            if smtp_use_tls:
+                server.starttls()
+        if smtp_username and smtp_password:
+            server.login(smtp_username, smtp_password)
+        return server
+
+    # ── Email ────────────────────────────────────────────────────────────
+
     def send_email(
         self,
         event: NotificationEvent,
@@ -200,40 +218,129 @@ class NotificationService:
     ) -> bool:
         ctx = self._default_context(context)
         subject = _EMAIL_SUBJECTS.get(event, "Update on order {order_number}").format(**ctx)
-        body = _EMAIL_BODIES.get(
+        plain_body = _EMAIL_BODIES.get(
             event, "Hi {customer_name},\n\nThere's an update on your order {order_number}."
         ).format(**ctx)
 
         if not to_email:
-            self._log(event, "email", "", "failed", user_id, order_id, subject, body, error="No recipient email")
+            self._log(event, "email", "", "failed", user_id, order_id, subject, plain_body, error="No recipient email")
             return False
 
         if not smtp_host:
-            self._log(event, "email", to_email, "skipped_no_config", user_id, order_id, subject, body)
+            self._log(event, "email", to_email, "skipped_no_config", user_id, order_id, subject, plain_body)
             return False
 
+        # Build Rich HTML Email Template
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>{subject}</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8f6f0; color: #2D2D2D;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f6f0; padding: 24px 12px;">
+            <tr>
+              <td align="center">
+                <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 580px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #efe8da;">
+                  
+                  <!-- Top Decorative Bar -->
+                  <tr>
+                    <td style="background: linear-gradient(90deg, #8B0000 0%, #D4AF37 50%, #8B0000 100%); height: 6px;"></td>
+                  </tr>
+
+                  <!-- Header -->
+                  <tr>
+                    <td align="center" style="padding: 28px 24px 18px 24px; border-bottom: 1px solid #f2ece1;">
+                      <h1 style="margin: 0; font-size: 26px; font-family: 'Playfair Display', Georgia, serif; color: #8B0000; letter-spacing: 1px; font-weight: 800;">
+                        NARI PEHNAWA
+                      </h1>
+                      <p style="margin: 4px 0 0 0; font-size: 11px; color: #9E7D3B; text-transform: uppercase; letter-spacing: 2px; font-weight: 600;">
+                        Timeless Indian Ethnic Wear
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Main Content Card -->
+                  <tr>
+                    <td style="padding: 32px 28px 24px 28px;">
+                      <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 700; color: #1a1a1a;">
+                        {subject}
+                      </h2>
+                      <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 1.6; color: #4a4a4a;">
+                        Dear <strong>{ctx.get('customer_name', 'Customer')}</strong>,
+                      </p>
+                      <div style="background-color: #fdfbf7; border-left: 4px solid #8B0000; border-radius: 8px; padding: 18px 20px; margin-bottom: 24px;">
+                        <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #333333; white-space: pre-line;">
+                          {plain_body}
+                        </p>
+                      </div>
+
+                      <!-- Order Summary Box -->
+                      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #faf8f4; border: 1px dashed #d8cbb5; border-radius: 10px; padding: 16px; margin-bottom: 24px;">
+                        <tr>
+                          <td style="padding: 6px 12px; font-size: 13px; color: #666;">Order Number:</td>
+                          <td align="right" style="padding: 6px 12px; font-size: 13px; font-weight: 700; color: #8B0000;">{ctx.get('order_number', 'N/A')}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 12px; font-size: 13px; color: #666;">Total Amount:</td>
+                          <td align="right" style="padding: 6px 12px; font-size: 14px; font-weight: 700; color: #1a1a1a;">&#8377;{ctx.get('amount', '0.00')}</td>
+                        </tr>
+                      </table>
+
+                      <!-- Call to Action Button -->
+                      <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 10px; margin-bottom: 20px;">
+                        <tr>
+                          <td align="center">
+                            <a href="https://www.naripehnawa.com/account/orders" target="_blank" style="display: inline-block; background-color: #8B0000; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 12px 28px; border-radius: 8px; box-shadow: 0 4px 10px rgba(139,0,0,0.25);">
+                              View Order Details
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color: #faf8f4; padding: 22px 28px; border-top: 1px solid #efe8da; text-align: center;">
+                      <p style="margin: 0 0 6px 0; font-size: 12px; color: #666666;">
+                        Need help with your order? Reach us at <a href="mailto:{ctx.get('support_email', 'support@naripehnawa.com')}" style="color: #8B0000; font-weight: 600; text-decoration: none;">{ctx.get('support_email', 'support@naripehnawa.com')}</a>
+                      </p>
+                      <p style="margin: 0; font-size: 11px; color: #999999;">
+                        &copy; 2026 Nari Pehnawa. All rights reserved. &bull; <a href="https://www.naripehnawa.com" style="color: #999999; text-decoration: underline;">www.naripehnawa.com</a>
+                      </p>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+        """
+
         try:
-            msg = MIMEMultipart()
+            msg = MIMEMultipart("alternative")
             msg["From"] = f"{smtp_from_name} <{smtp_from_email}>"
             msg["To"] = to_email
             msg["Subject"] = subject
-            msg.attach(MIMEText(body, "plain"))
+            msg.attach(MIMEText(plain_body, "plain"))
+            msg.attach(MIMEText(html_body, "html"))
 
-            with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
-                if smtp_use_tls:
-                    server.starttls()
-                if smtp_username and smtp_password:
-                    server.login(smtp_username, smtp_password)
+            with self._get_smtp_connection() as server:
                 server.sendmail(smtp_from_email, [to_email], msg.as_string())
 
-            self._log(event, "email", to_email, "sent", user_id, order_id, subject, body)
+            self._log(event, "email", to_email, "sent", user_id, order_id, subject, plain_body)
             return True
         except Exception as exc:
-            self._log(event, "email", to_email, "failed", user_id, order_id, subject, body, error=str(exc))
+            self._log(event, "email", to_email, "failed", user_id, order_id, subject, plain_body, error=str(exc))
             return False
 
     def send_raw_email(self, to_email: str, subject: str, body_html: str, body_text: Optional[str] = None) -> bool:
-        """Send custom HTML email (e.g. product recommendation share) using configured SMTP."""
+        """Send custom HTML email using configured SMTP with SSL/TLS auto-detection."""
         if not to_email or not smtp_host:
             return False
         try:
@@ -245,11 +352,7 @@ class NotificationService:
                 msg.attach(MIMEText(body_text, "plain"))
             msg.attach(MIMEText(body_html, "html"))
 
-            with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
-                if smtp_use_tls:
-                    server.starttls()
-                if smtp_username and smtp_password:
-                    server.login(smtp_username, smtp_password)
+            with self._get_smtp_connection() as server:
                 server.sendmail(smtp_from_email, [to_email], msg.as_string())
             return True
         except Exception as exc:
@@ -368,7 +471,7 @@ class NotificationService:
         user_id: Optional[str] = None,
         order_id: Optional[str] = None,
     ) -> bool:
-        """Send transactional SMS via MSG91 API."""
+        """Send transactional SMS via MSG91 Flow API (/api/v5/flow) or OTP API (/api/v5/otp)."""
         ctx = self._default_context(context)
         text = _SMS_TEMPLATES.get(
             event, "Update on your {company_name} order {order_number}."
@@ -380,18 +483,48 @@ class NotificationService:
 
         phone = self._normalize_phone(to_phone)
         import os
+        import json
         import requests
+
         msg91_authkey = os.getenv("MSG91_AUTHKEY", "571630AZ2xbnTitma6aa98569P1")
+        flow_template_id = os.getenv("MSG91_ORDER_TEMPLATE_ID") or os.getenv("MSG91_FLOW_TEMPLATE_ID", "")
 
         try:
-            url = "https://control.msg91.com/api/v5/otp"
-            headers = {"authkey": msg91_authkey, "content-type": "application/json"}
-            params = {
+            headers = {
                 "authkey": msg91_authkey,
-                "mobile": phone,
-                "message": text,
+                "content-type": "application/json",
+                "accept": "application/json",
             }
-            resp = requests.post(url, headers=headers, params=params, json={}, timeout=10)
+
+            # 1. If Flow template ID is configured, use official MSG91 Flow API (/api/v5/flow)
+            if flow_template_id:
+                flow_url = "https://control.msg91.com/api/v5/flow"
+                flow_payload = {
+                    "template_id": flow_template_id,
+                    "short_url": "0",
+                    "recipients": [
+                        {
+                            "mobiles": phone,
+                            "VAR1": ctx.get("customer_name", "Customer"),
+                            "VAR2": ctx.get("order_number", ""),
+                            "VAR3": str(ctx.get("amount", "")),
+                            "name": ctx.get("customer_name", "Customer"),
+                            "order_number": ctx.get("order_number", ""),
+                            "amount": str(ctx.get("amount", "")),
+                        }
+                    ],
+                }
+                resp = requests.post(flow_url, headers=headers, json=flow_payload, timeout=10)
+            else:
+                # 2. Standard MSG91 OTP/SMS endpoint
+                otp_url = "https://control.msg91.com/api/v5/otp"
+                params = {
+                    "authkey": msg91_authkey,
+                    "mobile": phone,
+                    "message": text,
+                }
+                resp = requests.post(otp_url, headers=headers, params=params, json={}, timeout=10)
+
             if resp.status_code >= 400:
                 raise RuntimeError(f"MSG91 SMS error {resp.status_code}: {resp.text[:200]}")
 
