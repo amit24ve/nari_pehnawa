@@ -258,9 +258,9 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
 
     is_new_user = False
     if not user:
-        # Check if email passed exists
-        custom_email = request.email.strip().lower() if (request.email and "@" in request.email) else f"{phone_clean}@naripehnawa.customer"
-        user_by_email = users.find_one({"email": custom_email}) if request.email else None
+        # Check if optional email was provided by customer
+        custom_email = request.email.strip().lower() if (request.email and "@" in request.email) else None
+        user_by_email = users.find_one({"email": custom_email}) if custom_email else None
         
         if user_by_email:
             # Link phone to existing account
@@ -270,7 +270,7 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
             )
             user = users.find_one({"_id": user_by_email["_id"]})
         else:
-            # Create new user
+            # Create new user with pure mobile number
             is_new_user = True
             user_name = request.name.strip() if request.name and request.name.strip() else f"User {phone_clean[-4:]}"
             new_user_data = {
@@ -298,7 +298,7 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
         }
         if request.name and request.name.strip() and (user.get("name") in [None, "", f"User {phone_clean[-4:]}"]):
             update_fields["name"] = request.name.strip()
-        if request.email and "@" in request.email and (not user.get("email") or "@naripehnawa.customer" in user.get("email")):
+        if request.email and "@" in request.email and not user.get("email"):
             update_fields["email"] = request.email.strip().lower()
 
         users.update_one({"_id": user["_id"]}, {"$set": update_fields})
@@ -307,7 +307,8 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
     # Issue JWT token
     token = create_access_token({
         "sub": str(user["_id"]),
-        "email": user.get("email", f"{phone_clean}@naripehnawa.customer"),
+        "phone": phone_clean,
+        "email": user.get("email"),
         "role": user.get("role", "customer")
     })
 
