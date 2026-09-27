@@ -86,7 +86,7 @@ company_support_phone = os.getenv("COMPANY_SUPPORT_PHONE", "")
 invoice_tax_percent = float(os.getenv("INVOICE_TAX_PERCENT", "5"))
 
 # ── MSG91 SMS & Flow API ──────────────────────────────────────────────────────
-msg91_authkey = os.getenv("MSG91_AUTHKEY", "571630AZ2xbnTitma6aa98569P1")
+msg91_authkey = os.getenv("MSG91_AUTHKEY", "571630Aktt8Nkq3uSh6ab87411P1")
 msg91_otp_template_id = os.getenv("MSG91_OTP_TEMPLATE_ID", "")
 msg91_order_template_id = os.getenv("MSG91_ORDER_TEMPLATE_ID", "")
 

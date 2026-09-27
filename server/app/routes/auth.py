@@ -36,7 +36,7 @@ class PhoneResendOTPRequest(BaseModel):
     phone: str
 
 
-MSG91_AUTHKEY = "571630AXc6Zj6LDxt6ab7ea23P1"
+MSG91_AUTHKEY = "571630Aktt8Nkq3uSh6ab87411P1"
 
 
 def normalize_indian_phone(phone: str) -> str:
@@ -273,7 +273,7 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
             )
             user = users.find_one({"_id": user_by_email["_id"]})
         else:
-            # Create new user with pure mobile number
+            # Create new user with complete customer schema
             is_new_user = True
             user_name = request.name.strip() if request.name and request.name.strip() else f"User {phone_clean[-4:]}"
             new_user_data = {
@@ -285,9 +285,14 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
                 "status": "active",
                 "auth_provider": "phone_otp",
                 "is_phone_verified": True,
+                "is_email_verified": bool(custom_email),
                 "joined_date": datetime.now().strftime("%Y-%m-%d"),
                 "last_login": datetime.now().strftime("%Y-%m-%d"),
                 "orders_count": 0,
+                "coins_balance": 0,
+                "coins_earned_total": 0,
+                "coins_spent_total": 0,
+                "addresses": [],
                 "created_at": datetime.now()
             }
             res = users.insert_one(new_user_data)

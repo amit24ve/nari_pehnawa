@@ -469,7 +469,7 @@ class NotificationService:
         import requests
         import requests.packages.urllib3.util.connection as urllib3_cn
 
-        msg91_authkey = os.getenv("MSG91_AUTHKEY", "571630AZ2xbnTitma6aa98569P1")
+        msg91_authkey = os.getenv("MSG91_AUTHKEY", "571630Aktt8Nkq3uSh6ab87411P1")
         flow_template_id = os.getenv("MSG91_ORDER_TEMPLATE_ID") or os.getenv("MSG91_FLOW_TEMPLATE_ID", "")
 
         try:
