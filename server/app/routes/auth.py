@@ -262,7 +262,6 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
             user_name = request.name.strip() if request.name and request.name.strip() else f"User {phone_clean[-4:]}"
             new_user_data = {
                 "phone": phone_clean,
-                "email": custom_email,
                 "name": user_name,
                 "role": "customer",
                 "is_admin": False,
@@ -279,6 +278,8 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
                 "addresses": [],
                 "created_at": datetime.now()
             }
+            if custom_email:
+                new_user_data["email"] = custom_email
             res = users.insert_one(new_user_data)
             user = users.find_one({"_id": res.inserted_id})
     else:
