@@ -34,38 +34,15 @@ def send_otp_sms(phone_10: str, otp_code: str) -> dict:
     elif len(clean_phone) == 11 and clean_phone.startswith("0"):
         clean_phone = clean_phone[1:]
 
-    sms_provider = os.getenv("SMS_PROVIDER", "2FACTOR").upper()
-    
-    # ── 1. If 2FACTOR selected or configured ─────────────────────────────────
-    twofactor_key = os.getenv("TWOFACTOR_API_KEY", "ebf37fc9-b8db-11f1-af74-0200cd936042")
-    if sms_provider == "2FACTOR" and twofactor_key:
-        res = _send_2factor(clean_phone, otp_code, twofactor_key)
-        if res.get("success"):
-            return res
-        logger.warning(f"2Factor failed: {res}. Trying fallbacks...")
-
-    # ── 2. FAST2SMS ─────────────────────────────────────────────────────────
-    fast2sms_key = os.getenv("FAST2SMS_API_KEY")
-    if fast2sms_key:
-        res = _send_fast2sms(clean_phone, otp_code, fast2sms_key)
-        if res.get("success"):
-            return res
-        logger.warning(f"Fast2SMS failed: {res}. Trying fallbacks...")
-
-    # ── 3. 2FACTOR fallback (if not first) ──────────────────────────────────
-    if twofactor_key:
-        res = _send_2factor(clean_phone, otp_code, twofactor_key)
-        if res.get("success"):
-            return res
-
-    # ── 4. MSG91 (Fallback) ──────────────────────────────────────────────────
-    msg91_key = os.getenv("MSG91_AUTHKEY")
+    # ── 1. MSG91 (Primary Provider) ──────────────────────────────────────────
+    msg91_key = os.getenv("MSG91_AUTHKEY", "571630Aktt8Nkq3uSh6ab87411P1")
     if msg91_key:
         res = _send_msg91(clean_phone, otp_code, msg91_key)
         if res.get("success"):
             return res
+        logger.warning(f"MSG91 failed: {res}")
 
-    return {"success": False, "message": "All SMS gateways failed or no API key configured"}
+    return {"success": False, "message": "Failed to dispatch SMS via MSG91"}
 
 
 def _send_fast2sms(phone_10: str, otp_code: str, api_key: str) -> dict:
