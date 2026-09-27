@@ -270,6 +270,10 @@ const Orders = () => {
                 <div className="space-y-3 sm:space-y-4">
                     {filteredOrders.map((order) => {
                         const orderStatus = order.status || 'pending';
+                        const rawNum = (order.order_number || order.id || '').toString().trim();
+                        const displayOrderNum = (rawNum.length === 24 && /^[0-9a-fA-F]+$/.test(rawNum))
+                            ? `ORD_${rawNum.slice(-6).toUpperCase()}`
+                            : (rawNum ? rawNum.replace(/^#/, '') : `ORD_${String(order.id || '').slice(-6).toUpperCase()}`);
                         return (
                             <div
                                 key={order.id}
@@ -282,7 +286,7 @@ const Orders = () => {
                                                 <Package className="w-5 h-5 sm:w-6 sm:h-6 text-[#0891b2]" />
                                             </div>
                                             <div className="min-w-0">
-                                                <h3 className="font-bold text-gray-800 text-sm sm:text-base">Order #{order.order_number || order.id}</h3>
+                                                <h3 className="font-bold text-gray-800 text-sm sm:text-base">Order #{displayOrderNum}</h3>
                                                 <p className="text-xs sm:text-sm text-gray-600 break-words">
                                                     Placed on {order.created_at ? new Date(order.created_at).toLocaleDateString('en-IN', {
                                                         day: 'numeric',

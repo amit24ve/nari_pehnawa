@@ -277,12 +277,18 @@ class ShiprocketService:
                 "hsn": ""
             })
 
-        is_prepaid = order_data.get("payment_method") in ("Razorpay", "Online", "razorpay", "Prepaid")
+        # Ensure clean, human-readable order number is passed to Shiprocket (so label prints Order#: ORD_... instead of 24-hex ObjectId)
+        clean_order_num = str(order_data.get("order_number") or order_id).strip()
+        if len(clean_order_num) == 24 and all(c in "0123456789abcdef" for c in clean_order_num):
+            ts = datetime.now().strftime("%Y%m%d")
+            clean_order_num = f"ORD_{ts}_{clean_order_num[-4:].upper()}"
 
         payload = {
-            "order_id": str(order_id),
+            "order_id": clean_order_num,
             "order_date": datetime.now().strftime("%Y-%m-%d %H:%M"),
             "pickup_location": order_data.get("pickup_location") or shiprocket_pickup_location,
+            "channel_id": str(shiprocket_channel_id).strip() if (shiprocket_channel_id and str(shiprocket_channel_id).strip() not in ("0", "")) else "",
+            "comment": f"Nari Pehnawa Order {clean_order_num}",
             "billing_customer_name": first_name,
             "billing_last_name": last_name,
             "billing_address": _clean_str(addr.get("address_line1") or "Station Road", 95),
@@ -291,7 +297,7 @@ class ShiprocketService:
             "billing_pincode": clean_pincode,
             "billing_state": _clean_str(addr.get("state") or "Uttar Pradesh", 40),
             "billing_country": _clean_str(addr.get("country") or "India", 20),
-            "billing_email": _clean_str(order_data.get("customer_email") or addr.get("email") or "customer@naripehnawa.com", 60),
+            "billing_email": _clean_str(order_data.get("customer_email") or addr.get("email") or "support@naripehnawa.com", 60),
             "billing_phone": clean_phone,
             "shipping_is_billing": True,
             "order_items": order_items,
@@ -302,9 +308,6 @@ class ShiprocketService:
             "height": float(dims.get("height", shiprocket_default_height_cm)),
             "weight": float(dims.get("weight", shiprocket_default_weight_kg)),
         }
-
-        if shiprocket_channel_id and str(shiprocket_channel_id).strip() not in ("0", ""):
-            payload["channel_id"] = str(shiprocket_channel_id).strip()
 
         return payload
 

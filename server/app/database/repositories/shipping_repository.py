@@ -51,15 +51,21 @@ class ShippingRepository:
                 except Exception:
                     pass
 
-                # 2. Try by order_number (e.g. NP-1002, 1002, #1002)
+                # 2. Try by order_number (e.g. ORD_20260927_1002, ORD-1002, NP-1002, 1002, #1002)
                 if not doc:
                     variations = [
                         clean_id,
                         clean_id.lstrip("#"),
-                        f"NP-{clean_id}",
-                        clean_id.replace("NP-", "")
+                        clean_id.replace("_", "-"),
+                        clean_id.replace("-", "_"),
+                        f"ORD_{clean_id.lstrip('#')}",
+                        f"ORD-{clean_id.lstrip('#')}",
+                        f"NP-{clean_id.lstrip('#')}",
+                        clean_id.replace("NP-", "").replace("ORD-", "").replace("ORD_", "")
                     ]
-                    for v in variations:
+                    for v in set(variations):
+                        if not v:
+                            continue
                         doc = self.orders.find_one({"order_number": {"$regex": f"^{v}$", "$options": "i"}})
                         if doc:
                             break
@@ -160,10 +166,29 @@ class ShippingRepository:
     async def update_shipping_info(
         self, order_id: str, shipping_info: ShippingInfo
     ) -> Optional[dict]:
-        """Merge `shipping_info` fields into `orders.<id>.shipping`."""
+        """Merge `shipping_info` fields into `orders.<id>.shipping` and sync root fields."""
         data = shipping_info.to_dict()
         set_fields = {f"shipping.{k}": v for k, v in data.items()}
         set_fields["updated_at"] = datetime.now()
+
+        # Synchronize top-level helpers
+        if shipping_info.awb:
+            set_fields["awb_code"] = shipping_info.awb
+        if shipping_info.courier_name:
+            set_fields["courier_name"] = shipping_info.courier_name
+        if shipping_info.shipment_status:
+            set_fields["shipment_status"] = shipping_info.shipment_status
+            sr_status = (shipping_info.shipment_status or "").lower()
+            if sr_status in ("delivered", "completed"):
+                set_fields["status"] = "delivered"
+            elif sr_status in ("shipped", "in_transit", "out_for_delivery"):
+                set_fields["status"] = "in_transit"
+            elif sr_status in ("pickup_scheduled", "picked_up"):
+                set_fields["status"] = "pickup_scheduled"
+            elif sr_status in ("awb_assigned", "manifest_generated"):
+                set_fields["status"] = "ready_to_ship"
+            elif sr_status == "cancelled":
+                set_fields["status"] = "cancelled"
 
         def _update():
             return self.orders.find_one_and_update(
@@ -189,10 +214,40 @@ class ShippingRepository:
 
     async def update_order_status(self, order_id: str, status: str) -> None:
         def _update():
+            prev = self.orders.find_one({"_id": ObjectId(order_id)})
+            prev_status = prev.get("status") if prev else None
             self.orders.update_one(
                 {"_id": ObjectId(order_id)},
                 {"$set": {"status": status, "updated_at": datetime.now()}},
             )
+            if prev:
+                user_id = str(prev.get("user_id") or "")
+                order_num = str(prev.get("order_number") or "")
+                if status in ("delivered", "completed") and prev_status not in ("delivered", "completed"):
+                    try:
+                        from app.services.reward_coin_service import RewardCoinService
+                        RewardCoinService(self.db).process_order_delivery(
+                            user_id=user_id,
+                            order_id=str(order_id),
+                            order_number=order_num,
+                            items=prev.get("items", []),
+                            coins_to_award=int(prev.get("coins_earned") or 0) if prev.get("coins_earned") else None
+                        )
+                    except Exception as e:
+                        print(f"[Coins] Error in shipping repo update_order_status delivery: {e}")
+                elif status in ("cancelled", "returned", "refunded") and prev_status not in ("cancelled", "returned", "refunded"):
+                    try:
+                        from app.services.reward_coin_service import RewardCoinService
+                        RewardCoinService(self.db).process_order_cancellation(
+                            user_id=user_id,
+                            order_id=str(order_id),
+                            order_number=order_num,
+                            coins_used=int(prev.get("coins_used") or 0),
+                            coins_earned=int(prev.get("coins_earned") or 0),
+                            action_type=status
+                        )
+                    except Exception as e:
+                        print(f"[Coins] Error in shipping repo update_order_status cancel: {e}")
 
         await asyncio.to_thread(_update)
 

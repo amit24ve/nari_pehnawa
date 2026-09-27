@@ -212,9 +212,12 @@ const Users = () => {
     const filteredUsers = users.filter((user) => {
         const userName = user.full_name || user.name || "";
         const userEmail = user.email || "";
+        const userPhone = user.phone || "";
+        const term = searchTerm.toLowerCase();
         const matchesSearch =
-            userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            userEmail.toLowerCase().includes(searchTerm.toLowerCase());
+            userName.toLowerCase().includes(term) ||
+            userEmail.toLowerCase().includes(term) ||
+            userPhone.toLowerCase().includes(term);
         const matchesRole = roleFilter === "all" || user.role === roleFilter;
         return matchesSearch && matchesRole;
     });

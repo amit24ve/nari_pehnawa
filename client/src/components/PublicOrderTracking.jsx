@@ -252,7 +252,15 @@ const PublicOrderTracking = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-stone-400 uppercase tracking-wider">Order Number:</span>
-                    <span className="text-base font-black text-stone-800 font-mono">#{data.order_number}</span>
+                    <span className="text-base font-black text-stone-800 font-mono">
+                      #{(() => {
+                        const raw = (data.order_number || data.order_id || '').toString().trim();
+                        if (raw.length === 24 && /^[0-9a-fA-F]+$/.test(raw)) {
+                          return `ORD_${raw.slice(-6).toUpperCase()}`;
+                        }
+                        return raw ? raw.replace(/^#/, '') : 'N/A';
+                      })()}
+                    </span>
                   </div>
                   {data.customer_name && (
                     <p className="text-xs text-stone-600 mt-0.5">

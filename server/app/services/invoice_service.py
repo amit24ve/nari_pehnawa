@@ -98,11 +98,11 @@ class InvoiceService:
     def _build_header(self, order: dict, invoice_number: Optional[str]) -> list:
         created_at = order.get("created_at")
         if isinstance(created_at, datetime):
-            date_str = created_at.strftime("%d %b %Y")
+            date_str = created_at.strftime("%d/%m/%Y")
         else:
-            date_str = datetime.now().strftime("%d %b %Y")
+            date_str = datetime.now().strftime("%d/%m/%Y")
 
-        inv_no = invoice_number or f"INV-{order.get('order_number', 'NA')}"
+        inv_no = invoice_number or f"Retail{order.get('order_number', '00001')}"
 
         header_table = Table(
             [
@@ -111,21 +111,21 @@ class InvoiceService:
                     Paragraph("<b>TAX INVOICE</b>", self._title_style),
                 ],
                 [
-                    Paragraph(company_address, self._small),
+                    Paragraph(f"{company_address}<br/>Sultanpur - 228151, Uttar Pradesh, India", self._small),
                     Paragraph(f"Invoice No: <b>{inv_no}</b>", self._small),
                 ],
                 [
                     Paragraph(
-                        f"GSTIN: {company_gstin or 'Not Registered'}", self._small
+                        f"State Code: 09 | GSTIN: {company_gstin or 'Not Registered'}", self._small
                     ),
                     Paragraph(f"Invoice Date: {date_str}", self._small),
                 ],
                 [
                     Paragraph(
-                        f"Support: {company_support_email} | {company_support_phone or '-'}",
+                        f"Email: {company_support_email} | Website: https://www.naripehnawa.com",
                         self._small,
                     ),
-                    Paragraph(f"Order No: {order.get('order_number', 'N/A')}", self._small),
+                    Paragraph(f"Order No: {order.get('order_number', order.get('id', 'N/A'))}", self._small),
                 ],
             ],
             colWidths=[95 * mm, 75 * mm],
@@ -151,16 +151,23 @@ class InvoiceService:
             addr.get("address_line2", ""),
             f"{addr.get('city', '')}, {addr.get('state', '')} - {addr.get('postal_code', '')}",
             addr.get("country", "India"),
-            f"Phone: {addr.get('phone', 'N/A')}",
+            f"State Code: {addr.get('state_code', '09')}",
+            f"Phone: {addr.get('phone', '—')}",
         ]
         bill_to_lines = [l for l in bill_to_lines if l]
 
         ship_to_para = Paragraph(
-            "<b>Ship To / Bill To</b><br/>" + "<br/>".join(bill_to_lines), self._small
+            "<b>SHIPPING / BILLING ADDRESS:</b><br/>" + "<br/>".join(bill_to_lines), self._small
         )
         seller_para = Paragraph(
-            f"<b>Sold By</b><br/>{company_name}<br/>{company_address}<br/>"
-            f"State: {company_state}<br/>GSTIN: {company_gstin or 'Not Registered'}",
+            f"<b>SOLD BY:</b><br/><b>{company_name}</b><br/>"
+            f"121a, Baisia, Vidhayak Nagar Chauraha, Guptarganj, Kurebhar<br/>"
+            f"Sultanpur 228151<br/>"
+            f"Uttar Pradesh, India<br/>"
+            f"State Code : 09<br/>"
+            f"GSTIN No. : {company_gstin or 'Not Registered'}<br/>"
+            f"Website: https://www.naripehnawa.com<br/>"
+            f"Email: {company_support_email}",
             self._small,
         )
 
@@ -262,12 +269,37 @@ class InvoiceService:
         return [table, Spacer(1, 4 * mm), payment_line]
 
     def _build_footer(self) -> list:
+        sign_table = Table(
+            [
+                [
+                    Paragraph(
+                        "<b>Declaration:</b><br/>"
+                        "We declare that this invoice shows the actual price of the goods described "
+                        "and that all particulars are true and correct.",
+                        self._small,
+                    ),
+                    Paragraph(
+                        f"<br/><b>For {company_name}</b><br/><br/><br/>"
+                        "<b>Authorized Signatory</b>",
+                        ParagraphStyle("RightSign", parent=self._small, alignment=2),
+                    ),
+                ]
+            ],
+            colWidths=[105 * mm, 65 * mm],
+        )
+        sign_table.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ]
+            )
+        )
         note = Paragraph(
-            "This is a computer-generated invoice and does not require a physical signature. "
-            "For any queries regarding this order, please contact our support team.",
+            "This is a computer-generated tax invoice. "
+            f"For support, contact: <b>{company_support_email}</b> | <b>https://www.naripehnawa.com</b>",
             self._small,
         )
-        return [note]
+        return [sign_table, Spacer(1, 4 * mm), note]
 
     # ── helpers ──────────────────────────────────────────────────────────
 

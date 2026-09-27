@@ -179,17 +179,34 @@ def _ensure_indexes(db):
     global _indexes_created
     if _indexes_created:
         return
-    db["visitors"].create_index("visitor_id", unique=True)
-    db["visitors"].create_index("user_id")
-    db["sessions"].create_index("session_id", unique=True)
-    db["sessions"].create_index("visitor_id")
-    db["pageviews"].create_index("visitor_id")
-    db["pageviews"].create_index("session_id")
-    db["events"].create_index("visitor_id")
-    db["events"].create_index("session_id")
-    db["clicks"].create_index("session_id")
-    db["scrolls"].create_index("session_id")
-    _indexes_created = True
+    try:
+        db["visitors"].create_index("visitor_id", unique=True)
+        db["visitors"].create_index("user_id")
+        db["visitors"].create_index("geo.country")
+        db["visitors"].create_index([("created_at", -1)])
+        
+        db["sessions"].create_index("session_id", unique=True)
+        db["sessions"].create_index("visitor_id")
+        db["sessions"].create_index([("start_time", -1)])
+        db["sessions"].create_index([("visitor_id", 1), ("start_time", -1)])
+        
+        db["pageviews"].create_index("visitor_id")
+        db["pageviews"].create_index("session_id")
+        db["pageviews"].create_index([("entered_at", -1)])
+        db["pageviews"].create_index([("session_id", 1), ("entered_at", 1)])
+        db["pageviews"].create_index([("path", 1), ("entered_at", -1)])
+        
+        db["events"].create_index("visitor_id")
+        db["events"].create_index("session_id")
+        db["events"].create_index([("created_at", -1)])
+        db["events"].create_index([("event_type", 1), ("created_at", -1)])
+        
+        db["conversions"].create_index([("created_at", -1)])
+        db["clicks"].create_index("session_id")
+        db["scrolls"].create_index("session_id")
+        _indexes_created = True
+    except Exception as e:
+        print(f"[Analytics] Index creation note: {e}")
 
 # Request Payloads
 class SessionStartRequest(BaseModel):
@@ -717,6 +734,8 @@ def get_visitor_intelligence_dashboard(
         elif visitor_type == "returning":
             session_filters["returning_visitor"] = True
 
+    _ensure_indexes(db)
+
     # 1. Live Counters
     five_mins_ago = datetime.now() - timedelta(minutes=5)
     active_visitors = len(db["pageviews"].distinct("visitor_id", {"entered_at": {"$gte": five_mins_ago}}))
@@ -735,58 +754,61 @@ def get_visitor_intelligence_dashboard(
     bounce_rate = round((bounce_sessions / total_sessions * 100), 1) if total_sessions > 0 else 0.0
 
     # Avg Session Time & Pages per Visit
-    sessions_cursor = list(db["sessions"].find(session_filters, {"duration": 1}))
+    sessions_cursor = list(db["sessions"].find(session_filters, {"duration": 1}).limit(5000))
     total_duration = sum(s.get("duration", 0) for s in sessions_cursor)
-    avg_session_time = round(total_duration / total_sessions, 1) if total_sessions > 0 else 0.0
+    num_sampled = len(sessions_cursor)
+    avg_session_time = round(total_duration / num_sampled, 1) if num_sampled > 0 else 0.0
     avg_pages_per_visit = round(total_pageviews / total_sessions, 1) if total_sessions > 0 else 0.0
 
     # 3. Country / City Breakdowns
     v_ids = db["sessions"].distinct("visitor_id", session_filters)
+    v_match = {"visitor_id": {"$in": v_ids[:5000]}} if v_ids else {}
+
     countries_cursor = db["visitors"].aggregate([
-        {"$match": {"visitor_id": {"$in": v_ids}}},
+        {"$match": v_match},
         {"$group": {"_id": "$geo.country", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
-        {"$limit": 5}
-    ])
+        {"$limit": 50}
+    ]) if v_match else []
     countries = [{"country": c["_id"] or "Unknown", "count": c["count"]} for c in countries_cursor]
 
     states_cursor = db["visitors"].aggregate([
-        {"$match": {"visitor_id": {"$in": v_ids}}},
+        {"$match": v_match},
         {"$group": {"_id": "$geo.state", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
-        {"$limit": 5}
-    ])
+        {"$limit": 20}
+    ]) if v_match else []
     states = [{"state": s["_id"] or "Unknown", "count": s["count"]} for s in states_cursor]
 
     cities_cursor = db["visitors"].aggregate([
-        {"$match": {"visitor_id": {"$in": v_ids}}},
+        {"$match": v_match},
         {"$group": {"_id": "$geo.city", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
-        {"$limit": 5}
-    ])
+        {"$limit": 30}
+    ]) if v_match else []
     cities = [{"city": c["_id"] or "Unknown", "count": c["count"]} for c in cities_cursor]
 
     # 4. Device & Browser Breakdowns
     devices_cursor = db["visitors"].aggregate([
-        {"$match": {"visitor_id": {"$in": v_ids}}},
+        {"$match": v_match},
         {"$group": {"_id": "$device.device_type", "count": {"$sum": 1}}}
-    ])
+    ]) if v_match else []
     devices = [{"device_type": d["_id"] or "Desktop", "count": d["count"]} for d in devices_cursor]
 
     browsers_cursor = db["visitors"].aggregate([
-        {"$match": {"visitor_id": {"$in": v_ids}}},
+        {"$match": v_match},
         {"$group": {"_id": "$device.browser", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
         {"$limit": 5}
-    ])
+    ]) if v_match else []
     browsers = [{"browser": b["_id"] or "Unknown", "count": b["count"]} for b in browsers_cursor]
 
     os_cursor = db["visitors"].aggregate([
-        {"$match": {"visitor_id": {"$in": v_ids}}},
+        {"$match": v_match},
         {"$group": {"_id": "$device.os", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
         {"$limit": 5}
-    ])
+    ]) if v_match else []
     operating_systems = [{"os": o["_id"] or "Unknown", "count": o["count"]} for o in os_cursor]
 
     # 5. Traffic Sources
@@ -809,7 +831,7 @@ def get_visitor_intelligence_dashboard(
         {"stage": "Purchased Sales", "count": funnel_purchases}
     ]
 
-    # 7. Visitor Journeys Table (with Searching/Pagination)
+    # 7. Visitor Journeys Table (with Searching/Pagination & batch queries)
     search_filters = {}
     if search:
         search_filters = {"$or": [
@@ -819,49 +841,82 @@ def get_visitor_intelligence_dashboard(
             {"device.browser": {"$regex": search, "$options": "i"}},
             {"device.os": {"$regex": search, "$options": "i"}}
         ]}
-
-    # Filter visitor IDs based on search
-    if search:
         searched_v_ids = db["visitors"].distinct("visitor_id", search_filters)
         session_filters["visitor_id"] = {"$in": searched_v_ids}
 
-    # Fetch sessions
     total_filtered_sessions = db["sessions"].count_documents(session_filters)
     journeys_cursor = list(db["sessions"].find(session_filters).sort("start_time", -1).skip((page - 1) * limit).limit(limit))
     
+    # Batch fetch visitors and pageviews to avoid N+1 queries
+    session_ids = [s["session_id"] for s in journeys_cursor]
+    j_visitor_ids = list({s["visitor_id"] for s in journeys_cursor})
+    
+    visitors_map = {
+        v["visitor_id"]: v
+        for v in db["visitors"].find({"visitor_id": {"$in": j_visitor_ids}})
+    } if j_visitor_ids else {}
+    
+    pvs_by_session = {}
+    if session_ids:
+        for pv in db["pageviews"].find({"session_id": {"$in": session_ids}}).sort("entered_at", 1):
+            pvs_by_session.setdefault(pv["session_id"], []).append(pv["path"])
+
     journeys = []
     for s in journeys_cursor:
-        visitor = db["visitors"].find_one({"visitor_id": s["visitor_id"]})
-        pvs = list(db["pageviews"].find({"session_id": s["session_id"]}).sort("entered_at", 1))
+        visitor = visitors_map.get(s["visitor_id"])
+        pages = pvs_by_session.get(s["session_id"], [])
         
         journeys.append({
             "session_id": s["session_id"],
             "visitor_id": s["visitor_id"],
             "start_time": s["start_time"],
-            "duration": s["duration"],
+            "duration": s.get("duration", 0),
             "referrer": s.get("traffic", {}).get("referrer") or "Direct",
             "geo": visitor.get("geo") if visitor else None,
             "device": visitor.get("device") if visitor else None,
-            "pages": [p["path"] for p in pvs],
+            "pages": pages,
             "bounce": s.get("bounce", True),
             "status": visitor.get("login_status", "Guest") if visitor else "Guest"
         })
 
-    # 8. Charts: Hourly / Daily visitors
+    # 8. Charts: Daily visitors aggregated in a single query
+    num_days = 30 if date_range == "30d" else 7
+    chart_start = now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=num_days)
+    
+    pv_agg = db["pageviews"].aggregate([
+        {"$match": {"entered_at": {"$gte": chart_start, "$lte": now}}},
+        {"$group": {
+            "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$entered_at"}},
+            "count": {"$sum": 1}
+        }}
+    ])
+    pv_map = {row["_id"]: row["count"] for row in pv_agg}
+
+    sess_agg = db["sessions"].aggregate([
+        {"$match": {"start_time": {"$gte": chart_start, "$lte": now}}},
+        {"$group": {
+            "_id": {
+                "day": {"$dateToString": {"format": "%Y-%m-%d", "date": "$start_time"}},
+                "visitor_id": "$visitor_id"
+            }
+        }},
+        {"$group": {
+            "_id": "$_id.day",
+            "count": {"$sum": 1}
+        }}
+    ])
+    sess_map = {row["_id"]: row["count"] for row in sess_agg}
+
     charts = {
         "dates": [],
         "pageviews": [],
         "visitors": []
     }
-    for i in range(date_range == "30d" and 30 or 7, -1, -1):
-        day_start = now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=i)
-        day_end = day_start + timedelta(days=1)
-        pv = db["pageviews"].count_documents({"entered_at": {"$gte": day_start, "$lt": day_end}})
-        uv = len(db["sessions"].distinct("visitor_id", {"start_time": {"$gte": day_start, "$lt": day_end}}))
-        
-        charts["dates"].append(day_start.strftime("%Y-%m-%d"))
-        charts["pageviews"].append(pv)
-        charts["visitors"].append(uv)
+    for i in range(num_days, -1, -1):
+        day_str = (now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=i)).strftime("%Y-%m-%d")
+        charts["dates"].append(day_str)
+        charts["pageviews"].append(pv_map.get(day_str, 0))
+        charts["visitors"].append(sess_map.get(day_str, 0))
 
     # 9. Top pages
     pages_cursor = db["pageviews"].aggregate([

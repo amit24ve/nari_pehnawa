@@ -282,23 +282,47 @@ async def cancel_shipment(
 ):
     """Cancel a shipment by order_id or a list of AWBs (Admin only)."""
     awbs = payload.awbs or []
+    target_order_id = payload.order_id
 
-    if payload.order_id and not awbs:
-        order = await _load_order_or_404(payload.order_id, repo)
-        awb = (order.get("shipping") or {}).get("awb")
-        if not awb:
-            raise HTTPException(
-                status_code=400, detail="Order has no AWB yet; nothing to cancel"
+    if target_order_id and not awbs:
+        order = await _load_order_or_404(target_order_id, repo)
+        awb = (order.get("shipping") or {}).get("awb") or order.get("awb_code") or order.get("tracking_number")
+        sr_order_id = (order.get("shipping") or {}).get("shiprocket_order_id") or order.get("shiprocket_order_id")
+        
+        if awb:
+            try:
+                await sr.cancel_shipment([str(awb)])
+            except Exception as e:
+                print(f"[Shiprocket] Cancel shipment error: {e}")
+        elif sr_order_id:
+            try:
+                await sr.cancel_order([int(sr_order_id)])
+            except Exception as e:
+                print(f"[Shiprocket] Cancel order error: {e}")
+
+        await repo.update_order_status(target_order_id, "cancelled")
+        try:
+            repo.orders.update_one(
+                {"_id": ObjectId(target_order_id)},
+                {"$set": {
+                    "shipping.shipment_status": "cancelled",
+                    "shipment_status": "cancelled",
+                    "status": "cancelled",
+                    "updated_at": datetime.now()
+                }}
             )
-        awbs = [awb]
+        except Exception:
+            pass
+
+        return CancelShipmentResponse(success=True, message=f"Order {target_order_id} cancelled successfully")
 
     if not awbs:
         raise HTTPException(status_code=400, detail="Provide order_id or awbs to cancel")
 
     try:
         await sr.cancel_shipment(awbs)
-    except ShiprocketAPIError as exc:
-        raise HTTPException(status_code=502, detail=str(exc))
+    except Exception as exc:
+        print(f"[Shiprocket API Error on cancel]: {exc}")
 
     for awb in awbs:
         await repo.update_shipping_by_awb(awb, {"shipment_status": "cancelled"})

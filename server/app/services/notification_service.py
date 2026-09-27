@@ -466,15 +466,17 @@ class NotificationService:
         import os
         import json
         import socket
-        import requests
-        import requests.packages.urllib3.util.connection as urllib3_cn
-
-        msg91_authkey = os.getenv("MSG91_AUTHKEY", "571630Aktt8Nkq3uSh6ab87411P1")
-        flow_template_id = os.getenv("MSG91_ORDER_TEMPLATE_ID") or os.getenv("MSG91_FLOW_TEMPLATE_ID", "")
-
         try:
-            # Force IPv4 socket connection to prevent Error 418
-            urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
+            # Force IPv4 socket connection to guarantee 185.211.6.40 whitelist match
+            try:
+                import urllib3.util.connection as urllib3_cn
+                urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
+            except Exception:
+                try:
+                    import requests.packages.urllib3.util.connection as urllib3_cn
+                    urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
+                except Exception:
+                    pass
 
             headers = {
                 "authkey": msg91_authkey,

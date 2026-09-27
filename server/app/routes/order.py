@@ -27,9 +27,29 @@ _STATUS_NOTIFICATION_MAP = {
 }
 
 
-def generate_order_number():
-    """Generate a unique order number"""
-    return "ORD-" + ''.join(random.choices(string.digits, k=4))
+def generate_order_number() -> str:
+    """Generate clean, sequential ecommerce order number: ORD_YYYYMMDD_XXXX"""
+    ts = datetime.now().strftime("%Y%m%d")
+    rand_seq = "".join(random.choices(string.digits, k=4))
+    return f"ORD_{ts}_{rand_seq}"
+
+
+def format_order_number(order: dict) -> str:
+    """Ensure order number is clean, human-readable and NEVER a raw MongoDB ObjectId"""
+    raw_num = str(order.get("order_number") or order.get("order_id") or "").strip()
+    if not raw_num or raw_num == "N/A" or (len(raw_num) == 24 and all(c in "0123456789abcdef" for c in raw_num)):
+        obj_id = str(order.get("_id") or order.get("id") or "")
+        created_at = order.get("created_at")
+        date_str = ""
+        if isinstance(created_at, datetime):
+            date_str = created_at.strftime("%Y%m%d")
+        elif isinstance(created_at, str) and len(created_at) >= 10:
+            date_str = created_at[:10].replace("-", "")
+        if not date_str:
+            date_str = datetime.now().strftime("%Y%m%d")
+        suffix = obj_id[-4:].upper() if obj_id else "".join(random.choices(string.digits, k=4))
+        return f"ORD_{date_str}_{suffix}"
+    return raw_num
 
 
 def _stock_items_from_order(order: dict) -> list[StockLineItem]:
@@ -114,23 +134,27 @@ def create_order(order: OrderCreate, current_user: dict = Depends(get_current_us
         # Process reward coins
         try:
             from app.services.reward_coin_service import RewardCoinService
+            is_prepaid = (order_data.get("payment_method") or "").upper() != "COD" and order_data.get("payment_status") == "captured"
             coin_res = RewardCoinService(db).process_order_placement(
                 user_id=current_user.get("id"),
                 order_id=order_data["_id"],
                 order_number=order_data["order_number"],
                 items=order_data.get("items", []),
                 coins_to_redeem=int(order_data.get("coins_used") or 0),
-                subtotal=float(order_data.get("subtotal") or order_data.get("total_amount") or 0)
+                subtotal=float(order_data.get("subtotal") or order_data.get("total_amount") or 0),
+                is_prepaid=is_prepaid
             )
             order_data["coins_used"] = coin_res["coins_used"]
             order_data["coin_discount"] = coin_res["coin_discount"]
             order_data["coins_earned"] = coin_res["coins_earned"]
+            order_data["coins_awarded"] = coin_res.get("coins_awarded", False)
             orders_collection.update_one(
                 {"_id": result.inserted_id},
                 {"$set": {
                     "coins_used": coin_res["coins_used"],
                     "coin_discount": coin_res["coin_discount"],
-                    "coins_earned": coin_res["coins_earned"]
+                    "coins_earned": coin_res["coins_earned"],
+                    "coins_awarded": coin_res.get("coins_awarded", False)
                 }}
             )
         except Exception as coin_err:
@@ -183,7 +207,7 @@ def get_orders(
             )
             order_dict = {
                 "id": str(order["_id"]),
-                "order_number": order.get("order_number") or order.get("order_id") or f"ORD-{str(order['_id'])[-6:]}",
+                "order_number": format_order_number(order),
                 "user_id": order.get("user_id"),
                 "total_amount": order.get("total_amount", 0),
                 "subtotal": order.get("subtotal", 0),
@@ -336,7 +360,7 @@ def get_my_orders(
         for order in orders:
             order_dict = {
                 "id": str(order["_id"]),
-                "order_number": order.get("order_number", "N/A"),
+                "order_number": format_order_number(order),
                 "user_id": order.get("user_id"),
                 "total_amount": order.get("total_amount", 0),
                 "subtotal": order.get("subtotal", 0),
@@ -426,7 +450,7 @@ def get_order(order_id: str, current_user: dict = Depends(get_current_user)):
         )
         order_dict = {
             "id": str(order["_id"]),
-            "order_number": order.get("order_number") or order.get("order_id") or f"ORD-{str(order['_id'])[-6:]}",
+            "order_number": format_order_number(order),
             "user_id": order.get("user_id"),
             "total_amount": order.get("total_amount", 0),
             "subtotal": order.get("subtotal", 0),
@@ -683,8 +707,55 @@ def update_order_status(order_id: str, status_data: dict, current_user: dict = D
             except Exception as e:
                 print(f"[Shiprocket] auto-trigger on status change failed: {e}")
 
+        # Credit reward coins if this transition delivers/completes the order (for COD or previously unawarded orders)
+        if status in ("delivered", "completed") and previous_status not in ("delivered", "completed"):
+            try:
+                from app.services.reward_coin_service import RewardCoinService
+                coin_service = RewardCoinService(db)
+                coin_service.process_order_delivery(
+                    user_id=str(result.get("user_id") or ""),
+                    order_id=str(order_id),
+                    order_number=str(result.get("order_number") or ""),
+                    items=result.get("items", []),
+                    coins_to_award=int(result.get("coins_earned") or 0) if result.get("coins_earned") else None
+                )
+            except Exception as coin_err:
+                print(f"[Coins] Error awarding coins for delivered order {order_id}: {coin_err}")
+
         # Restore inventory and reverse reward coins if this transition cancels/returns the order
         if status in ("cancelled", "returned", "refunded") and previous_status not in ("cancelled", "returned", "refunded"):
+            # Trigger Shiprocket cancellation if shipment / order was created
+            if status == "cancelled":
+                try:
+                    import threading
+                    import asyncio
+                    from app.services.shiprocket_service import get_shiprocket_service
+
+                    def _cancel_sr():
+                        async def _do_cancel():
+                            sr = get_shiprocket_service()
+                            shipping = result.get("shipping") or {}
+                            awb = shipping.get("awb")
+                            sr_order_id = shipping.get("shiprocket_order_id")
+                            if awb:
+                                try:
+                                    await sr.cancel_shipment([str(awb)])
+                                    print(f"[Shiprocket] Cancelled shipment {awb} for order {order_id}")
+                                except Exception as e:
+                                    print(f"[Shiprocket] Cancel AWB {awb} note: {e}")
+                            elif sr_order_id:
+                                try:
+                                    await sr.cancel_order([int(sr_order_id)])
+                                    print(f"[Shiprocket] Cancelled order {sr_order_id} for order {order_id}")
+                                except Exception as e:
+                                    print(f"[Shiprocket] Cancel order {sr_order_id} note: {e}")
+
+                        asyncio.run(_do_cancel())
+
+                    threading.Thread(target=_cancel_sr, daemon=True).start()
+                except Exception as e:
+                    print(f"[Shiprocket] Could not dispatch cancel: {e}")
+
             from app.services.referral_service import try_reverse_for_order
             try_reverse_for_order(db, order_id)
             stock_items = _stock_items_from_order(result)
@@ -811,6 +882,37 @@ def _finalise_cancellation(db, order: dict, order_id: str, cancellation_id: str,
         InventoryService(db).restore_stock_for_order(
             stock_items, order_id, reason="Order cancelled"
         )
+
+    # Cancel Shiprocket order / shipment if any
+    try:
+        import threading
+        import asyncio
+        from app.services.shiprocket_service import get_shiprocket_service
+
+        def _cancel_sr_auto():
+            async def _do_cancel():
+                sr = get_shiprocket_service()
+                shipping = order.get("shipping") or {}
+                awb = shipping.get("awb")
+                sr_order_id = shipping.get("shiprocket_order_id")
+                if awb:
+                    try:
+                        await sr.cancel_shipment([str(awb)])
+                        print(f"[Shiprocket] Cancelled shipment {awb} for cancellation {cancellation_id}")
+                    except Exception as e:
+                        print(f"[Shiprocket] Cancel AWB note: {e}")
+                elif sr_order_id:
+                    try:
+                        await sr.cancel_order([int(sr_order_id)])
+                        print(f"[Shiprocket] Cancelled order {sr_order_id} for cancellation {cancellation_id}")
+                    except Exception as e:
+                        print(f"[Shiprocket] Cancel order note: {e}")
+
+            asyncio.run(_do_cancel())
+
+        threading.Thread(target=_cancel_sr_auto, daemon=True).start()
+    except Exception as e:
+        print(f"[Shiprocket] Could not dispatch auto cancel: {e}")
 
     try:
         from app.services.reward_coin_service import RewardCoinService

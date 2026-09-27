@@ -51,16 +51,85 @@ const StatCard = ({ title, value, subText, icon: Icon }) => {
 };
 
 const countryCoords = {
+  // Asia & South Asia
   'india': [20.5937, 78.9629],
-  'united states': [37.0902, -95.7129],
+  'nepal': [28.3949, 84.1240],
+  'bangladesh': [23.6850, 90.3563],
+  'pakistan': [30.3753, 69.3451],
+  'sri lanka': [7.8731, 80.7718],
+  'bhutan': [27.5142, 90.4336],
+  'maldives': [3.2028, 73.2207],
+  'china': [35.8617, 104.1954],
+  'japan': [36.2048, 138.2529],
+  'south korea': [35.9078, 127.7669],
+  'singapore': [1.3521, 103.8198],
+  'malaysia': [4.2105, 101.9758],
+  'indonesia': [-0.7893, 113.9213],
+  'thailand': [15.8700, 100.9925],
+  'vietnam': [14.0583, 108.2772],
+  'philippines': [12.8797, 121.7740],
+  'hong kong': [22.3193, 114.1694],
+  'taiwan': [23.6978, 120.9605],
+
+  // Middle East
+  'united arab emirates': [23.4241, 53.8478],
+  'uae': [23.4241, 53.8478],
+  'saudi arabia': [23.8859, 45.0792],
+  'qatar': [25.3548, 51.1839],
+  'oman': [21.4735, 55.9754],
+  'kuwait': [29.3117, 47.4818],
+  'bahrain': [26.0667, 50.5577],
+  'israel': [31.0461, 34.8516],
+  'turkey': [38.9637, 35.2433],
+
+  // Europe
   'united kingdom': [55.3781, -3.4360],
-  'canada': [56.1304, -106.3468],
-  'australia': [-25.2744, 133.7751],
+  'uk': [55.3781, -3.4360],
   'germany': [51.1657, 10.4515],
   'france': [46.2276, 2.2137],
-  'united arab emirates': [23.4241, 53.8478],
-  'singapore': [1.3521, 103.8198],
+  'italy': [41.8719, 12.5674],
+  'spain': [40.4637, -3.7492],
+  'netherlands': [52.1326, 5.2913],
+  'switzerland': [46.8182, 8.2275],
+  'sweden': [60.1282, 18.6435],
+  'norway': [60.4720, 8.4689],
+  'denmark': [56.2639, 9.5018],
+  'ireland': [53.1424, -7.6921],
+  'belgium': [50.5039, 4.4699],
+  'austria': [47.5162, 14.5501],
+  'portugal': [39.3999, -8.2245],
+  'greece': [39.0742, 21.8243],
+  'poland': [51.9194, 19.1451],
+  'russia': [61.5240, 105.3188],
+
+  // Americas
+  'united states': [37.0902, -95.7129],
+  'usa': [37.0902, -95.7129],
+  'canada': [56.1304, -106.3468],
+  'mexico': [23.6345, -102.5528],
+  'brazil': [-14.2350, -51.9253],
+  'argentina': [-38.4161, -63.6167],
+  'colombia': [4.5709, -74.2973],
+  'chile': [-35.6751, -71.5430],
+
+  // Oceania & Africa
+  'australia': [-25.2744, 133.7751],
+  'new zealand': [-40.9006, 174.8860],
+  'south africa': [-30.5595, 22.9375],
+  'egypt': [26.8206, 30.8025],
+  'nigeria': [9.0820, 8.6753],
+  'kenya': [-0.0236, 37.9062],
   'unknown': [20.5937, 78.9629]
+};
+
+const getCountryCoord = (name) => {
+  if (!name) return countryCoords['india'];
+  const clean = name.toString().trim().toLowerCase().replace(/^(the\s+)/, '');
+  if (countryCoords[clean]) return countryCoords[clean];
+  for (const [k, v] of Object.entries(countryCoords)) {
+    if (clean.includes(k) || k.includes(clean)) return v;
+  }
+  return [20.5937, 78.9629];
 };
 
 const Visitors = () => {
@@ -96,92 +165,124 @@ const Visitors = () => {
   const wsRef = useRef(null);
 
   // Leaflet Map states & refs
-  const [leafletLoaded, setLeafletLoaded] = useState(false);
+  const [leafletLoaded, setLeafletLoaded] = useState(Boolean(typeof window !== 'undefined' && window.L));
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersGroupRef = useRef(null);
+  const tileLayerRef = useRef(null);
 
-  // Inject Leaflet CDN dynamically
+  // Check & ensure Leaflet is loaded
   useEffect(() => {
-    if (!document.getElementById('leaflet-css')) {
+    if (typeof window !== 'undefined' && window.L) {
+      setLeafletLoaded(true);
+      return;
+    }
+
+    if (!document.querySelector('link[href*="leaflet.css"]')) {
       const link = document.createElement('link');
-      link.id = 'leaflet-css';
       link.rel = 'stylesheet';
       link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
       document.head.appendChild(link);
     }
 
-    if (!document.getElementById('leaflet-custom-style')) {
-      const style = document.createElement('style');
-      style.id = 'leaflet-custom-style';
-      style.innerHTML = `
-        .leaflet-popup-content-wrapper {
-          background: #ffffff !important;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-          padding: 0 !important;
-          border: 1px solid #e2e8f0 !important;
-          border-radius: 12px !important;
-        }
-        .leaflet-popup-content {
-          margin: 0 !important;
-        }
-        .leaflet-popup-tip {
-          background: #ffffff !important;
-          border: 1px solid #e2e8f0 !important;
-        }
-        .leaflet-container {
-          background: #f8fafc !important;
-        }
-      `;
-      document.head.appendChild(style);
-    }
+    const checkLeaflet = setInterval(() => {
+      if (typeof window !== 'undefined' && window.L) {
+        setLeafletLoaded(true);
+        clearInterval(checkLeaflet);
+      }
+    }, 150);
 
-    if (!window.L) {
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.async = true;
-      script.onload = () => setLeafletLoaded(true);
-      document.body.appendChild(script);
-    } else {
-      setLeafletLoaded(true);
-    }
+    const timer = setTimeout(() => {
+      clearInterval(checkLeaflet);
+      if (!window.L) {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.async = true;
+        script.onload = () => setLeafletLoaded(true);
+        document.body.appendChild(script);
+      }
+    }, 800);
+
+    return () => {
+      clearInterval(checkLeaflet);
+      clearTimeout(timer);
+    };
   }, []);
 
   // Initialize Leaflet Map
   useEffect(() => {
-    if (!leafletLoaded || !mapRef.current) return;
-    if (mapInstanceRef.current) return;
+    if (!leafletLoaded || !mapRef.current || !window.L) return;
+
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.invalidateSize();
+      return;
+    }
 
     try {
+      if (mapRef.current._leaflet_id) {
+        delete mapRef.current._leaflet_id;
+      }
+
+      // World view centered with zoom 2 to show all continents
       const map = window.L.map(mapRef.current, {
         zoomControl: true,
-        attributionControl: false
-      }).setView([20, 10], 2);
+        attributionControl: false,
+        worldCopyJump: true,
+        minZoom: 1,
+        maxZoom: 18
+      }).setView([20.5937, 78.9629], 3);
 
-      window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19
+      const tileUrl = isDarkMode
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+      const tileLayer = window.L.tileLayer(tileUrl, {
+        maxZoom: 19,
+        subdomains: isDarkMode ? ['a', 'b', 'c', 'd'] : ['a', 'b', 'c']
       }).addTo(map);
 
+      tileLayerRef.current = tileLayer;
       const markerGroup = window.L.layerGroup().addTo(map);
       mapInstanceRef.current = map;
       markersGroupRef.current = markerGroup;
 
+      [100, 300, 700, 1500].forEach((delay) => {
+        setTimeout(() => {
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.invalidateSize();
+          }
+        }, delay);
+      });
+
+      const handleResize = () => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      };
+      window.addEventListener('resize', handleResize);
+
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.remove();
+          mapInstanceRef.current = null;
+        }
+      };
+    } catch (e) {
+      console.error("Leaflet initialization failed: ", e);
+    }
+  }, [leafletLoaded, isDarkMode]);
+
+  // Invalidate map size on data change
+  useEffect(() => {
+    if (mapInstanceRef.current) {
       setTimeout(() => {
         if (mapInstanceRef.current) {
           mapInstanceRef.current.invalidateSize();
         }
-      }, 300);
-    } catch (e) {
-      console.error("Leaflet initialization failed: ", e);
+      }, 200);
     }
-
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
-    };
-  }, [leafletLoaded, dashboardData]);
+  }, [dashboardData]);
 
   // Update Map Markers
   useEffect(() => {
@@ -211,7 +312,7 @@ const Visitors = () => {
       const countryName = c.country;
       if (!countryName || countryName === 'Unknown') return;
       const count = c.count;
-      const coords = countryCoords[countryName.toLowerCase()] || countryCoords['unknown'];
+      const coords = getCountryCoord(countryName);
       
       const circle = window.L.circleMarker(coords, {
         radius: Math.min(Math.max(count * 3, 7), 40),
@@ -240,15 +341,15 @@ const Visitors = () => {
       let lon = j.geo?.lon;
 
       if (!lat || !lon || (lat === 0 && lon === 0)) {
-        const countryName = (j.geo?.country || '').toLowerCase();
-        const coords = countryCoords[countryName] || countryCoords['unknown'];
+        const countryName = j.geo?.country || '';
+        const coords = getCountryCoord(countryName);
         lat = coords[0];
         lon = coords[1];
       }
 
-      let finalLat = lat;
-      let finalLon = lon;
-      const key = `${lat.toFixed(2)},${lon.toFixed(2)}`;
+      let finalLat = Number(lat) || 20.5937;
+      let finalLon = Number(lon) || 78.9629;
+      const key = `${finalLat.toFixed(2)},${finalLon.toFixed(2)}`;
       if (plotted.includes(key)) {
         finalLat += (Math.random() - 0.5) * 0.15;
         finalLon += (Math.random() - 0.5) * 0.15;
@@ -265,10 +366,10 @@ const Visitors = () => {
       const popupContent = `
         <div style="background-color: #ffffff; color: #1e293b; padding: 12px; border-radius: 12px; font-family: sans-serif; font-size: 11px; width: 220px; line-height: 1.5;">
           <div style="font-weight: bold; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-family: monospace; color: #0891b2;">${j.visitor_id.substring(0, 14)}...</span>
+            <span style="font-family: monospace; color: #0891b2;">${(j.visitor_id || 'Visitor').substring(0, 14)}...</span>
             <span style="background: rgba(8, 145, 178, 0.1); color: #0891b2; padding: 1.5px 5px; border-radius: 4px; font-size: 9px; font-weight: bold; text-transform: uppercase;">Active</span>
           </div>
-          <div style="margin-bottom: 4px; color: #475569;"><strong>Location:</strong> ${j.geo?.city || 'Mumbai'}, ${j.geo?.country || 'India'}</div>
+          <div style="margin-bottom: 4px; color: #475569;"><strong>Location:</strong> ${j.geo?.city || 'City'}, ${j.geo?.country || 'India'}</div>
           <div style="margin-bottom: 4px; color: #475569;"><strong>Platform:</strong> ${j.device?.browser || 'Chrome'} (${j.device?.os || 'Android'})</div>
           <div style="margin-bottom: 4px; color: #475569;"><strong>Referrer:</strong> ${j.referrer || 'Direct'}</div>
           <div style="color: #475569;"><strong>Status:</strong> <span style="font-weight: bold; color: #0891b2">${j.status || 'Guest'}</span></div>

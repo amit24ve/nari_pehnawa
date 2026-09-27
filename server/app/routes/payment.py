@@ -67,8 +67,8 @@ def _rz_client():
 
 def _gen_order_number() -> str:
     ts = datetime.now().strftime("%Y%m%d")
-    rand = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
-    return f"ORD-{ts}-{rand}"
+    rand = "".join(random.choices(string.digits, k=4))
+    return f"ORD_{ts}_{rand}"
 
 
 def _log_payment_event(
@@ -559,17 +559,20 @@ def verify_razorpay_payment(data: dict, current_user: dict = Depends(get_current
             order_number=order_num,
             items=order_data.get("items", []),
             coins_to_redeem=coins_to_redeem,
-            subtotal=subtotal
+            subtotal=subtotal,
+            is_prepaid=True
         )
         order_data["coins_used"] = coins_res["coins_used"]
         order_data["coin_discount"] = coins_res["coin_discount"]
         order_data["coins_earned"] = coins_res["coins_earned"]
+        order_data["coins_awarded"] = coins_res.get("coins_awarded", True)
         db["orders"].update_one(
             {"_id": result.inserted_id},
             {"$set": {
                 "coins_used": coins_res["coins_used"],
                 "coin_discount": coins_res["coin_discount"],
-                "coins_earned": coins_res["coins_earned"]
+                "coins_earned": coins_res["coins_earned"],
+                "coins_awarded": coins_res.get("coins_awarded", True)
             }}
         )
     except Exception as coin_err:
@@ -825,17 +828,20 @@ def create_cod_order(order_data: dict, current_user: dict = Depends(get_current_
             order_number=order_num,
             items=order_data.get("items", []),
             coins_to_redeem=coins_to_redeem,
-            subtotal=subtotal
+            subtotal=subtotal,
+            is_prepaid=True
         )
         order_data["coins_used"] = coins_res["coins_used"]
         order_data["coin_discount"] = coins_res["coin_discount"]
         order_data["coins_earned"] = coins_res["coins_earned"]
+        order_data["coins_awarded"] = coins_res.get("coins_awarded", True)
         db["orders"].update_one(
             {"_id": result.inserted_id},
             {"$set": {
                 "coins_used": coins_res["coins_used"],
                 "coin_discount": coins_res["coin_discount"],
-                "coins_earned": coins_res["coins_earned"]
+                "coins_earned": coins_res["coins_earned"],
+                "coins_awarded": coins_res.get("coins_awarded", True)
             }}
         )
     except Exception as coin_err:

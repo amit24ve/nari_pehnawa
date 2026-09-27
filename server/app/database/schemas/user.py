@@ -1,12 +1,12 @@
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+from pydantic import BaseModel, Field
+from typing import Optional, Any, Dict
 from datetime import datetime
 
 
 class User(BaseModel):
     id: str
-    email: EmailStr
-    name: str = "User"
+    email: Optional[str] = None
+    name: Optional[str] = "User"
     role: Optional[str] = "customer"  # customer or admin
     is_admin: Optional[bool] = False
     age: Optional[int] = None
@@ -21,12 +21,13 @@ class User(BaseModel):
     coins_balance: Optional[int] = 0
     coins_earned_total: Optional[int] = 0
     coins_spent_total: Optional[int] = 0
+    coins_rupee_value: Optional[float] = 0.0
 
 
 class UserCreate(BaseModel):
-    email: EmailStr
-    name: str
-    password: str
+    email: Optional[str] = None
+    name: Optional[str] = "User"
+    password: Optional[str] = None
     role: Optional[str] = "customer"
     is_admin: Optional[bool] = False
     age: Optional[int] = None
@@ -37,7 +38,7 @@ class UserCreate(BaseModel):
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     password: Optional[str] = None
     role: Optional[str] = None
     is_admin: Optional[bool] = None

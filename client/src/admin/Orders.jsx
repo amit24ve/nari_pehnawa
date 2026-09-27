@@ -34,8 +34,10 @@ import {
   ArrowRight,
   Shield,
   MessageSquare,
-  RefreshCw
+  RefreshCw,
+  RotateCcw
 } from "lucide-react";
+
 import shippingApi from "../services/shippingApi";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
@@ -129,57 +131,93 @@ const Orders = () => {
     }
   };
 
-  const transformOrder = (o) => ({
-    id: o.order_number ? (o.order_number.startsWith("#") ? o.order_number : `#${o.order_number}`) : `#ORD-${o.id}`,
-    orderId: o.id,
-    order_number: o.order_number || o.id,
-    customer: o.user?.name || o.user?.email?.split("@")[0] || "Unknown",
-    customerId: o.user_id || "N/A",
-    email: o.user?.email || "N/A",
-    total: o.total_amount || 0,
-    status: o.status || "pending",
-    payment_status: o.payment_status || "pending",
-    payment_method: o.payment_method || "COD",
-    date: o.created_at ? new Date(o.created_at).toISOString().split("T")[0] : "N/A",
-    created_at: o.created_at || "N/A",
-    items: (o.items || []).map((item) => ({
-      product_id: item.product_id,
-      name: item.product_name || item.product?.name || "Unknown Product",
-      sku: item.sku || `SKU-${Math.floor(1000 + Math.random() * 9000)}`,
-      category: item.category || "Fashion",
-      brand: item.brand || "Nari Pehnawa",
-      color: item.color || "Default",
-      size: item.size || "Free Size",
-      quantity: item.quantity || 1,
-      price: item.price || 0,
-      discount: item.discount || 0,
-      tax: item.tax || 0,
-      shipping: item.shipping || 0,
-    })),
-    shippingAddress: typeof o.shipping_address === "string" ? {
-      full_name: o.user?.name || "Customer",
-      phone: o.user?.phone || "N/A",
-      address_line1: o.shipping_address,
-      city: "N/A",
-      state: "N/A",
-      postal_code: "N/A",
-      country: "India"
-    } : o.shipping_address || {},
-    phone: o.user?.phone || (o.shipping_address && typeof o.shipping_address === "object" ? o.shipping_address.phone : "N/A"),
-    notes: o.notes || "",
-    staff_assigned: o.staff_assigned || "Not Assigned",
-    warehouse_assigned: o.warehouse_assigned || "Primary",
-    awb_code: o.shipping?.awb || o.awb_code || null,
-    courier_name: o.shipping?.courier_name || o.courier_name || null,
-    shiprocket_order_id: o.shipping?.shiprocket_order_id || o.shiprocket_order_id || null,
-    shipment_id: o.shipping?.shipment_id || o.shipment_id || null,
-    // Razorpay / Gateway Details
-    payment_id: o.razorpay_payment_id || o.payment_id || "N/A",
-    razorpay_order_id: o.razorpay_order_id || o.payment_order_id || "N/A",
-    signature_verified: o.signature_verified || (["captured", "completed", "paid"].includes((o.payment_status || "").toLowerCase()) || o.razorpay_payment_id ? "Verified" : (o.payment_method === "COD" ? "COD Mode" : "Pending")),
-    refund_id: o.refund_id || "N/A",
-    refund_status: o.refund_status || "N/A",
-  });
+  const transformOrder = (o) => {
+    const rawOrderNum = (o.order_number || o.id || "").toString().trim();
+    const cleanDisplayId = (rawOrderNum.length === 24 && /^[0-9a-fA-F]+$/.test(rawOrderNum))
+      ? `ORD_${rawOrderNum.slice(-6).toUpperCase()}`
+      : (rawOrderNum || `ORD_${String(o.id || "").slice(-6).toUpperCase()}`);
+
+    const rawStatus = (o.status || "pending").toLowerCase();
+    const shipmentStatus = (o.shipping?.shipment_status || o.shipping?.current_status || o.shipment_status || "").toLowerCase();
+    const awbCode = o.shipping?.awb || o.awb_code || null;
+
+    // Dynamically derive the most accurate live status
+    let displayStatus = rawStatus;
+    if (rawStatus === "cancelled" || shipmentStatus === "cancelled") {
+      displayStatus = "cancelled";
+    } else if (rawStatus === "returned" || rawStatus === "rto" || shipmentStatus === "rto") {
+      displayStatus = "returned";
+    } else if (rawStatus === "delivered" || rawStatus === "completed" || shipmentStatus === "delivered") {
+      displayStatus = "delivered";
+    } else if (["out_for_delivery", "out for delivery"].includes(shipmentStatus) || rawStatus === "out_for_delivery") {
+      displayStatus = "out_for_delivery";
+    } else if (["in_transit", "in transit", "shipped", "reached_destination"].includes(shipmentStatus) || rawStatus === "shipped" || rawStatus === "in_transit") {
+      displayStatus = "in_transit";
+    } else if (["picked_up", "pickup_done"].includes(shipmentStatus) || rawStatus === "picked_up") {
+      displayStatus = "picked_up";
+    } else if (["pickup_scheduled", "pickup scheduled"].includes(shipmentStatus) || rawStatus === "pickup_scheduled") {
+      displayStatus = "pickup_scheduled";
+    } else if (["awb_assigned", "manifest_generated"].includes(shipmentStatus) || rawStatus === "ready_to_ship" || awbCode) {
+      displayStatus = "ready_to_ship";
+    } else if (["processing", "stock_confirmed"].includes(rawStatus)) {
+      displayStatus = "processing";
+    } else if (["confirmed", "paid"].includes(rawStatus)) {
+      displayStatus = "confirmed";
+    }
+
+    return {
+      id: cleanDisplayId.startsWith("#") ? cleanDisplayId : `#${cleanDisplayId}`,
+      orderId: o.id || o._id,
+      order_number: cleanDisplayId.replace(/^#/, ""),
+      customer: o.user?.name || o.user?.email?.split("@")[0] || "Unknown",
+      customerId: o.user_id || "N/A",
+      email: o.user?.email || "N/A",
+      total: o.total_amount || 0,
+      status: displayStatus,
+      raw_status: rawStatus,
+      payment_status: o.payment_status || "pending",
+      payment_method: o.payment_method || "COD",
+      date: o.created_at ? new Date(o.created_at).toISOString().split("T")[0] : "N/A",
+      created_at: o.created_at || "N/A",
+      items: (o.items || []).map((item) => ({
+        product_id: item.product_id,
+        name: item.product_name || item.product?.name || "Unknown Product",
+        sku: item.sku || `SKU-${Math.floor(1000 + Math.random() * 9000)}`,
+        category: item.category || "Fashion",
+        brand: item.brand || "Nari Pehnawa",
+        color: item.color || "Default",
+        size: item.size || "Free Size",
+        quantity: item.quantity || 1,
+        price: item.price || 0,
+        discount: item.discount || 0,
+        tax: item.tax || 0,
+        shipping: item.shipping || 0,
+      })),
+      shippingAddress: typeof o.shipping_address === "string" ? {
+        full_name: o.user?.name || "Customer",
+        phone: o.user?.phone || "N/A",
+        address_line1: o.shipping_address,
+        city: "N/A",
+        state: "N/A",
+        postal_code: "N/A",
+        country: "India"
+      } : o.shipping_address || {},
+      phone: o.user?.phone || (o.shipping_address && typeof o.shipping_address === "object" ? o.shipping_address.phone : "N/A"),
+      notes: o.notes || "",
+      staff_assigned: o.staff_assigned || "Not Assigned",
+      warehouse_assigned: o.warehouse_assigned || "Primary",
+      awb_code: awbCode,
+      courier_name: o.shipping?.courier_name || o.courier_name || null,
+      shiprocket_order_id: o.shipping?.shiprocket_order_id || o.shiprocket_order_id || null,
+      shipment_id: o.shipping?.shipment_id || o.shipment_id || null,
+      // Razorpay / Gateway Details
+      payment_id: o.razorpay_payment_id || o.payment_id || "N/A",
+      razorpay_order_id: o.razorpay_order_id || o.payment_order_id || "N/A",
+      signature_verified: o.signature_verified || (["captured", "completed", "paid"].includes((o.payment_status || "").toLowerCase()) || o.razorpay_payment_id ? "Verified" : (o.payment_method === "COD" ? "COD Mode" : "Pending")),
+      refund_id: o.refund_id || "N/A",
+      refund_status: o.refund_status || "N/A",
+    };
+  };
 
 
 
@@ -261,28 +299,28 @@ const Orders = () => {
   };
 
   const fetchTracking = async (awb) => {
+    if (!awb) {
+      setTrackingData(null);
+      return;
+    }
     setTrackingLoading(true);
     setTrackingData(null);
     try {
       const res = await shippingApi.trackByAwb(awb);
       setTrackingData(res);
     } catch (e) {
-      setTrackingData({
-        current_status: "In Transit",
-        estimated_delivery: "2026-07-27",
-        tracking_history: [
-          { activity: "Out for delivery from local facility", timestamp: "2026-07-23 09:30", location: "Mumbai Facility" },
-          { activity: "Reached Destination Hub", timestamp: "2026-07-22 17:45", location: "Mumbai Central Hub" },
-          { activity: "Package picked up by Delhivery", timestamp: "2026-07-21 18:30", location: "Delhi Warehouse" },
-          { activity: "Manifest generated by merchant", timestamp: "2026-07-21 11:20", location: "Warehouse Primary" }
-        ]
-      });
+      console.warn("Tracking fetch notice:", e);
+      setTrackingData(null);
     } finally {
       setTrackingLoading(false);
     }
   };
 
   const fetchLogs = async (orderId) => {
+    if (!orderId) {
+      setOrderLogs([]);
+      return;
+    }
     setLogsLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/orders/${orderId}/history`, {
@@ -291,13 +329,12 @@ const Orders = () => {
       if (res.ok) {
         const data = await res.json();
         setOrderLogs(data.history || []);
+      } else {
+        setOrderLogs([]);
       }
     } catch (err) {
-      console.error(err);
-      setOrderLogs([
-        { from_status: "pending", to_status: "confirmed", changed_by: "System", changed_by_role: "system", reason: "Payment Verified", created_at: "2026-07-23T05:15:00Z" },
-        { from_status: null, to_status: "pending", changed_by: "Customer", changed_by_role: "customer", reason: "Order Created", created_at: "2026-07-23T05:12:00Z" }
-      ]);
+      console.warn("fetchLogs notice:", err);
+      setOrderLogs([]);
     } finally {
       setLogsLoading(false);
     }
@@ -381,8 +418,9 @@ const Orders = () => {
       setSelectedOrder(detail);
       setEditedAddress(detail.shippingAddress || {});
       setEditedNotes(detail.notes || "");
-      setOrders((prev) => prev.map((o) => (o.orderId === detail.orderId ? detail : o)));
+      setOrders((prev) => prev.map((o) => (o.orderId === detail.orderId || o.id === detail.id ? { ...o, ...detail } : o)));
       fetchLogs(selectedOrder.orderId);
+      fetchOrders();
     } catch (e) {
       console.error("Failed to refresh order:", e);
     }
@@ -441,21 +479,22 @@ const Orders = () => {
       return;
     }
 
-    const itemsHtml = (order.items || []).map((item) => `
+    const itemsHtml = (order.items || []).map((item, idx) => `
       <tr style="border-bottom: 1px solid #eee;">
-        <td style="padding: 10px 0; font-family: sans-serif; font-size: 13px; color: #333;">
+        <td style="padding: 10px 8px; font-family: sans-serif; font-size: 12px; color: #333; text-align: center;">${idx + 1}</td>
+        <td style="padding: 10px 8px; font-family: sans-serif; font-size: 12px; color: #333;">
           <strong>${item.name || "Product"}</strong>
-          ${item.size ? `<br><span style="color: #666; font-size: 11px; margin-top: 4px; display: inline-block;">Size: ${item.size}</span>` : ""}
+          ${item.size ? `<br><span style="color: #666; font-size: 11px; margin-top: 2px; display: inline-block;">Size: ${item.size}</span>` : ""}
         </td>
-        <td style="padding: 10px 0; text-align: center; font-family: sans-serif; font-size: 13px; color: #333;">${item.quantity || 1}</td>
-        <td style="padding: 10px 0; text-align: right; font-family: sans-serif; font-size: 13px; color: #333;">₹${(item.price || 0).toLocaleString("en-IN")}</td>
-        <td style="padding: 10px 0; text-align: right; font-family: sans-serif; font-size: 13px; color: #333; font-weight: bold;">₹${((item.price || 0) * (item.quantity || 1)).toLocaleString("en-IN")}</td>
+        <td style="padding: 10px 8px; text-align: center; font-family: sans-serif; font-size: 12px; color: #333;">${item.hsn_code || "6204"}</td>
+        <td style="padding: 10px 8px; text-align: center; font-family: sans-serif; font-size: 12px; color: #333;">${item.quantity || 1}</td>
+        <td style="padding: 10px 8px; text-align: right; font-family: sans-serif; font-size: 12px; color: #333;">₹${(item.price || 0).toLocaleString("en-IN")}</td>
+        <td style="padding: 10px 8px; text-align: right; font-family: sans-serif; font-size: 12px; color: #333; font-weight: bold;">₹${((item.price || 0) * (item.quantity || 1)).toLocaleString("en-IN")}</td>
       </tr>
     `).join("");
 
     const orderDate = order.created_at ? new Date(order.created_at).toLocaleDateString("en-IN", {
-      day: "2-digit", month: "short", year: "numeric",
-      hour: "2-digit", minute: "2-digit"
+      day: "2-digit", month: "2-digit", year: "numeric"
     }) : "—";
 
     const discountAmount = order.discount || 0;
@@ -464,85 +503,88 @@ const Orders = () => {
     const grandTotal = order.total_amount || (subtotal + shippingCost - discountAmount);
 
     const invoiceHtml = `
+      <!DOCTYPE html>
       <html>
         <head>
-          <title>Invoice - ${order.order_number || order.orderId}</title>
+          <title>Tax Invoice - ${order.order_number || order.orderId}</title>
           <style>
-            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
-            .invoice-box { max-width: 800px; margin: auto; padding: 30px; border: 1px solid #eee; box-shadow: 0 0 10px rgba(0, 0, 0, .15); font-size: 14px; line-height: 24px; color: #555; }
-            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #8B0000; padding-bottom: 20px; margin-bottom: 20px; }
-            .logo { font-size: 26px; font-weight: bold; color: #8B0000; letter-spacing: 1px; font-family: Georgia, serif; }
-            .company-details { text-align: right; font-size: 12px; line-height: 18px; }
-            .title { font-size: 22px; font-weight: bold; color: #333; margin-bottom: 5px; }
-            .invoice-details { font-size: 12px; color: #777; line-height: 18px; }
-            .addresses { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; font-size: 12px; }
-            .address-block { background: #fdfaf9; padding: 15px; border-radius: 8px; border: 1px solid #f5ebe6; }
-            .section-title { font-weight: bold; color: #8B0000; margin-bottom: 8px; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
-            .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-            .items-table th { background: #fdfaf9; color: #8B0000; text-align: left; padding: 10px; font-size: 11px; font-weight: bold; border-bottom: 2px solid #f5ebe6; text-transform: uppercase; }
-            .summary-table { width: 40%; margin-left: auto; font-size: 13px; line-height: 24px; }
-            .summary-table td { padding: 4px 0; }
-            .summary-table .total-row { font-size: 16px; font-weight: bold; color: #8B0000; border-top: 2px solid #8B0000; }
-            .footer { border-top: 1px solid #eee; margin-top: 40px; padding-top: 20px; text-align: center; font-size: 11px; color: #999; }
+            @page { size: A4; margin: 12mm; }
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; margin: 0; padding: 20px; color: #222; font-size: 12px; line-height: 1.5; }
+            .invoice-box { max-width: 850px; margin: auto; padding: 30px; border: 1px solid #ddd; background: #fff; }
+            .main-title { text-align: center; font-size: 22px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 25px; border-bottom: 2px solid #222; padding-bottom: 12px; }
+            .parties-grid { display: grid; grid-template-columns: 1.1fr 1.3fr 1.1fr; gap: 18px; margin-bottom: 25px; }
+            .col-title { font-weight: 800; font-size: 11px; text-transform: uppercase; color: #111; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+            .party-col { font-size: 11.5px; line-height: 18px; color: #333; }
+            .divider-col { border-left: 1px dashed #ccc; border-right: 1px dashed #ccc; padding: 0 14px; }
+            .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            .items-table th { background: #f8f8f8; color: #111; text-align: left; padding: 8px; font-size: 11px; font-weight: 700; border-top: 1px solid #333; border-bottom: 1px solid #333; text-transform: uppercase; }
+            .summary-wrap { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; }
+            .summary-table { width: 45%; margin-left: auto; font-size: 12px; }
+            .summary-table td { padding: 4px 6px; }
+            .summary-table .total-row { font-size: 14px; font-weight: 800; color: #000; border-top: 2px solid #222; border-bottom: 2px solid #222; }
+            .declaration-box { font-size: 10px; color: #555; max-width: 50%; line-height: 15px; }
+            .signature-box { text-align: right; margin-top: 40px; font-size: 11px; }
             @media print {
               body { padding: 0; }
-              .invoice-box { border: none; box-shadow: none; padding: 0; }
+              .invoice-box { border: none; padding: 0; }
             }
           </style>
         </head>
         <body>
           <div class="invoice-box">
-            <div class="header">
-              <div>
-                <div class="logo">NARI PEHNAWA</div>
-                <div style="font-size: 10px; color: #666; font-weight: bold; tracking: 1px;">— TRADITIONAL KA TADKA —</div>
-              </div>
-              <div class="company-details">
-                <strong>Nari Pehnawa</strong><br>
-                Sultanpur, Uttar Pradesh, India<br>
-                Email: support@naripehnawa.com | Mob: +91 9140228795
-              </div>
+            <div style="text-align: center; margin-bottom: 5px;">
+              <span style="font-size: 26px; font-weight: 900; letter-spacing: 2px; color: #8B0000; font-family: Georgia, serif;">NARI PEHNAWA</span>
             </div>
-            
-            <div style="display: flex; justify-content: space-between; margin-bottom: 25px; align-items: flex-end;">
-              <div>
-                <div class="title">RETAIL INVOICE</div>
-                <div class="invoice-details">
-                  Invoice No: <strong>INV-${order.order_number || order.orderId}</strong><br>
-                  Order Date: ${orderDate}
-                </div>
-              </div>
-              <div style="text-align: right; font-size: 12px; color: #555;">
-                Payment Status: <strong style="color: ${order.payment_status === "paid" || order.payment_status === "captured" ? "#15803d" : "#b45309"}">${(order.payment_status || "Pending").toUpperCase()}</strong><br>
-                Payment Mode: <strong>${(order.payment_method || "COD").toUpperCase()}</strong>
-              </div>
-            </div>
+            <div class="main-title">TAX INVOICE</div>
 
-            <div class="addresses">
-              <div class="address-block">
-                <div class="section-title">Billed To</div>
+            <div class="parties-grid">
+              <div class="party-col">
+                <div class="col-title">SHIPPING ADDRESS:</div>
                 <strong>${order.shipping_address?.full_name || order.customer?.name || "Customer"}</strong><br>
                 ${order.shipping_address?.address_line1 || ""}, ${order.shipping_address?.address_line2 || ""}<br>
-                ${order.shipping_address?.city || ""}, ${order.shipping_address?.state || ""} - ${order.shipping_address?.postal_code || ""}<br>
-                Phone: ${order.shipping_address?.phone || order.customer?.phone || "—"}<br>
-                Email: ${order.customer?.email || "—"}
-              </div>
-              <div class="address-block">
-                <div class="section-title">Shipped To</div>
-                <strong>${order.shipping_address?.full_name || order.customer?.name || "Customer"}</strong><br>
-                ${order.shipping_address?.address_line1 || ""}, ${order.shipping_address?.address_line2 || ""}<br>
-                ${order.shipping_address?.city || ""}, ${order.shipping_address?.state || ""} - ${order.shipping_address?.postal_code || ""}<br>
+                ${order.shipping_address?.city || ""}, ${order.shipping_address?.state || ""}<br>
+                ${order.shipping_address?.postal_code ? `${order.shipping_address?.city || ""} ${order.shipping_address?.postal_code}` : ""}<br>
+                ${order.shipping_address?.state || "Uttar Pradesh"}<br>
+                India<br>
+                State Code : 09<br>
                 Phone: ${order.shipping_address?.phone || order.customer?.phone || "—"}
+              </div>
+
+              <div class="party-col divider-col">
+                <div class="col-title">SOLD BY:</div>
+                <strong style="font-size: 13px;">Nari Pehnawa</strong><br>
+                121a, baisia, vidhayak nagar chauraha, guptarganj, kurebhar,<br>
+                sultanpur, 228151<br>
+                Sultanpur 228151<br>
+                Uttar Pradesh<br>
+                India<br>
+                State Code : 09<br>
+                GSTIN No. : Not Registered<br>
+                Website: https://www.naripehnawa.com<br>
+                Email: support@naripehnawa.com
+              </div>
+
+              <div class="party-col">
+                <div class="col-title">INVOICE DETAILS:</div>
+                <strong>INVOICE NO.</strong> : Retail${order.order_number || order.orderId || "00001"}<br>
+                <strong>INVOICE DATE</strong> : ${orderDate}<br>
+                <strong>ORDER NO.</strong> : ${order.order_number || order.orderId}<br>
+                <strong>ORDER DATE</strong> : ${orderDate}<br>
+                <strong>PAYMENT METHOD</strong> : ${(order.payment_method || "Prepaid").toUpperCase()}<br>
+                ${order.awb_code ? `<strong>AWB NO.</strong> : ${order.awb_code}<br>` : ""}
+                <strong>REMARK</strong> : Custom Order
               </div>
             </div>
 
             <table class="items-table">
               <thead>
                 <tr>
-                  <th style="width: 55%;">Product Description</th>
-                  <th style="width: 10%; text-align: center;">Qty</th>
+                  <th style="width: 5%; text-align: center;">#</th>
+                  <th style="width: 45%;">Description</th>
+                  <th style="width: 12%; text-align: center;">HSN</th>
+                  <th style="width: 8%; text-align: center;">Qty</th>
                   <th style="width: 15%; text-align: right;">Unit Price</th>
-                  <th style="width: 20%; text-align: right;">Amount</th>
+                  <th style="width: 15%; text-align: right;">Total</th>
                 </tr>
               </thead>
               <tbody>
@@ -550,29 +592,39 @@ const Orders = () => {
               </tbody>
             </table>
 
-            <table class="summary-table">
-              <tr>
-                <td>Subtotal:</td>
-                <td style="text-align: right;">₹${subtotal.toLocaleString("en-IN")}</td>
-              </tr>
-              ${discountAmount > 0 ? `
-              <tr>
-                <td style="color: #15803d;">Coupon Discount:</td>
-                <td style="text-align: right; color: #15803d;">- ₹${discountAmount.toLocaleString("en-IN")}</td>
-              </tr>` : ""}
-              <tr>
-                <td>Shipping & Handling:</td>
-                <td style="text-align: right;">₹${shippingCost.toLocaleString("en-IN")}</td>
-              </tr>
-              <tr class="total-row">
-                <td>Total:</td>
-                <td style="text-align: right;">₹${grandTotal.toLocaleString("en-IN")}</td>
-              </tr>
-            </table>
+            <div class="summary-wrap">
+              <div class="declaration-box">
+                <strong>Declaration:</strong><br>
+                We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.<br><br>
+                For customer support & inquiries:<br>
+                Website: <strong>https://www.naripehnawa.com</strong><br>
+                Email: <strong>support@naripehnawa.com</strong>
+              </div>
 
-            <div class="footer">
-              <p>Thank you for shopping with Nari Pehnawa!</p>
-              <p style="font-size: 10px; color: #bbb;">This is a computer-generated invoice and requires no signature.</p>
+              <table class="summary-table">
+                <tr>
+                  <td>Subtotal:</td>
+                  <td style="text-align: right;">₹${subtotal.toLocaleString("en-IN")}</td>
+                </tr>
+                ${discountAmount > 0 ? `
+                <tr>
+                  <td style="color: #15803d;">Discount:</td>
+                  <td style="text-align: right; color: #15803d;">- ₹${discountAmount.toLocaleString("en-IN")}</td>
+                </tr>` : ""}
+                <tr>
+                  <td>Shipping & Handling:</td>
+                  <td style="text-align: right;">₹${shippingCost.toLocaleString("en-IN")}</td>
+                </tr>
+                <tr class="total-row">
+                  <td><strong>Grand Total:</strong></td>
+                  <td style="text-align: right;"><strong>₹${grandTotal.toLocaleString("en-IN")}</strong></td>
+                </tr>
+              </table>
+            </div>
+
+            <div class="signature-box">
+              <strong>For Nari Pehnawa</strong><br><br><br>
+              <span style="border-top: 1px solid #333; padding-top: 4px; display: inline-block; min-width: 160px; text-align: center; font-weight: 700;">Authorized Signatory</span>
             </div>
           </div>
           <script>
@@ -580,7 +632,7 @@ const Orders = () => {
               setTimeout(function() {
                 window.print();
                 window.close();
-              }, 500);
+              }, 400);
             };
           </script>
         </body>
@@ -620,13 +672,13 @@ const Orders = () => {
           name: "Nari Pehnawa Dispatch Hub (Prayagraj / Allahabad)",
           address: "221/28A/8, Sarvodaya Nagar, New Sohabatia Bagh, Allahpur",
           city: "Prayagraj / Allahabad, Uttar Pradesh - 211006",
-          contact: "Ritika Singh (+91 9555807961)",
+          contact: "Support (support@naripehnawa.com)",
         }
       : {
           name: "Nari Pehnawa Dispatch Hub (Sultanpur)",
           address: "121a, Baisia, Vidhayak Nagar Chauraha, Guptarganj, Kurebhar",
           city: "Sultanpur, Uttar Pradesh - 228151",
-          contact: "Pooja Verma (+91 9807429743)",
+          contact: "Support (support@naripehnawa.com)",
         };
 
     const packingSlipHtml = `
@@ -715,8 +767,21 @@ const Orders = () => {
   };
 
   const handleCancelShipment = () => {
-    if (!window.confirm("Cancel shipment with the courier?")) return;
-    runShippingAction("cancel", () => shippingApi.cancelShipment(selectedOrder.orderId));
+    if (!window.confirm("Cancel shipment with the courier? This will mark the order as cancelled and void the AWB.")) return;
+    runShippingAction("cancel", async () => {
+      await shippingApi.cancelShipment(selectedOrder.orderId);
+      try {
+        await fetch(`${API_BASE_URL}/orders/${selectedOrder.orderId}/status`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: "cancelled", reason: "Courier shipment cancelled by admin" }),
+        });
+      } catch (_) {}
+      await fetchOrders();
+    });
   };
 
   const handleBulkInvoices = async () => {
@@ -850,10 +915,11 @@ const Orders = () => {
       
       setActionSuccessMsg(`Order status updated to ${newStatus}`);
       setOrders((prev) =>
-        prev.map((o) => (o.orderId === selectedOrder.orderId ? { ...o, status: newStatus } : o))
+        prev.map((o) => (o.orderId === selectedOrder.orderId || o.id === selectedOrder.id ? { ...o, status: newStatus } : o))
       );
       setSelectedOrder((s) => ({ ...s, status: newStatus }));
       fetchLogs(selectedOrder.orderId);
+      fetchOrders();
     } catch (e) {
       alert(`Error: ${e.message}`);
     } finally {
@@ -959,9 +1025,14 @@ const Orders = () => {
       case "pending":
       case "pending_payment":
         return "bg-amber-50 text-amber-700 border border-amber-200";
+      case "confirmed":
+      case "paid":
+        return "bg-emerald-50 text-emerald-700 border border-emerald-200";
       case "processing":
+      case "stock_confirmed":
         return "bg-blue-50 text-blue-700 border border-blue-200";
       case "ready_to_ship":
+      case "awb_assigned":
       case "shipment_created":
         return "bg-cyan-50 text-cyan-700 border border-cyan-200";
       case "pickup_scheduled":
@@ -969,13 +1040,17 @@ const Orders = () => {
         return "bg-orange-50 text-orange-700 border border-orange-200";
       case "shipped":
       case "in_transit":
-      case "out_for_delivery":
         return "bg-purple-50 text-purple-700 border border-purple-200";
+      case "out_for_delivery":
+        return "bg-indigo-50 text-indigo-700 border border-indigo-200";
       case "delivered":
       case "completed":
         return "bg-emerald-50 text-emerald-700 border border-emerald-200";
       case "cancelled":
         return "bg-rose-50 text-rose-700 border border-rose-200";
+      case "returned":
+      case "rto":
+        return "bg-orange-50 text-orange-700 border border-orange-200";
       default:
         return "bg-slate-50 text-slate-600 border border-slate-200";
     }
@@ -983,11 +1058,15 @@ const Orders = () => {
 
   const statusBtns = [
     { status: "pending", label: "Pending", icon: Clock, color: "bg-amber-50 text-amber-700 border-amber-200" },
+    { status: "confirmed", label: "Confirmed", icon: CheckCircle, color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     { status: "processing", label: "Processing", icon: Package, color: "bg-blue-50 text-blue-700 border-blue-200" },
-    { status: "shipped", label: "Shipped", icon: Truck, color: "bg-purple-50 text-purple-700 border-purple-200" },
+    { status: "ready_to_ship", label: "Ready to Ship (AWB Assigned)", icon: Truck, color: "bg-cyan-50 text-cyan-700 border-cyan-200" },
+    { status: "in_transit", label: "In Transit / Shipped", icon: Truck, color: "bg-purple-50 text-purple-700 border-purple-200" },
     { status: "delivered", label: "Delivered", icon: CheckCircle, color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    { status: "returned", label: "Returned / RTO", icon: RotateCcw, color: "bg-orange-50 text-orange-700 border-orange-200" },
     { status: "cancelled", label: "Cancelled", icon: XCircle, color: "bg-rose-50 text-rose-700 border-rose-200" },
   ];
+
 
   // Advanced filters computation
   const todayStr = new Date().toISOString().split("T")[0];
@@ -995,9 +1074,10 @@ const Orders = () => {
   const statusCounts = {
     all: orders.length,
     pending: orders.filter((o) => o.status === "pending" || o.status === "pending_payment").length,
-    processing: orders.filter((o) => o.status === "processing").length,
-    ready_to_ship: orders.filter((o) => o.status === "ready_to_ship" || o.status === "shipment_created").length,
-    in_transit: orders.filter((o) => o.status === "shipped" || o.status === "in_transit" || o.status === "pickup_scheduled" || o.status === "picked_up").length,
+    confirmed: orders.filter((o) => o.status === "confirmed" || o.status === "paid").length,
+    processing: orders.filter((o) => o.status === "processing" || o.status === "stock_confirmed").length,
+    ready_to_ship: orders.filter((o) => o.status === "ready_to_ship" || o.status === "awb_assigned" || o.status === "shipment_created").length,
+    in_transit: orders.filter((o) => o.status === "shipped" || o.status === "in_transit" || o.status === "pickup_scheduled" || o.status === "picked_up" || o.status === "out_for_delivery").length,
     delivered: orders.filter((o) => o.status === "delivered" || o.status === "completed").length,
     cancelled: orders.filter((o) => o.status === "cancelled").length,
     refunded: orders.filter((o) => o.status === "refunded").length,
@@ -1382,7 +1462,8 @@ const Orders = () => {
                         )}
                       </td>
                       <td className="py-3.5 px-6">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold capitalize ${getStatusColor(o.status)}`}>
+                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1.5 shadow-2xs border ${getStatusColor(o.status)}`}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80 animate-pulse"></span>
                           {o.status.replace(/_/g, " ")}
                         </span>
                       </td>
@@ -1645,72 +1726,202 @@ const Orders = () => {
 
               {/* Visual Order Status Stepper */}
               <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-semibold">
-                  {[
-                    { label: "Order Placed", desc: selectedOrder.created_at || "Order registered" },
-                    { label: "Processing", desc: selectedOrder.warehouse_assigned ? `Warehouse: ${selectedOrder.warehouse_assigned}` : "Stock confirmed" },
-                    { label: "AWB Generated", desc: selectedOrder.awb_code ? `AWB: ${selectedOrder.awb_code}` : "Awaiting AWB" },
-                    { label: "Shipped", desc: selectedOrder.courier_name || (trackingData?.current_status ? String(trackingData.current_status) : "In Transit") },
-                    { label: "Delivered", desc: (selectedOrder.status === "delivered" || selectedOrder.status === "completed" || trackingData?.current_status?.toLowerCase() === "delivered") ? "Handover complete" : "Pending delivery" }
-                  ].map((step, idx, arr) => {
-                    const status = (selectedOrder.status || "").toLowerCase();
-                    const hasAwb = Boolean(selectedOrder.awb_code || selectedOrder.tracking_number);
-                    const hasShipment = Boolean(selectedOrder.shipment_id || selectedOrder.shiprocket_order_id || hasAwb);
-                    const isDelivered = status === "delivered" || status === "completed" || trackingData?.current_status?.toLowerCase() === "delivered";
-                    const isShipped = isDelivered || status === "shipped" || status === "in_transit" || status === "out_for_delivery" || Boolean(trackingData?.current_status?.toLowerCase()?.includes("transit")) || Boolean(trackingData?.current_status?.toLowerCase()?.includes("out for delivery"));
-                    const isAwbGenerated = isShipped || hasAwb || ["awb_assigned", "pickup_scheduled", "pickup_queued", "pickup_rescheduled"].includes(status);
-                    const isProcessing = isAwbGenerated || hasShipment || ["processing", "confirmed", "paid", "ready_to_ship"].includes(status);
-                    const isPlaced = status !== "cancelled" && status !== "failed";
+                {(() => {
+                  const status = (selectedOrder.status || "").toLowerCase();
+                  const isCancelled = status === "cancelled" || status === "failed";
+                  const isReturned = status === "returned" || status === "rto" || status === "return_initiated";
 
-                    let isDone = false;
-                    let isCurrent = false;
+                  const hasAwb = Boolean(selectedOrder.awb_code || selectedOrder.tracking_number);
+                  const hasShipment = Boolean(selectedOrder.shipment_id || selectedOrder.shiprocket_order_id || hasAwb);
+                  const trackingStatus = (trackingData?.current_status || "").toLowerCase();
 
-                    if (idx === 0) {
-                      isDone = isPlaced;
-                      isCurrent = !isProcessing && isPlaced;
-                    } else if (idx === 1) {
-                      isDone = isProcessing;
-                      isCurrent = isProcessing && !isAwbGenerated;
-                    } else if (idx === 2) {
-                      isDone = isAwbGenerated;
-                      isCurrent = isAwbGenerated && !isShipped;
-                    } else if (idx === 3) {
-                      isDone = isShipped;
-                      isCurrent = isShipped && !isDelivered;
-                    } else if (idx === 4) {
-                      isDone = isDelivered;
-                      isCurrent = isDelivered;
+                  const isDelivered = status === "delivered" || status === "completed" || trackingStatus === "delivered";
+                  const isShipped = isDelivered || status === "shipped" || status === "in_transit" || status === "out_for_delivery" || trackingStatus.includes("transit") || trackingStatus.includes("out for delivery") || trackingStatus.includes("shipped");
+                  const isAwbGenerated = isShipped || hasAwb || ["awb_assigned", "pickup_scheduled", "pickup_queued", "pickup_rescheduled"].includes(status);
+                  const isProcessing = isAwbGenerated || hasShipment || ["processing", "confirmed", "paid", "ready_to_ship"].includes(status) || Boolean(selectedOrder.warehouse_assigned);
+
+                  let steps = [];
+
+                  if (isCancelled) {
+                    // Retain all completed stages up to cancellation point
+                    steps.push({
+                      label: "Order Placed",
+                      desc: selectedOrder.created_at || "Order registered",
+                      state: "done"
+                    });
+
+                    if (isProcessing) {
+                      steps.push({
+                        label: "Processing",
+                        desc: selectedOrder.warehouse_assigned ? `Warehouse: ${selectedOrder.warehouse_assigned}` : "Stock confirmed",
+                        state: "done"
+                      });
                     }
 
-                    return (
-                      <React.Fragment key={idx}>
-                        <div className="flex items-center gap-3">
-                          <span className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs border transition ${
-                            isDone
-                              ? "bg-emerald-600 border-emerald-600 text-white shadow-sm"
-                              : isCurrent
-                              ? "bg-[#0891b2] border-[#0891b2] text-white ring-4 ring-[#0891b2]/20 animate-pulse"
-                              : "bg-slate-50 border-slate-200 text-slate-400"
-                          }`}>
-                            {isDone ? "✓" : idx + 1}
-                          </span>
-                          <div>
-                            <span className={`block font-bold ${isDone ? "text-emerald-900 font-black" : isCurrent ? "text-[#0891b2]" : "text-slate-400"}`}>
-                              {step.label}
-                            </span>
-                            <span className={`text-[10px] font-medium block mt-0.5 ${isDone ? "text-emerald-700" : "text-slate-400"}`}>
-                              {step.desc}
-                            </span>
-                          </div>
-                        </div>
-                        {idx < arr.length - 1 && (
-                          <div className={`hidden md:block h-1 flex-1 rounded-full transition ${isDone ? "bg-emerald-500" : "bg-slate-200"}`} />
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                </div>
+                    if (isAwbGenerated) {
+                      steps.push({
+                        label: "AWB Generated",
+                        desc: selectedOrder.awb_code ? `AWB: ${selectedOrder.awb_code}` : "Shipment assigned",
+                        state: "done"
+                      });
+                    }
+
+                    if (isShipped) {
+                      steps.push({
+                        label: "Shipped",
+                        desc: selectedOrder.courier_name || "Dispatched via courier",
+                        state: "done"
+                      });
+                    }
+
+                    steps.push({
+                      label: "Order Cancelled",
+                      desc: selectedOrder.cancellation_reason || selectedOrder.cancel_reason || "Cancelled / Voided",
+                      state: "cancelled"
+                    });
+                  } else if (isReturned) {
+                    steps.push({
+                      label: "Order Placed",
+                      desc: selectedOrder.created_at || "Order registered",
+                      state: "done"
+                    });
+
+                    if (isProcessing) {
+                      steps.push({
+                        label: "Processing",
+                        desc: selectedOrder.warehouse_assigned ? `Warehouse: ${selectedOrder.warehouse_assigned}` : "Stock confirmed",
+                        state: "done"
+                      });
+                    }
+
+                    if (isAwbGenerated) {
+                      steps.push({
+                        label: "AWB Generated",
+                        desc: selectedOrder.awb_code ? `AWB: ${selectedOrder.awb_code}` : "Shipment assigned",
+                        state: "done"
+                      });
+                    }
+
+                    steps.push({
+                      label: "Shipped",
+                      desc: selectedOrder.courier_name || "In Transit",
+                      state: "done"
+                    });
+
+                    steps.push({
+                      label: "Returned / RTO",
+                      desc: "Return to Origin / Restocked",
+                      state: "returned"
+                    });
+                  } else {
+                    // Standard 5-stage fulfillment flow
+                    steps = [
+                      {
+                        label: "Order Placed",
+                        desc: selectedOrder.created_at || "Order registered",
+                        state: isProcessing ? "done" : "current"
+                      },
+                      {
+                        label: "Processing",
+                        desc: selectedOrder.warehouse_assigned ? `Warehouse: ${selectedOrder.warehouse_assigned}` : (isProcessing ? "Stock confirmed" : "Pending processing"),
+                        state: isAwbGenerated ? "done" : isProcessing ? "current" : "pending"
+                      },
+                      {
+                        label: "AWB Generated",
+                        desc: selectedOrder.awb_code ? `AWB: ${selectedOrder.awb_code}` : (isAwbGenerated ? "AWB generated" : "Awaiting AWB"),
+                        state: isShipped ? "done" : isAwbGenerated ? "current" : "pending"
+                      },
+                      {
+                        label: "Shipped",
+                        desc: selectedOrder.courier_name || (trackingData?.current_status ? String(trackingData.current_status) : (isShipped ? "In Transit" : "Pending dispatch")),
+                        state: isDelivered ? "done" : isShipped ? "current" : "pending"
+                      },
+                      {
+                        label: "Delivered",
+                        desc: isDelivered ? "Handover complete" : "Pending delivery",
+                        state: isDelivered ? "done" : "pending"
+                      }
+                    ];
+                  }
+
+                  return (
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-semibold">
+                      {steps.map((step, idx, arr) => {
+                        const isDone = step.state === "done";
+                        const isCurrent = step.state === "current";
+                        const isCancelledStep = step.state === "cancelled";
+                        const isReturnedStep = step.state === "returned";
+
+                        return (
+                          <React.Fragment key={idx}>
+                            <div className="flex items-center gap-3">
+                              <span
+                                className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs border transition ${
+                                  isCancelledStep
+                                    ? "bg-rose-600 border-rose-600 text-white shadow-sm ring-4 ring-rose-600/20 animate-pulse"
+                                    : isReturnedStep
+                                    ? "bg-orange-500 border-orange-500 text-white shadow-sm ring-4 ring-orange-500/20 animate-pulse"
+                                    : isDone
+                                    ? "bg-emerald-600 border-emerald-600 text-white shadow-sm"
+                                    : isCurrent
+                                    ? "bg-[#0891b2] border-[#0891b2] text-white ring-4 ring-[#0891b2]/20 animate-pulse"
+                                    : "bg-slate-50 border-slate-200 text-slate-400"
+                                }`}
+                              >
+                                {isCancelledStep ? "✕" : isReturnedStep ? "⟲" : isDone ? "✓" : idx + 1}
+                              </span>
+                              <div>
+                                <span
+                                  className={`block font-bold ${
+                                    isCancelledStep
+                                      ? "text-rose-700 font-black"
+                                      : isReturnedStep
+                                      ? "text-orange-800 font-black"
+                                      : isDone
+                                      ? "text-emerald-900 font-black"
+                                      : isCurrent
+                                      ? "text-[#0891b2] font-black"
+                                      : "text-slate-400"
+                                  }`}
+                                >
+                                  {step.label}
+                                </span>
+                                <span
+                                  className={`text-[10px] font-medium block mt-0.5 ${
+                                    isCancelledStep
+                                      ? "text-rose-600"
+                                      : isReturnedStep
+                                      ? "text-orange-600"
+                                      : isDone
+                                      ? "text-emerald-700"
+                                      : "text-slate-400"
+                                  }`}
+                                >
+                                  {step.desc}
+                                </span>
+                              </div>
+                            </div>
+                            {idx < arr.length - 1 && (
+                              <div
+                                className={`hidden md:block h-1 flex-1 rounded-full transition ${
+                                  arr[idx + 1].state === "cancelled"
+                                    ? "bg-rose-400"
+                                    : arr[idx + 1].state === "returned"
+                                    ? "bg-orange-400"
+                                    : isDone
+                                    ? "bg-emerald-500"
+                                    : "bg-slate-200"
+                                }`}
+                              />
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
+
               
               {/* Feedback Banners */}
               {shippingActionError && (
@@ -2245,7 +2456,7 @@ const Orders = () => {
                       <Printer className="w-4 h-4 text-[#0891b2]" /> Document Print Center
                     </h5>
                     <div className="space-y-2.5">
-                      {/* Button 1: Print Official Shipping Label (Shiprocket) */}
+                      {/* Document 1: Shipping Label (Shiprocket Label) */}
                       <button
                         onClick={handlePrintLabel}
                         disabled={shippingActionLoading === "label"}
@@ -2256,25 +2467,25 @@ const Orders = () => {
                           <span>
                             {shippingActionLoading === "label"
                               ? "Fetching Shiprocket Label..."
-                              : "Print Shipping Label (Shiprocket)"}
+                              : "Shipping Label (Shiprocket Label)"}
                           </span>
                         </div>
                         <span className="px-2 py-0.5 rounded bg-emerald-200/90 text-emerald-800 font-extrabold text-[10px] uppercase">
-                          Official PDF
+                          Label PDF
                         </span>
                       </button>
 
-                      {/* Button 2: Print Courier Slip (Nari Pehnawa Dispatch Slip) */}
+                      {/* Document 2: Invoice / Courier Slip (Shiprocket Slip) */}
                       <button
-                        onClick={() => handlePrintPackingSlip(selectedOrder)}
-                        className="w-full flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition text-xs font-bold text-slate-800 text-left shadow-xs cursor-pointer group"
+                        onClick={() => handlePrintCustomInvoice(selectedOrder)}
+                        className="w-full flex items-center justify-between p-3 bg-amber-50/90 border border-amber-300 rounded-xl hover:bg-amber-100 transition text-xs font-bold text-amber-900 text-left shadow-xs cursor-pointer group"
                       >
                         <div className="flex items-center gap-2">
-                          <Truck className="w-4 h-4 text-[#0891b2] group-hover:scale-110 transition-transform" />
-                          <span>Print Courier Slip (Dispatch Slip)</span>
+                          <FileText className="w-4 h-4 text-amber-700 group-hover:scale-110 transition-transform" />
+                          <span>Invoice / Courier Slip (Shiprocket Slip)</span>
                         </div>
-                        <span className="px-2 py-0.5 rounded bg-slate-200 text-slate-700 font-extrabold text-[10px] uppercase">
-                          Courier Slip
+                        <span className="px-2 py-0.5 rounded bg-amber-200/90 text-amber-900 font-extrabold text-[10px] uppercase">
+                          Invoice / Slip
                         </span>
                       </button>
 

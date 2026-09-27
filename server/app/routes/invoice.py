@@ -32,11 +32,14 @@ def _ensure_invoice_record(db, order: dict) -> str:
     if existing:
         return existing["invoice_number"]
 
-    invoice_number = f"INV-{order.get('order_number', order_id[-8:])}"
+    raw_num = str(order.get('order_number') or order_id).strip()
+    if len(raw_num) == 24 and all(c in "0123456789abcdef" for c in raw_num):
+        raw_num = f"ORD_{raw_num[-6:].upper()}"
+    invoice_number = f"INV-{raw_num.replace('#', '')}"
     db["invoices"].insert_one(
         {
             "order_id": order_id,
-            "order_number": order.get("order_number"),
+            "order_number": raw_num,
             "invoice_number": invoice_number,
             "user_id": order.get("user_id"),
             "total_amount": order.get("total_amount"),

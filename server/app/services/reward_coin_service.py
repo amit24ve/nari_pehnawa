@@ -135,20 +135,23 @@ class RewardCoinService:
 
     def process_order_placement(
         self, user_id: Optional[str], order_id: str, order_number: str,
-        items: List[Dict[str, Any]], coins_to_redeem: int, subtotal: float
+        items: List[Dict[str, Any]], coins_to_redeem: int, subtotal: float,
+        is_prepaid: bool = False
     ) -> Dict[str, Any]:
         """
-        Deduct redeemed coins (if any) and credit earned coins on order placement.
+        Deduct redeemed coins (if any).
+        - If is_prepaid=True (Online/Razorpay/PhonePe): credit earned coins immediately and mark coins_awarded=True.
+        - If is_prepaid=False (COD): calculate coins_earned but DO NOT credit to balance yet (coins_awarded=False). Coins will be credited upon delivery.
         """
         if not user_id:
-            return {"coins_used": 0, "coin_discount": 0.0, "coins_earned": 0}
+            return {"coins_used": 0, "coin_discount": 0.0, "coins_earned": 0, "coins_awarded": False}
 
         user_query = {"_id": ObjectId(user_id)} if ObjectId.is_valid(user_id) else {"_id": user_id}
         user = self.users.find_one(user_query)
         if not user:
             user = self.users.find_one({"id": user_id})
             if not user:
-                return {"coins_used": 0, "coin_discount": 0.0, "coins_earned": 0}
+                return {"coins_used": 0, "coin_discount": 0.0, "coins_earned": 0, "coins_awarded": False}
 
         user_actual_id = str(user["_id"])
         current_balance = int(user.get("coins_balance", 0))
@@ -183,9 +186,12 @@ class RewardCoinService:
                 })
                 current_balance = new_balance
 
-        # 2. Handle Coin Reward (Credit)
+        # 2. Calculate Earned Coins
         coins_earned = self.calculate_order_potential_coins(items)
-        if coins_earned > 0:
+        coins_awarded = False
+
+        # Only credit immediately if order is Prepaid/Online
+        if is_prepaid and coins_earned > 0:
             new_balance = current_balance + coins_earned
             self.users.update_one(
                 {"_id": user["_id"]},
@@ -205,28 +211,132 @@ class RewardCoinService:
                 "description": f"Earned {coins_earned} Reward Coins on Order #{order_number}",
                 "created_at": datetime.now()
             })
+            coins_awarded = True
 
         return {
             "coins_used": actual_coins_used,
             "coin_discount": discount_amount,
-            "coins_earned": coins_earned
+            "coins_earned": coins_earned,
+            "coins_awarded": coins_awarded
         }
+
+    def process_order_delivery(
+        self, user_id: Optional[str], order_id: str, order_number: str,
+        items: Optional[List[Dict[str, Any]]] = None,
+        coins_to_award: Optional[int] = None
+    ) -> int:
+        """
+        Credit earned reward coins when an order is delivered (especially for COD orders).
+        Ensures strict idempotency: will only credit once per order.
+        """
+        if not user_id:
+            return 0
+
+        # Idempotency check: has credit already been given for this order?
+        already_credited = self.transactions.find_one({
+            "order_id": str(order_id),
+            "type": "credit"
+        })
+        if already_credited:
+            return int(already_credited.get("coins", 0))
+
+        # Check order doc if coins_awarded is True
+        order_doc = None
+        if ObjectId.is_valid(order_id):
+            order_doc = self.orders.find_one({"_id": ObjectId(order_id)})
+        if not order_doc:
+            order_doc = self.orders.find_one({"_id": order_id}) or self.orders.find_one({"id": order_id})
+
+        if order_doc and order_doc.get("coins_awarded"):
+            return int(order_doc.get("coins_earned", 0))
+
+        # Determine coins amount to award
+        if coins_to_award is None:
+            if order_doc and order_doc.get("coins_earned"):
+                coins_to_award = int(order_doc["coins_earned"])
+            elif items:
+                coins_to_award = self.calculate_order_potential_coins(items)
+            elif order_doc and order_doc.get("items"):
+                coins_to_award = self.calculate_order_potential_coins(order_doc["items"])
+            else:
+                coins_to_award = COINS_STANDARD_ITEM
+
+        if coins_to_award <= 0:
+            return 0
+
+        user_query = {"_id": ObjectId(user_id)} if ObjectId.is_valid(user_id) else {"_id": user_id}
+        user = self.users.find_one(user_query) or self.users.find_one({"id": user_id})
+        if not user:
+            return 0
+
+        user_actual_id = str(user["_id"])
+        current_balance = int(user.get("coins_balance", 0))
+        new_balance = current_balance + coins_to_award
+
+        self.users.update_one(
+            {"_id": user["_id"]},
+            {
+                "$set": {"coins_balance": new_balance},
+                "$inc": {"coins_earned_total": coins_to_award}
+            }
+        )
+        self.transactions.insert_one({
+            "user_id": user_actual_id,
+            "order_id": str(order_id),
+            "order_number": order_number,
+            "type": "credit",
+            "coins": coins_to_award,
+            "rupee_value": round(coins_to_award / COINS_PER_RUPEE, 2),
+            "balance_after": new_balance,
+            "description": f"Earned {coins_to_award} Reward Coins on Delivered Order #{order_number}",
+            "created_at": datetime.now()
+        })
+
+        # Mark order as coins_awarded
+        if ObjectId.is_valid(order_id):
+            self.orders.update_one(
+                {"_id": ObjectId(order_id)},
+                {"$set": {"coins_awarded": True, "coins_earned": coins_to_award, "coins_awarded_at": datetime.now()}}
+            )
+        else:
+            self.orders.update_one(
+                {"_id": order_id},
+                {"$set": {"coins_awarded": True, "coins_earned": coins_to_award, "coins_awarded_at": datetime.now()}}
+            )
+
+        return coins_to_award
 
     def process_order_cancellation(
         self, user_id: Optional[str], order_id: str, order_number: str,
-        coins_used: int, coins_earned: int, action_type: str = "cancelled"
+        coins_used: int = 0, coins_earned: int = 0, action_type: str = "cancelled"
     ) -> None:
-        """Reverse coin transactions when an order is cancelled or returned."""
+        """
+        Reverse coin transactions when an order is cancelled or returned:
+        1. If customer earned coins from this order (prepaid or delivered COD), automatically deduct/reverse them.
+        2. If customer spent/redeemed coins on this order, automatically refund them to wallet.
+        Ensures strict idempotency.
+        """
         if not user_id:
             return
 
-        # Idempotency guard: avoid double reversing coins for the same order
-        already_reversed = self.transactions.find_one({
-            "order_id": str(order_id),
-            "type": {"$in": ["reversal", "refund"]}
-        })
-        if already_reversed:
-            return
+        # Fetch order doc if needed to check coins awarded
+        order_doc = None
+        if ObjectId.is_valid(order_id):
+            order_doc = self.orders.find_one({"_id": ObjectId(order_id)})
+        if not order_doc:
+            order_doc = self.orders.find_one({"_id": order_id}) or self.orders.find_one({"id": order_id})
+
+        if order_doc:
+            if not coins_used and order_doc.get("coins_used"):
+                coins_used = int(order_doc.get("coins_used", 0))
+            if not coins_earned and order_doc.get("coins_earned"):
+                coins_earned = int(order_doc.get("coins_earned", 0))
+
+        # Check whether coins were actually credited
+        was_credited = bool(
+            (order_doc and order_doc.get("coins_awarded")) or
+            self.transactions.find_one({"order_id": str(order_id), "type": "credit"})
+        )
 
         user_query = {"_id": ObjectId(user_id)} if ObjectId.is_valid(user_id) else {"_id": user_id}
         user = self.users.find_one(user_query) or self.users.find_one({"id": user_id})
@@ -236,8 +346,12 @@ class RewardCoinService:
         user_actual_id = str(user["_id"])
         current_balance = int(user.get("coins_balance", 0))
 
-        # Refund spent coins if any were used
-        if coins_used > 0:
+        # 1. Refund spent coins if any were used and not already refunded
+        already_refunded = self.transactions.find_one({
+            "order_id": str(order_id),
+            "type": "refund"
+        })
+        if coins_used > 0 and not already_refunded:
             new_balance = current_balance + coins_used
             self.users.update_one(
                 {"_id": user["_id"]},
@@ -259,8 +373,12 @@ class RewardCoinService:
             })
             current_balance = new_balance
 
-        # Reverse earned coins (deduct 100/50 coins per item awarded on purchase)
-        if coins_earned > 0:
+        # 2. Reverse/Deduct earned coins if they were awarded and not already reversed
+        already_reversed = self.transactions.find_one({
+            "order_id": str(order_id),
+            "type": "reversal"
+        })
+        if was_credited and coins_earned > 0 and not already_reversed:
             new_balance = max(0, current_balance - coins_earned)
             self.users.update_one(
                 {"_id": user["_id"]},
@@ -280,6 +398,18 @@ class RewardCoinService:
                 "description": f"Deducted {coins_earned} Coins from {action_type} Order #{order_number}",
                 "created_at": datetime.now()
             })
+
+        # Update order flag
+        if ObjectId.is_valid(order_id):
+            self.orders.update_one(
+                {"_id": ObjectId(order_id)},
+                {"$set": {"coins_reversed": True, "coins_awarded": False, "updated_at": datetime.now()}}
+            )
+        else:
+            self.orders.update_one(
+                {"_id": order_id},
+                {"$set": {"coins_reversed": True, "coins_awarded": False, "updated_at": datetime.now()}}
+            )
 
     def admin_adjust_coins(
         self, user_id: str, amount: int, reason: str, admin_email: str

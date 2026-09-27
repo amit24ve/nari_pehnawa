@@ -897,15 +897,24 @@ const Navbar = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="px-5 py-4">
+                    <div className="px-5 py-4 space-y-2">
                       <button
                         onClick={() => {
-                          openLoginModal();
+                          openLoginModal("", null, "login");
                           setIsMobileMenuOpen(false);
                         }}
-                        className="w-full bg-[#8B0000] hover:bg-[#6B0000] text-white font-semibold py-3 rounded-lg text-sm transition-colors"
+                        className="w-full bg-[#8B0000] hover:bg-[#6B0000] text-white font-bold py-3 rounded-xl text-sm shadow-sm transition-colors cursor-pointer"
                       >
-                        Login / Sign Up
+                        Login to Account
+                      </button>
+                      <button
+                        onClick={() => {
+                          openLoginModal("", null, "signup");
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full bg-neutral-100 hover:bg-neutral-200 text-gray-800 font-semibold py-2.5 rounded-xl text-xs transition-colors cursor-pointer"
+                      >
+                        New Customer? Create Account
                       </button>
                     </div>
                   )}
@@ -991,11 +1000,11 @@ const Navbar = () => {
                       <button
                         onClick={() => {
                           setIsMobileMenuOpen(false);
-                          openLoginModal("🔐 Please sign in or create an account to start shopping");
+                          openLoginModal("", null, "login");
                         }}
-                        className="flex items-center gap-3 py-3.5 text-sm font-semibold text-gray-700 hover:text-[#8B0000] w-full border-b border-gray-100 text-left"
+                        className="flex items-center gap-3 py-3.5 text-sm font-semibold text-gray-700 hover:text-[#8B0000] w-full border-b border-gray-100 text-left cursor-pointer"
                       >
-                        <UserCircle className="w-5 h-5 text-gray-400" /> Sign In / Register
+                        <UserCircle className="w-5 h-5 text-gray-400" /> Sign In to Account
                       </button>
                     </div>
                   )}

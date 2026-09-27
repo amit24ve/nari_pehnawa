@@ -44,8 +44,8 @@ def get_user_detailed_view(user_id: str, current_user: dict = Depends(require_ad
         # Format user fields
         user_out = {
             "id": user_id_str,
-            "email": user_email,
-            "name": user.get("name") or user.get("full_name") or user_email.split("@")[0],
+            "email": user_email or "",
+            "name": user.get("name") or user.get("full_name") or (user_email.split("@")[0] if user_email else None) or (f"User {user.get('phone', '')[-4:]}" if user.get("phone") else "Customer"),
             "phone": user.get("phone") or "",
             "role": user.get("role") or ("admin" if user.get("is_admin") else "customer"),
             "status": user.get("status", "active"),
@@ -56,9 +56,9 @@ def get_user_detailed_view(user_id: str, current_user: dict = Depends(require_ad
             "joined_date": user.get("joined_date") or created_ist[:11],
             "created_at_ist": created_ist,
             "last_login": user.get("last_login") or "",
-            "coins_balance": user.get("coins_balance", 0) or 0,
-            "coins_earned_total": user.get("coins_earned_total", 0) or 0,
-            "coins_spent_total": user.get("coins_spent_total", 0) or 0,
+            "coins_balance": int(user.get("coins_balance", 0) or 0),
+            "coins_earned_total": int(user.get("coins_earned_total", 0) or 0),
+            "coins_spent_total": int(user.get("coins_spent_total", 0) or 0),
             "coins_rupee_value": round((user.get("coins_balance", 0) or 0) / 10, 2),
         }
 
@@ -70,14 +70,14 @@ def get_user_detailed_view(user_id: str, current_user: dict = Depends(require_ad
             addr.pop("_id", None)
             addresses.append(addr)
 
-        # Fetch all orders (by user_id or email)
-        orders_query = {
-            "$or": [
-                {"user_id": user_id_str},
-                {"customer_email": user_email},
-                {"email": user_email}
-            ]
-        }
+        # Fetch all orders (by user_id, email, or phone)
+        user_order_filters = [{"user_id": user_id_str}]
+        if user_email:
+            user_order_filters.extend([{"customer_email": user_email}, {"email": user_email}])
+        if user.get("phone"):
+            user_order_filters.extend([{"customer_phone": user.get("phone")}, {"phone": user.get("phone")}])
+
+        orders_query = {"$or": user_order_filters}
         orders_cursor = orders_collection.find(orders_query).sort("_id", -1)
         orders = []
         total_spent = 0
@@ -171,8 +171,8 @@ def create_user(user: UserCreate):
 
 @router.get("/", response_model=List[User])
 def get_users(
-    skip: int = Query(0, ge=0), 
-    limit: int = Query(50, ge=1, le=100),
+    skip: int = 0, 
+    limit: int = 500,
     role: Optional[str] = None,
     status: Optional[str] = None,
     search: Optional[str] = None,
@@ -191,7 +191,9 @@ def get_users(
         if search:
             query["$or"] = [
                 {"name": {"$regex": search, "$options": "i"}},
-                {"email": {"$regex": search, "$options": "i"}}
+                {"full_name": {"$regex": search, "$options": "i"}},
+                {"email": {"$regex": search, "$options": "i"}},
+                {"phone": {"$regex": search, "$options": "i"}}
             ]
         
         cursor = users_collection.find(query).sort("_id", -1).skip(skip).limit(limit)
@@ -199,7 +201,9 @@ def get_users(
         for user in users:
             user["id"] = str(user["_id"])
             if not user.get("name"):
-                user["name"] = user.get("full_name") or user.get("email", "").split("@")[0] or "Customer"
+                user["name"] = user.get("full_name") or (user.get("email", "").split("@")[0] if user.get("email") else None) or (f"User {user.get('phone', '')[-4:]}" if user.get("phone") else "Customer")
+            if not user.get("email"):
+                user["email"] = user.get("email") or ""
             if not user.get("role"):
                 user["role"] = "admin" if user.get("is_admin") else "customer"
             if not user.get("status"):
@@ -215,12 +219,18 @@ def get_users(
                 user["joined_date"] = datetime.now().strftime("%Y-%m-%d")
 
             # Get order count for each user
-            user["orders_count"] = orders_collection.count_documents({
-                "$or": [{"user_id": user["id"]}, {"email": user.get("email")}]
-            })
-            user["coins_balance"] = user.get("coins_balance", 0) or 0
-            user["coins_earned_total"] = user.get("coins_earned_total", 0) or 0
-            user["coins_spent_total"] = user.get("coins_spent_total", 0) or 0
+            user_orders_query = [{"user_id": user["id"]}]
+            if user.get("email"):
+                user_orders_query.append({"email": user.get("email")})
+                user_orders_query.append({"customer_email": user.get("email")})
+            if user.get("phone"):
+                user_orders_query.append({"phone": user.get("phone")})
+                user_orders_query.append({"customer_phone": user.get("phone")})
+
+            user["orders_count"] = orders_collection.count_documents({"$or": user_orders_query})
+            user["coins_balance"] = int(user.get("coins_balance", 0) or 0)
+            user["coins_earned_total"] = int(user.get("coins_earned_total", 0) or 0)
+            user["coins_spent_total"] = int(user.get("coins_spent_total", 0) or 0)
             user["coins_rupee_value"] = round(user["coins_balance"] / 10, 2)
             user.pop("_id", None)
             user.pop("password_hash", None)

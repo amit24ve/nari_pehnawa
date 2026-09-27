@@ -347,7 +347,8 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
     name: str
-    otp: str
+    otp: Optional[str] = None
+
 
 
 class ForgotPasswordSendOTPRequest(BaseModel):
@@ -590,7 +591,7 @@ def login(request: LoginRequest):
 
 @router.post("/register")
 def register(request: RegisterRequest):
-    """Register new user endpoint with mandatory Email OTP verification"""
+    """Register new user endpoint (supports direct signup or email OTP verification)"""
     from app.security import get_password_hash
     from datetime import datetime
 
@@ -599,31 +600,41 @@ def register(request: RegisterRequest):
     otps = db["otps"]
 
     # Check if user already exists
-    existing_user = users.find_one({"email": request.email})
+    existing_user = users.find_one({"email": request.email.strip().lower()})
     if existing_user:
-        raise HTTPException(status_code=400, detail="User with this email already exists")
+        raise HTTPException(status_code=400, detail="An account with this email already exists. Please log in.")
 
-    # Verify OTP
-    otp_record = otps.find_one({"email": request.email, "otp": request.otp})
-    if not otp_record:
-        raise HTTPException(status_code=400, detail="Invalid OTP code")
+    # Verify OTP if provided
+    if request.otp and request.otp.strip():
+        otp_record = otps.find_one({"email": request.email.strip().lower(), "otp": request.otp.strip()})
+        if not otp_record:
+            raise HTTPException(status_code=400, detail="Invalid verification OTP code.")
 
-    if otp_record.get("expires_at") and otp_record.get("expires_at") < datetime.now():
-        raise HTTPException(status_code=400, detail="OTP code has expired. Please request a new code.")
+        if otp_record.get("expires_at") and otp_record.get("expires_at") < datetime.now():
+            raise HTTPException(status_code=400, detail="OTP code has expired. Please request a new code.")
 
-    # OTP is valid — delete used OTP record
-    otps.delete_one({"_id": otp_record["_id"]})
+        # Delete used OTP record
+        otps.delete_one({"_id": otp_record["_id"]})
 
     # Create new user
     user_data = {
-        "email": request.email,
-        "name": request.name,
+        "email": request.email.strip().lower(),
+        "name": request.name.strip(),
         "password_hash": get_password_hash(request.password),
         "role": "customer",
+        "is_admin": False,
         "is_email_verified": True,
+        "auth_provider": "email_password",
         "created_at": datetime.now(),
-        "orders_count": 0
+        "joined_date": datetime.now().strftime("%Y-%m-%d"),
+        "last_login": datetime.now().strftime("%Y-%m-%d"),
+        "orders_count": 0,
+        "coins_balance": 0,
+        "coins_earned_total": 0,
+        "coins_spent_total": 0,
+        "addresses": []
     }
+
 
     result = users.insert_one(user_data)
 

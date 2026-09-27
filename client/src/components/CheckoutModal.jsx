@@ -696,7 +696,7 @@ const CheckoutModal = ({
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Order Number</span>
                 <span className="font-semibold text-gray-900 font-mono">
-                  {orderResult.order_number}
+                  {orderResult?.order_number || orderResult?.order?.order_number || orderResult?.order_id || "Confirmed"}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
