@@ -491,12 +491,9 @@ class NotificationService:
                     "recipients": [
                         {
                             "mobiles": phone,
-                            "VAR1": ctx.get("customer_name", "Customer"),
-                            "VAR2": ctx.get("order_number", ""),
+                            "VAR1": str(ctx.get("customer_name", "Customer")),
+                            "VAR2": str(ctx.get("order_number", "")),
                             "VAR3": str(ctx.get("amount", "")),
-                            "name": ctx.get("customer_name", "Customer"),
-                            "order_number": ctx.get("order_number", ""),
-                            "amount": str(ctx.get("amount", "")),
                         }
                     ],
                 }

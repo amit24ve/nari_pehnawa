@@ -141,10 +141,7 @@ def _send_msg91(phone_10: str, otp_code: str, api_key: str) -> dict:
             "recipients": [
                 {
                     "mobiles": f"91{phone_10}",
-                    "otp": otp_code,
-                    "OTP": otp_code,
-                    "VAR1": otp_code,
-                    "var": otp_code
+                    "OTP": str(otp_code)
                 }
             ]
         }
