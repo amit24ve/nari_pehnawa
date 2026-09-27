@@ -147,7 +147,7 @@ def phone_send_otp(request: PhoneSendOTPRequest):
         "created_at": datetime.now()
     })
 
-    # Dispatch via Unified Indian SMS Provider (Fast2SMS / 2Factor / MSG91)
+    # Dispatch via MSG91 SMS Provider
     from app.services.sms_service import send_otp_sms
     sms_res = send_otp_sms(phone_clean, otp_code)
 
@@ -161,13 +161,13 @@ def phone_send_otp(request: PhoneSendOTPRequest):
         "phone": phone_clean,
         "is_existing_user": is_existing_user,
         "name": user.get("name") if user else None,
-        "sms_provider": sms_res.get("provider", "SMS")
+        "sms_provider": sms_res.get("provider", "MSG91")
     }
 
 
 @router.post("/phone/resend-otp")
 def phone_resend_otp(request: PhoneResendOTPRequest):
-    """Resend OTP via Unified SMS Provider"""
+    """Resend OTP via MSG91 SMS Provider"""
     import random
     from datetime import datetime, timedelta
 
@@ -190,7 +190,7 @@ def phone_resend_otp(request: PhoneResendOTPRequest):
         "created_at": datetime.now()
     })
 
-    # Dispatch via Unified SMS Provider
+    # Dispatch via MSG91 SMS Provider
     from app.services.sms_service import send_otp_sms
     send_otp_sms(phone_clean, otp_code)
 
@@ -783,6 +783,11 @@ def google_callback(code: Optional[str] = None, error: Optional[str] = None, sta
             "joined_date": datetime.now().strftime("%Y-%m-%d"),
             "last_login": datetime.now().strftime("%Y-%m-%d"),
             "orders_count": 0,
+            "coins_balance": 0,
+            "coins_earned_total": 0,
+            "coins_spent_total": 0,
+            "addresses": [],
+            "created_at": datetime.now()
         }
         result = users.insert_one(new_user)
         user = users.find_one({"_id": result.inserted_id})
