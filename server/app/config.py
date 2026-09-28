@@ -85,8 +85,14 @@ company_support_email = os.getenv("COMPANY_SUPPORT_EMAIL", "support@naripehnawa.
 company_support_phone = os.getenv("COMPANY_SUPPORT_PHONE", "")
 invoice_tax_percent = float(os.getenv("INVOICE_TAX_PERCENT", "5"))
 
-# ── MSG91 SMS & Flow API ──────────────────────────────────────────────────────
-msg91_authkey = os.getenv("MSG91_AUTHKEY", "571630Aktt8Nkq3uSh6ab87411P1")
-msg91_otp_template_id = os.getenv("MSG91_OTP_TEMPLATE_ID", "")
-msg91_order_template_id = os.getenv("MSG91_ORDER_TEMPLATE_ID", "")
+# ── APITxT SMS & OTP Provider ──────────────────────────────────────────────
+apitxt_authkey = os.getenv("APITXT_AUTHKEY", "WcH5Bte6t91yK2flL7x_aoQyr0_Dek5pgPzREaPsei4")
+apitxt_sender = os.getenv("APITXT_SENDER", "")
+apitxt_route = os.getenv("APITXT_ROUTE", "4")
+apitxt_pe_id = os.getenv("APITXT_PE_ID", "NA")
+apitxt_otp_template_id = os.getenv("APITXT_OTP_TEMPLATE_ID", "")
+apitxt_order_confirmed_template_id = os.getenv("APITXT_ORDER_CONFIRMED_TEMPLATE_ID", "")
+apitxt_order_shipped_template_id = os.getenv("APITXT_ORDER_SHIPPED_TEMPLATE_ID", "")
+apitxt_order_delivered_template_id = os.getenv("APITXT_ORDER_DELIVERED_TEMPLATE_ID", "")
+apitxt_order_cancelled_template_id = os.getenv("APITXT_ORDER_CANCELLED_TEMPLATE_ID", "")
 

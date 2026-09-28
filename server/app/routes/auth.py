@@ -36,9 +36,6 @@ class PhoneResendOTPRequest(BaseModel):
     phone: str
 
 
-MSG91_AUTHKEY = "571630Aktt8Nkq3uSh6ab87411P1"
-
-
 def normalize_indian_phone(phone: str) -> str:
     """Normalize phone number to 10-digit Indian mobile number"""
     digits = "".join(c for c in str(phone) if c.isdigit())
@@ -49,77 +46,9 @@ def normalize_indian_phone(phone: str) -> str:
     return digits
 
 
-def _msg91_request(method: str, url: str, **kwargs):
-    """Execute MSG91 request with forced IPv4 socket to guarantee 185.211.6.40 whitelist match"""
-    import socket
-    import requests.packages.urllib3.util.connection as urllib3_cn
-    urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
-    return requests.request(method, url, **kwargs)
-
-
-def send_msg91_otp_sms(clean_phone_10: str, otp_code: str):
-    """Dispatch SMS OTP via MSG91 Flow and OTP API with verified template ID"""
-    import os
-    auth_key = os.getenv("MSG91_AUTHKEY", MSG91_AUTHKEY)
-    otp_template_id = os.getenv("MSG91_OTP_TEMPLATE_ID", "6ab7c339fac81f8c28075912")
-
-    try:
-        headers = {
-            "authkey": auth_key,
-            "content-type": "application/json",
-            "accept": "application/json"
-        }
-
-        # Official MSG91 Flow API dispatch with exact approved template variable ##OTP##
-        flow_url = "https://control.msg91.com/api/v5/flow"
-        flow_payload = {
-            "template_id": otp_template_id,
-            "short_url": "0",
-            "recipients": [
-                {
-                    "mobiles": f"91{clean_phone_10}",
-                    "OTP": str(otp_code)
-                }
-            ]
-        }
-        res_flow = _msg91_request("POST", flow_url, headers=headers, json=flow_payload, timeout=8)
-        print(f"DEBUG: MSG91 Flow OTP to 91{clean_phone_10} status {res_flow.status_code}: {res_flow.text}")
-
-        return res_flow.ok, res_flow.text
-    except Exception as e:
-        print(f"ERROR: Failed to call MSG91 OTP API: {e}")
-        return False, str(e)
-
-
-def verify_msg91_otp_sms(clean_phone_10: str, otp_code: str):
-    """Verify OTP with MSG91 API v5"""
-    import os
-    auth_key = os.getenv("MSG91_AUTHKEY", MSG91_AUTHKEY)
-    try:
-        url = "https://control.msg91.com/api/v5/otp/verify"
-        headers = {
-            "authkey": auth_key
-        }
-        params = {
-            "authkey": auth_key,
-            "mobile": f"91{clean_phone_10}",
-            "otp": otp_code
-        }
-        res = _msg91_request("GET", url, headers=headers, params=params, timeout=8)
-        print(f"DEBUG: MSG91 verify OTP status {res.status_code}: {res.text}")
-        if res.status_code == 200:
-            data = res.json()
-            if data.get("type") == "success":
-                return True
-        return False
-    except Exception as e:
-        print(f"ERROR: Failed to call MSG91 verify API: {e}")
-        return False
-
-
 @router.post("/phone/send-otp")
 def phone_send_otp(request: PhoneSendOTPRequest):
-    """Send mobile verification OTP via MSG91 for Phone Login / Registration"""
+    """Send mobile verification OTP via APITxT for Phone Login / Registration"""
     import random
     from datetime import datetime, timedelta
 
@@ -147,7 +76,7 @@ def phone_send_otp(request: PhoneSendOTPRequest):
         "created_at": datetime.now()
     })
 
-    # Dispatch via MSG91 SMS Provider
+    # Dispatch via APITxT SMS Provider
     from app.services.sms_service import send_otp_sms
     sms_res = send_otp_sms(phone_clean, otp_code)
 
@@ -161,13 +90,13 @@ def phone_send_otp(request: PhoneSendOTPRequest):
         "phone": phone_clean,
         "is_existing_user": is_existing_user,
         "name": user.get("name") if user else None,
-        "sms_provider": sms_res.get("provider", "MSG91")
+        "sms_provider": sms_res.get("provider", "APITxT")
     }
 
 
 @router.post("/phone/resend-otp")
 def phone_resend_otp(request: PhoneResendOTPRequest):
-    """Resend OTP via MSG91 SMS Provider"""
+    """Resend OTP via APITxT SMS Provider"""
     import random
     from datetime import datetime, timedelta
 
@@ -190,7 +119,7 @@ def phone_resend_otp(request: PhoneResendOTPRequest):
         "created_at": datetime.now()
     })
 
-    # Dispatch via MSG91 SMS Provider
+    # Dispatch via APITxT SMS Provider
     from app.services.sms_service import send_otp_sms
     send_otp_sms(phone_clean, otp_code)
 
@@ -226,12 +155,7 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
             is_valid_db = True
         otps.delete_one({"_id": otp_record["_id"]})
 
-    # 2. Check MSG91 verify API as backup/dual check
-    is_valid_msg91 = False
     if not is_valid_db:
-        is_valid_msg91 = verify_msg91_otp_sms(phone_clean, otp_input)
-
-    if not is_valid_db and not is_valid_msg91:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP code. Please try again.")
 
     # OTP is valid! Find or auto-create customer account

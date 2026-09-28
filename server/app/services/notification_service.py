@@ -23,6 +23,14 @@ from app.config import (
     whatsapp_access_token,
     whatsapp_api_version,
     whatsapp_phone_number_id,
+    apitxt_authkey,
+    apitxt_sender,
+    apitxt_route,
+    apitxt_pe_id,
+    apitxt_order_confirmed_template_id,
+    apitxt_order_shipped_template_id,
+    apitxt_order_delivered_template_id,
+    apitxt_order_cancelled_template_id,
 )
 from app.database.schemas.notification import NotificationEvent
 
@@ -442,7 +450,7 @@ class NotificationService:
             self._log(event, "whatsapp", phone, "failed", user_id, order_id, body_preview=text, error=str(exc))
             return False
 
-    # ── SMS (MSG91) ───────────────────────────────────────────────────────
+    # ── SMS (APITxT) ──────────────────────────────────────────────────────
 
     def send_sms(
         self,
@@ -452,7 +460,7 @@ class NotificationService:
         user_id: Optional[str] = None,
         order_id: Optional[str] = None,
     ) -> bool:
-        """Send transactional SMS via MSG91 Flow API (/api/v5/flow) or OTP API (/api/v5/otp)."""
+        """Send transactional SMS via APITxT (/api/sendMsg)."""
         ctx = self._default_context(context)
         text = _SMS_TEMPLATES.get(
             event, "Update on your {company_name} order {order_number}."
@@ -463,60 +471,31 @@ class NotificationService:
             return False
 
         phone = self._normalize_phone(to_phone)
-        import os
-        import json
-        import socket
-        try:
-            # Force IPv4 socket connection to guarantee 185.211.6.40 whitelist match
-            try:
-                import urllib3.util.connection as urllib3_cn
-                urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
-            except Exception:
-                try:
-                    import requests.packages.urllib3.util.connection as urllib3_cn
-                    urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
-                except Exception:
-                    pass
+        
+        event_template_map = {
+            NotificationEvent.ORDER_CONFIRMED: apitxt_order_confirmed_template_id,
+            NotificationEvent.PAYMENT_SUCCESS: apitxt_order_confirmed_template_id,
+            NotificationEvent.ORDER_SHIPPED: apitxt_order_shipped_template_id,
+            NotificationEvent.ORDER_DELIVERED: apitxt_order_delivered_template_id,
+            NotificationEvent.ORDER_CANCELLED: apitxt_order_cancelled_template_id,
+        }
+        template_id = event_template_map.get(event, "")
 
-            headers = {
-                "authkey": msg91_authkey,
-                "content-type": "application/json",
-                "accept": "application/json",
-            }
+        from app.services.sms_service import send_transactional_sms
+        res = send_transactional_sms(
+            phone_10=phone,
+            message=text,
+            template_id=template_id,
+            sender=apitxt_sender,
+            route=apitxt_route,
+            pe_id=apitxt_pe_id or "NA",
+        )
 
-            # 1. If Flow template ID is configured, use official MSG91 Flow API (/api/v5/flow)
-            if flow_template_id:
-                flow_url = "https://control.msg91.com/api/v5/flow"
-                flow_payload = {
-                    "template_id": flow_template_id,
-                    "short_url": "0",
-                    "recipients": [
-                        {
-                            "mobiles": phone,
-                            "VAR1": str(ctx.get("customer_name", "Customer")),
-                            "VAR2": str(ctx.get("order_number", "")),
-                            "VAR3": str(ctx.get("amount", "")),
-                        }
-                    ],
-                }
-                resp = requests.post(flow_url, headers=headers, json=flow_payload, timeout=10)
-            else:
-                # 2. Standard MSG91 OTP/SMS endpoint
-                otp_url = "https://control.msg91.com/api/v5/otp"
-                params = {
-                    "authkey": msg91_authkey,
-                    "mobile": phone,
-                    "message": text,
-                }
-                resp = requests.post(otp_url, headers=headers, params=params, json={}, timeout=10)
-
-            if resp.status_code >= 400:
-                raise RuntimeError(f"MSG91 SMS error {resp.status_code}: {resp.text[:200]}")
-
+        if res.get("success"):
             self._log(event, "sms", phone, "sent", user_id, order_id, body_preview=text)
             return True
-        except Exception as exc:
-            self._log(event, "sms", phone, "failed", user_id, order_id, body_preview=text, error=str(exc))
+        else:
+            self._log(event, "sms", phone, "failed", user_id, order_id, body_preview=text, error=str(res.get("error")))
             return False
 
     # ── Combined helper ──────────────────────────────────────────────────
@@ -530,7 +509,7 @@ class NotificationService:
         user_id: Optional[str] = None,
         order_id: Optional[str] = None,
     ) -> None:
-        """Fire Email, WhatsApp, and MSG91 SMS for a lifecycle event. Never raises."""
+        """Fire Email, WhatsApp, and APITxT SMS for a lifecycle event. Never raises."""
         try:
             if to_email:
                 self.send_email(event, to_email, context, user_id, order_id)

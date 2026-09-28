@@ -10,7 +10,7 @@ const INDIAN_STATES = [
 ];
 
 const Profile = () => {
-    const { user } = useAuth();
+    const { user, updateUserProfile } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
@@ -94,6 +94,7 @@ const Profile = () => {
 
         try {
             const payload = { name: formData.name };
+            if (formData.email !== undefined) payload.email = formData.email.trim();
             if (formData.age) payload.age = parseInt(formData.age, 10);
             if (formData.phone) payload.phone = formData.phone;
             if (formData.bio) payload.bio = formData.bio;
@@ -108,6 +109,10 @@ const Profile = () => {
             });
 
             if (res.ok) {
+                const updatedUser = await res.json();
+                if (updateUserProfile) {
+                    updateUserProfile(updatedUser);
+                }
                 setMessage({ type: 'success', text: 'Profile updated successfully!' });
                 setIsEditing(false);
             } else {
@@ -388,8 +393,10 @@ const Profile = () => {
                                     type="email"
                                     name="email"
                                     value={formData.email}
-                                    disabled
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-600"
+                                    onChange={handleChange}
+                                    disabled={!isEditing}
+                                    placeholder="Enter your email address"
+                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#8B0000] focus:border-transparent transition-all ${isEditing ? 'bg-white border-gray-300' : 'bg-gray-50 border-gray-200 text-gray-600'}`}
                                 />
                             </div>
 

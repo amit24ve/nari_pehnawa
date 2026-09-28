@@ -8,6 +8,7 @@ class Address(BaseModel):
     type: str  # home, work, other
     full_name: str
     phone: str
+    email: Optional[str] = None
     address_line1: str
     address_line2: Optional[str] = None
     city: str
@@ -20,6 +21,7 @@ class AddressCreate(BaseModel):
     type: str = "home"
     full_name: str
     phone: str
+    email: Optional[str] = None
     address_line1: str
     address_line2: Optional[str] = None
     city: str
@@ -32,9 +34,11 @@ class AddressUpdate(BaseModel):
     type: Optional[str] = None
     full_name: Optional[str] = None
     phone: Optional[str] = None
+    email: Optional[str] = None
     address_line1: Optional[str] = None
     address_line2: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
     pincode: Optional[str] = None
     is_default: Optional[bool] = None
+

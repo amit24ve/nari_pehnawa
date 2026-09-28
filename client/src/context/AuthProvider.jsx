@@ -78,9 +78,14 @@ export const AuthProvider = ({ children }) => {
                     res.json().then(profile => {
                         const u = {
                             id: profile.id,
-                            email: profile.email,
-                            name: profile.name,
+                            email: profile.email || "",
+                            name: profile.name || "User",
+                            phone: profile.phone || "",
                             role: profile.role || "customer",
+                            is_admin: profile.is_admin || false,
+                            age: profile.age,
+                            bio: profile.bio || "",
+                            coins_balance: profile.coins_balance || 0,
                             orders_count: profile.orders_count || 0
                         };
                         localStorage.setItem("neel_admin_user", JSON.stringify(u));
@@ -93,6 +98,15 @@ export const AuthProvider = ({ children }) => {
             });
         }
     }, []);
+
+    const updateUserProfile = (updatedData) => {
+        setUser(prev => {
+            const updated = { ...prev, ...updatedData };
+            localStorage.setItem("neel_admin_user", JSON.stringify(updated));
+            return updated;
+        });
+    };
+
 
     // Listen for Google Auth popup response
     useEffect(() => {
@@ -310,6 +324,7 @@ export const AuthProvider = ({ children }) => {
                 closeLoginModal,
                 setPendingCheckout,
                 clearPendingCheckout,
+                updateUserProfile,
             }}
         >
             {children}

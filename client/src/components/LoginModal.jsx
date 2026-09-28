@@ -164,6 +164,11 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
     setSendingOtp(false);
 
     if (res.ok) {
+      if (authView === "signup" && res.data?.is_existing_user) {
+        setError("Number is already exist! This mobile number is already registered. Please log in.");
+        setPhoneIsExistingUser(true);
+        return;
+      }
       setPhoneOtpSent(true);
       setPhoneIsExistingUser(res.data?.is_existing_user);
       if (res.data?.name && !fullName) setPhoneUserName(res.data.name);
@@ -289,7 +294,13 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
         body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.detail || "Registration failed. Please try again.");
+      if (!res.ok) {
+        const detailMsg = data.detail || "Registration failed. Please try again.";
+        if (detailMsg.toLowerCase().includes("already exists") || detailMsg.toLowerCase().includes("already registered")) {
+          throw new Error("Email is already exist! An account with this email already exists. Please log in.");
+        }
+        throw new Error(detailMsg);
+      }
 
       if (data.access_token) {
         await loginWithToken(data.access_token);
@@ -357,7 +368,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to reset password");
-      setSuccessMsg("Password reset successful! Please sign in with your new password.");
+      setSuccessMsg("Password reset successful! Please login with your new password.");
       setAuthView("login");
       setLoginMethod("email");
       setEmail(forgotEmail);
@@ -405,7 +416,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
       />
 
       {/* Modal Card */}
-      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md border border-gray-100 my-auto flex flex-col overflow-hidden animate-scaleUp z-10">
+      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-[500px] border border-gray-100 my-auto flex flex-col overflow-hidden animate-scaleUp z-10">
         {/* Top Luxury Accent Stripe */}
         <div className="h-1.5 w-full bg-gradient-to-r from-[#8B0000] via-[#d4af37] to-[#8B0000]" />
 
@@ -435,24 +446,46 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
 
               <div className="space-y-1">
                 <span className="inline-block px-3 py-0.5 bg-emerald-100 text-emerald-800 text-[11px] font-bold rounded-full uppercase tracking-wider">
-                  Verified &amp; Logged In
+                  Account Verified &amp; Active
                 </span>
                 <h3 className="text-xl sm:text-2xl font-serif font-black text-gray-900">
                   Welcome to Nari Pehnawa!
                 </h3>
                 <p className="text-gray-600 text-xs sm:text-sm">
-                  Hello, <span className="font-bold text-[#8B0000]">{registeredUserData?.name || "Shopper"}</span>! Your account is active.
+                  Hello, <span className="font-bold text-[#8B0000]">{registeredUserData?.name || user?.name || fullName || "Valued Shopper"}</span>!
                 </p>
+              </div>
+
+              {/* User Details Summary Card */}
+              <div className="bg-neutral-50 border border-gray-200 rounded-2xl p-3.5 text-left text-xs space-y-2">
+                <div className="flex items-center justify-between text-gray-500 border-b border-gray-200/80 pb-2">
+                  <span className="font-medium">User Profile</span>
+                  <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    Active Member
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-gray-700">
+                  <div>
+                    <p className="text-[10px] text-gray-400 uppercase font-semibold">Name</p>
+                    <p className="font-bold truncate">{registeredUserData?.name || user?.name || fullName || "Shopper"}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 uppercase font-semibold">Contact</p>
+                    <p className="font-bold truncate">
+                      {registeredUserData?.phone || (phone ? `+91 ${phone}` : "") || registeredUserData?.email || email || user?.email || "Registered"}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-2xl text-left text-xs text-amber-950 flex items-start gap-2.5">
                 <UserCheck className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-bold">Account ready &amp; logged in seamlessly!</p>
+                  <p className="font-bold">Account created &amp; logged in seamlessly!</p>
                   <p className="text-amber-800 mt-0.5 text-[11px]">
                     {pendingCheckout
                       ? "You can now complete your pending order checkout without any interruption."
-                      : "Track your orders, save wishlists, and enjoy member rewards."}
+                      : "Track your orders, save addresses, and earn reward coins on every order."}
                   </p>
                 </div>
               </div>
@@ -485,10 +518,10 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                 {authView === "login" && (
                   <>
                     <h2 className="text-lg sm:text-xl font-serif font-bold text-gray-900 leading-tight">
-                      Sign In to Your Account
+                      Login to Your Account
                     </h2>
                     <p className="text-gray-500 text-xs mt-1">
-                      Welcome back! Log in via Mobile OTP or Email
+                      Welcome back! Login via Mobile OTP or Email
                     </p>
                   </>
                 )}
@@ -669,7 +702,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                               </>
                             ) : (
                               <>
-                                <span>Verify &amp; Sign In</span>
+                                <span>Verify &amp; Login</span>
                                 <ArrowRight className="w-4 h-4" />
                               </>
                             )}
@@ -734,7 +767,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                         disabled={loading}
                         className="w-full py-3 bg-[#8B0000] hover:bg-[#700000] text-white font-bold rounded-xl shadow-md transition text-sm disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
                       >
-                        {loading ? "Signing in..." : "Sign In with Email"}
+                        {loading ? "Logging in..." : "Login with Email"}
                       </button>
                     </form>
                   )}
@@ -759,7 +792,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                       <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                       <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                     </svg>
-                    <span>Sign in with Google</span>
+                    <span>Login with Google</span>
                   </button>
 
                   {/* Switch to Create Account */}
@@ -1024,7 +1057,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                           </>
                         ) : (
                           <>
-                            <span>Create Account &amp; Sign In</span>
+                            <span>Create Account</span>
                             <ArrowRight className="w-4 h-4" />
                           </>
                         )}
@@ -1052,7 +1085,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                       <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                       <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                     </svg>
-                    <span>Sign in with Google</span>
+                    <span>Sign up with Google</span>
                   </button>
 
                   {/* Switch to Login */}
@@ -1065,7 +1098,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                         className="font-bold text-[#8B0000] hover:underline cursor-pointer inline-flex items-center gap-1"
                       >
                         <LogIn className="w-3 h-3" />
-                        <span>Sign In</span>
+                        <span>Login</span>
                       </button>
                     </p>
                   </div>
@@ -1160,7 +1193,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                       className="text-xs font-bold text-[#8B0000] hover:underline cursor-pointer inline-flex items-center gap-1"
                     >
                       <ArrowLeft className="w-3 h-3" />
-                      <span>Back to Sign In</span>
+                      <span>Back to Login</span>
                     </button>
                   </div>
                 </div>
@@ -1168,9 +1201,22 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
 
               {/* Status Notifications (Errors / Success) */}
               {error && (
-                <div className="text-xs mt-3 font-semibold p-2.5 rounded-xl text-center bg-red-50 text-red-700 border border-red-200 flex items-center justify-center gap-1.5 animate-fadeIn">
-                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>{error}</span>
+                <div className="text-xs mt-3 font-semibold p-3 rounded-xl bg-red-50 text-red-800 border border-red-200 flex flex-col items-center justify-center gap-2 animate-fadeIn">
+                  <div className="flex items-center gap-1.5 text-center">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-600" />
+                    <span>{error}</span>
+                  </div>
+                  {(error.includes("already exist") || error.includes("already registered")) && authView === "signup" && (
+                    <button
+                      type="button"
+                      onClick={() => switchView("login")}
+                      className="mt-1 px-4 py-1.5 bg-[#8B0000] hover:bg-[#700000] text-white font-bold rounded-lg text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <LogIn className="w-3.5 h-3.5" />
+                      <span>Switch to Login</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
               )}
 
