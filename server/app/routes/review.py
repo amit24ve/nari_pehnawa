@@ -64,49 +64,31 @@ def can_user_review_product(product_id: str, current_user: Optional[dict] = Depe
     if not current_user:
         return {"can_review": False, "reason": "not_logged_in"}
 
-    db = get_database()
-    user_id = str(current_user.get("id") or current_user.get("_id") or "")
-    user_email = current_user.get("email") or ""
-
-    if current_user.get("role") == "admin":
-        return {"can_review": True, "reason": "admin"}
-
-    has_purchased = check_user_purchased_product(db, user_id, user_email, product_id)
-    if not has_purchased:
-        return {"can_review": False, "reason": "not_purchased"}
-
     return {"can_review": True}
 
 
 @router.post("/", response_model=Review, status_code=201)
 def create_review(review: ReviewCreate, current_user: dict = Depends(get_current_user)):
-    """Create a new review (pending admin approval; only verified purchasers can review)"""
+    """Create a new review (pending admin approval)"""
     db = get_database()
     reviews_collection = db["reviews"]
 
     user_id = str(current_user.get("id") or current_user.get("_id") or "")
     user_email = current_user.get("email") or ""
 
-    # Verify that the user has purchased the item (admin can bypass)
-    if current_user.get("role") != "admin":
-        has_purchased = check_user_purchased_product(db, user_id, user_email, review.product_id)
-        if not has_purchased:
-            raise HTTPException(
-                status_code=403,
-                detail="Only verified buyers who have purchased this product can leave a review."
-            )
+    has_purchased = check_user_purchased_product(db, user_id, user_email, review.product_id) if review.product_id else False
 
     try:
         review_data = review.model_dump()
         user_record = db["users"].find_one({"_id": ObjectId(user_id)}) if ObjectId.is_valid(user_id) else db["users"].find_one({"id": user_id})
-        user_name = review_data.get("user_name") or (user_record.get("name") if user_record else None) or current_user.get("name") or "Verified Buyer"
+        user_name = review_data.get("user_name") or (user_record.get("name") if user_record else None) or current_user.get("name") or "Verified Customer"
 
         review_data["user_id"] = user_id
         review_data["user_name"] = user_name
         review_data["user_email"] = user_email
-        review_data["verified_purchase"] = True
+        review_data["verified_purchase"] = bool(has_purchased or review_data.get("verified_purchase"))
         review_data["status"] = "pending"  # Requires Admin Approval to appear publicly
-        review_data["images"] = []  # No customer photo uploads
+        review_data["images"] = review.images or []
         review_data["created_at"] = datetime.now()
         review_data["updated_at"] = datetime.now()
         review_data["helpful_count"] = 0
