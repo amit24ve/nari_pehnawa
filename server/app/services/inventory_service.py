@@ -122,42 +122,67 @@ class InventoryService:
         self, product_id: str, quantity: int, order_id: Optional[str] = None, size: Optional[str] = None
     ) -> int:
         """
-        Atomically deducts `quantity` from stock_quantity (and size_stock.<size> if size provided),
-        guarded in the query itself. Also flips `in_stock` to False once total stock reaches 0.
+        Deducts `quantity` from stock_quantity (and size_stock.<size> if size provided).
+        Updates `in_stock` to False once total stock reaches 0.
         """
         oid = self._to_oid(product_id)
-        query = {"_id": oid, "stock_quantity": {"$gte": quantity}}
-        inc_fields = {"stock_quantity": -quantity}
-        if size:
-            query[f"size_stock.{size}"] = {"$gte": quantity}
-            inc_fields[f"size_stock.{size}"] = -quantity
+        product = self.products.find_one({"_id": oid})
+        if not product:
+            raise ValueError(f"Product not found: {product_id}")
 
-        result = self.products.find_one_and_update(
-            query,
-            {"$inc": inc_fields},
-            return_document=True,
-        )
-        if result is None:
-            current = self.products.find_one({"_id": oid}, {"stock_quantity": 1, "size_stock": 1})
-            available = int(current.get("stock_quantity", 0)) if current else 0
-            if size and current and current.get("size_stock") and size in current["size_stock"]:
-                available = int(current["size_stock"][size])
-            raise InsufficientStockError(product_id, quantity, available)
+        size_stock = dict(product.get("size_stock") or {})
+        matched_size_key = None
+        if size and isinstance(size_stock, dict):
+            clean_size = str(size).strip().upper()
+            for k in size_stock.keys():
+                if str(k).strip().upper() == clean_size:
+                    matched_size_key = k
+                    break
 
-        new_stock = int(result["stock_quantity"])
-        if new_stock <= 0:
-            self.products.update_one({"_id": oid}, {"$set": {"in_stock": False}})
+        current_stock = int(product.get("stock_quantity", 0) or 0)
+        new_total_stock = max(0, current_stock - quantity)
+
+        if matched_size_key:
+            current_size_stock = int(size_stock.get(matched_size_key, 0) or 0)
+            new_size_stock = max(0, current_size_stock - quantity)
+            size_stock[matched_size_key] = new_size_stock
+
+            sum_sizes = sum(int(v or 0) for v in size_stock.values())
+            new_total_stock = sum_sizes
+
+            self.products.update_one(
+                {"_id": oid},
+                {
+                    "$set": {
+                        f"size_stock.{matched_size_key}": new_size_stock,
+                        "stock_quantity": new_total_stock,
+                        "in_stock": new_total_stock > 0,
+                        "updated_at": datetime.now()
+                    }
+                }
+            )
+        else:
+            self.products.update_one(
+                {"_id": oid},
+                {
+                    "$set": {
+                        "stock_quantity": new_total_stock,
+                        "in_stock": new_total_stock > 0,
+                        "updated_at": datetime.now()
+                    }
+                }
+            )
 
         self._log(
             product_id,
             "reduce",
             -quantity,
-            stock_before=new_stock + quantity,
-            stock_after=new_stock,
+            stock_before=current_stock,
+            stock_after=new_total_stock,
             order_id=order_id,
             reason=f"Order placed ({size})" if size else "Order placed",
         )
-        return new_stock
+        return new_total_stock
 
     def restore_stock(
         self,
@@ -168,32 +193,65 @@ class InventoryService:
         size: Optional[str] = None,
     ) -> int:
         """
-        Atomically adds `quantity` back to stock_quantity and size_stock.<size>.
+        Adds `quantity` back to stock_quantity and size_stock.<size>.
         """
         oid = self._to_oid(product_id)
-        inc_fields = {"stock_quantity": quantity}
-        if size:
-            inc_fields[f"size_stock.{size}"] = quantity
-
-        result = self.products.find_one_and_update(
-            {"_id": oid},
-            {"$inc": inc_fields, "$set": {"in_stock": True}},
-            return_document=True,
-        )
-        if result is None:
+        product = self.products.find_one({"_id": oid})
+        if not product:
             raise ValueError(f"Product not found: {product_id}")
 
-        new_stock = int(result["stock_quantity"])
+        size_stock = dict(product.get("size_stock") or {})
+        matched_size_key = None
+        if size and isinstance(size_stock, dict):
+            clean_size = str(size).strip().upper()
+            for k in size_stock.keys():
+                if str(k).strip().upper() == clean_size:
+                    matched_size_key = k
+                    break
+
+        current_stock = int(product.get("stock_quantity", 0) or 0)
+        new_total_stock = current_stock + quantity
+
+        if matched_size_key:
+            current_size_stock = int(size_stock.get(matched_size_key, 0) or 0)
+            new_size_stock = current_size_stock + quantity
+            size_stock[matched_size_key] = new_size_stock
+            sum_sizes = sum(int(v or 0) for v in size_stock.values())
+            new_total_stock = sum_sizes
+
+            self.products.update_one(
+                {"_id": oid},
+                {
+                    "$set": {
+                        f"size_stock.{matched_size_key}": new_size_stock,
+                        "stock_quantity": new_total_stock,
+                        "in_stock": True,
+                        "updated_at": datetime.now()
+                    }
+                }
+            )
+        else:
+            self.products.update_one(
+                {"_id": oid},
+                {
+                    "$set": {
+                        "stock_quantity": new_total_stock,
+                        "in_stock": True,
+                        "updated_at": datetime.now()
+                    }
+                }
+            )
+
         self._log(
             product_id,
             "restore",
             quantity,
-            stock_before=new_stock - quantity,
-            stock_after=new_stock,
+            stock_before=current_stock,
+            stock_after=new_total_stock,
             order_id=order_id,
             reason=reason,
         )
-        return new_stock
+        return new_total_stock
 
     def reduce_stock_for_order(
         self, items: list[StockLineItem], order_id: str

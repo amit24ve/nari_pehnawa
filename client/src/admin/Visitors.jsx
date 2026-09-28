@@ -262,7 +262,11 @@ const Visitors = () => {
     if (!mapRef.current) return;
 
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.invalidateSize();
+      setTimeout(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      }, 100);
       return;
     }
 
@@ -278,7 +282,7 @@ const Visitors = () => {
         worldCopyJump: true,
         minZoom: 2,
         maxZoom: 18
-      }).setView([22.5937, 78.9629], 4);
+      }).setView([22.5937, 78.9629], 4.5);
 
       const tileUrl = isDarkMode
         ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
@@ -294,7 +298,7 @@ const Visitors = () => {
       mapInstanceRef.current = map;
       markersGroupRef.current = markerGroup;
 
-      [100, 300, 600, 1200].forEach((delay) => {
+      [100, 300, 600, 1200, 2000].forEach((delay) => {
         setTimeout(() => {
           if (mapInstanceRef.current) {
             mapInstanceRef.current.invalidateSize();
@@ -319,7 +323,7 @@ const Visitors = () => {
     } catch (e) {
       console.error("Leaflet initialization failed: ", e);
     }
-  }, [isDarkMode]);
+  }, [loading, isDarkMode]);
 
   // Handle tile switch on dark mode toggle
   useEffect(() => {
@@ -333,13 +337,15 @@ const Visitors = () => {
   // Invalidate map size on data update
   useEffect(() => {
     if (mapInstanceRef.current) {
-      setTimeout(() => {
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.invalidateSize();
-        }
-      }, 200);
+      [100, 300, 600].forEach(d => {
+        setTimeout(() => {
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.invalidateSize();
+          }
+        }, d);
+      });
     }
-  }, [dashboardData]);
+  }, [dashboardData, loading]);
 
   // Update Map Markers & Geolocation Pins
   useEffect(() => {
