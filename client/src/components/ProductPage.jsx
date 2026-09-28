@@ -1521,6 +1521,28 @@ const ProductPage = () => {
               </div>
             </div>
 
+            {/* Customer Photo Gallery (if customers uploaded wear/unbox photos) */}
+            {reviewStats?.images && reviewStats.images.length > 0 && (
+              <div className="pt-4 border-t border-gray-100">
+                <p className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                  <Camera className="w-4 h-4 text-[#8B0000]" /> Customer Photos ({reviewStats.images.length})
+                </p>
+                <div className="flex flex-wrap gap-2.5">
+                  {reviewStats.images.map((imgUrl, imgIdx) => (
+                    <a
+                      key={imgIdx}
+                      href={imgUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="relative w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden border border-gray-200 shadow-xs hover:opacity-90 hover:scale-105 transition group"
+                    >
+                      <img src={imgUrl} alt={`Customer photo ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Verified Customer Reviews Cards (Dynamic from Backend API - only admin-approved reviews) */}
             <div className="space-y-4 pt-4 border-t border-gray-100">
               {dbReviews && dbReviews.length > 0 ? (
@@ -1547,11 +1569,28 @@ const ProductPage = () => {
                         <Star key={i} className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
                       ))}
                     </div>
-                    <p className="text-gray-700 leading-relaxed">{rev.comment}</p>
+                    {rev.comment && <p className="text-gray-700 leading-relaxed">{rev.comment}</p>}
+
+                    {/* Customer Photos in Review */}
+                    {rev.images && rev.images.length > 0 && (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {rev.images.map((imgUrl, imgIdx) => (
+                          <a
+                            key={imgIdx}
+                            href={imgUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-16 h-16 rounded-xl overflow-hidden border border-gray-200 hover:scale-105 transition inline-block shadow-xs"
+                          >
+                            <img src={imgUrl} alt={`Review photo ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                          </a>
+                        ))}
+                      </div>
+                    )}
 
                     <button
                       onClick={() => toggleHelpful(rId)}
-                      className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-[#8B0000] transition-colors pt-1"
+                      className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-[#8B0000] transition-colors pt-1 cursor-pointer"
                     >
                       <ThumbsUp className={`w-3 h-3 ${helpfulVotes[rId] ? "text-[#8B0000] fill-[#8B0000]" : ""}`} />
                       <span>Helpful ({currentHelpful})</span>

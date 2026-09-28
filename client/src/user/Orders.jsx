@@ -107,8 +107,10 @@ const Orders = () => {
     ];
 
     const openReviewModal = (item, order) => {
+        const pid = item.product_id || item.id || item._id;
         setReviewModalItem({
             ...item,
+            product_id: pid,
             order_id: order.id || order.order_number || order._id
         });
         setReviewRating(5);
