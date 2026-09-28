@@ -166,10 +166,6 @@ const Orders = () => {
     const submitReview = async (e) => {
         e.preventDefault();
         if (!reviewModalItem) return;
-        if (!reviewComment.trim()) {
-            setReviewFeedback({ type: 'error', message: 'Please write a review comment.' });
-            return;
-        }
 
         setSubmittingReview(true);
         setReviewFeedback(null);
@@ -182,8 +178,7 @@ const Orders = () => {
                 product_id: String(reviewModalItem.product_id || reviewModalItem.id || 'unknown'),
                 product_name: reviewModalItem.product_name || reviewModalItem.name || 'Ethnic Wear Product',
                 rating: Number(reviewRating),
-                title: reviewTitle.trim() || undefined,
-                comment: reviewComment.trim(),
+                comment: reviewComment.trim() || undefined,
                 images: reviewImages,
                 verified_purchase: true,
                 size_purchased: reviewModalItem.size || undefined,
@@ -502,43 +497,50 @@ const Orders = () => {
 
             {/* Review Submission Modal */}
             {reviewModalItem && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border border-gray-100">
-                        {/* Modal Header */}
-                        <div className="bg-gradient-to-r from-[#2c3e50] to-[#1a1f2e] text-white p-5 flex items-center justify-between">
-                            <div>
-                                <h3 className="text-lg font-serif font-bold">Rate & Review Product</h3>
-                                <p className="text-xs text-gray-300 mt-0.5">Your review will be verified and displayed on the product page</p>
-                            </div>
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 animate-in zoom-in-95">
+                        {/* Modal Header (Centered Maroon Banner) */}
+                        <div className="bg-[#8B0000] text-white py-5 px-6 rounded-t-3xl text-center relative sticky top-0 z-20 shadow-sm">
                             <button
+                                type="button"
                                 onClick={() => setReviewModalItem(null)}
-                                className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition"
+                                className="absolute top-4 right-4 text-white/80 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition cursor-pointer"
                             >
                                 <X className="w-5 h-5" />
                             </button>
+                            <h3 className="text-xl font-serif font-bold tracking-wide flex items-center justify-center gap-2">
+                                <Star className="w-5 h-5 text-amber-300 fill-amber-300" />
+                                Rate &amp; Review Product
+                            </h3>
+                            <p className="text-xs text-rose-100/90 mt-1">
+                                Share your genuine rating and feedback with other shoppers
+                            </p>
                         </div>
 
                         {/* Modal Body */}
-                        <form onSubmit={submitReview} className="p-6 space-y-4">
+                        <form onSubmit={submitReview} className="p-6 md:p-8 space-y-6">
                             {/* Product Info */}
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <div className="flex items-center gap-4 p-3.5 bg-rose-50/40 rounded-2xl border border-rose-100">
                                 {reviewModalItem.image ? (
-                                    <img src={reviewModalItem.image} alt={reviewModalItem.product_name} className="w-14 h-14 rounded-lg object-cover border" />
+                                    <img src={reviewModalItem.image} alt={reviewModalItem.product_name} className="w-16 h-16 rounded-xl object-cover border border-rose-200/60 shadow-xs" />
                                 ) : (
-                                    <div className="w-14 h-14 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">
-                                        <Package className="w-6 h-6" />
+                                    <div className="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center text-gray-400">
+                                        <Package className="w-7 h-7" />
                                     </div>
                                 )}
                                 <div className="flex-1 min-w-0">
+                                    <span className="text-[10px] font-bold text-[#8B0000] uppercase tracking-wider">Ordered Item</span>
                                     <h4 className="font-semibold text-gray-900 text-sm truncate">{reviewModalItem.product_name || reviewModalItem.name}</h4>
                                     <p className="text-xs text-gray-500 mt-0.5">Order #{reviewModalItem.order_id}</p>
                                 </div>
                             </div>
 
-                            {/* Star Rating */}
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Overall Rating *</label>
-                                <div className="flex items-center gap-2">
+                            {/* Overall Rating (Center Aligned - Mandatory) */}
+                            <div className="bg-gray-50/80 rounded-2xl p-5 border border-gray-200/70 text-center flex flex-col items-center justify-center">
+                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                                    Overall Rating <span className="text-red-500">*</span>
+                                </label>
+                                <div className="flex items-center justify-center gap-2">
                                     {[1, 2, 3, 4, 5].map((star) => (
                                         <button
                                             type="button"
@@ -546,76 +548,71 @@ const Orders = () => {
                                             onClick={() => setReviewRating(star)}
                                             onMouseEnter={() => setReviewHoverRating(star)}
                                             onMouseLeave={() => setReviewHoverRating(0)}
-                                            className="p-1 text-gray-300 hover:scale-110 transition-transform"
+                                            className="p-1.5 text-gray-300 hover:scale-125 transition-transform cursor-pointer focus:outline-none"
                                         >
                                             <Star
-                                                className={`w-7 h-7 ${(reviewHoverRating || reviewRating) >= star
-                                                    ? 'text-amber-400 fill-amber-400'
-                                                    : 'text-gray-300'
-                                                    }`}
+                                                className={`w-9 h-9 transition-colors ${
+                                                    (reviewHoverRating || reviewRating) >= star
+                                                        ? 'text-amber-400 fill-amber-400 drop-shadow-xs'
+                                                        : 'text-gray-300'
+                                                }`}
                                             />
                                         </button>
                                     ))}
-                                    <span className="text-xs font-semibold text-gray-600 ml-2">
-                                        {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][reviewHoverRating || reviewRating]}
-                                    </span>
+                                </div>
+                                <div className="mt-2 text-sm font-bold text-[#8B0000]">
+                                    {['', '1 Star - Poor', '2 Stars - Fair', '3 Stars - Good', '4 Stars - Very Good', '5 Stars - Excellent'][reviewHoverRating || reviewRating]}
                                 </div>
                             </div>
 
-                            {/* Review Title */}
+                            {/* Review Description (Optional) */}
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Review Title (Optional)</label>
-                                <input
-                                    type="text"
-                                    value={reviewTitle}
-                                    onChange={(e) => setReviewTitle(e.target.value)}
-                                    placeholder="e.g. Gorgeous fabric, perfect festive fit!"
-                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0891b2] focus:border-transparent outline-none"
-                                />
-                            </div>
-
-                            {/* Review Comment */}
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Your Review *</label>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                        Your Review / Feedback
+                                    </label>
+                                    <span className="text-[11px] font-normal text-gray-400">Optional</span>
+                                </div>
                                 <textarea
-                                    rows={3}
-                                    required
+                                    rows={4}
                                     value={reviewComment}
                                     onChange={(e) => setReviewComment(e.target.value)}
-                                    placeholder="Share details about the fitting, material, color, and your shopping experience..."
-                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0891b2] focus:border-transparent outline-none resize-none"
+                                    placeholder="Share details about the fitting, material, color, quality, and your shopping experience..."
+                                    className="w-full px-4 py-3 text-sm border border-gray-300 rounded-2xl focus:ring-2 focus:ring-[#8B0000] focus:border-transparent outline-none resize-none transition"
                                 />
                             </div>
 
-                            {/* Upload Product Photos */}
+                            {/* Upload Product Photos (Optional) */}
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                                    <span>Product Photos (Optional)</span>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                        Product Photos (Wear / Unbox)
+                                    </label>
                                     <span className="text-[11px] font-normal text-gray-500">{reviewImages.length}/4 photos</span>
-                                </label>
+                                </div>
                                 
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     {/* Photos Preview Grid */}
                                     {reviewImages.length > 0 && (
-                                        <div className="flex flex-wrap gap-2 mb-2">
+                                        <div className="flex flex-wrap gap-3">
                                             {reviewImages.map((imgUrl, imgIdx) => (
-                                                <div key={imgIdx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 group">
+                                                <div key={imgIdx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 group shadow-xs">
                                                     <img src={imgUrl} alt={`Upload ${imgIdx + 1}`} className="w-full h-full object-cover" />
                                                     <button
                                                         type="button"
                                                         onClick={() => removeReviewImage(imgIdx)}
-                                                        className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/70 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition"
+                                                        className="absolute top-1 right-1 w-6 h-6 bg-black/75 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition cursor-pointer"
                                                     >
-                                                        <X className="w-3 h-3" />
+                                                        <X className="w-3.5 h-3.5" />
                                                     </button>
                                                 </div>
                                             ))}
                                         </div>
                                     )}
 
-                                    {/* Upload Button */}
+                                    {/* Upload Area */}
                                     {reviewImages.length < 4 && (
-                                        <label className={`flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 hover:border-[#0891b2] rounded-xl cursor-pointer bg-gray-50 hover:bg-cyan-50/40 transition ${uploadingImage ? 'opacity-50 pointer-events-none' : ''}`}>
+                                        <label className={`flex flex-col sm:flex-row items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 hover:border-[#8B0000] rounded-2xl cursor-pointer bg-gray-50 hover:bg-rose-50/30 transition ${uploadingImage ? 'opacity-50 pointer-events-none' : ''}`}>
                                             <input
                                                 type="file"
                                                 accept="image/*"
@@ -626,13 +623,13 @@ const Orders = () => {
                                             />
                                             {uploadingImage ? (
                                                 <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                    <Loader2 className="w-4 h-4 animate-spin text-[#0891b2]" />
+                                                    <Loader2 className="w-5 h-5 animate-spin text-[#8B0000]" />
                                                     <span>Uploading photo...</span>
                                                 </div>
                                             ) : (
-                                                <div className="flex items-center gap-2 text-xs font-semibold text-[#0891b2]">
-                                                    <Camera className="w-4 h-4" />
-                                                    <span>Attach Photos (Wear / Unbox)</span>
+                                                <div className="flex items-center gap-2 text-xs font-semibold text-[#8B0000]">
+                                                    <Camera className="w-5 h-5" />
+                                                    <span>Click to attach photos (Wear / Unbox)</span>
                                                 </div>
                                             )}
                                         </label>
@@ -642,7 +639,7 @@ const Orders = () => {
 
                             {/* Feedback Alert */}
                             {reviewFeedback && (
-                                <div className={`p-3 rounded-xl text-xs font-medium ${reviewFeedback.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>
+                                <div className={`p-3.5 rounded-2xl text-xs font-medium text-center ${reviewFeedback.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>
                                     {reviewFeedback.message}
                                 </div>
                             )}
@@ -652,16 +649,22 @@ const Orders = () => {
                                 <button
                                     type="button"
                                     onClick={() => setReviewModalItem(null)}
-                                    className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 rounded-xl hover:bg-gray-100 transition"
+                                    className="px-5 py-2.5 text-sm text-gray-600 hover:text-gray-800 rounded-xl hover:bg-gray-100 transition cursor-pointer font-medium"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={submittingReview}
-                                    className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0891b2] hover:bg-[#0e7490] rounded-xl shadow-md disabled:opacity-50 transition flex items-center gap-2"
+                                    disabled={submittingReview || !reviewRating}
+                                    className="px-8 py-3 text-sm font-bold text-white bg-[#8B0000] hover:bg-[#6B0000] rounded-xl shadow-md hover:shadow-lg disabled:opacity-50 transition flex items-center gap-2 cursor-pointer"
                                 >
-                                    {submittingReview ? 'Submitting...' : 'Submit Review'}
+                                    {submittingReview ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" /> Submitting...
+                                        </>
+                                    ) : (
+                                        'Submit Review'
+                                    )}
                                 </button>
                             </div>
                         </form>
