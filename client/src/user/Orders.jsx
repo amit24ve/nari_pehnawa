@@ -21,6 +21,13 @@ const Orders = () => {
     const [reviewFeedback, setReviewFeedback] = useState(null);
     const [reviewedProducts, setReviewedProducts] = useState({});
 
+    // Cancel Modal States
+    const [cancelModalOrder, setCancelModalOrder] = useState(null);
+    const [cancelReason, setCancelReason] = useState('Changed my mind');
+    const [customCancelReason, setCustomCancelReason] = useState('');
+    const [cancellingOrder, setCancellingOrder] = useState(false);
+    const [cancelFeedback, setCancelFeedback] = useState(null);
+
     useEffect(() => {
         fetchOrders();
     }, []);
@@ -216,6 +223,65 @@ const Orders = () => {
         }
     };
 
+    const handleCancelOrder = async (e) => {
+        e.preventDefault();
+        if (!cancelModalOrder) return;
+
+        const reasonText = cancelReason === 'Other'
+            ? (customCancelReason.trim() || 'Other reason')
+            : cancelReason;
+
+        setCancellingOrder(true);
+        setCancelFeedback(null);
+
+        const API_URL = import.meta.env.VITE_API_URL || 'https://naripehnawa.com:7100';
+        const token = localStorage.getItem('neel_token') || localStorage.getItem('token');
+        const orderId = cancelModalOrder.id || cancelModalOrder._id;
+
+        try {
+            const res = await fetch(`${API_URL}/orders/${orderId}/cancel-request`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ reason: reasonText })
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.detail || 'Failed to cancel order');
+            }
+
+            setCancelFeedback({
+                type: 'success',
+                message: data.message || 'Order has been successfully cancelled. Any reward coins have been updated.'
+            });
+
+            // Update local order list immediately
+            setOrders(prev => prev.map(o => {
+                if (String(o.id || o._id) === String(orderId)) {
+                    return { ...o, status: 'cancelled' };
+                }
+                return o;
+            }));
+
+            setTimeout(() => {
+                setCancelModalOrder(null);
+                setCancelFeedback(null);
+                fetchOrders();
+            }, 2000);
+        } catch (err) {
+            console.error('Cancel order error:', err);
+            setCancelFeedback({
+                type: 'error',
+                message: err.message || 'Error processing cancellation. Please try again.'
+            });
+        } finally {
+            setCancellingOrder(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -270,6 +336,7 @@ const Orders = () => {
                 <div className="space-y-3 sm:space-y-4">
                     {filteredOrders.map((order) => {
                         const orderStatus = order.status || 'pending';
+                        const canCancel = ['pending', 'processing', 'confirmed', 'placed'].includes(orderStatus.toLowerCase()) && !order?.shipping?.awb;
                         const rawNum = (order.order_number || order.id || '').toString().trim();
                         const displayOrderNum = (rawNum.length === 24 && /^[0-9a-fA-F]+$/.test(rawNum))
                             ? `ORD_${rawNum.slice(-6).toUpperCase()}`
@@ -296,11 +363,27 @@ const Orders = () => {
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
+                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                                             <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold border flex items-center justify-center gap-2 ${getStatusColor(orderStatus)}`}>
                                                 {getStatusIcon(orderStatus)}
                                                 {orderStatus.charAt(0).toUpperCase() + orderStatus.slice(1)}
                                             </span>
+
+                                            {canCancel && (
+                                                <button
+                                                    onClick={() => {
+                                                        setCancelModalOrder(order);
+                                                        setCancelReason('Changed my mind');
+                                                        setCustomCancelReason('');
+                                                        setCancelFeedback(null);
+                                                    }}
+                                                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 rounded-lg transition-colors flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold"
+                                                >
+                                                    <XCircle className="w-4 h-4 text-rose-600" />
+                                                    Cancel Order
+                                                </button>
+                                            )}
+
                                             <button
                                                 onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
                                                 className="px-3 sm:px-4 py-1.5 sm:py-2 bg-[#0891b2] text-white rounded-lg hover:bg-[#06b6d4] transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm"
@@ -579,6 +662,156 @@ const Orders = () => {
                                     className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0891b2] hover:bg-[#0e7490] rounded-xl shadow-md disabled:opacity-50 transition flex items-center gap-2"
                                 >
                                     {submittingReview ? 'Submitting...' : 'Submit Review'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Cancel Order Modal */}
+            {cancelModalOrder && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl border border-gray-100">
+                        {/* Modal Header */}
+                        <div className="bg-gradient-to-r from-rose-900 to-slate-900 text-white p-5 flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-2 bg-rose-500/20 border border-rose-400/30 rounded-xl">
+                                    <XCircle className="w-5 h-5 text-rose-400" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-serif font-bold">Cancel Order</h3>
+                                    <p className="text-xs text-rose-200 mt-0.5">Order #{cancelModalOrder.order_number || cancelModalOrder.id}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setCancelModalOrder(null)}
+                                className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <form onSubmit={handleCancelOrder} className="p-6 space-y-4">
+                            {/* Order Summary Box */}
+                            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1 text-xs">
+                                <div className="flex justify-between text-slate-600">
+                                    <span>Total Amount:</span>
+                                    <span className="font-bold text-slate-800">₹{Number(cancelModalOrder.total_amount || 0).toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between text-slate-600">
+                                    <span>Payment Method:</span>
+                                    <span className="font-semibold text-slate-700">{cancelModalOrder.payment_method || 'COD'}</span>
+                                </div>
+                                {cancelModalOrder.coins_earned > 0 && (
+                                    <div className="flex justify-between text-amber-700 bg-amber-50/70 p-1.5 rounded-lg font-medium mt-1">
+                                        <span>Earned Coins to reverse:</span>
+                                        <span className="font-bold">-{cancelModalOrder.coins_earned} Coins</span>
+                                    </div>
+                                )}
+                                {cancelModalOrder.coins_used > 0 && (
+                                    <div className="flex justify-between text-emerald-700 bg-emerald-50/70 p-1.5 rounded-lg font-medium mt-1">
+                                        <span>Redeemed Coins to refund:</span>
+                                        <span className="font-bold">+{cancelModalOrder.coins_used} Coins</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Reason Selector */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                    Reason for Cancellation *
+                                </label>
+                                <div className="space-y-2">
+                                    {[
+                                        'Changed my mind',
+                                        'Found a better price / offer',
+                                        'Incorrect delivery address or contact',
+                                        'Ordered by mistake',
+                                        'Want to change size or product',
+                                        'Other'
+                                    ].map((reason) => (
+                                        <label
+                                            key={reason}
+                                            className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs cursor-pointer transition ${
+                                                cancelReason === reason
+                                                    ? 'border-rose-400 bg-rose-50/40 text-slate-900 font-semibold shadow-xs'
+                                                    : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                                            }`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="cancelReason"
+                                                value={reason}
+                                                checked={cancelReason === reason}
+                                                onChange={(e) => setCancelReason(e.target.value)}
+                                                className="text-rose-600 focus:ring-rose-500"
+                                            />
+                                            <span>{reason}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {cancelReason === 'Other' && (
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                        Please specify reason
+                                    </label>
+                                    <textarea
+                                        rows={2}
+                                        value={customCancelReason}
+                                        onChange={(e) => setCustomCancelReason(e.target.value)}
+                                        placeholder="Type your cancellation reason here..."
+                                        className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none resize-none"
+                                        required
+                                    />
+                                </div>
+                            )}
+
+                            {/* Notice regarding coins */}
+                            <div className="p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 leading-relaxed">
+                                <p className="font-semibold mb-0.5">⚠️ Coin Balance & Refund Policy</p>
+                                <p>Upon cancellation, any reward coins awarded on this order will be deducted from your wallet balance, and any coins you redeemed will be credited back.</p>
+                            </div>
+
+                            {/* Feedback */}
+                            {cancelFeedback && (
+                                <div className={`p-3 rounded-xl text-xs font-medium ${
+                                    cancelFeedback.type === 'success'
+                                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                        : 'bg-rose-50 text-rose-800 border border-rose-200'
+                                }`}>
+                                    {cancelFeedback.message}
+                                </div>
+                            )}
+
+                            {/* Actions */}
+                            <div className="flex items-center justify-end gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setCancelModalOrder(null)}
+                                    className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition"
+                                >
+                                    Keep Order
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={cancellingOrder}
+                                    className="px-5 py-2.5 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-md disabled:opacity-50 transition flex items-center gap-2"
+                                >
+                                    {cancellingOrder ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            <span>Cancelling...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <XCircle className="w-4 h-4" />
+                                            <span>Confirm Cancellation</span>
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </form>

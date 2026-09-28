@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import {
   Eye,
   Users,
@@ -30,7 +32,9 @@ import {
   ChevronLeft,
   MousePointer,
   ShoppingBag,
-  Bell
+  Bell,
+  Maximize2,
+  Navigation
 } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
@@ -50,85 +54,168 @@ const StatCard = ({ title, value, subText, icon: Icon }) => {
   );
 };
 
-const countryCoords = {
-  // Asia & South Asia
-  'india': [20.5937, 78.9629],
-  'nepal': [28.3949, 84.1240],
-  'bangladesh': [23.6850, 90.3563],
-  'pakistan': [30.3753, 69.3451],
-  'sri lanka': [7.8731, 80.7718],
-  'bhutan': [27.5142, 90.4336],
-  'maldives': [3.2028, 73.2207],
-  'china': [35.8617, 104.1954],
-  'japan': [36.2048, 138.2529],
-  'south korea': [35.9078, 127.7669],
-  'singapore': [1.3521, 103.8198],
-  'malaysia': [4.2105, 101.9758],
-  'indonesia': [-0.7893, 113.9213],
-  'thailand': [15.8700, 100.9925],
-  'vietnam': [14.0583, 108.2772],
-  'philippines': [12.8797, 121.7740],
-  'hong kong': [22.3193, 114.1694],
-  'taiwan': [23.6978, 120.9605],
+// Comprehensive Geo Coordinate mapping for Indian Cities, States & Global Countries
+const geoCoords = {
+  // Major Indian Cities & Towns
+  'sultanpur': [26.2648, 82.0727],
+  'lucknow': [26.8467, 80.9462],
+  'kanpur': [26.4499, 80.3319],
+  'varanasi': [25.3176, 82.9739],
+  'prayagraj': [25.4358, 81.8463],
+  'allahabad': [25.4358, 81.8463],
+  'ayodhya': [26.7922, 82.1998],
+  'faizabad': [26.7731, 82.1458],
+  'gorakhpur': [26.7606, 83.3732],
+  'agra': [27.1767, 78.0081],
+  'bareilly': [28.3670, 79.4304],
+  'meerut': [28.9845, 77.7064],
+  'aligarh': [27.8974, 78.0880],
+  'moradabad': [28.8389, 78.7768],
+  'noida': [28.5355, 77.3910],
+  'greater noida': [28.4744, 77.5040],
+  'ghaziabad': [28.6692, 77.4538],
+  'delhi': [28.6139, 77.2090],
+  'new delhi': [28.6139, 77.2090],
+  'gurugram': [28.4595, 77.0266],
+  'gurgaon': [28.4595, 77.0266],
+  'faridabad': [28.4089, 77.3178],
+  'mumbai': [19.0760, 72.8777],
+  'navi mumbai': [19.0330, 73.0297],
+  'thane': [19.2183, 72.9781],
+  'pune': [18.5204, 73.8567],
+  'nagpur': [21.1458, 79.0882],
+  'nashik': [19.9975, 73.7898],
+  'aurangabad': [19.8762, 75.3433],
+  'kolhapur': [16.7050, 74.2433],
+  'bengaluru': [12.9716, 77.5946],
+  'bangalore': [12.9716, 77.5946],
+  'mysuru': [12.2958, 76.6394],
+  'mysore': [12.2958, 76.6394],
+  'hyderabad': [17.3850, 78.4867],
+  'secunderabad': [17.4399, 78.4983],
+  'chennai': [13.0827, 80.2707],
+  'madurai': [9.9252, 78.1198],
+  'coimbatore': [11.0168, 76.9558],
+  'kolkata': [22.5726, 88.3639],
+  'howrah': [22.5958, 88.2636],
+  'ahmedabad': [23.0225, 72.5714],
+  'surat': [21.1702, 72.8311],
+  'vadodara': [22.3072, 73.1812],
+  'rajkot': [22.3039, 70.8022],
+  'jaipur': [26.9124, 75.7873],
+  'jodhpur': [26.2389, 73.0243],
+  'udaipur': [24.5854, 73.7125],
+  'kota': [25.2138, 75.8648],
+  'patna': [25.5941, 85.1376],
+  'gaya': [24.7914, 85.0002],
+  'muzaffarpur': [26.1209, 85.3647],
+  'ranchi': [23.3441, 85.3096],
+  'jamshedpur': [22.8046, 86.2029],
+  'dhanbad': [23.7957, 86.4304],
+  'bhopal': [23.2599, 77.4126],
+  'indore': [22.7196, 75.8577],
+  'jabalpur': [23.1815, 79.9864],
+  'gwalior': [26.2183, 78.1828],
+  'chandigarh': [30.7333, 76.7794],
+  'ludhiana': [30.9010, 75.8573],
+  'amritsar': [31.6340, 74.8723],
+  'jalandhar': [31.3260, 75.5762],
+  'dehradun': [30.3165, 78.0322],
+  'haridwar': [29.9457, 78.1642],
+  'shimla': [31.1048, 77.1734],
+  'srinagar': [34.0837, 74.7973],
+  'jammu': [32.7266, 74.8570],
+  'guwahati': [26.1445, 91.7362],
+  'bhubaneswar': [20.2961, 85.8245],
+  'cuttack': [20.4625, 85.8828],
+  'raipur': [21.2514, 81.6296],
+  'kochi': [9.9312, 76.2673],
+  'cochin': [9.9312, 76.2673],
+  'thiruvananthapuram': [8.5241, 76.9366],
+  'trivandrum': [8.5241, 76.9366],
+  'kozhikode': [11.2588, 75.7804],
+  'visakhapatnam': [17.6868, 83.2185],
+  'vijayawada': [16.5062, 80.6480],
+  'panaji': [15.4909, 73.8278],
+  'goa': [15.2993, 74.1240],
 
-  // Middle East
+  // Indian States
+  'uttar pradesh': [26.8467, 80.9462],
+  'maharashtra': [19.7515, 75.7139],
+  'karnataka': [15.3173, 75.7139],
+  'tamil nadu': [11.1271, 78.6569],
+  'gujarat': [22.2587, 71.1924],
+  'rajasthan': [27.0238, 74.2179],
+  'west bengal': [22.9868, 87.8550],
+  'madhya pradesh': [22.9734, 78.6569],
+  'bihar': [25.0961, 85.3131],
+  'andhra pradesh': [15.9129, 79.7400],
+  'telangana': [18.1124, 79.0193],
+  'kerala': [10.8505, 76.2711],
+  'punjab': [31.1471, 75.3412],
+  'haryana': [29.0588, 76.0856],
+  'odisha': [20.9517, 85.0985],
+  'jharkhand': [23.6102, 85.2799],
+  'chhattisgarh': [21.2787, 81.8661],
+  'assam': [26.2006, 92.9376],
+  'uttarakhand': [30.0668, 79.0193],
+  'himachal pradesh': [31.1048, 77.1734],
+  'jammu and kashmir': [33.7782, 76.5762],
+
+  // Countries
+  'india': [20.5937, 78.9629],
   'united arab emirates': [23.4241, 53.8478],
   'uae': [23.4241, 53.8478],
-  'saudi arabia': [23.8859, 45.0792],
-  'qatar': [25.3548, 51.1839],
-  'oman': [21.4735, 55.9754],
-  'kuwait': [29.3117, 47.4818],
-  'bahrain': [26.0667, 50.5577],
-  'israel': [31.0461, 34.8516],
-  'turkey': [38.9637, 35.2433],
-
-  // Europe
-  'united kingdom': [55.3781, -3.4360],
-  'uk': [55.3781, -3.4360],
-  'germany': [51.1657, 10.4515],
-  'france': [46.2276, 2.2137],
-  'italy': [41.8719, 12.5674],
-  'spain': [40.4637, -3.7492],
-  'netherlands': [52.1326, 5.2913],
-  'switzerland': [46.8182, 8.2275],
-  'sweden': [60.1282, 18.6435],
-  'norway': [60.4720, 8.4689],
-  'denmark': [56.2639, 9.5018],
-  'ireland': [53.1424, -7.6921],
-  'belgium': [50.5039, 4.4699],
-  'austria': [47.5162, 14.5501],
-  'portugal': [39.3999, -8.2245],
-  'greece': [39.0742, 21.8243],
-  'poland': [51.9194, 19.1451],
-  'russia': [61.5240, 105.3188],
-
-  // Americas
   'united states': [37.0902, -95.7129],
   'usa': [37.0902, -95.7129],
+  'united kingdom': [55.3781, -3.4360],
+  'uk': [55.3781, -3.4360],
   'canada': [56.1304, -106.3468],
-  'mexico': [23.6345, -102.5528],
-  'brazil': [-14.2350, -51.9253],
-  'argentina': [-38.4161, -63.6167],
-  'colombia': [4.5709, -74.2973],
-  'chile': [-35.6751, -71.5430],
-
-  // Oceania & Africa
   'australia': [-25.2744, 133.7751],
-  'new zealand': [-40.9006, 174.8860],
-  'south africa': [-30.5595, 22.9375],
-  'egypt': [26.8206, 30.8025],
-  'nigeria': [9.0820, 8.6753],
-  'kenya': [-0.0236, 37.9062],
+  'singapore': [1.3521, 103.8198],
+  'nepal': [28.3949, 84.1240],
+  'bangladesh': [23.6850, 90.3563],
+  'saudi arabia': [23.8859, 45.0792],
+  'germany': [51.1657, 10.4515],
+  'france': [46.2276, 2.2137],
+  'qatar': [25.3548, 51.1839],
+  'kuwait': [29.3117, 47.4818],
+  'oman': [21.4735, 55.9754],
+  'malaysia': [4.2105, 101.9758],
   'unknown': [20.5937, 78.9629]
 };
 
-const getCountryCoord = (name) => {
-  if (!name) return countryCoords['india'];
-  const clean = name.toString().trim().toLowerCase().replace(/^(the\s+)/, '');
-  if (countryCoords[clean]) return countryCoords[clean];
-  for (const [k, v] of Object.entries(countryCoords)) {
-    if (clean.includes(k) || k.includes(clean)) return v;
+const resolveGeoLocation = (geo) => {
+  if (!geo) return [20.5937, 78.9629];
+  
+  // 1. Direct valid coordinates
+  const lat = Number(geo.lat);
+  const lon = Number(geo.lon);
+  if (lat && lon && !isNaN(lat) && !isNaN(lon) && (lat !== 0 || lon !== 0)) {
+    return [lat, lon];
   }
+
+  // 2. City lookup
+  const city = (geo.city || '').toString().trim().toLowerCase().replace(/^(the\s+)/, '');
+  if (city && geoCoords[city]) return geoCoords[city];
+  for (const [k, v] of Object.entries(geoCoords)) {
+    if (city && (city === k || city.includes(k) || k.includes(city))) return v;
+  }
+
+  // 3. State lookup
+  const state = (geo.state || '').toString().trim().toLowerCase().replace(/^(the\s+)/, '');
+  if (state && geoCoords[state]) return geoCoords[state];
+  for (const [k, v] of Object.entries(geoCoords)) {
+    if (state && (state === k || state.includes(k) || k.includes(state))) return v;
+  }
+
+  // 4. Country lookup
+  const country = (geo.country || '').toString().trim().toLowerCase().replace(/^(the\s+)/, '');
+  if (country && geoCoords[country]) return geoCoords[country];
+  for (const [k, v] of Object.entries(geoCoords)) {
+    if (country && (country === k || country.includes(k) || k.includes(country))) return v;
+  }
+
   return [20.5937, 78.9629];
 };
 
@@ -165,53 +252,14 @@ const Visitors = () => {
   const wsRef = useRef(null);
 
   // Leaflet Map states & refs
-  const [leafletLoaded, setLeafletLoaded] = useState(Boolean(typeof window !== 'undefined' && window.L));
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersGroupRef = useRef(null);
   const tileLayerRef = useRef(null);
 
-  // Check & ensure Leaflet is loaded
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.L) {
-      setLeafletLoaded(true);
-      return;
-    }
-
-    if (!document.querySelector('link[href*="leaflet.css"]')) {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-    }
-
-    const checkLeaflet = setInterval(() => {
-      if (typeof window !== 'undefined' && window.L) {
-        setLeafletLoaded(true);
-        clearInterval(checkLeaflet);
-      }
-    }, 150);
-
-    const timer = setTimeout(() => {
-      clearInterval(checkLeaflet);
-      if (!window.L) {
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-        script.async = true;
-        script.onload = () => setLeafletLoaded(true);
-        document.body.appendChild(script);
-      }
-    }, 800);
-
-    return () => {
-      clearInterval(checkLeaflet);
-      clearTimeout(timer);
-    };
-  }, []);
-
   // Initialize Leaflet Map
   useEffect(() => {
-    if (!leafletLoaded || !mapRef.current || !window.L) return;
+    if (!mapRef.current) return;
 
     if (mapInstanceRef.current) {
       mapInstanceRef.current.invalidateSize();
@@ -223,30 +271,30 @@ const Visitors = () => {
         delete mapRef.current._leaflet_id;
       }
 
-      // World view centered with zoom 2 to show all continents
-      const map = window.L.map(mapRef.current, {
+      // Default view centered on India
+      const map = L.map(mapRef.current, {
         zoomControl: true,
         attributionControl: false,
         worldCopyJump: true,
-        minZoom: 1,
+        minZoom: 2,
         maxZoom: 18
-      }).setView([20.5937, 78.9629], 3);
+      }).setView([22.5937, 78.9629], 4);
 
       const tileUrl = isDarkMode
         ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
         : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
-      const tileLayer = window.L.tileLayer(tileUrl, {
+      const tileLayer = L.tileLayer(tileUrl, {
         maxZoom: 19,
         subdomains: isDarkMode ? ['a', 'b', 'c', 'd'] : ['a', 'b', 'c']
       }).addTo(map);
 
       tileLayerRef.current = tileLayer;
-      const markerGroup = window.L.layerGroup().addTo(map);
+      const markerGroup = L.layerGroup().addTo(map);
       mapInstanceRef.current = map;
       markersGroupRef.current = markerGroup;
 
-      [100, 300, 700, 1500].forEach((delay) => {
+      [100, 300, 600, 1200].forEach((delay) => {
         setTimeout(() => {
           if (mapInstanceRef.current) {
             mapInstanceRef.current.invalidateSize();
@@ -271,9 +319,18 @@ const Visitors = () => {
     } catch (e) {
       console.error("Leaflet initialization failed: ", e);
     }
-  }, [leafletLoaded, isDarkMode]);
+  }, [isDarkMode]);
 
-  // Invalidate map size on data change
+  // Handle tile switch on dark mode toggle
+  useEffect(() => {
+    if (!mapInstanceRef.current || !tileLayerRef.current) return;
+    const tileUrl = isDarkMode
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    tileLayerRef.current.setUrl(tileUrl);
+  }, [isDarkMode]);
+
+  // Invalidate map size on data update
   useEffect(() => {
     if (mapInstanceRef.current) {
       setTimeout(() => {
@@ -284,94 +341,92 @@ const Visitors = () => {
     }
   }, [dashboardData]);
 
-  // Update Map Markers
+  // Update Map Markers & Geolocation Pins
   useEffect(() => {
-    if (!leafletLoaded || !markersGroupRef.current || !mapInstanceRef.current || !dashboardData) return;
+    if (!markersGroupRef.current || !mapInstanceRef.current || !dashboardData) return;
 
     markersGroupRef.current.clearLayers();
     const plotted = [];
 
     const createPulsingIcon = (color = 'amber') => {
-      const colorHex = color === 'red' ? '#ef4444' : color === 'emerald' ? '#10b981' : '#f59e0b';
-      return window.L.divIcon({
+      const colorHex = color === 'red' ? '#ef4444' : color === 'emerald' ? '#10b981' : '#0891b2';
+      return L.divIcon({
         className: 'custom-pulsing-marker',
         html: `
-          <div style="position: relative; width: 12px; height: 12px;">
-            <div style="position: absolute; width: 12px; height: 12px; border-radius: 50%; background-color: ${colorHex}; opacity: 0.8; z-index: 10; border: 1.5px solid #ffffff;"></div>
-            <div class="animate-ping" style="position: absolute; width: 24px; height: 24px; top: -6px; left: -6px; border-radius: 50%; background-color: ${colorHex}; opacity: 0.4;"></div>
+          <div style="position: relative; width: 14px; height: 14px;">
+            <div style="position: absolute; width: 14px; height: 14px; border-radius: 50%; background-color: ${colorHex}; opacity: 0.9; z-index: 10; border: 2px solid #ffffff; box-shadow: 0 0 10px ${colorHex};"></div>
+            <div class="animate-ping" style="position: absolute; width: 28px; height: 28px; top: -7px; left: -7px; border-radius: 50%; background-color: ${colorHex}; opacity: 0.5;"></div>
           </div>
         `,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
       });
     };
 
-    // 1. Draw Country Density Bubbles
+    // 1. Draw Country & City Density Bubbles
     const countriesData = dashboardData.countries || [];
     countriesData.forEach(c => {
       const countryName = c.country;
       if (!countryName || countryName === 'Unknown') return;
-      const count = c.count;
-      const coords = getCountryCoord(countryName);
+      const count = c.count || 1;
+      const coords = resolveGeoLocation({ country: countryName });
       
-      const circle = window.L.circleMarker(coords, {
-        radius: Math.min(Math.max(count * 3, 7), 40),
+      const circle = L.circleMarker(coords, {
+        radius: Math.min(Math.max(count * 3, 8), 36),
         fillColor: '#0891b2',
         color: '#06b6d4',
         weight: 1.5,
         opacity: 0.9,
-        fillOpacity: 0.3
+        fillOpacity: 0.35
       });
       
       const popupHtml = `
-        <div style="background-color: #ffffff; color: #1e293b; padding: 8px 12px; border-radius: 8px; font-family: sans-serif; font-size: 11px; line-height: 1.4;">
-          <strong style="color:#0891b2; font-size: 12px;">${countryName}</strong><br/>
-          <span style="color: #475569;"><strong>Visitor Count:</strong> ${count}</span>
+        <div style="background-color: #ffffff; color: #1e293b; padding: 8px 12px; border-radius: 10px; font-family: sans-serif; font-size: 11px; line-height: 1.4; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+          <strong style="color:#0891b2; font-size: 12px;">📍 ${countryName}</strong><br/>
+          <span style="color: #475569;"><strong>Store Visitors:</strong> ${count}</span>
         </div>
       `;
       circle.bindPopup(popupHtml, { closeButton: false });
       markersGroupRef.current.addLayer(circle);
     });
 
-    // 2. Draw active session pins
+    // 2. Draw Active Session Geolocation Pins
     const journeysToPlot = dashboardData.journeys || [];
     
     journeysToPlot.forEach(j => {
-      let lat = j.geo?.lat;
-      let lon = j.geo?.lon;
+      const coords = resolveGeoLocation(j.geo);
+      let finalLat = coords[0];
+      let finalLon = coords[1];
 
-      if (!lat || !lon || (lat === 0 && lon === 0)) {
-        const countryName = j.geo?.country || '';
-        const coords = getCountryCoord(countryName);
-        lat = coords[0];
-        lon = coords[1];
-      }
-
-      let finalLat = Number(lat) || 20.5937;
-      let finalLon = Number(lon) || 78.9629;
+      // Jitter overlapping coordinates slightly so all markers are visible
       const key = `${finalLat.toFixed(2)},${finalLon.toFixed(2)}`;
       if (plotted.includes(key)) {
-        finalLat += (Math.random() - 0.5) * 0.15;
-        finalLon += (Math.random() - 0.5) * 0.15;
+        finalLat += (Math.random() - 0.5) * 0.25;
+        finalLon += (Math.random() - 0.5) * 0.25;
       }
       plotted.push(key);
 
-      const aiIntent = j.ai_intent || 'unknown';
-      const markerColor = aiIntent === 'high' ? 'red' : aiIntent === 'medium' ? 'amber' : 'emerald';
+      const aiIntent = j.ai_intent || 'medium';
+      const markerColor = aiIntent === 'high' ? 'red' : aiIntent === 'low' ? 'emerald' : 'cyan';
 
-      const marker = window.L.marker([finalLat, finalLon], {
+      const marker = L.marker([finalLat, finalLon], {
         icon: createPulsingIcon(markerColor)
       });
 
+      const cityText = j.geo?.city || j.geo?.state || 'Store Visitor';
+      const countryText = j.geo?.country || 'India';
+      const browserText = j.device?.browser || 'Browser';
+      const osText = j.device?.os || 'OS';
+
       const popupContent = `
-        <div style="background-color: #ffffff; color: #1e293b; padding: 12px; border-radius: 12px; font-family: sans-serif; font-size: 11px; width: 220px; line-height: 1.5;">
+        <div style="background-color: #ffffff; color: #1e293b; padding: 12px; border-radius: 12px; font-family: sans-serif; font-size: 11px; width: 220px; line-height: 1.5; box-shadow: 0 6px 16px rgba(0,0,0,0.12);">
           <div style="font-weight: bold; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
             <span style="font-family: monospace; color: #0891b2;">${(j.visitor_id || 'Visitor').substring(0, 14)}...</span>
-            <span style="background: rgba(8, 145, 178, 0.1); color: #0891b2; padding: 1.5px 5px; border-radius: 4px; font-size: 9px; font-weight: bold; text-transform: uppercase;">Active</span>
+            <span style="background: rgba(8, 145, 178, 0.1); color: #0891b2; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; text-transform: uppercase;">Active</span>
           </div>
-          <div style="margin-bottom: 4px; color: #475569;"><strong>Location:</strong> ${j.geo?.city || 'City'}, ${j.geo?.country || 'India'}</div>
-          <div style="margin-bottom: 4px; color: #475569;"><strong>Platform:</strong> ${j.device?.browser || 'Chrome'} (${j.device?.os || 'Android'})</div>
-          <div style="margin-bottom: 4px; color: #475569;"><strong>Referrer:</strong> ${j.referrer || 'Direct'}</div>
+          <div style="margin-bottom: 3px; color: #475569;"><strong>Location:</strong> ${cityText}, ${countryText}</div>
+          <div style="margin-bottom: 3px; color: #475569;"><strong>Device:</strong> ${browserText} (${osText})</div>
+          <div style="margin-bottom: 3px; color: #475569;"><strong>Referrer:</strong> ${j.referrer || 'Direct'}</div>
           <div style="color: #475569;"><strong>Status:</strong> <span style="font-weight: bold; color: #0891b2">${j.status || 'Guest'}</span></div>
         </div>
       `;
@@ -383,7 +438,7 @@ const Visitors = () => {
 
       markersGroupRef.current.addLayer(marker);
     });
-  }, [leafletLoaded, dashboardData, liveEvents]);
+  }, [dashboardData, liveEvents]);
 
   // Fetch Dashboard State
   const fetchDashboard = async () => {
@@ -715,21 +770,35 @@ const Visitors = () => {
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">Real-time coordinates of storefront traffic.</p>
             </div>
-            <div className="flex gap-2">
-              <span className="flex items-center gap-1 text-[9px] text-slate-500"><span className="w-2 h-2 rounded-full bg-red-500"></span> High Intent</span>
-              <span className="flex items-center gap-1 text-[9px] text-slate-500"><span className="w-2 h-2 rounded-full bg-amber-500"></span> Med Intent</span>
-              <span className="flex items-center gap-1 text-[9px] text-slate-500"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Low Intent</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex gap-1.5 mr-2">
+                <span className="flex items-center gap-1 text-[9px] text-slate-500"><span className="w-2 h-2 rounded-full bg-red-500"></span> High</span>
+                <span className="flex items-center gap-1 text-[9px] text-slate-500"><span className="w-2 h-2 rounded-full bg-cyan-600"></span> Active</span>
+                <span className="flex items-center gap-1 text-[9px] text-slate-500"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Low</span>
+              </div>
+              
+              <button
+                type="button"
+                onClick={() => mapInstanceRef.current?.setView([22.5937, 78.9629], 4.5)}
+                className="px-2.5 py-1 text-[10px] font-bold bg-slate-100 hover:bg-cyan-50 hover:text-[#0891b2] text-slate-700 rounded-lg border border-slate-200 transition flex items-center gap-1"
+                title="Center on India"
+              >
+                <Navigation className="w-3 h-3" /> Focus India
+              </button>
+
+              <button
+                type="button"
+                onClick={() => mapInstanceRef.current?.setView([20.0, 10.0], 2)}
+                className="px-2.5 py-1 text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg border border-slate-200 transition flex items-center gap-1"
+                title="Global World View"
+              >
+                <Globe className="w-3 h-3" /> Global View
+              </button>
             </div>
           </div>
           
-          <div className="h-[380px] w-full rounded-xl bg-slate-50 border border-slate-200 relative overflow-hidden">
-            {!leafletLoaded && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 text-xs gap-3 z-20 bg-slate-50">
-                <RefreshCw className="w-8 h-8 animate-spin text-[#0891b2]" />
-                <span>Initializing Live Coordinate Map...</span>
-              </div>
-            )}
-            <div ref={mapRef} className="h-full w-full z-10" style={{ height: '380px', width: '100%' }} />
+          <div className="h-[400px] w-full rounded-xl bg-slate-50 border border-slate-200 relative overflow-hidden shadow-inner">
+            <div ref={mapRef} className="h-full w-full z-10" style={{ height: '400px', width: '100%', minHeight: '400px' }} />
           </div>
         </div>
 

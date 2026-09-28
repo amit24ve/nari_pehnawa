@@ -316,41 +316,72 @@ class RewardCoinService:
         2. If customer spent/redeemed coins on this order, automatically refund them to wallet.
         Ensures strict idempotency.
         """
-        if not user_id:
-            return
-
-        # Fetch order doc if needed to check coins awarded
+        # 1. Fetch order doc
         order_doc = None
-        if ObjectId.is_valid(order_id):
-            order_doc = self.orders.find_one({"_id": ObjectId(order_id)})
-        if not order_doc:
+        if order_id and ObjectId.is_valid(str(order_id)):
+            order_doc = self.orders.find_one({"_id": ObjectId(str(order_id))})
+        if not order_doc and order_id:
             order_doc = self.orders.find_one({"_id": order_id}) or self.orders.find_one({"id": order_id})
+        if not order_doc and order_number:
+            order_doc = self.orders.find_one({"order_number": order_number})
 
         if order_doc:
+            if not order_id:
+                order_id = str(order_doc.get("_id"))
+            if not order_number:
+                order_number = str(order_doc.get("order_number") or "")
+            if not user_id:
+                user_id = str(order_doc.get("user_id") or "")
             if not coins_used and order_doc.get("coins_used"):
                 coins_used = int(order_doc.get("coins_used", 0))
             if not coins_earned and order_doc.get("coins_earned"):
                 coins_earned = int(order_doc.get("coins_earned", 0))
 
-        # Check whether coins were actually credited
-        was_credited = bool(
-            (order_doc and order_doc.get("coins_awarded")) or
-            self.transactions.find_one({"order_id": str(order_id), "type": "credit"})
-        )
+        # 2. Resolve User
+        user = None
+        if user_id:
+            if ObjectId.is_valid(str(user_id)):
+                user = self.users.find_one({"_id": ObjectId(str(user_id))})
+            if not user:
+                user = self.users.find_one({"_id": user_id}) or self.users.find_one({"id": user_id})
+        if not user and order_doc:
+            email = order_doc.get("customer_email") or (order_doc.get("shipping_address") or {}).get("email")
+            phone = (order_doc.get("shipping_address") or {}).get("phone")
+            if email:
+                user = self.users.find_one({"email": {"$regex": f"^{email.strip()}$", "$options": "i"}})
+            if not user and phone:
+                clean_p = "".join(filter(str.isdigit, str(phone)))[-10:]
+                user = self.users.find_one({"phone": {"$regex": clean_p}})
 
-        user_query = {"_id": ObjectId(user_id)} if ObjectId.is_valid(user_id) else {"_id": user_id}
-        user = self.users.find_one(user_query) or self.users.find_one({"id": user_id})
         if not user:
             return
 
         user_actual_id = str(user["_id"])
-        current_balance = int(user.get("coins_balance", 0))
+        current_balance = int(user.get("coins_balance", 0) or 0)
 
-        # 1. Refund spent coins if any were used and not already refunded
-        already_refunded = self.transactions.find_one({
-            "order_id": str(order_id),
+        # 3. Check for Debit / Refund (Coins spent by user during checkout)
+        debit_query_conds = []
+        if order_id:
+            debit_query_conds.append({"order_id": str(order_id)})
+            if ObjectId.is_valid(str(order_id)):
+                debit_query_conds.append({"order_id": ObjectId(str(order_id))})
+        if order_number:
+            debit_query_conds.append({"order_number": order_number})
+
+        debit_tx = self.transactions.find_one({
+            "$or": debit_query_conds,
+            "type": "debit"
+        }) if debit_query_conds else None
+
+        if debit_tx and not coins_used:
+            coins_used = abs(int(debit_tx.get("coins", 0)))
+
+        refund_tx = self.transactions.find_one({
+            "$or": debit_query_conds,
             "type": "refund"
-        })
+        }) if debit_query_conds else None
+
+        already_refunded = bool(refund_tx or (order_doc and order_doc.get("coins_refunded")))
         if coins_used > 0 and not already_refunded:
             new_balance = current_balance + coins_used
             self.users.update_one(
@@ -373,11 +404,37 @@ class RewardCoinService:
             })
             current_balance = new_balance
 
-        # 2. Reverse/Deduct earned coins if they were awarded and not already reversed
-        already_reversed = self.transactions.find_one({
-            "order_id": str(order_id),
+        # 4. Check for Credit / Reversal (Coins earned by user on order)
+        credit_query_conds = []
+        if order_id:
+            credit_query_conds.append({"order_id": str(order_id)})
+            if ObjectId.is_valid(str(order_id)):
+                credit_query_conds.append({"order_id": ObjectId(str(order_id))})
+        if order_number:
+            credit_query_conds.append({"order_number": order_number})
+
+        credit_tx = self.transactions.find_one({
+            "$or": credit_query_conds,
+            "type": "credit"
+        }) if credit_query_conds else None
+
+        if credit_tx and not coins_earned:
+            coins_earned = int(credit_tx.get("coins", 0))
+
+        was_credited = bool(
+            credit_tx or
+            (order_doc and (
+                order_doc.get("coins_awarded") or
+                (order_doc.get("payment_status") == "captured" and (order_doc.get("payment_method") or "").upper() != "COD")
+            ))
+        )
+
+        reversal_tx = self.transactions.find_one({
+            "$or": credit_query_conds,
             "type": "reversal"
-        })
+        }) if credit_query_conds else None
+
+        already_reversed = bool(reversal_tx or (order_doc and order_doc.get("coins_reversed")))
         if was_credited and coins_earned > 0 and not already_reversed:
             new_balance = max(0, current_balance - coins_earned)
             self.users.update_one(
@@ -399,17 +456,23 @@ class RewardCoinService:
                 "created_at": datetime.now()
             })
 
-        # Update order flag
-        if ObjectId.is_valid(order_id):
+        # 5. Update Order Document Flags
+        order_update_fields = {
+            "coins_reversed": True,
+            "coins_awarded": False,
+            "updated_at": datetime.now()
+        }
+        if coins_used > 0:
+            order_update_fields["coins_refunded"] = True
+
+        if order_doc:
             self.orders.update_one(
-                {"_id": ObjectId(order_id)},
-                {"$set": {"coins_reversed": True, "coins_awarded": False, "updated_at": datetime.now()}}
+                {"_id": order_doc["_id"]},
+                {"$set": order_update_fields}
             )
-        else:
-            self.orders.update_one(
-                {"_id": order_id},
-                {"$set": {"coins_reversed": True, "coins_awarded": False, "updated_at": datetime.now()}}
-            )
+        elif order_id:
+            q = {"_id": ObjectId(str(order_id))} if ObjectId.is_valid(str(order_id)) else {"_id": order_id}
+            self.orders.update_one(q, {"$set": order_update_fields})
 
     def admin_adjust_coins(
         self, user_id: str, amount: int, reason: str, admin_email: str
