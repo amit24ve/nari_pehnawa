@@ -528,7 +528,7 @@ const Categories = () => {
                         className="bg-[#0b1220] border border-gray-800 rounded-xl px-4 py-2 text-xs text-gray-300 focus:outline-none cursor-pointer"
                     >
                         <option value="name">Sort by Name</option>
-                        <option value="order">Sort by Order</option>
+                        <option value="order">Sort by Sequence</option>
                     </select>
 
                     <button
@@ -1068,7 +1068,7 @@ const Categories = () => {
                                     </div>
                                 </InputField>
 
-                                <InputField label="Display Order">
+                                <InputField label="Display Sequence (क्रम)">
                                     <input
                                         type="number"
                                         min="0"
@@ -1237,7 +1237,7 @@ const Categories = () => {
 
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                                            Display Order
+                                            Display Sequence (क्रम)
                                         </label>
                                         <input
                                             type="number"
@@ -1294,7 +1294,7 @@ const Categories = () => {
                                                 <div>
                                                     <div className="font-bold text-xs text-slate-800 flex items-center gap-2">
                                                         <span>{d.name}</span>
-                                                        <span className="text-[10px] text-slate-400 font-mono">order #{d.display_order ?? 0}</span>
+                                                        <span className="text-[10px] text-slate-400 font-mono">seq #{d.display_order ?? 0}</span>
                                                     </div>
                                                     <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
                                                         <span>{d.category_count ?? 0} categories</span>

@@ -34,11 +34,13 @@ const TopBar = () => {
     };
 
     window.addEventListener("np_announcements_updated", handleUpdate);
+    window.addEventListener("np_mystery_jar_updated", handleUpdate);
     window.addEventListener("storage", handleUpdate);
     window.addEventListener("focus", handleUpdate);
 
     return () => {
       window.removeEventListener("np_announcements_updated", handleUpdate);
+      window.removeEventListener("np_mystery_jar_updated", handleUpdate);
       window.removeEventListener("storage", handleUpdate);
       window.removeEventListener("focus", handleUpdate);
     };

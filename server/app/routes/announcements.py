@@ -221,6 +221,8 @@ def update_welcome_offer_modal_config(
 
 class MysteryJarOfferConfig(BaseModel):
     is_enabled: bool = True
+    show_in_topbar: bool = Field(True, description="Whether to also display this launching offer in top bar ticker")
+    ticker_text: Optional[str] = Field(None, description="Custom top bar ticker message text (optional)")
     pill_text: str = Field("Free Mystery Jewellery Jar", description="Text on slider button")
     pill_subtext: str = Field("View Gift →", description="Subtext / link on slider button")
     image_url: str = Field("/mystery_jewelry_jar.jpg", description="Jar photo URL")
@@ -239,6 +241,8 @@ def get_mystery_jar_offer_config():
     if not cfg:
         return {
             "is_enabled": True,
+            "show_in_topbar": True,
+            "ticker_text": "Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!",
             "pill_text": "Free Mystery Jewellery Jar",
             "pill_subtext": "View Gift →",
             "image_url": "/mystery_jewelry_jar.jpg",
@@ -249,6 +253,7 @@ def get_mystery_jar_offer_config():
             "button_link": "/new-arrivals",
         }
     cfg.pop("_id", None)
+    cfg.setdefault("show_in_topbar", True)
     return cfg
 
 
@@ -257,7 +262,7 @@ def update_mystery_jar_offer_config(
     data: MysteryJarOfferConfig,
     current_user: dict = Depends(require_admin),
 ):
-    """Admin endpoint: Update mystery jewelry jar launching offer settings"""
+    """Admin endpoint: Update mystery jewelry jar launching offer settings and auto-sync with Top Bar ticker"""
     db = get_database()
     doc = data.dict()
     doc["key"] = "mystery_jar_offer"
@@ -269,6 +274,45 @@ def update_mystery_jar_offer_config(
         {"$set": doc},
         upsert=True,
     )
+
+    # Auto-sync with Top Bar Announcement Ticker
+    ticker_msg = (data.ticker_text or data.overlay_text or "Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!").strip()
+    is_topbar_active = bool(data.is_enabled and data.show_in_topbar)
+
+    db["announcements"].update_one(
+        {"key": "mystery_jar_topbar"},
+        {
+            "$set": {
+                "key": "mystery_jar_topbar",
+                "text": ticker_msg,
+                "sub_text": "CLAIM GIFT 🎁",
+                "link": data.button_link or "/new-arrivals",
+                "badge": "LAUNCH OFFER",
+                "icon": "🎁",
+                "is_active": is_topbar_active,
+                "display_order": 0,
+                "updated_at": datetime.now(),
+            },
+            "$setOnInsert": {
+                "created_at": datetime.now(),
+                "created_by": current_user.get("email", "admin"),
+            },
+        },
+        upsert=True,
+    )
+
+    if is_topbar_active:
+        # Ensure Top Bar master switch is ON so visitors see the ticker
+        db["admin_settings"].update_one(
+            {"key": "topbar_settings"},
+            {"$set": {"is_enabled": True, "updated_at": datetime.now()}},
+            upsert=True,
+        )
+
     clear_api_cache()
-    return {"success": True, "message": "Mystery jar offer settings updated successfully!", "config": doc}
+    return {
+        "success": True,
+        "message": "Mystery jar offer settings updated and Top Bar ticker synced successfully!",
+        "config": doc,
+    }
 

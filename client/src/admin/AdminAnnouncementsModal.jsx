@@ -329,7 +329,9 @@ const AdminAnnouncementsModal = () => {
       if (!res.ok) throw new Error("Failed to save mystery jar settings");
       localStorage.setItem("np_mystery_jar", JSON.stringify(mysteryJarConfig));
       window.dispatchEvent(new Event("np_mystery_jar_updated"));
-      alert("Mystery Jewelry Jar Launching Offer updated successfully!");
+      window.dispatchEvent(new Event("np_announcements_updated"));
+      await fetchAllData();
+      alert("Mystery Jewelry Jar Launching Offer and Top Bar Ticker updated successfully!");
     } catch (e) {
       alert(e.message || "Error saving mystery jar settings");
     } finally {
@@ -488,7 +490,7 @@ const AdminAnnouncementsModal = () => {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider">
               <tr>
-                <th className="py-3 px-4">Order</th>
+                <th className="py-3 px-4">Sequence</th>
                 <th className="py-3 px-4">Badge / Icon</th>
                 <th className="py-3 px-4">Announcement Text</th>
                 <th className="py-3 px-4">Subtext / Code</th>
@@ -1199,6 +1201,61 @@ const AdminAnnouncementsModal = () => {
               </div>
             </div>
 
+            {/* Top Bar Ticker Auto-Sync Section */}
+            <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50/50 border border-amber-200 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={mysteryJarConfig.show_in_topbar !== false}
+                    onChange={(e) =>
+                      setMysteryJarConfig({
+                        ...mysteryJarConfig,
+                        show_in_topbar: e.target.checked,
+                      })
+                    }
+                    className="w-4 h-4 text-[#580C1F] rounded focus:ring-0 cursor-pointer accent-[#580C1F]"
+                  />
+                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <span>📢</span> Show in Website Top Bar Ticker (जैसे ही ऑफर चालू हो, टॉप बार में भी दिखे)
+                  </span>
+                </label>
+                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-200/80 text-amber-900 uppercase tracking-wider">
+                  Live Sync
+                </span>
+              </div>
+
+              {mysteryJarConfig.show_in_topbar !== false && (
+                <div className="space-y-2 pt-1">
+                  <label className="text-[11px] font-bold text-slate-600 block">
+                    Custom Top Bar Ticker Message (Optional Override)
+                  </label>
+                  <input
+                    type="text"
+                    value={mysteryJarConfig.ticker_text ?? ""}
+                    onChange={(e) =>
+                      setMysteryJarConfig({
+                        ...mysteryJarConfig,
+                        ticker_text: e.target.value,
+                      })
+                    }
+                    placeholder={mysteryJarConfig.overlay_text || "Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!"}
+                    className="w-full px-3 py-2 bg-white border border-amber-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-amber-600"
+                  />
+                  {/* Mini Ticker Preview */}
+                  <div className="bg-gradient-to-r from-[#580C1F] via-[#7B1128] to-[#580C1F] text-white p-2 rounded-xl text-[11px] flex items-center justify-center gap-2 shadow-xs border border-[#d4af37]/30">
+                    <span>🎁</span>
+                    <span className="font-semibold truncate">
+                      {mysteryJarConfig.ticker_text || mysteryJarConfig.overlay_text || "Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!"}
+                    </span>
+                    <span className="bg-black/30 text-[#ffe29a] px-1.5 py-0.5 rounded text-[10px] font-mono font-bold">
+                      CLAIM GIFT 🎁
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="pt-2">
               <button
                 type="submit"
@@ -1206,7 +1263,7 @@ const AdminAnnouncementsModal = () => {
                 className="w-full py-3 bg-[#580C1F] hover:bg-[#7B1128] text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Save className="w-4 h-4" />
-                <span>{savingJar ? "Saving Settings…" : "Save Mystery Jar Offer Settings"}</span>
+                <span>{savingJar ? "Saving Settings…" : "Save Mystery Jar Offer & Sync Top Bar"}</span>
               </button>
             </div>
           </form>
@@ -1376,7 +1433,7 @@ const AdminAnnouncementsModal = () => {
 
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Display Order
+                    Display Sequence / Position
                   </label>
                   <input
                     type="number"

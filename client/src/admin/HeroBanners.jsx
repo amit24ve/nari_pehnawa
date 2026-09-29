@@ -864,7 +864,7 @@ const HeroBanners = () => {
                     <span className="text-slate-400 text-xs">No image provided</span>
                   )}
                   <div className="absolute top-3 right-3 bg-cyan-600 text-white font-bold px-3 py-1 rounded-full text-xs shadow-md border border-cyan-400 uppercase">
-                    Order: {slide.order}
+                    Sequence: {slide.order}
                   </div>
                 </div>
 
@@ -993,7 +993,7 @@ const HeroBanners = () => {
                 <div className="h-48 bg-black relative overflow-hidden flex items-center justify-center">
                   <video src={reel.video_url} className="w-full h-full object-cover" poster={reel.thumbnail} muted />
                   <div className="absolute top-3 right-3 bg-cyan-600 text-white font-bold px-3 py-1 rounded-full text-xs shadow-md border border-cyan-400 uppercase">
-                    Order: {reel.order}
+                    Sequence: {reel.order}
                   </div>
                   <div className="absolute top-3 left-3 bg-[#0891b2] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                     {reel.views || "1.2L"} Views
@@ -1077,7 +1077,7 @@ const HeroBanners = () => {
                     {look.tag}
                   </div>
                   <div className="absolute top-3 right-3 bg-cyan-600 text-white font-bold px-3 py-1 rounded-full text-xs shadow-md border border-cyan-400 uppercase">
-                    Order: {look.order}
+                    Sequence: {look.order}
                   </div>
                 </div>
 
@@ -1207,7 +1207,7 @@ const HeroBanners = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">Slide Order (क्रम)</label>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Slide Sequence (क्रम)</label>
                 <input
                   type="number"
                   value={slideForm.order}
@@ -1448,6 +1448,18 @@ const HeroBanners = () => {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Reel Sequence (क्रम)</label>
+                <input
+                  type="number"
+                  value={reelForm.order ?? 1}
+                  onChange={(e) => setReelForm({ ...reelForm, order: Number(e.target.value) || 0 })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0891b2]"
+                  placeholder="e.g. 1"
+                  required
+                />
+              </div>
+
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 flex-shrink-0">
                 <button type="button" onClick={() => setShowReelModal(false)} className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-black rounded-xl text-sm font-bold cursor-pointer transition">
@@ -1588,6 +1600,18 @@ const HeroBanners = () => {
                   value={celebForm.link}
                   onChange={(val) => setCelebForm({ ...celebForm, link: val })}
                   placeholder="/category/anarkali-kurtis"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Look Sequence (क्रम)</label>
+                <input
+                  type="number"
+                  value={celebForm.order ?? 1}
+                  onChange={(e) => setCelebForm({ ...celebForm, order: Number(e.target.value) || 0 })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0891b2]"
+                  placeholder="e.g. 1"
+                  required
                 />
               </div>
 
