@@ -69,6 +69,8 @@ const AdminAnnouncementsModal = () => {
   // Mystery Jewelry Jar Launching Offer Config state
   const [mysteryJarConfig, setMysteryJarConfig] = useState({
     is_enabled: true,
+    show_in_topbar: true,
+    ticker_text: "Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!",
     pill_text: "Free Mystery Jewellery Jar",
     pill_subtext: "View Gift →",
     image_url: "/mystery_jewelry_jar.jpg",
@@ -326,7 +328,10 @@ const AdminAnnouncementsModal = () => {
         headers: authHeaders(),
         body: JSON.stringify(mysteryJarConfig),
       });
-      if (!res.ok) throw new Error("Failed to save mystery jar settings");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Failed to save mystery jar settings");
+      }
       localStorage.setItem("np_mystery_jar", JSON.stringify(mysteryJarConfig));
       window.dispatchEvent(new Event("np_mystery_jar_updated"));
       window.dispatchEvent(new Event("np_announcements_updated"));

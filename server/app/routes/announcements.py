@@ -49,12 +49,28 @@ class WelcomeOfferModalConfig(BaseModel):
     delay_seconds: int = 3
 
 
+class MysteryJarOfferConfig(BaseModel):
+    is_enabled: bool = True
+    show_in_topbar: bool = Field(True, description="Whether to also display this launching offer in top bar ticker")
+    ticker_text: Optional[str] = Field(None, description="Custom top bar ticker message text (optional)")
+    pill_text: str = Field("Free Mystery Jewellery Jar", description="Text on slider button")
+    pill_subtext: str = Field("View Gift →", description="Subtext / link on slider button")
+    image_url: str = Field("/mystery_jewelry_jar.jpg", description="Jar photo URL")
+    title: str = Field("Free Mystery Jewellery Jar 🎁", description="Modal Title")
+    overlay_text: str = Field("Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!", description="Text displayed directly on image")
+    description: Optional[str] = Field("Receive this handcrafted luxury glass jar with red ribbon, filled with premium surprise jewelry inside with your delivery parcel!", description="Modal description")
+    button_text: str = Field("Shop Now & Claim Gift", description="Button text")
+    button_link: str = Field("/new-arrivals", description="Button link")
+
+
 def _format_announcement(doc: dict) -> dict:
     if not doc:
         return {}
     doc["id"] = str(doc.pop("_id"))
     return doc
 
+
+# ── TOP BAR SETTINGS ──
 
 @router.get("/topbar-settings")
 def get_topbar_settings():
@@ -82,6 +98,141 @@ def update_topbar_settings(
     clear_api_cache()
     return {"success": True, "is_enabled": is_enabled}
 
+
+# ── WELCOME OFFER MODAL CONFIG (Sync with Top Bar & Banners) ──
+
+@router.get("/welcome-modal")
+def get_welcome_offer_modal_config():
+    """Public endpoint: Get welcome offer modal configuration"""
+    db = get_database()
+    cfg = db["admin_settings"].find_one({"key": "welcome_offer_modal"})
+    if not cfg:
+        return {
+            "is_enabled": True,
+            "template_type": "festive-royal",
+            "banner_image": "/nari_post_banner.jpg",
+            "title": "Grand Festive Season Sale",
+            "subtitle": "Flat 10% OFF on Handcrafted Designer Kurtis & Ethnic Wear",
+            "coupon_code": "FESTIVE10",
+            "discount_badge": "FLAT 10% OFF",
+            "button_text": "EXPLORE COLLECTION",
+            "button_link": "/new-arrivals",
+            "show_on_mobile": True,
+            "delay_seconds": 3,
+        }
+    cfg.pop("_id", None)
+    cfg.setdefault("template_type", "festive-royal")
+    return cfg
+
+
+@router.put("/welcome-modal")
+def update_welcome_offer_modal_config(
+    data: WelcomeOfferModalConfig,
+    current_user: dict = Depends(require_admin),
+):
+    """Admin endpoint: Update welcome offer modal configuration"""
+    db = get_database()
+    doc = data.dict()
+    doc["key"] = "welcome_offer_modal"
+    doc["updated_at"] = datetime.now()
+    doc["updated_by"] = current_user.get("email", "admin")
+
+    db["admin_settings"].update_one(
+        {"key": "welcome_offer_modal"},
+        {"$set": doc},
+        upsert=True,
+    )
+    clear_api_cache()
+    return {"success": True, "message": "Welcome offer modal updated successfully!", "config": doc}
+
+
+# ── MYSTERY JEWELRY JAR LAUNCHING OFFER CONFIG ──
+
+@router.get("/mystery-jar")
+def get_mystery_jar_offer_config():
+    """Public endpoint: Get mystery jewelry jar launching offer settings"""
+    db = get_database()
+    cfg = db["admin_settings"].find_one({"key": "mystery_jar_offer"})
+    if not cfg:
+        return {
+            "is_enabled": True,
+            "show_in_topbar": True,
+            "ticker_text": "Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!",
+            "pill_text": "Free Mystery Jewellery Jar",
+            "pill_subtext": "View Gift →",
+            "image_url": "/mystery_jewelry_jar.jpg",
+            "title": "Free Mystery Jewellery Jar 🎁",
+            "overlay_text": "Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!",
+            "description": "Receive this handcrafted luxury glass jar with red ribbon, filled with premium surprise jewelry inside with your delivery parcel!",
+            "button_text": "Shop Now & Claim Gift",
+            "button_link": "/new-arrivals",
+        }
+    cfg.pop("_id", None)
+    cfg.setdefault("show_in_topbar", True)
+    return cfg
+
+
+@router.put("/mystery-jar")
+def update_mystery_jar_offer_config(
+    data: MysteryJarOfferConfig,
+    current_user: dict = Depends(require_admin),
+):
+    """Admin endpoint: Update mystery jewelry jar launching offer settings and auto-sync with Top Bar ticker"""
+    db = get_database()
+    doc = data.dict()
+    doc["key"] = "mystery_jar_offer"
+    doc["updated_at"] = datetime.now()
+    doc["updated_by"] = current_user.get("email", "admin")
+
+    db["admin_settings"].update_one(
+        {"key": "mystery_jar_offer"},
+        {"$set": doc},
+        upsert=True,
+    )
+
+    # Auto-sync with Top Bar Announcement Ticker
+    ticker_msg = (data.ticker_text or data.overlay_text or "Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!").strip()
+    is_topbar_active = bool(data.is_enabled and data.show_in_topbar)
+
+    db["announcements"].update_one(
+        {"key": "mystery_jar_topbar"},
+        {
+            "$set": {
+                "key": "mystery_jar_topbar",
+                "text": ticker_msg,
+                "sub_text": "CLAIM GIFT 🎁",
+                "link": data.button_link or "/new-arrivals",
+                "badge": "LAUNCH OFFER",
+                "icon": "🎁",
+                "is_active": is_topbar_active,
+                "display_order": 0,
+                "updated_at": datetime.now(),
+            },
+            "$setOnInsert": {
+                "created_at": datetime.now(),
+                "created_by": current_user.get("email", "admin"),
+            },
+        },
+        upsert=True,
+    )
+
+    if is_topbar_active:
+        # Ensure Top Bar master switch is ON so visitors see the ticker
+        db["admin_settings"].update_one(
+            {"key": "topbar_settings"},
+            {"$set": {"is_enabled": True, "updated_at": datetime.now()}},
+            upsert=True,
+        )
+
+    clear_api_cache()
+    return {
+        "success": True,
+        "message": "Mystery jar offer settings updated and Top Bar ticker synced successfully!",
+        "config": doc,
+    }
+
+
+# ── BASIC ANNOUNCEMENTS CRUD ──
 
 @router.get("/")
 def get_active_announcements():
@@ -168,151 +319,3 @@ def delete_announcement(announcement_id: str, current_user: dict = Depends(requi
 
     clear_api_cache()
     return {"success": True, "message": "Announcement deleted successfully!"}
-
-
-# ── WELCOME OFFER MODAL CONFIG (Sync with Top Bar & Banners) ──
-
-@router.get("/welcome-modal")
-def get_welcome_offer_modal_config():
-    """Public endpoint: Get welcome offer modal configuration"""
-    db = get_database()
-    cfg = db["admin_settings"].find_one({"key": "welcome_offer_modal"})
-    if not cfg:
-        return {
-            "is_enabled": True,
-            "template_type": "festive-royal",
-            "banner_image": "/nari_post_banner.jpg",
-            "title": "Grand Festive Season Sale",
-            "subtitle": "Flat 10% OFF on Handcrafted Designer Kurtis & Ethnic Wear",
-            "coupon_code": "FESTIVE10",
-            "discount_badge": "FLAT 10% OFF",
-            "button_text": "EXPLORE COLLECTION",
-            "button_link": "/new-arrivals",
-            "show_on_mobile": True,
-            "delay_seconds": 3,
-        }
-    cfg.pop("_id", None)
-    cfg.setdefault("template_type", "festive-royal")
-    return cfg
-
-
-@router.put("/welcome-modal")
-def update_welcome_offer_modal_config(
-    data: WelcomeOfferModalConfig,
-    current_user: dict = Depends(require_admin),
-):
-    """Admin endpoint: Update welcome offer modal configuration"""
-    db = get_database()
-    doc = data.dict()
-    doc["key"] = "welcome_offer_modal"
-    doc["updated_at"] = datetime.now()
-    doc["updated_by"] = current_user.get("email", "admin")
-
-    db["admin_settings"].update_one(
-        {"key": "welcome_offer_modal"},
-        {"$set": doc},
-        upsert=True,
-    )
-    clear_api_cache()
-    return {"success": True, "message": "Welcome offer modal updated successfully!", "config": doc}
-
-
-# ── MYSTERY JEWELRY JAR LAUNCHING OFFER CONFIG ──
-
-class MysteryJarOfferConfig(BaseModel):
-    is_enabled: bool = True
-    show_in_topbar: bool = Field(True, description="Whether to also display this launching offer in top bar ticker")
-    ticker_text: Optional[str] = Field(None, description="Custom top bar ticker message text (optional)")
-    pill_text: str = Field("Free Mystery Jewellery Jar", description="Text on slider button")
-    pill_subtext: str = Field("View Gift →", description="Subtext / link on slider button")
-    image_url: str = Field("/mystery_jewelry_jar.jpg", description="Jar photo URL")
-    title: str = Field("Free Mystery Jewellery Jar 🎁", description="Modal Title")
-    overlay_text: str = Field("Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!", description="Text displayed directly on image")
-    description: Optional[str] = Field("Receive this handcrafted luxury glass jar with red ribbon, filled with premium surprise jewelry inside with your delivery parcel!", description="Modal description")
-    button_text: str = Field("Shop Now & Claim Gift", description="Button text")
-    button_link: str = Field("/new-arrivals", description="Button link")
-
-
-@router.get("/mystery-jar")
-def get_mystery_jar_offer_config():
-    """Public endpoint: Get mystery jewelry jar launching offer settings"""
-    db = get_database()
-    cfg = db["admin_settings"].find_one({"key": "mystery_jar_offer"})
-    if not cfg:
-        return {
-            "is_enabled": True,
-            "show_in_topbar": True,
-            "ticker_text": "Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!",
-            "pill_text": "Free Mystery Jewellery Jar",
-            "pill_subtext": "View Gift →",
-            "image_url": "/mystery_jewelry_jar.jpg",
-            "title": "Free Mystery Jewellery Jar 🎁",
-            "overlay_text": "Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!",
-            "description": "Receive this handcrafted luxury glass jar with red ribbon, filled with premium surprise jewelry inside with your delivery parcel!",
-            "button_text": "Shop Now & Claim Gift",
-            "button_link": "/new-arrivals",
-        }
-    cfg.pop("_id", None)
-    cfg.setdefault("show_in_topbar", True)
-    return cfg
-
-
-@router.put("/mystery-jar")
-def update_mystery_jar_offer_config(
-    data: MysteryJarOfferConfig,
-    current_user: dict = Depends(require_admin),
-):
-    """Admin endpoint: Update mystery jewelry jar launching offer settings and auto-sync with Top Bar ticker"""
-    db = get_database()
-    doc = data.dict()
-    doc["key"] = "mystery_jar_offer"
-    doc["updated_at"] = datetime.now()
-    doc["updated_by"] = current_user.get("email", "admin")
-
-    db["admin_settings"].update_one(
-        {"key": "mystery_jar_offer"},
-        {"$set": doc},
-        upsert=True,
-    )
-
-    # Auto-sync with Top Bar Announcement Ticker
-    ticker_msg = (data.ticker_text or data.overlay_text or "Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!").strip()
-    is_topbar_active = bool(data.is_enabled and data.show_in_topbar)
-
-    db["announcements"].update_one(
-        {"key": "mystery_jar_topbar"},
-        {
-            "$set": {
-                "key": "mystery_jar_topbar",
-                "text": ticker_msg,
-                "sub_text": "CLAIM GIFT 🎁",
-                "link": data.button_link or "/new-arrivals",
-                "badge": "LAUNCH OFFER",
-                "icon": "🎁",
-                "is_active": is_topbar_active,
-                "display_order": 0,
-                "updated_at": datetime.now(),
-            },
-            "$setOnInsert": {
-                "created_at": datetime.now(),
-                "created_by": current_user.get("email", "admin"),
-            },
-        },
-        upsert=True,
-    )
-
-    if is_topbar_active:
-        # Ensure Top Bar master switch is ON so visitors see the ticker
-        db["admin_settings"].update_one(
-            {"key": "topbar_settings"},
-            {"$set": {"is_enabled": True, "updated_at": datetime.now()}},
-            upsert=True,
-        )
-
-    clear_api_cache()
-    return {
-        "success": True,
-        "message": "Mystery jar offer settings updated and Top Bar ticker synced successfully!",
-        "config": doc,
-    }
-

@@ -864,7 +864,7 @@ const HeroBanners = () => {
                     <span className="text-slate-400 text-xs">No image provided</span>
                   )}
                   <div className="absolute top-3 right-3 bg-cyan-600 text-white font-bold px-3 py-1 rounded-full text-xs shadow-md border border-cyan-400 uppercase">
-                    Sequence: {slide.order}
+                    Sr: {slide.order}
                   </div>
                 </div>
 
@@ -1207,7 +1207,7 @@ const HeroBanners = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">Slide Sequence (क्रम)</label>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Slide Sequence</label>
                 <input
                   type="number"
                   value={slideForm.order}
@@ -1449,7 +1449,7 @@ const HeroBanners = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">Reel Sequence (क्रम)</label>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Reel Sequence</label>
                 <input
                   type="number"
                   value={reelForm.order ?? 1}
@@ -1604,7 +1604,7 @@ const HeroBanners = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">Look Sequence (क्रम)</label>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Look Sequence</label>
                 <input
                   type="number"
                   value={celebForm.order ?? 1}
