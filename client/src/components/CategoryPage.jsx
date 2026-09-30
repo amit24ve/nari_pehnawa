@@ -457,9 +457,9 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
       {/* ── HERO BANNER ── */}
       <div
         className={`cat-hero relative overflow-hidden bg-gradient-to-br ${fallbackGradient}`}
-        style={{ height: "460px" }}
+        style={{ minHeight: "260px", height: "clamp(260px, 58vw, 520px)" }}
       >
-        <style>{`@media(min-width:768px){.cat-hero{height:540px!important;}}`}</style>
+        <style>{`@media(max-width:767px){.cat-hero{height:clamp(260px, 60vw, 380px)!important;}} @media(min-width:768px){.cat-hero{height:520px!important;}}`}</style>
 
         {/* Breadcrumb — Top-left floating badge */}
         <div className="absolute top-4 left-4 md:left-8 z-20 flex items-center gap-1.5 text-xs text-white/90 bg-black/40 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20 shadow-md">
