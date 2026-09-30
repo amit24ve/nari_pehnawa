@@ -411,6 +411,7 @@ const Navbar = () => {
                     if (!isSearchOpen) setIsSearchOpen(true);
                   }}
                   onFocus={() => setIsSearchOpen(true)}
+                  onBlur={() => setTimeout(() => setIsSearchOpen(false), 200)}
                   className="flex-1 bg-transparent text-gray-800 placeholder-gray-400 text-xs focus:outline-none min-w-0"
                 />
                 {searchQuery && (
@@ -426,12 +427,12 @@ const Navbar = () => {
 
               {/* Mobile Search Dropdown */}
               {isSearchOpen && searchQuery.trim() && (
-                <div className="fixed left-2 right-2 top-[72px] sm:top-[82px] bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-[70vh] overflow-y-auto">
+                <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 w-[calc(100vw-24px)] max-w-[420px] bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-[65vh] overflow-y-auto">
                   {/* Founder / Owner Direct Match */}
                   {["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) && (
                     <Link
                       to="/owner"
-                      onClick={() => {
+                      onMouseDown={() => {
                         setIsSearchOpen(false);
                         setSearchQuery("");
                       }}
@@ -458,7 +459,7 @@ const Navbar = () => {
                     filteredProducts.map((p) => (
                       <button
                         key={p.id}
-                        onClick={() => {
+                        onMouseDown={() => {
                           setIsSearchOpen(false);
                           setSearchQuery("");
                           navigate(`/product/${p.slug || p._id || p.id}`);
