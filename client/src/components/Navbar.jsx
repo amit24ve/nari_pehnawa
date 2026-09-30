@@ -307,7 +307,7 @@ const Navbar = () => {
               />
             </Link>
 
-            {/* ═ Search Bar — flex-1 fills space between logo and icons ═ */}
+            {/* ═ Desktop Search Bar — flex-1 fills space between logo and icons ═ */}
             <div className="relative hidden lg:flex flex-1 justify-center max-w-[700px] mx-auto">
               <div className="flex items-center border-2 border-gray-200 hover:border-[#8B0000] focus-within:border-[#8B0000] rounded-full overflow-hidden transition-all duration-200 bg-gray-50 focus-within:bg-white w-full">
                 <Search className="w-4 h-5 text-gray-400 ml-4 flex-shrink-0" />
@@ -398,6 +398,98 @@ const Navbar = () => {
               )}
             </div>
 
+            {/* ═ Mobile Search Bar (Between Logo and SALE Icon) ═ */}
+            <div className="relative flex lg:hidden flex-1 items-center min-w-0 mx-1 sm:mx-2 max-w-[240px] sm:max-w-[340px]">
+              <div className="flex items-center border border-gray-300 focus-within:border-[#8B0000] focus-within:ring-2 focus-within:ring-[#8B0000]/10 rounded-full px-2.5 py-1.5 bg-gray-50 focus-within:bg-white transition-all w-full shadow-sm">
+                <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mr-1.5" />
+                <input
+                  type="text"
+                  placeholder="Search Kurtis, Sarees…"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (!isSearchOpen) setIsSearchOpen(true);
+                  }}
+                  onFocus={() => setIsSearchOpen(true)}
+                  className="flex-1 bg-transparent text-gray-800 placeholder-gray-400 text-xs focus:outline-none min-w-0"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="p-0.5 text-gray-400 hover:text-gray-600 rounded-full flex-shrink-0"
+                    aria-label="Clear search"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Mobile Search Dropdown */}
+              {isSearchOpen && searchQuery.trim() && (
+                <div className="fixed left-2 right-2 top-[72px] sm:top-[82px] bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-[70vh] overflow-y-auto">
+                  {/* Founder / Owner Direct Match */}
+                  {["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) && (
+                    <Link
+                      to="/owner"
+                      onClick={() => {
+                        setIsSearchOpen(false);
+                        setSearchQuery("");
+                      }}
+                      className="flex items-center gap-3 p-3.5 m-2 bg-gradient-to-r from-[#580C1F] to-[#2E0F15] text-[#F7ECE1] rounded-xl border border-[#d4af37]/40 shadow-md"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-[#d4af37] text-[#580C1F] flex items-center justify-center font-bold text-base flex-shrink-0 shadow">
+                        👑
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[10px] font-bold text-[#dfc384] uppercase tracking-wider">
+                          Official Founders &amp; Owners
+                        </div>
+                        <div className="text-sm font-bold text-white truncate">
+                          Pooja Verma &amp; Ritika Singh
+                        </div>
+                      </div>
+                      <span className="text-xs text-[#dfc384] font-bold underline whitespace-nowrap">
+                        Meet Founders →
+                      </span>
+                    </Link>
+                  )}
+
+                  {filteredProducts.length > 0 ? (
+                    filteredProducts.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => {
+                          setIsSearchOpen(false);
+                          setSearchQuery("");
+                          navigate(`/product/${p.slug || p._id || p.id}`);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#fff5f5] border-b border-gray-100 last:border-0 text-left transition-colors cursor-pointer"
+                      >
+                        <img
+                          src={p.image}
+                          alt={p.name}
+                          className="w-11 h-11 object-cover rounded-xl flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-800 truncate">
+                            {p.name}
+                          </p>
+                          <p className="text-xs text-gray-400">{p.category}</p>
+                        </div>
+                        <p className="text-sm font-bold text-[#8B0000] flex-shrink-0">
+                          ₹{p.price.toLocaleString("en-IN")}
+                        </p>
+                      </button>
+                    ))
+                  ) : !["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) ? (
+                    <div className="px-4 py-8 text-center text-sm text-gray-400">
+                      No results for "{searchQuery}"
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+
             {/* ═ LIVE SALE ANNOUNCEMENT WITH MEGAPHONE ═ */}
             <Link
               to="/category/sale"
@@ -422,20 +514,20 @@ const Navbar = () => {
             <div className="hidden lg:block w-px h-9 bg-gray-200" />
 
             {/* ═ Icon Group ═ */}
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-0.5 sm:gap-1.5 flex-shrink-0">
               {/* Mobile: 1. Megaphone SALE Button */}
               <Link
                 to="/category/sale"
-                className="lg:hidden relative flex items-center group transition-transform active:scale-95 flex-shrink-0 p-1"
+                className="lg:hidden relative flex items-center group transition-transform active:scale-95 flex-shrink-0 p-0.5"
                 title="Explore Live Festive Sale"
               >
                 <div className="relative flex items-center justify-center p-0.5">
                   <img
                     src="/sale-megaphone.png"
                     alt="Sale"
-                    className="w-8 h-8 object-contain drop-shadow-[0_2px_4px_rgba(220,38,38,0.25)]"
+                    className="w-7 h-7 sm:w-8 sm:h-8 object-contain drop-shadow-[0_2px_4px_rgba(220,38,38,0.25)]"
                   />
-                  <span className="absolute -top-1 -right-1.5 bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-[8px] tracking-wider px-1 py-0.2 rounded-full shadow border border-white uppercase animate-pulse">
+                  <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-[7px] sm:text-[8px] tracking-wider px-1 py-0.2 rounded-full shadow border border-white uppercase animate-pulse">
                     SALE
                   </span>
                 </div>
@@ -444,12 +536,12 @@ const Navbar = () => {
               {/* Mobile: 2. Wishlist Icon */}
               <Link
                 to="/wishlist"
-                className="lg:hidden p-2 text-gray-600 hover:text-[#8B0000] transition-colors relative"
+                className="lg:hidden p-1.5 text-gray-600 hover:text-[#8B0000] transition-colors relative flex-shrink-0"
                 aria-label="Wishlist"
               >
-                <Heart className="w-6 h-6 sm:w-7 sm:h-7" />
+                <Heart className="w-5 h-5 sm:w-6 sm:h-6" />
                 {wishlistCount > 0 && (
-                  <span className="absolute top-1 right-1 bg-[#8B0000] text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                  <span className="absolute top-0.5 right-0.5 bg-[#8B0000] text-white text-[8px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
                     {wishlistCount > 9 ? "9+" : wishlistCount}
                   </span>
                 )}
@@ -458,12 +550,12 @@ const Navbar = () => {
               {/* Mobile: 3. Cart Icon */}
               <Link
                 to="/cart"
-                className="lg:hidden p-2 text-gray-600 hover:text-[#8B0000] transition-colors relative"
+                className="lg:hidden p-1.5 text-gray-600 hover:text-[#8B0000] transition-colors relative flex-shrink-0"
                 aria-label="Cart"
               >
-                <ShoppingCart className="w-6 h-6 sm:w-7 sm:h-7" />
+                <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />
                 {cartCount > 0 && (
-                  <span className="absolute top-1 right-1 bg-[#8B0000] text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                  <span className="absolute top-0.5 right-0.5 bg-[#8B0000] text-white text-[8px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
                     {cartCount > 9 ? "9+" : cartCount}
                   </span>
                 )}
@@ -652,113 +744,13 @@ const Navbar = () => {
 
               {/* Mobile: 4. Hamburger Button */}
               <button
-                className="lg:hidden p-2 text-gray-600 hover:text-[#8B0000] hover:bg-[#fff0f0] rounded-xl transition-colors"
+                className="lg:hidden p-1.5 text-gray-600 hover:text-[#8B0000] hover:bg-[#fff0f0] rounded-lg transition-colors flex-shrink-0"
                 onClick={() => setIsMobileMenuOpen(true)}
                 aria-label="Open menu"
               >
-                <Menu className="w-6 h-6 sm:w-7 sm:h-7" />
+                <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
             </div>
-          </div>
-        </div>
-
-        {/* ═ Mobile Full-Width Search Input Row ═ */}
-        <div className="lg:hidden px-3 pb-2.5 pt-0.5 relative bg-white">
-          <div className="relative w-full">
-            <div className="flex items-center border border-gray-300 focus-within:border-[#8B0000] focus-within:ring-2 focus-within:ring-[#8B0000]/10 rounded-full px-3.5 py-2 bg-gray-50 focus-within:bg-white transition-all shadow-sm">
-              <Search className="w-4 h-4 text-gray-400 flex-shrink-0 mr-2" />
-              <input
-                type="text"
-                placeholder="Search Kurtis, Sarees, Ethnic Wear…"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  if (!isSearchOpen) setIsSearchOpen(true);
-                }}
-                onFocus={() => setIsSearchOpen(true)}
-                className="flex-1 bg-transparent text-gray-800 placeholder-gray-400 text-sm focus:outline-none min-w-0"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => {
-                    setSearchQuery("");
-                  }}
-                  className="p-1 text-gray-400 hover:text-gray-600 rounded-full flex-shrink-0"
-                  aria-label="Clear search"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            {/* Mobile Live Search Dropdown */}
-            {isSearchOpen && searchQuery.trim() && (
-              <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-[65vh] overflow-y-auto">
-                {/* Founder / Owner Direct Match */}
-                {["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) && (
-                  <Link
-                    to="/owner"
-                    onClick={() => {
-                      setIsSearchOpen(false);
-                      setSearchQuery("");
-                    }}
-                    className="flex items-center gap-3 p-3.5 m-2 bg-gradient-to-r from-[#580C1F] to-[#2E0F15] text-[#F7ECE1] rounded-xl border border-[#d4af37]/40 shadow-md"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-[#d4af37] text-[#580C1F] flex items-center justify-center font-bold text-base flex-shrink-0 shadow">
-                      👑
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-bold text-[#dfc384] uppercase tracking-wider">
-                        Official Founders &amp; Owners
-                      </div>
-                      <div className="text-sm font-bold text-white truncate">
-                        Pooja Verma &amp; Ritika Singh
-                      </div>
-                    </div>
-                    <span className="text-xs text-[#dfc384] font-bold underline whitespace-nowrap">
-                      Meet Founders →
-                    </span>
-                  </Link>
-                )}
-
-                {filteredProducts.length > 0 ? (
-                  filteredProducts.map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => {
-                        setIsSearchOpen(false);
-                        setSearchQuery("");
-                        navigate(`/product/${p.slug || p._id || p.id}`);
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#fff5f5] border-b border-gray-100 last:border-0 text-left transition-colors"
-                    >
-                      <img
-                        src={p.image}
-                        alt={p.name}
-                        className="w-11 h-11 object-cover rounded-xl flex-shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 truncate">
-                          {p.name}
-                        </p>
-                        <p className="text-xs text-gray-400">{p.category}</p>
-                      </div>
-                      <p className="text-sm font-bold text-[#8B0000] flex-shrink-0">
-                        ₹{p.price.toLocaleString("en-IN")}
-                      </p>
-                    </button>
-                  ))
-                ) : !["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) ? (
-                  <div className="px-4 py-8 text-center text-sm text-gray-400">
-                    No results for "
-                    <span className="text-gray-700 font-medium">
-                      {searchQuery}
-                    </span>
-                    "
-                  </div>
-                ) : null}
-              </div>
-            )}
           </div>
         </div>
       </div>
