@@ -91,73 +91,10 @@ const WatchAndBuy = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  // Real-time live like synchronization across devices (WebSocket + lightweight polling)
+  // Real-time live like & view synchronization across devices (3-second lightweight polling)
   useEffect(() => {
-    let ws = null;
-    let reconnectTimeout = null;
-    let isUnmounted = false;
-    let retryCount = 0;
-    const MAX_RETRIES = 2;
-
-    const connectWs = () => {
-      if (isUnmounted || retryCount >= MAX_RETRIES) return;
-      try {
-        // Construct valid secure websocket endpoint
-        let wsHost = API_BASE_URL;
-        if (!wsHost || wsHost.startsWith("/")) {
-          wsHost = `${window.location.protocol === "https:" ? "https:" : "http:"}//${window.location.hostname}:7100`;
-        }
-        const wsUrl = wsHost.replace(/^http/, "ws") + "/reels/ws";
-        
-        ws = new WebSocket(wsUrl);
-
-        ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            if (data && data.type === "reel_like" && data.reel_id) {
-              setVideoProducts((prev) =>
-                prev.map((v) => {
-                  const vid = v.id || v._id;
-                  if (vid === data.reel_id) {
-                    return { ...v, likes: data.likes };
-                  }
-                  return v;
-                })
-              );
-            } else if (data && data.type === "reel_view" && data.reel_id) {
-              setVideoProducts((prev) =>
-                prev.map((v) => {
-                  const vid = v.id || v._id;
-                  if (vid === data.reel_id) {
-                    return { ...v, views: data.views };
-                  }
-                  return v;
-                })
-              );
-            }
-          } catch (_) {}
-        };
-
-        ws.onclose = () => {
-          if (!isUnmounted && retryCount < MAX_RETRIES) {
-            retryCount++;
-            reconnectTimeout = setTimeout(connectWs, 10000);
-          }
-        };
-
-        ws.onerror = () => {
-          retryCount++;
-          try {
-            ws.close();
-          } catch (_) {}
-        };
-      } catch (_) {}
-    };
-
-    connectWs();
-
-    // 3-second lightweight polling fallback so backgrounded/mobile browsers stay 100% in sync
-    const pollInterval = setInterval(async () => {
+    // 3-second lightweight delta sync so all devices stay 100% in sync without firewall/port errors
+    const syncReelsData = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/reels/likes-sync`);
         if (res.ok) {
@@ -188,17 +125,12 @@ const WatchAndBuy = () => {
           });
         }
       } catch (_) {}
-    }, 3000);
+    };
+
+    const pollInterval = setInterval(syncReelsData, 3000);
 
     return () => {
-      isUnmounted = true;
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
       if (pollInterval) clearInterval(pollInterval);
-      if (ws) {
-        try {
-          ws.close();
-        } catch (_) {}
-      }
     };
   }, []);
 
