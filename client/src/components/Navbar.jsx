@@ -444,62 +444,16 @@ const Navbar = () => {
 
             {/* ═ Icon Group ═ */}
             <div className="flex items-center gap-1 sm:gap-2">
-              {/* Mobile: Megaphone SALE Button */}
-              <Link
-                to="/category/sale"
-                className="md:hidden relative flex items-center group transition-transform active:scale-95 flex-shrink-0"
-                title="Explore Live Festive Sale"
-              >
-                <div className="relative flex items-center justify-center p-0.5">
-                  <img
-                    src="/sale-megaphone.png"
-                    alt="Sale"
-                    className="w-8 h-8 object-contain drop-shadow-[0_2px_4px_rgba(220,38,38,0.25)]"
-                  />
-                  <span className="absolute -top-1 -right-1.5 bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-[8px] tracking-wider px-1 py-0.2 rounded-full shadow border border-white uppercase animate-pulse">
-                    SALE
-                  </span>
-                </div>
-              </Link>
-
-              {/* Mobile: Search Icon */}
+              {/* Mobile: Search Icon (Only Search & Hamburger on mobile header) */}
               <button
-                className="lg:hidden p-2 text-gray-600 hover:text-[#8B0000] transition-colors"
+                className="lg:hidden p-2 text-gray-700 hover:text-[#8B0000] transition-colors flex items-center justify-center rounded-full hover:bg-gray-100"
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
                 aria-label="Search"
               >
-                <Search className="w-6 h-6 sm:w-7 sm:h-7" />
+                <Search className="w-6 h-6" />
               </button>
 
-              {/* Mobile: Wishlist Icon */}
-              <Link
-                to="/wishlist"
-                className="md:hidden p-2 text-gray-600 hover:text-[#8B0000] transition-colors relative"
-                aria-label="Wishlist"
-              >
-                <Heart className="w-7 h-7" />
-                {wishlistCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 bg-[#8B0000] text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                    {wishlistCount > 9 ? "9+" : wishlistCount}
-                  </span>
-                )}
-              </Link>
-
-              {/* Mobile: Cart Icon */}
-              <Link
-                to="/cart"
-                className="md:hidden p-2 text-gray-600 hover:text-[#8B0000] transition-colors relative"
-                aria-label="Cart"
-              >
-                <ShoppingCart className="w-7 h-7" />
-                {cartCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 bg-[#8B0000] text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                    {cartCount > 9 ? "9+" : cartCount}
-                  </span>
-                )}
-              </Link>
-
-              {/* Account / Login */}
+              {/* Account / Login (Desktop only) */}
               {user ? (
                 <div
                   className="relative hidden md:block"
@@ -619,17 +573,17 @@ const Navbar = () => {
               ) : (
                 <button
                   onClick={() => openLoginModal()}
-                  className="flex flex-col items-center gap-1 px-2.5 py-2 text-gray-600 hover:text-[#8B0000] transition-colors"
+                  className="hidden md:flex flex-col items-center gap-1 px-2.5 py-2 text-gray-600 hover:text-[#8B0000] transition-colors cursor-pointer"
                   aria-label="Login"
                 >
                   <User className="w-7 h-7" />
-                  <span className="hidden md:inline text-[11px] font-semibold tracking-wide leading-none">
+                  <span className="text-[11px] font-semibold tracking-wide leading-none">
                     Login
                   </span>
                 </button>
               )}
 
-              {/* Track Order Direct Link */}
+              {/* Track Order Direct Link (Desktop only) */}
               <Link
                 to="/track-order"
                 className="relative hidden md:flex flex-col items-center gap-1 px-3 py-2 text-gray-600 hover:text-[#8B0000] transition-colors"
@@ -642,7 +596,7 @@ const Navbar = () => {
                 </span>
               </Link>
 
-              {/* Wishlist — fixed link to /wishlist */}
+              {/* Wishlist (Desktop only) */}
               <Link
                 to="/wishlist"
                 className="relative hidden md:flex flex-col items-center gap-1 px-3.5 py-2 text-gray-600 hover:text-[#8B0000] transition-colors"
@@ -661,7 +615,7 @@ const Navbar = () => {
                 </span>
               </Link>
 
-              {/* Cart */}
+              {/* Cart (Desktop only) */}
               <Link
                 to="/cart"
                 className="relative hidden md:flex flex-col items-center gap-1 px-3.5 py-2 text-gray-600 hover:text-[#8B0000] transition-colors"
@@ -682,7 +636,7 @@ const Navbar = () => {
 
               {/* Mobile Hamburger — right aligned */}
               <button
-                className="lg:hidden p-2.5 ml-auto text-gray-600 hover:text-[#8B0000] hover:bg-[#fff0f0] rounded-xl transition-colors"
+                className="lg:hidden p-2 text-gray-700 hover:text-[#8B0000] hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
                 onClick={() => setIsMobileMenuOpen(true)}
                 aria-label="Open menu"
               >
@@ -970,6 +924,71 @@ const Navbar = () => {
                       </button>
                     </div>
                   )}
+
+                  {/* Quick Action Grid inside Drawer (Cart, Wishlist, Track, Sale) */}
+                  <div className="grid grid-cols-2 gap-2 p-3 bg-stone-50 border-b border-gray-100">
+                    <Link
+                      to="/cart"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-2.5 p-2.5 bg-white rounded-xl border border-gray-200 shadow-xs hover:border-[#8B0000] transition active:scale-95"
+                    >
+                      <div className="relative flex-shrink-0">
+                        <ShoppingCart className="w-5 h-5 text-[#8B0000]" />
+                        {cartCount > 0 && (
+                          <span className="absolute -top-1.5 -right-1.5 bg-[#8B0000] text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                            {cartCount > 9 ? "9+" : cartCount}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold text-gray-800 block leading-tight">My Cart</span>
+                        <span className="text-[10px] text-gray-400">{cartCount} items</span>
+                      </div>
+                    </Link>
+
+                    <Link
+                      to="/wishlist"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-2.5 p-2.5 bg-white rounded-xl border border-gray-200 shadow-xs hover:border-[#8B0000] transition active:scale-95"
+                    >
+                      <div className="relative flex-shrink-0">
+                        <Heart className="w-5 h-5 text-[#8B0000]" />
+                        {wishlistCount > 0 && (
+                          <span className="absolute -top-1.5 -right-1.5 bg-[#8B0000] text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                            {wishlistCount > 9 ? "9+" : wishlistCount}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold text-gray-800 block leading-tight">Wishlist</span>
+                        <span className="text-[10px] text-gray-400">{wishlistCount} saved</span>
+                      </div>
+                    </Link>
+
+                    <Link
+                      to="/category/sale"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-2.5 p-2.5 bg-gradient-to-r from-red-50 to-rose-50 rounded-xl border border-red-200 shadow-xs transition active:scale-95"
+                    >
+                      <Sparkles className="w-5 h-5 text-red-600 animate-pulse flex-shrink-0" />
+                      <div className="min-w-0">
+                        <span className="text-xs font-black text-red-700 block leading-tight uppercase">Mega Sale</span>
+                        <span className="text-[10px] text-red-500 font-semibold">Live Offers</span>
+                      </div>
+                    </Link>
+
+                    <Link
+                      to="/track-order"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-2.5 p-2.5 bg-white rounded-xl border border-gray-200 shadow-xs hover:border-[#8B0000] transition active:scale-95"
+                    >
+                      <Truck className="w-5 h-5 text-[#8B0000] flex-shrink-0" />
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold text-gray-800 block leading-tight">Track Order</span>
+                        <span className="text-[10px] text-gray-400">Order status</span>
+                      </div>
+                    </Link>
+                  </div>
 
                   <nav className="flex-1">
                     {/* HOME */}
