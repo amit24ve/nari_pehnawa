@@ -296,65 +296,41 @@ const Navbar = () => {
           MAIN BAR — Logo (left) | Search + SALE Announcement (center) | Icons (right)
       ══════════════════════════════════════ */}
       <div className="bg-white border-b border-gray-100">
-        <div className="w-full px-2 sm:px-4 lg:px-6">
-          <div className="flex items-center justify-between h-[60px] sm:h-[70px] lg:h-[80px] gap-1.5 sm:gap-3">
+        <div className="w-full pl-3 sm:pl-[24px] pr-3 xl:pr-8">
+          <div className="flex items-center justify-between h-[80px] gap-3 md:gap-4">
             {/* ═ Logo — left ═ */}
             <Link to="/" className="flex-shrink-0">
               <img
                 src="/logo.png"
                 alt="Nari Pehnawa"
-                className="h-[38px] sm:h-[48px] lg:h-[62px] w-auto object-contain"
+                className="h-[56px] sm:h-[66px] w-auto object-contain"
               />
             </Link>
 
-            {/* ═ Direct Search Bar — flex-1 on BOTH mobile & desktop ═ */}
-            <div className="relative flex-1 max-w-[650px] mx-1 sm:mx-3">
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (filteredProducts.length > 0) {
-                    navigate(`/product/${filteredProducts[0].id}`);
-                    setIsSearchOpen(false);
-                    setSearchQuery("");
-                  }
-                }}
-                className="flex items-center border border-sky-400 sm:border-gray-200 hover:border-[#8B0000] focus-within:border-[#8B0000] rounded-full overflow-hidden transition-all duration-200 bg-white sm:bg-gray-50/90 focus-within:bg-white shadow-2xs focus-within:shadow-md w-full"
-              >
-                <Search className="w-4 h-4 text-sky-500 sm:text-gray-400 ml-2.5 sm:ml-4 flex-shrink-0" />
+            {/* ═ Search Bar — flex-1 fills space between logo and icons ═ */}
+            <div className="relative hidden lg:flex flex-1 justify-center max-w-[700px] mx-auto">
+              <div className="flex items-center border-2 border-gray-200 hover:border-[#8B0000] focus-within:border-[#8B0000] rounded-full overflow-hidden transition-all duration-200 bg-gray-50 focus-within:bg-white w-full">
+                <Search className="w-4 h-5 text-gray-400 ml-4 flex-shrink-0" />
                 <input
                   type="text"
                   placeholder="Search Kurtis, Sarees, Ethnic Wear…"
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setIsSearchOpen(true);
-                  }}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchOpen(true)}
-                  onBlur={() => setTimeout(() => setIsSearchOpen(false), 250)}
-                  className="flex-1 px-2 sm:px-3 py-1.5 sm:py-2 bg-transparent text-gray-800 placeholder-gray-400 text-xs sm:text-sm focus:outline-none min-w-0"
+                  onBlur={() => setTimeout(() => setIsSearchOpen(false), 200)}
+                  className="flex-1 px-3 py-2.5 bg-transparent text-gray-800 placeholder-gray-400 text-sm focus:outline-none"
                 />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery("")}
-                    className="p-1 sm:p-1.5 text-gray-400 hover:text-gray-600 transition mr-1"
-                    title="Clear search"
-                  >
-                    <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </button>
-                )}
                 <button
-                  type="submit"
-                  aria-label="Search"
-                  className="hidden sm:flex m-1 p-1.5 sm:p-2 bg-[#8B0000] hover:bg-[#6B0000] text-white rounded-full transition-all duration-200 items-center justify-center cursor-pointer shadow-xs hover:scale-105 active:scale-95 flex-shrink-0"
+                  onClick={() => setIsSearchOpen(true)}
+                  className="px-5 py-2.5 bg-[#8B0000] hover:bg-[#6B0000] text-white text-sm font-semibold transition-colors whitespace-nowrap cursor-pointer"
                 >
-                  <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  SEARCH
                 </button>
-              </form>
+              </div>
 
-              {/* Live Search Autocomplete Dropdown */}
+              {/* Desktop Search Dropdown */}
               {isSearchOpen && searchQuery.trim() && (
-                <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-[70vh] overflow-y-auto divide-y divide-gray-100">
+                <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-96 overflow-y-auto">
                   {/* Founder / Owner Direct Search Match */}
                   {["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) && (
                     <Link
@@ -363,16 +339,16 @@ const Navbar = () => {
                         setIsSearchOpen(false);
                         setSearchQuery("");
                       }}
-                      className="flex items-center gap-3 p-3 bg-gradient-to-r from-[#580C1F] to-[#2E0F15] text-[#F7ECE1] hover:brightness-110 transition"
+                      className="flex items-center gap-3 p-3.5 m-2 bg-gradient-to-r from-[#580C1F] to-[#2E0F15] text-[#F7ECE1] rounded-xl border border-[#d4af37]/40 shadow-md hover:brightness-110 transition"
                     >
-                      <div className="w-9 h-9 rounded-full bg-[#d4af37] text-[#580C1F] flex items-center justify-center font-bold text-sm flex-shrink-0 shadow">
+                      <div className="w-10 h-10 rounded-full bg-[#d4af37] text-[#580C1F] flex items-center justify-center font-bold text-base flex-shrink-0 shadow">
                         👑
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[10px] font-bold text-[#dfc384] uppercase tracking-wider">
                           Official Founders &amp; Owners
                         </div>
-                        <div className="text-xs sm:text-sm font-bold text-white truncate">
+                        <div className="text-sm font-bold text-white truncate">
                           Pooja Verma &amp; Ritika Singh
                         </div>
                       </div>
@@ -389,28 +365,28 @@ const Navbar = () => {
                         onMouseDown={() => {
                           setIsSearchOpen(false);
                           setSearchQuery("");
-                          navigate(`/product/${p.id}`);
+                          navigate(`/product/${p.slug || p._id || p.id}`);
                         }}
-                        className="w-full flex items-center gap-3 px-3.5 sm:px-5 py-2.5 sm:py-3 hover:bg-[#fff5f5] text-left transition-colors cursor-pointer"
+                        className="w-full flex items-center gap-3 px-5 py-3 hover:bg-[#fff5f5] border-b border-gray-50 last:border-0 text-left transition-colors cursor-pointer"
                       >
                         <img
                           src={p.image}
                           alt={p.name}
-                          className="w-10 h-10 sm:w-11 sm:h-11 object-cover rounded-xl flex-shrink-0 border border-gray-100"
+                          className="w-11 h-11 object-cover rounded-xl flex-shrink-0"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs sm:text-sm font-semibold text-gray-800 truncate">
+                          <p className="text-sm font-semibold text-gray-800 truncate">
                             {p.name}
                           </p>
-                          <p className="text-[10px] sm:text-xs text-gray-400">{p.category}</p>
+                          <p className="text-xs text-gray-400">{p.category}</p>
                         </div>
-                        <p className="text-xs sm:text-sm font-bold text-[#8B0000] flex-shrink-0">
+                        <p className="text-sm font-bold text-[#8B0000] flex-shrink-0">
                           ₹{p.price.toLocaleString("en-IN")}
                         </p>
                       </button>
                     ))
                   ) : !["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) ? (
-                    <div className="px-4 py-6 text-center text-xs sm:text-sm text-gray-400">
+                    <div className="px-5 py-6 text-center text-sm text-gray-400">
                       No results for "
                       <span className="text-gray-700 font-medium">
                         {searchQuery}
@@ -422,70 +398,95 @@ const Navbar = () => {
               )}
             </div>
 
-            {/* ═ Icon Group (Matches user screenshot: SALE icon, Wishlist, Cart, Hamburger / Account) ═ */}
-            <div className="flex items-center gap-0.5 sm:gap-2 flex-shrink-0">
-              {/* SALE Icon Button (Mobile & Desktop) */}
+            {/* ═ LIVE SALE ANNOUNCEMENT WITH MEGAPHONE ═ */}
+            <Link
+              to="/category/sale"
+              className="relative hidden lg:flex items-center group transition-all duration-300 hover:scale-105 select-none flex-shrink-0"
+              title="Explore Live Festive Sale"
+            >
+              <div className="relative flex items-center justify-center p-1">
+                {/* 3D Megaphone Graphic */}
+                <img
+                  src="/sale-megaphone.png"
+                  alt="Festive Sale"
+                  className="w-9 h-9 sm:w-10 sm:h-10 object-contain drop-shadow-[0_4px_8px_rgba(220,38,38,0.25)] group-hover:rotate-[-6deg] transition-transform duration-300"
+                />
+                {/* Clean Red SALE Tag floating at top */}
+                <span className="absolute -top-1 -right-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-[9px] tracking-widest px-1.5 py-0.5 rounded-full shadow-md border border-white uppercase flex items-center gap-0.5 animate-pulse">
+                  SALE
+                </span>
+              </div>
+            </Link>
+
+            {/* Thin separator — desktop */}
+            <div className="hidden lg:block w-px h-9 bg-gray-200" />
+
+            {/* ═ Icon Group ═ */}
+            <div className="flex items-center gap-1 sm:gap-2">
+              {/* Mobile: 1. Megaphone SALE Button */}
               <Link
                 to="/category/sale"
-                className="relative flex flex-col items-center justify-center p-1 sm:p-2 text-rose-600 hover:text-red-700 transition active:scale-95 flex-shrink-0"
-                title="Live Offers & Sale"
+                className="lg:hidden relative flex items-center group transition-transform active:scale-95 flex-shrink-0 p-1"
+                title="Explore Live Festive Sale"
               >
-                <div className="relative flex flex-col items-center">
-                  <span className="bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-[7px] sm:text-[8px] tracking-wider px-1 py-0.2 rounded-full shadow-xs uppercase leading-none mb-0.5 animate-pulse">
+                <div className="relative flex items-center justify-center p-0.5">
+                  <img
+                    src="/sale-megaphone.png"
+                    alt="Sale"
+                    className="w-8 h-8 object-contain drop-shadow-[0_2px_4px_rgba(220,38,38,0.25)]"
+                  />
+                  <span className="absolute -top-1 -right-1.5 bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-[8px] tracking-wider px-1 py-0.2 rounded-full shadow border border-white uppercase animate-pulse">
                     SALE
                   </span>
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-rose-500 text-rose-600 font-black text-xs flex items-center justify-center">
-                    %
-                  </div>
                 </div>
               </Link>
 
-              {/* Wishlist Icon Button */}
+              {/* Mobile: 2. Wishlist Icon */}
               <Link
                 to="/wishlist"
-                className="relative p-1.5 sm:p-2 text-gray-700 hover:text-[#8B0000] transition active:scale-95 flex-shrink-0"
+                className="lg:hidden p-2 text-gray-600 hover:text-[#8B0000] transition-colors relative"
                 aria-label="Wishlist"
               >
-                <Heart className="w-5 h-5 sm:w-6 sm:h-6" />
+                <Heart className="w-6 h-6 sm:w-7 sm:h-7" />
                 {wishlistCount > 0 && (
-                  <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 bg-[#8B0000] text-white text-[8px] sm:text-[9px] font-bold rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center">
+                  <span className="absolute top-1 right-1 bg-[#8B0000] text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                     {wishlistCount > 9 ? "9+" : wishlistCount}
                   </span>
                 )}
               </Link>
 
-              {/* Cart Icon Button */}
+              {/* Mobile: 3. Cart Icon */}
               <Link
                 to="/cart"
-                className="relative p-1.5 sm:p-2 text-gray-700 hover:text-[#8B0000] transition active:scale-95 flex-shrink-0"
+                className="lg:hidden p-2 text-gray-600 hover:text-[#8B0000] transition-colors relative"
                 aria-label="Cart"
               >
-                <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />
+                <ShoppingCart className="w-6 h-6 sm:w-7 sm:h-7" />
                 {cartCount > 0 && (
-                  <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 bg-[#8B0000] text-white text-[8px] sm:text-[9px] font-bold rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center">
+                  <span className="absolute top-1 right-1 bg-[#8B0000] text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                     {cartCount > 9 ? "9+" : cartCount}
                   </span>
                 )}
               </Link>
 
-              {/* Account / Login (Desktop only) */}
+              {/* Account / Login (Desktop) */}
               {user ? (
                 <div
-                  className="relative hidden lg:block"
+                  className="relative hidden md:block"
                   ref={profileDropdownRef}
                 >
                   <button
                     onClick={() =>
                       setIsProfileDropdownOpen(!isProfileDropdownOpen)
                     }
-                    className="flex flex-col items-center gap-1 px-2.5 py-1 text-gray-700 hover:text-[#580C1F] transition-colors group cursor-pointer"
+                    className="flex flex-col items-center gap-1 px-3 py-1.5 text-gray-700 hover:text-[#580C1F] transition-colors group cursor-pointer"
                   >
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#580C1F] to-[#8B0000] p-0.5 shadow-xs">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#580C1F] to-[#8B0000] p-0.5 shadow-sm">
                       <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-[#580C1F] font-bold text-xs">
                         {user.name?.charAt(0).toUpperCase() || "U"}
                       </div>
                     </div>
-                    <span className="text-[10px] font-bold tracking-wide leading-none flex items-center gap-0.5">
+                    <span className="text-[11px] font-bold tracking-wide leading-none flex items-center gap-0.5">
                       {user.name?.split(" ")[0] || "Account"}
                       <ChevronDown className="w-2.5 h-2.5 text-gray-400 group-hover:text-[#580C1F] transition-transform" />
                     </span>
@@ -588,25 +589,176 @@ const Navbar = () => {
               ) : (
                 <button
                   onClick={() => openLoginModal()}
-                  className="hidden lg:flex flex-col items-center gap-0.5 px-2 py-1 text-gray-600 hover:text-[#8B0000] transition-colors cursor-pointer"
+                  className="hidden lg:flex flex-col items-center gap-1 px-2.5 py-2 text-gray-600 hover:text-[#8B0000] transition-colors"
                   aria-label="Login"
                 >
-                  <User className="w-6 h-6" />
-                  <span className="text-[10px] font-semibold tracking-wide leading-none">
+                  <User className="w-7 h-7" />
+                  <span className="text-[11px] font-semibold tracking-wide leading-none">
                     Login
                   </span>
                 </button>
               )}
 
-              {/* Mobile Hamburger — right aligned */}
+              {/* Track Order Direct Link (Desktop) */}
+              <Link
+                to="/track-order"
+                className="relative hidden lg:flex flex-col items-center gap-1 px-3 py-2 text-gray-600 hover:text-[#8B0000] transition-colors"
+                aria-label="Track Order"
+                title="Track Shipment / Order Status"
+              >
+                <Truck className="w-7 h-7" />
+                <span className="text-[11px] font-semibold tracking-wide leading-none">
+                  Track
+                </span>
+              </Link>
+
+              {/* Wishlist (Desktop) */}
+              <Link
+                to="/wishlist"
+                className="relative hidden lg:flex flex-col items-center gap-1 px-3.5 py-2 text-gray-600 hover:text-[#8B0000] transition-colors"
+                aria-label="Wishlist"
+              >
+                <div className="relative">
+                  <Heart className="w-7 h-7" />
+                  {wishlistCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-[#8B0000] text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                      {wishlistCount > 9 ? "9+" : wishlistCount}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[11px] font-semibold tracking-wide leading-none">
+                  Wishlist
+                </span>
+              </Link>
+
+              {/* Cart (Desktop) */}
+              <Link
+                to="/cart"
+                className="relative hidden lg:flex flex-col items-center gap-1 px-3.5 py-2 text-gray-600 hover:text-[#8B0000] transition-colors"
+                aria-label="Cart"
+              >
+                <div className="relative">
+                  <ShoppingCart className="w-7 h-7" />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-[#8B0000] text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                      {cartCount > 9 ? "9+" : cartCount}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[11px] font-semibold tracking-wide leading-none">
+                  Cart
+                </span>
+              </Link>
+
+              {/* Mobile: 4. Hamburger Button */}
               <button
-                className="lg:hidden p-1.5 text-gray-700 hover:text-[#8B0000] hover:bg-gray-100 rounded-lg transition-colors cursor-pointer flex-shrink-0"
+                className="lg:hidden p-2 text-gray-600 hover:text-[#8B0000] hover:bg-[#fff0f0] rounded-xl transition-colors"
                 onClick={() => setIsMobileMenuOpen(true)}
                 aria-label="Open menu"
               >
-                <Menu className="w-6 h-6" />
+                <Menu className="w-6 h-6 sm:w-7 sm:h-7" />
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* ═ Mobile Full-Width Search Input Row ═ */}
+        <div className="lg:hidden px-3 pb-2.5 pt-0.5 relative bg-white">
+          <div className="relative w-full">
+            <div className="flex items-center border border-gray-300 focus-within:border-[#8B0000] focus-within:ring-2 focus-within:ring-[#8B0000]/10 rounded-full px-3.5 py-2 bg-gray-50 focus-within:bg-white transition-all shadow-sm">
+              <Search className="w-4 h-4 text-gray-400 flex-shrink-0 mr-2" />
+              <input
+                type="text"
+                placeholder="Search Kurtis, Sarees, Ethnic Wear…"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (!isSearchOpen) setIsSearchOpen(true);
+                }}
+                onFocus={() => setIsSearchOpen(true)}
+                className="flex-1 bg-transparent text-gray-800 placeholder-gray-400 text-sm focus:outline-none min-w-0"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                  }}
+                  className="p-1 text-gray-400 hover:text-gray-600 rounded-full flex-shrink-0"
+                  aria-label="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Mobile Live Search Dropdown */}
+            {isSearchOpen && searchQuery.trim() && (
+              <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-[65vh] overflow-y-auto">
+                {/* Founder / Owner Direct Match */}
+                {["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) && (
+                  <Link
+                    to="/owner"
+                    onClick={() => {
+                      setIsSearchOpen(false);
+                      setSearchQuery("");
+                    }}
+                    className="flex items-center gap-3 p-3.5 m-2 bg-gradient-to-r from-[#580C1F] to-[#2E0F15] text-[#F7ECE1] rounded-xl border border-[#d4af37]/40 shadow-md"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-[#d4af37] text-[#580C1F] flex items-center justify-center font-bold text-base flex-shrink-0 shadow">
+                      👑
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] font-bold text-[#dfc384] uppercase tracking-wider">
+                        Official Founders &amp; Owners
+                      </div>
+                      <div className="text-sm font-bold text-white truncate">
+                        Pooja Verma &amp; Ritika Singh
+                      </div>
+                    </div>
+                    <span className="text-xs text-[#dfc384] font-bold underline whitespace-nowrap">
+                      Meet Founders →
+                    </span>
+                  </Link>
+                )}
+
+                {filteredProducts.length > 0 ? (
+                  filteredProducts.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        setIsSearchOpen(false);
+                        setSearchQuery("");
+                        navigate(`/product/${p.slug || p._id || p.id}`);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#fff5f5] border-b border-gray-100 last:border-0 text-left transition-colors"
+                    >
+                      <img
+                        src={p.image}
+                        alt={p.name}
+                        className="w-11 h-11 object-cover rounded-xl flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 truncate">
+                          {p.name}
+                        </p>
+                        <p className="text-xs text-gray-400">{p.category}</p>
+                      </div>
+                      <p className="text-sm font-bold text-[#8B0000] flex-shrink-0">
+                        ₹{p.price.toLocaleString("en-IN")}
+                      </p>
+                    </button>
+                  ))
+                ) : !["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) ? (
+                  <div className="px-4 py-8 text-center text-sm text-gray-400">
+                    No results for "
+                    <span className="text-gray-700 font-medium">
+                      {searchQuery}
+                    </span>
+                    "
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
         </div>
       </div>
