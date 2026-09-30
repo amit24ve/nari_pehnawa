@@ -556,12 +556,15 @@ const Visitors = () => {
   useEffect(() => {
     let wsUrl;
     try {
-      const parsedUrl = new URL(API_BASE_URL);
+      const targetBase = (!API_BASE_URL || API_BASE_URL.startsWith("/"))
+        ? `${window.location.protocol}//${window.location.hostname}:7100`
+        : API_BASE_URL;
+      const parsedUrl = new URL(targetBase);
       const wsProto = parsedUrl.protocol === 'https:' ? 'wss' : 'ws';
       wsUrl = `${wsProto}://${parsedUrl.host}/analytics/live-ws`;
     } catch (err) {
       const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-      wsUrl = `${wsProto}://${window.location.host}/analytics/live-ws`;
+      wsUrl = `${wsProto}://${window.location.hostname}:7100/analytics/live-ws`;
     }
 
     const connectWS = () => {

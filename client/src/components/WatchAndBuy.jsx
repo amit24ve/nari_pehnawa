@@ -105,7 +105,7 @@ const WatchAndBuy = () => {
         // Construct valid secure websocket endpoint
         let wsHost = API_BASE_URL;
         if (!wsHost || wsHost.startsWith("/")) {
-          wsHost = window.location.origin;
+          wsHost = `${window.location.protocol === "https:" ? "https:" : "http:"}//${window.location.hostname}:7100`;
         }
         const wsUrl = wsHost.replace(/^http/, "ws") + "/reels/ws";
         
