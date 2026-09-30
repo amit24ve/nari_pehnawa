@@ -131,13 +131,17 @@ const HeroSection = () => {
   return (
     <>
       <section className="relative overflow-hidden bg-white select-none mx-0 sm:mx-2.5 shadow-sm">
-        <div
-          className="relative w-full aspect-[1024/411] max-h-[580px]"
-          style={{
-            aspectRatio: "1024 / 411",
-            width: "100%",
-          }}
-        >
+        <style>{`
+          .home-hero-slider {
+            height: clamp(260px, 60vw, 380px);
+          }
+          @media(min-width: 768px) {
+            .home-hero-slider {
+              height: clamp(450px, calc(40.14vw - 8px), 580px);
+            }
+          }
+        `}</style>
+        <div className="home-hero-slider relative w-full">
           {slides.map((slide, i) => {
             const resolvedSrc = resolveImageUrl(slide.image, DEFAULT_HERO_FALLBACK);
             const hasText = Boolean(slide.title || slide.subtitle || (slide.cta_text && slide.cta_link && slide.cta_link !== "/"));
@@ -148,11 +152,11 @@ const HeroSection = () => {
                 className="absolute inset-0 transition-opacity duration-700 bg-stone-900"
                 style={{ opacity: i === current ? 1 : 0, zIndex: i === current ? 1 : 0 }}
               >
-                {/* Background image — preserves full aspect ratio without cropping parts on mobile */}
+                {/* Background image — matching Category hero mobile proportion & full visibility */}
                 <img
                   src={resolvedSrc}
                   alt={slide.alt || slide.title || "Nari Pehnawa"}
-                  className="w-full h-full object-cover object-center transition-transform duration-1000 ease-out"
+                  className="w-full h-full object-cover object-center sm:object-top transition-transform duration-1000 ease-out"
                   loading={i === 0 ? "eager" : "lazy"}
                   decoding={i === 0 ? "sync" : "async"}
                   onError={(e) => {
@@ -174,12 +178,12 @@ const HeroSection = () => {
 
                 {/* Text overlay */}
                 {hasText && i === current && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-end pb-12 sm:pb-[68px] md:pb-[76px] px-4 sm:px-6 text-center z-10 pointer-events-none">
+                  <div className="absolute inset-0 flex flex-col items-center justify-end pb-16 sm:pb-[68px] md:pb-[76px] px-4 sm:px-6 text-center z-10 pointer-events-none">
                     <div className="pointer-events-auto max-w-2xl">
                       {slide.title && (
                         <h2
                           className="text-white font-bold drop-shadow-lg mb-1 sm:mb-2 leading-tight inline-flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap text-center font-serif"
-                          style={{ fontSize: "clamp(1rem, 3.5vw, 2.5rem)" }}
+                          style={{ fontSize: "clamp(1.1rem, 3.5vw, 2.5rem)" }}
                         >
                           <NariHeadingDecoration className="w-5 h-5 sm:w-7 sm:h-7 md:w-10 md:h-10" />
                           <span>{slide.title}</span>
@@ -187,14 +191,14 @@ const HeroSection = () => {
                         </h2>
                       )}
                       {slide.subtitle && (
-                        <p className="text-white/90 text-[10px] sm:text-xs md:text-sm max-w-xl mb-2 sm:mb-3 font-light drop-shadow line-clamp-2 sm:line-clamp-none">
+                        <p className="text-white/90 text-xs sm:text-sm max-w-xl mb-2 sm:mb-3 font-light drop-shadow line-clamp-2 sm:line-clamp-none">
                           {slide.subtitle}
                         </p>
                       )}
                       {slide.cta_text && slide.cta_link && (
                         <Link
                           to={slide.cta_link}
-                          className="inline-block bg-white text-[#8B0000] text-[10px] sm:text-xs md:text-sm font-bold px-4 sm:px-6 py-1.5 sm:py-2 rounded-full shadow-lg tracking-wide hover:bg-amber-50 hover:scale-105 transition-all"
+                          className="inline-block bg-white text-[#8B0000] text-xs md:text-sm font-bold px-5 sm:px-6 py-1.5 sm:py-2 rounded-full shadow-lg tracking-wide hover:bg-amber-50 hover:scale-105 transition-all"
                         >
                           {slide.cta_text}
                         </Link>
@@ -209,14 +213,14 @@ const HeroSection = () => {
           {/* Arrow buttons */}
           <button
             onClick={prev}
-            className="absolute left-1.5 sm:left-3 md:left-5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-9 sm:h-9 md:w-11 md:h-11 bg-white/20 hover:bg-white/40 border border-white/30 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-all hover:scale-105 cursor-pointer shadow-md"
+            className="absolute left-1.5 sm:left-3 md:left-5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 md:w-11 md:h-11 bg-white/20 hover:bg-white/40 border border-white/30 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-all hover:scale-105 cursor-pointer shadow-md"
             aria-label="Previous slide"
           >
             <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
           <button
             onClick={next}
-            className="absolute right-1.5 sm:right-3 md:right-5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-9 sm:h-9 md:w-11 md:h-11 bg-white/20 hover:bg-white/40 border border-white/30 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-all hover:scale-105 cursor-pointer shadow-md"
+            className="absolute right-1.5 sm:right-3 md:right-5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 md:w-11 md:h-11 bg-white/20 hover:bg-white/40 border border-white/30 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-all hover:scale-105 cursor-pointer shadow-md"
             aria-label="Next slide"
           >
             <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -224,20 +228,20 @@ const HeroSection = () => {
 
           {/* ── Fixed Rectangular Bottom Offer Box (Thicker black border, rich shadow, clean gift icon) ── */}
           {jarConfig.is_enabled && (
-            <div className="absolute bottom-5 sm:bottom-8 md:bottom-11 left-1/2 -translate-x-1/2 z-20 pointer-events-auto max-w-[95%] sm:max-w-none">
+            <div className="absolute bottom-7 sm:bottom-9 md:bottom-11 left-1/2 -translate-x-1/2 z-20 pointer-events-auto max-w-[95%] sm:max-w-none">
               <button
                 onClick={() => setShowJarModal(true)}
-                className="bg-white/95 hover:bg-white text-gray-900 border-1.5 sm:border-2 border-black shadow-[0_8px_20px_rgba(0,0,0,0.25)] backdrop-blur-md rounded-xl sm:rounded-2xl py-1 sm:py-2 px-2.5 sm:px-5 flex items-center gap-2 sm:gap-3 cursor-pointer transition-transform hover:scale-102"
+                className="bg-white/95 hover:bg-white text-gray-900 border-1.5 sm:border-2 border-black shadow-[0_8px_20px_rgba(0,0,0,0.25)] backdrop-blur-md rounded-xl sm:rounded-2xl py-1.5 sm:py-2 px-3 sm:px-5 flex items-center gap-2.5 sm:gap-3 cursor-pointer transition-transform hover:scale-102"
                 title="Click to view Mystery Jewellery Jar offer"
               >
-                <span className="text-lg sm:text-2xl flex-shrink-0 select-none leading-none">
+                <span className="text-xl sm:text-2xl flex-shrink-0 select-none leading-none">
                   🎁
                 </span>
                 <div className="text-left">
-                  <div className="text-[10px] sm:text-xs md:text-[13px] font-black text-gray-900 leading-tight tracking-tight whitespace-nowrap">
+                  <div className="text-xs sm:text-[13px] font-black text-gray-900 leading-tight tracking-tight whitespace-nowrap">
                     {jarConfig.pill_text || "Free Mystery Jewellery Jar"}
                   </div>
-                  <div className="text-[9px] sm:text-[11px] font-bold text-[#8B0000] flex items-center gap-1">
+                  <div className="text-[10px] sm:text-[11px] font-bold text-[#8B0000] flex items-center gap-1">
                     <span>View Gift</span>
                     <span className="text-xs">&rarr;</span>
                   </div>
@@ -247,7 +251,7 @@ const HeroSection = () => {
           )}
 
           {/* Dot indicators — positioned at bottom */}
-          <div className="absolute bottom-1.5 sm:bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 sm:gap-2">
+          <div className="absolute bottom-2 sm:bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 sm:gap-2">
             {slides.map((_, i) => (
               <button
                 key={i}
@@ -255,7 +259,7 @@ const HeroSection = () => {
                 aria-label={`Go to slide ${i + 1}`}
                 className={`rounded-full transition-all duration-300 cursor-pointer ${
                   i === current
-                    ? "w-5 sm:w-7 h-1.5 sm:h-2 bg-white shadow-md"
+                    ? "w-6 sm:w-7 h-1.5 sm:h-2 bg-white shadow-md"
                     : "w-1.5 sm:w-2 h-1.5 sm:h-2 bg-white/50 hover:bg-white/80"
                 }`}
               />
