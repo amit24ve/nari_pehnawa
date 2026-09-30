@@ -308,25 +308,46 @@ const Navbar = () => {
             </Link>
 
             {/* ═ Search Bar — flex-1 fills space between logo and icons ═ */}
-            <div className="relative hidden lg:flex flex-1 justify-center max-w-[700px] mx-auto">
-              <div className="flex items-center border-2 border-gray-200 hover:border-[#8B0000] focus-within:border-[#8B0000] rounded-full overflow-hidden transition-all duration-200 bg-gray-50 focus-within:bg-white w-full">
-                <Search className="w-4 h-5 text-gray-400 ml-4 flex-shrink-0" />
+            <div className="relative hidden lg:flex flex-1 justify-center max-w-[650px] mx-auto">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (filteredProducts.length > 0) {
+                    navigate(`/product/${filteredProducts[0].id}`);
+                    setIsSearchOpen(false);
+                    setSearchQuery("");
+                  }
+                }}
+                className="flex items-center border border-gray-200 hover:border-[#8B0000] focus-within:border-[#8B0000] rounded-full overflow-hidden transition-all duration-200 bg-gray-50/90 focus-within:bg-white shadow-xs focus-within:shadow-md w-full"
+              >
+                <Search className="w-4 h-4 text-gray-400 ml-4 flex-shrink-0" />
                 <input
                   type="text"
                   placeholder="Search Kurtis, Sarees, Ethnic Wear…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchOpen(true)}
-                  onBlur={() => setTimeout(() => setIsSearchOpen(false), 200)}
-                  className="flex-1 px-3 py-2.5 bg-transparent text-gray-800 placeholder-gray-400 text-sm focus:outline-none"
+                  onBlur={() => setTimeout(() => setIsSearchOpen(false), 250)}
+                  className="flex-1 px-3 py-2 bg-transparent text-gray-800 placeholder-gray-400 text-sm focus:outline-none"
                 />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 transition mr-1"
+                    title="Clear search"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
                 <button
-                  onClick={() => setIsSearchOpen(true)}
-                  className="px-5 py-2.5 bg-[#8B0000] hover:bg-[#6B0000] text-white text-sm font-semibold transition-colors whitespace-nowrap cursor-pointer"
+                  type="submit"
+                  aria-label="Search"
+                  className="m-1 p-2 bg-[#8B0000] hover:bg-[#6B0000] text-white rounded-full transition-all duration-200 flex items-center justify-center cursor-pointer shadow-xs hover:scale-105 active:scale-95 flex-shrink-0"
                 >
-                  SEARCH
+                  <Search className="w-4 h-4" />
                 </button>
-              </div>
+              </form>
 
               {/* Desktop Search Dropdown */}
               {isSearchOpen && searchQuery.trim() && (
@@ -365,8 +386,9 @@ const Navbar = () => {
                         onMouseDown={() => {
                           setIsSearchOpen(false);
                           setSearchQuery("");
+                          navigate(`/product/${p.id}`);
                         }}
-                        className="w-full flex items-center gap-3 px-5 py-3 hover:bg-[#fff5f5] border-b border-gray-50 last:border-0 text-left transition-colors"
+                        className="w-full flex items-center gap-3 px-5 py-3 hover:bg-[#fff5f5] border-b border-gray-50 last:border-0 text-left transition-colors cursor-pointer"
                       >
                         <img
                           src={p.image}
@@ -737,98 +759,128 @@ const Navbar = () => {
       </div>
 
       {/* ══════════════════════════════════════
-          MOBILE SEARCH OVERLAY
+          MOBILE SEARCH SLIDE-DOWN & LIVE AUTOCOMPLETE
       ══════════════════════════════════════ */}
       {isSearchOpen && (
-        <div className="fixed inset-0 bg-white z-50 flex flex-col md:hidden">
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200">
-            <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
-            <input
-              type="text"
-              placeholder="Search Kurtis, Sarees, Ethnic Wear…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent text-gray-800 placeholder-gray-400 text-sm focus:outline-none"
-              autoFocus
-            />
-            <button
-              onClick={() => {
-                setIsSearchOpen(false);
-                setSearchQuery("");
+        <>
+          {/* Soft backdrop to easily dismiss search on outside tap */}
+          <div
+            className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40 lg:hidden"
+            onClick={() => {
+              setIsSearchOpen(false);
+              setSearchQuery("");
+            }}
+          />
+
+          {/* Slide-down Search Bar container */}
+          <div className="relative z-50 bg-white border-b border-gray-200 px-3 py-2.5 shadow-xl lg:hidden">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (filteredProducts.length > 0) {
+                  navigate(`/product/${filteredProducts[0].id}`);
+                  setIsSearchOpen(false);
+                  setSearchQuery("");
+                }
               }}
-              className="text-gray-500 hover:text-gray-900"
+              className="flex items-center bg-gray-100/90 rounded-full border border-gray-200 focus-within:border-[#8B0000] focus-within:bg-white transition-all shadow-inner px-3 py-1.5"
             >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-2">
-            {/* Founder / Owner Direct Match for Mobile */}
-            {searchQuery.trim() && ["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) && (
-              <Link
-                to="/owner"
+              <Search className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+              <input
+                type="text"
+                placeholder="Search Kurtis, Sarees, Ethnic Wear…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                autoFocus
+                className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 focus:outline-none"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="p-1 text-gray-400 hover:text-gray-600 mr-1"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+              <button
+                type="button"
                 onClick={() => {
                   setIsSearchOpen(false);
                   setSearchQuery("");
                 }}
-                className="flex items-center gap-3 p-3 mb-2 bg-gradient-to-r from-[#580C1F] to-[#2E0F15] text-[#F7ECE1] rounded-2xl border border-[#d4af37]/40 shadow-md"
+                className="text-xs font-semibold text-[#8B0000] px-2 py-1 hover:underline"
               >
-                <div className="w-10 h-10 rounded-full bg-[#d4af37] text-[#580C1F] flex items-center justify-center font-bold text-base flex-shrink-0 shadow">
-                  👑
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[10px] font-bold text-[#dfc384] uppercase tracking-wider">
-                    Official Founders &amp; Owners
-                  </div>
-                  <div className="text-sm font-bold text-white truncate">
-                    Pooja Verma &amp; Ritika Singh
-                  </div>
-                  <div className="text-[10px] text-[#dfc384]/80">
-                    Roots: Prayagraj &amp; Deoria, UP
-                  </div>
-                </div>
-                <span className="text-xs text-[#dfc384] font-bold underline whitespace-nowrap">
-                  View →
-                </span>
-              </Link>
-            )}
+                Cancel
+              </button>
+            </form>
 
-            {searchQuery.trim() && filteredProducts.length > 0 ? (
-              filteredProducts.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => {
-                    setIsSearchOpen(false);
-                    setSearchQuery("");
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-3 hover:bg-[#fff5f5] border-b border-gray-100 rounded-xl"
-                >
-                  <img
-                    src={p.image}
-                    alt={p.name}
-                    className="w-11 h-11 object-cover rounded-xl"
-                  />
-                  <div className="flex-1 text-left">
-                    <p className="text-sm font-semibold text-gray-800">
-                      {p.name}
-                    </p>
-                    <p className="text-xs text-gray-400">{p.category}</p>
+            {/* Live autocomplete floating dropdown right below the search input without covering the entire screen */}
+            {searchQuery.trim() && (
+              <div className="mt-2 bg-white rounded-2xl border border-gray-200 shadow-2xl overflow-hidden max-h-[60vh] overflow-y-auto divide-y divide-gray-100">
+                {/* Founder / Owner Direct Match for Mobile */}
+                {["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) && (
+                  <Link
+                    to="/owner"
+                    onClick={() => {
+                      setIsSearchOpen(false);
+                      setSearchQuery("");
+                    }}
+                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-[#580C1F] to-[#2E0F15] text-[#F7ECE1] hover:brightness-110 transition"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-[#d4af37] text-[#580C1F] flex items-center justify-center font-bold text-sm flex-shrink-0 shadow">
+                      👑
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] font-bold text-[#dfc384] uppercase tracking-wider">
+                        Official Founders &amp; Owners
+                      </div>
+                      <div className="text-xs font-bold text-white truncate">
+                        Pooja Verma &amp; Ritika Singh
+                      </div>
+                    </div>
+                    <span className="text-xs text-[#dfc384] font-bold underline whitespace-nowrap">
+                      Meet Founders →
+                    </span>
+                  </Link>
+                )}
+
+                {filteredProducts.length > 0 ? (
+                  filteredProducts.map((p) => (
+                    <div
+                      key={p.id}
+                      onClick={() => {
+                        setIsSearchOpen(false);
+                        setSearchQuery("");
+                        navigate(`/product/${p.id}`);
+                      }}
+                      className="flex items-center gap-3 p-2.5 hover:bg-[#fff5f5] active:bg-[#ffebeb] transition-colors cursor-pointer"
+                    >
+                      <img
+                        src={p.image}
+                        alt={p.name}
+                        className="w-11 h-11 object-cover rounded-xl flex-shrink-0 border border-gray-100"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs sm:text-sm font-semibold text-gray-800 truncate">
+                          {p.name}
+                        </p>
+                        <p className="text-[11px] text-gray-400">{p.category}</p>
+                      </div>
+                      <p className="text-xs sm:text-sm font-bold text-[#8B0000] flex-shrink-0">
+                        ₹{p.price.toLocaleString("en-IN")}
+                      </p>
+                    </div>
+                  ))
+                ) : !["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) ? (
+                  <div className="p-4 text-center text-xs text-gray-400">
+                    No products found for "{searchQuery}"
                   </div>
-                  <p className="text-sm font-bold text-[#8B0000]">
-                    ₹{p.price.toLocaleString("en-IN")}
-                  </p>
-                </button>
-              ))
-            ) : searchQuery.trim() && !["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) ? (
-              <div className="px-4 py-10 text-center text-gray-400 text-sm">
-                No results for "{searchQuery}"
+                ) : null}
               </div>
-            ) : !searchQuery.trim() ? (
-              <div className="px-4 py-6 text-sm text-gray-400 text-center">
-                Start typing to search…
-              </div>
-            ) : null}
+            )}
           </div>
-        </div>
+        </>
       )}
 
       {/* ── Mobile Drawer ── */}
