@@ -135,33 +135,6 @@ const Settings = () => {
         </div>
       </div>
 
-      {/* Promotions & Offers Central Hub Link Card */}
-      <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 border border-amber-200 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-start gap-3.5">
-          <div className="p-3 bg-amber-500 text-white rounded-xl shadow-md">
-            <Flame className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="font-bold text-slate-900 text-sm md:text-base flex items-center gap-2">
-              Promotions, Flash Sales &amp; Coupons Central Hub
-              <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-300">
-                RECOMMENDED
-              </span>
-            </h3>
-            <p className="text-xs text-slate-600 mt-0.5">
-              Flash Sale events, Promo Coupon Codes, Grand Launch Mystery Jar &amp; Free Jhumka Offer, and Top Bar Announcement Sliders are now in the unified <strong>Announcements &amp; Offers Hub</strong>.
-            </p>
-          </div>
-        </div>
-
-        <Link
-          to="/admin/announcements"
-          className="px-4 py-2.5 bg-gradient-to-r from-[#580C1F] to-[#7B1128] hover:from-[#7B1128] hover:to-[#580C1F] text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-md transition whitespace-nowrap cursor-pointer"
-        >
-          Open Offers Hub <ArrowRight className="w-4 h-4" />
-        </Link>
-      </div>
-
       {/* Tabs */}
       <div className="bg-white border border-slate-200 rounded-2xl p-1.5 shadow-xs">
         <div className="flex overflow-x-auto gap-1.5">

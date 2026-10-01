@@ -18,6 +18,7 @@ import { useAuth } from "../context/AuthProvider";
 import { useWishlist } from "../context/WishlistProvider";
 import CheckoutModal from "./CheckoutModal";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 const SHIPPING_THRESHOLD = 999;
 const SHIPPING_FEE = 99;
 
@@ -134,11 +135,13 @@ const Cart = () => {
   }, [activeSale, cartItems]);
 
   const couponDiscount = appliedCoupon
-    ? appliedCoupon.type === "percent"
+    ? appliedCoupon.discount_amount !== undefined
+      ? appliedCoupon.discount_amount
+      : appliedCoupon.type === "percent"
       ? Math.round((subtotal * appliedCoupon.value) / 100)
       : appliedCoupon.type === "flat"
-        ? Math.min(appliedCoupon.value, subtotal)
-        : 0
+      ? Math.min(appliedCoupon.value, subtotal)
+      : 0
     : 0;
 
   const totalDiscount = couponDiscount + promoDiscount;
@@ -164,22 +167,59 @@ const Cart = () => {
   };
 
   const shipping =
-    appliedCoupon?.type === "shipping" ? 0 : calculateDeliveryFee();
+    appliedCoupon?.type === "shipping" || appliedCoupon?.type === "free_shipping" || appliedCoupon?.free_shipping
+      ? 0
+      : calculateDeliveryFee();
   const totalAmount = afterDiscount + shipping;
 
   // ── Coupon helpers ───────────────────────────────────────────────────
-  const applyCoupon = () => {
+  const applyCoupon = async () => {
     setCouponError("");
     setCouponSuccess("");
     const code = couponInput.trim().toUpperCase();
-    const coupon = COUPON_CODES[code];
-    if (!coupon) {
-      setCouponError("Invalid code. Try NARI10, SAVE100 or FREESHIP.");
-      return;
+    if (!code) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/coupons/validate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+        body: JSON.stringify({ code, subtotal }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.valid) {
+          setAppliedCoupon({
+            code: data.code,
+            type: data.type,
+            discount_amount: data.discount_amount,
+            free_shipping: data.free_shipping,
+            label: data.message || `₹${data.discount_amount} off`,
+          });
+          setCouponSuccess(`"${data.code}" applied — ${data.message || "Discount activated!"}`);
+          setCouponInput("");
+          return;
+        } else {
+          setCouponError(data.message || "Invalid coupon code.");
+          return;
+        }
+      }
+    } catch (e) {
+      // Fallback to local check
     }
-    setAppliedCoupon({ ...coupon, code });
-    setCouponSuccess(`"${code}" applied — ${coupon.label}!`);
-    setCouponInput("");
+
+    const fallback = COUPON_CODES[code];
+    if (fallback) {
+      const disc = fallback.type === "flat" ? fallback.value : Math.round((subtotal * fallback.value) / 100);
+      setAppliedCoupon({ ...fallback, code, discount_amount: disc });
+      setCouponSuccess(`"${code}" applied — ${fallback.label}!`);
+      setCouponInput("");
+    } else {
+      setCouponError("Invalid or expired coupon code.");
+    }
   };
   const removeCoupon = () => {
     setAppliedCoupon(null);

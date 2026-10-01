@@ -35,8 +35,8 @@ import { resolveImageUrl } from "../utils/imageUrl";
 const API_BASE = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
 const AdminAnnouncementsModal = () => {
-  // Navigation Tabs
-  const [activeTab, setActiveTab] = useState("topbar"); // 'topbar' | 'launch_offer' | 'flash_sale' | 'coupons' | 'welcome_modal'
+  // Navigation Tabs: 4 unified tabs (Mystery jar removed as requested)
+  const [activeTab, setActiveTab] = useState("topbar"); // 'topbar' | 'flash_sale' | 'coupons' | 'welcome_modal'
 
   // Global Toast / Feedback
   const [toastMessage, setToastMessage] = useState("");
@@ -258,101 +258,15 @@ const AdminAnnouncementsModal = () => {
   }, [announcements]);
 
   /* ─────────────────────────────────────────────────────────────
-     TAB 2: GRAND LAUNCH OFFER (MYSTERY JAR + FREE JHUMKA)
-  ───────────────────────────────────────────────────────────── */
-  const [mysteryJarConfig, setMysteryJarConfig] = useState({
-    is_enabled: true,
-    show_in_topbar: true,
-    ticker_text: "Grand Launch Offer: First 5 Orders Get a Free Mystery Jewellery Jar! 🎁",
-    pill_text: "Free Mystery Jewellery Jar",
-    pill_subtext: "View Gift →",
-    image_url: "/mystery_jewelry_jar.webp",
-    title: "Free Mystery Jewellery Jar 🎁",
-    overlay_text: "First 5 Customer Orders Get a Free Handcrafted Mystery Jewellery Jar!",
-    description: "Grand Launching Celebration: The first 5 customer orders receive a handcrafted luxury glass jar filled with surprise jewelry! PLUS, receive a complimentary matching Jhumka Set with every single kurti in your order!",
-    button_text: "Shop Kurtis & Claim Gift",
-    button_link: "/new-arrivals",
-  });
-  const [savingJar, setSavingJar] = useState(false);
-  const [uploadingJarImg, setUploadingJarImg] = useState(false);
-  const jarFileInputRef = useRef(null);
-
-  const fetchJarData = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/announcements/mystery-jar`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data) setMysteryJarConfig((prev) => ({ ...prev, ...data }));
-      }
-    } catch (e) {
-      console.error("Failed to load jar config", e);
-    }
-  };
-
-  const handleSaveMysteryJar = async (e) => {
-    e.preventDefault();
-    setSavingJar(true);
-    try {
-      const res = await fetch(`${API_BASE}/announcements/mystery-jar`, {
-        method: "PUT",
-        headers: authHeaders(),
-        body: JSON.stringify(mysteryJarConfig),
-      });
-      if (!res.ok) throw new Error("Failed to update Grand Launch offer");
-      const saved = await res.json();
-      setMysteryJarConfig((prev) => ({ ...prev, ...saved }));
-      window.dispatchEvent(new Event("np_mystery_jar_updated"));
-      window.dispatchEvent(new Event("np_announcements_updated"));
-      showToast("Grand Launch Offer updated successfully!");
-    } catch (e) {
-      alert(`Save failed: ${e.message}`);
-    } finally {
-      setSavingJar(false);
-    }
-  };
-
-  const handleUploadJarImage = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("file", file);
-    setUploadingJarImg(true);
-
-    try {
-      const res = await fetch(`${API_BASE}/upload/image`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${
-            localStorage.getItem("neel_token") || localStorage.getItem("token") || ""
-          }`,
-        },
-        body: formData,
-      });
-      if (!res.ok) throw new Error("Image upload failed");
-      const data = await res.json();
-      const fullUrl = data.url.startsWith("http")
-        ? data.url
-        : `${API_BASE.replace(/\/api\/?$/, "")}${data.url.startsWith("/") ? "" : "/"}${data.url}`;
-      setMysteryJarConfig((prev) => ({ ...prev, image_url: fullUrl }));
-      showToast("Gift image uploaded!");
-    } catch (err) {
-      alert(`Upload error: ${err.message}`);
-    } finally {
-      setUploadingJarImg(false);
-    }
-  };
-
-  /* ─────────────────────────────────────────────────────────────
-     TAB 3: FLASH SALE & EVENTS MANAGER
+     TAB 2: FLASH SALE & EVENTS MANAGER
   ───────────────────────────────────────────────────────────── */
   const [allCampaigns, setAllCampaigns] = useState([]);
   const [flashSaleConfig, setFlashSaleConfig] = useState({
     is_active: true,
-    title: "Grand Festive Flash Sale",
+    title: "Grand Launch Flash Deal",
     subtitle: "Exclusive Handcrafted Luxury Ethnic Wear",
     deal_type: "percentage",
-    deal_text: "",
+    deal_text: "FLAT 30% OFF",
     buy_qty: 1,
     get_free_qty: 1,
     discount_percentage: 30,
@@ -362,6 +276,7 @@ const AdminAnnouncementsModal = () => {
     start_time: "",
     end_time: "",
     banner_image: "",
+    sync_to_topbar: true,
   });
   const [showCampaignModal, setShowCampaignModal] = useState(false);
   const [editingCampaignId, setEditingCampaignId] = useState(null);
@@ -407,6 +322,7 @@ const AdminAnnouncementsModal = () => {
       start_time: new Date().toISOString().slice(0, 16),
       end_time: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
       banner_image: "",
+      sync_to_topbar: true,
     });
     setShowCampaignModal(true);
   };
@@ -429,6 +345,7 @@ const AdminAnnouncementsModal = () => {
       start_time: camp.start_time ? camp.start_time.slice(0, 16) : "",
       end_time: camp.end_time ? camp.end_time.slice(0, 16) : "",
       banner_image: camp.banner_image || "",
+      sync_to_topbar: true,
     });
     setShowCampaignModal(true);
   };
@@ -453,6 +370,30 @@ const AdminAnnouncementsModal = () => {
 
       if (!res.ok) throw new Error("Failed to save flash sale campaign");
       await fetchFlashSales();
+
+      // If sync to topbar is checked, update announcements
+      if (flashSaleConfig.sync_to_topbar && flashSaleConfig.is_active) {
+        const promoText = `⚡ ${flashSaleConfig.title}: ${flashSaleConfig.deal_text || `${flashSaleConfig.discount_percentage}% OFF`}! ✨`;
+        const promoLink = flashSaleConfig.target_type === "category" && flashSaleConfig.target_category
+          ? `/category/${flashSaleConfig.target_category.toLowerCase().replace(/\s+/g, "-")}`
+          : "/new-arrivals";
+
+        fetch(`${API_BASE}/announcements/`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({
+            text: promoText,
+            link: promoLink,
+            icon: "⚡",
+            is_active: true,
+            display_order: 1,
+          }),
+        }).then(() => {
+          fetchAnnouncements();
+          window.dispatchEvent(new Event("np_announcements_updated"));
+        }).catch(() => {});
+      }
+
       setShowCampaignModal(false);
       showToast("Flash sale campaign saved successfully!");
     } catch (e) {
@@ -527,7 +468,7 @@ const AdminAnnouncementsModal = () => {
   };
 
   /* ─────────────────────────────────────────────────────────────
-     TAB 4: COUPONS & PROMO CODES
+     TAB 3: COUPONS & PROMO CODES
   ───────────────────────────────────────────────────────────── */
   const [couponsList, setCouponsList] = useState([]);
   const [loadingCoupons, setLoadingCoupons] = useState(false);
@@ -685,7 +626,7 @@ const AdminAnnouncementsModal = () => {
   };
 
   /* ─────────────────────────────────────────────────────────────
-     TAB 5: WELCOME OFFER MODAL
+     TAB 4: WELCOME OFFER MODAL
   ───────────────────────────────────────────────────────────── */
   const [welcomeConfig, setWelcomeConfig] = useState({
     is_enabled: true,
@@ -770,7 +711,6 @@ const AdminAnnouncementsModal = () => {
   // Initial Data Load
   useEffect(() => {
     fetchAnnouncements();
-    fetchJarData();
     fetchFlashSales();
     fetchCoupons();
     fetchWelcomeData();
@@ -800,7 +740,7 @@ const AdminAnnouncementsModal = () => {
             Promotions &amp; Offers Central Hub
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Manage Top Bar Announcement Sliders, Grand Launch Offers (Mystery Jar &amp; Free Jhumka), Flash Sales, and Promo Coupons in one central place.
+            Manage Top Bar Announcement Sliders, Flash Sales &amp; BOGO Deals, Promo Coupons, and Welcome Modals in one central place.
           </p>
         </div>
       </div>
@@ -810,7 +750,6 @@ const AdminAnnouncementsModal = () => {
         <div className="flex overflow-x-auto gap-1.5">
           {[
             { id: "topbar", label: "📢 Top Bar Slider", icon: Sparkles },
-            { id: "launch_offer", label: "🎁 Grand Launch Offer", icon: Gift },
             { id: "flash_sale", label: "⚡ Flash Sale & Events", icon: Flame },
             { id: "coupons", label: "🎟️ Coupons & Promo Codes", icon: Tag },
             { id: "welcome_modal", label: "🎉 Welcome Popup Modal", icon: Layers },
@@ -1143,198 +1082,7 @@ const AdminAnnouncementsModal = () => {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          TAB 2: GRAND LAUNCH OFFER (MYSTERY JAR + FREE JHUMKA)
-      ───────────────────────────────────────────────────────────── */}
-      {activeTab === "launch_offer" && (
-        <form onSubmit={handleSaveMysteryJar} className="space-y-6">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Gift className="w-5 h-5 text-[#0891b2]" />
-                  Grand Launch Celebration Offer
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  1) <strong>First 5 Orders</strong> receive Free Handcrafted Mystery Jewellery Jar. 2) <strong>Every Kurti Order</strong> gets a Free Matching Jhumka Set.
-                </p>
-              </div>
-
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={mysteryJarConfig.is_enabled}
-                  onChange={(e) =>
-                    setMysteryJarConfig({ ...mysteryJarConfig, is_enabled: e.target.checked })
-                  }
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:width-5 after:transition-all peer-checked:bg-[#0891b2]"></div>
-                <span className="ml-2.5 text-xs font-bold text-slate-700">
-                  {mysteryJarConfig.is_enabled ? "● Offer Active" : "Offer Disabled"}
-                </span>
-              </label>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-              <div className="space-y-4">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Offer Title</label>
-                  <input
-                    type="text"
-                    value={mysteryJarConfig.title}
-                    onChange={(e) =>
-                      setMysteryJarConfig({ ...mysteryJarConfig, title: e.target.value })
-                    }
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    Hero Section Badge / Pill Text
-                  </label>
-                  <input
-                    type="text"
-                    value={mysteryJarConfig.pill_text}
-                    onChange={(e) =>
-                      setMysteryJarConfig({ ...mysteryJarConfig, pill_text: e.target.value })
-                    }
-                    placeholder="🎁 Launch Offer | Free Jhumka with Every Kurti"
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    Offer Highlight / Overlay Text
-                  </label>
-                  <input
-                    type="text"
-                    value={mysteryJarConfig.overlay_text}
-                    onChange={(e) =>
-                      setMysteryJarConfig({ ...mysteryJarConfig, overlay_text: e.target.value })
-                    }
-                    placeholder="First 5 Orders Get Free Mystery Jar + Free Jhumka Set with Every Kurti!"
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    Full Offer Description (Modal Popup)
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={mysteryJarConfig.description}
-                    onChange={(e) =>
-                      setMysteryJarConfig({ ...mysteryJarConfig, description: e.target.value })
-                    }
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs leading-relaxed"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Button Text</label>
-                    <input
-                      type="text"
-                      value={mysteryJarConfig.button_text}
-                      onChange={(e) =>
-                        setMysteryJarConfig({ ...mysteryJarConfig, button_text: e.target.value })
-                      }
-                      className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Button Link</label>
-                    <input
-                      type="text"
-                      value={mysteryJarConfig.button_link}
-                      onChange={(e) =>
-                        setMysteryJarConfig({ ...mysteryJarConfig, button_link: e.target.value })
-                      }
-                      className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs font-mono"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Image & Live Preview */}
-              <div className="space-y-4">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    Gift Box / Jar Image
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={mysteryJarConfig.image_url}
-                      onChange={(e) =>
-                        setMysteryJarConfig({ ...mysteryJarConfig, image_url: e.target.value })
-                      }
-                      placeholder="Image URL or upload"
-                      className="flex-1 bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs"
-                    />
-                    <input
-                      type="file"
-                      ref={jarFileInputRef}
-                      onChange={handleUploadJarImage}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => jarFileInputRef.current?.click()}
-                      disabled={uploadingJarImg}
-                      className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
-                    >
-                      {uploadingJarImg ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                      Upload
-                    </button>
-                  </div>
-                </div>
-
-                {/* Offer Card Preview */}
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/80 shadow-sm space-y-3">
-                  <div className="text-[11px] font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600" /> Customer Modal Preview
-                  </div>
-                  <div className="bg-white rounded-xl p-4 border border-amber-100 shadow-md text-center space-y-2.5">
-                    <div className="w-20 h-20 mx-auto rounded-full bg-amber-50 p-1 border-2 border-amber-400 overflow-hidden shadow-inner">
-                      <img
-                        src={resolveImageUrl(mysteryJarConfig.image_url, "/mystery_jewelry_jar.webp")}
-                        alt="Gift Preview"
-                        className="w-full h-full object-cover rounded-full"
-                      />
-                    </div>
-                    <h4 className="font-bold text-sm text-slate-900">{mysteryJarConfig.title}</h4>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      {mysteryJarConfig.description}
-                    </p>
-                    <div className="inline-block bg-[#8B0000] text-white font-bold text-xs px-4 py-1.5 rounded-lg shadow-sm">
-                      {mysteryJarConfig.button_text} &rarr;
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-slate-100 flex justify-end">
-              <button
-                type="submit"
-                disabled={savingJar}
-                className="px-6 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold rounded-xl text-xs shadow-md transition cursor-pointer flex items-center gap-2"
-              >
-                {savingJar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Save Grand Launch Offer
-              </button>
-            </div>
-          </div>
-        </form>
-      )}
-
-      {/* ─────────────────────────────────────────────────────────────
-          TAB 3: FLASH SALE & EVENTS MANAGER
+          TAB 2: FLASH SALE & EVENTS MANAGER
       ───────────────────────────────────────────────────────────── */}
       {activeTab === "flash_sale" && (
         <div className="space-y-6">
@@ -1346,7 +1094,7 @@ const AdminAnnouncementsModal = () => {
                   Promotional Campaigns &amp; Flash Sales
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Schedule live festive deals (BOGO, Percentage Discount, Buy 2 Get 1) in <strong>Indian Standard Time (IST)</strong>.
+                  Schedule live promotional deals (BOGO Buy 1 Get 1, Buy 2 Get 1, Buy 3 Get 1, Percentage Discounts) in <strong>Indian Standard Time (IST)</strong>.
                 </p>
               </div>
 
@@ -1660,6 +1408,22 @@ const AdminAnnouncementsModal = () => {
                       </button>
                     </div>
                   </div>
+
+                  {/* Top Bar Sync Checkbox */}
+                  <div className="pt-2 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="sync_topbar"
+                      checked={flashSaleConfig.sync_to_topbar !== false}
+                      onChange={(e) =>
+                        setFlashSaleConfig({ ...flashSaleConfig, sync_to_topbar: e.target.checked })
+                      }
+                      className="w-4 h-4 text-[#0891b2] rounded cursor-pointer"
+                    />
+                    <label htmlFor="sync_topbar" className="text-xs font-bold text-slate-800 cursor-pointer">
+                      Also show this offer in Top Bar Announcement Slider automatically
+                    </label>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
@@ -1686,7 +1450,7 @@ const AdminAnnouncementsModal = () => {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          TAB 4: COUPONS & PROMO CODES
+          TAB 3: COUPONS & PROMO CODES
       ───────────────────────────────────────────────────────────── */}
       {activeTab === "coupons" && (
         <div className="space-y-6">
@@ -1944,7 +1708,7 @@ const AdminAnnouncementsModal = () => {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          TAB 5: WELCOME POPUP MODAL
+          TAB 4: WELCOME POPUP MODAL
       ───────────────────────────────────────────────────────────── */}
       {activeTab === "welcome_modal" && (
         <form onSubmit={handleSaveWelcome} className="space-y-6">
