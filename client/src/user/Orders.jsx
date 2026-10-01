@@ -353,6 +353,7 @@ const Orders = () => {
                                                 <h3 className="font-bold text-gray-800 text-sm sm:text-base">Order #{displayOrderNum}</h3>
                                                 <p className="text-xs sm:text-sm text-gray-600 break-words">
                                                     Placed on {order.created_at ? new Date(order.created_at).toLocaleDateString('en-IN', {
+                                                        timeZone: 'Asia/Kolkata',
                                                         day: 'numeric',
                                                         month: 'long',
                                                         year: 'numeric'

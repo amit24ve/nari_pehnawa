@@ -22,12 +22,6 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:71
 const SHIPPING_THRESHOLD = 999;
 const SHIPPING_FEE = 99;
 
-const COUPON_CODES = {
-  NARI10: { type: "percent", value: 10, label: "10% off" },
-  SAVE100: { type: "flat", value: 100, label: "₹100 off" },
-  FREESHIP: { type: "shipping", value: 0, label: "Free Shipping" },
-};
-
 // ─────────────────────────────────────────────────────────────────────────────
 
 const Cart = () => {
@@ -48,6 +42,7 @@ const Cart = () => {
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState("");
   const [couponSuccess, setCouponSuccess] = useState("");
+  const [availableCoupons, setAvailableCoupons] = useState([]);
 
   /* checkout modal (shared component handles address/payment/success) */
   const [showCheckout, setShowCheckout] = useState(false);
@@ -56,6 +51,16 @@ const Cart = () => {
     free_delivery_order_count: 3,
     default_delivery_charge: 99,
   });
+
+  useEffect(() => {
+    // Fetch active coupons from DB
+    fetch(`${API_BASE_URL}/coupons/public-active`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        if (Array.isArray(data)) setAvailableCoupons(data);
+      })
+      .catch(() => {});
+  }, []);
 
   React.useEffect(() => {
     if (user && pendingCheckout && pendingCheckout.type === "cart") {
@@ -173,19 +178,23 @@ const Cart = () => {
   const totalAmount = afterDiscount + shipping;
 
   // ── Coupon helpers ───────────────────────────────────────────────────
-  const applyCoupon = async () => {
+  const applyCoupon = async (overrideCode) => {
     setCouponError("");
     setCouponSuccess("");
-    const code = couponInput.trim().toUpperCase();
-    if (!code) return;
+    const code = (overrideCode || couponInput).trim().toUpperCase();
+    if (!code) {
+      setCouponError("Please enter a coupon code");
+      return;
+    }
 
     try {
+      const token = localStorage.getItem("token") || localStorage.getItem("neel_token") || "";
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
       const res = await fetch(`${API_BASE_URL}/coupons/validate`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-        },
+        headers,
         body: JSON.stringify({ code, subtotal }),
       });
 
@@ -203,22 +212,16 @@ const Cart = () => {
           setCouponInput("");
           return;
         } else {
-          setCouponError(data.message || "Invalid coupon code.");
+          setCouponError(data.message || "Invalid or expired coupon code.");
           return;
         }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setCouponError(errData.detail || errData.message || "Invalid or inactive coupon code.");
+        return;
       }
     } catch (e) {
-      // Fallback to local check
-    }
-
-    const fallback = COUPON_CODES[code];
-    if (fallback) {
-      const disc = fallback.type === "flat" ? fallback.value : Math.round((subtotal * fallback.value) / 100);
-      setAppliedCoupon({ ...fallback, code, discount_amount: disc });
-      setCouponSuccess(`"${code}" applied — ${fallback.label}!`);
-      setCouponInput("");
-    } else {
-      setCouponError("Invalid or expired coupon code.");
+      setCouponError("Unable to validate coupon at this moment. Please check connection.");
     }
   };
   const removeCoupon = () => {
@@ -537,13 +540,38 @@ const Cart = () => {
                       </p>
                     )}
                     {couponSuccess && (
-                      <p className="text-xs text-green-600 mt-1.5">
+                      <p className="text-xs text-green-600 mt-1.5 font-medium">
                         {couponSuccess}
                       </p>
                     )}
-                    <p className="text-xs text-gray-400 mt-1.5">
-                      Try: NARI10, SAVE100, FREESHIP
-                    </p>
+                    {availableCoupons.length > 0 ? (
+                      <div className="mt-2.5 pt-2 border-t border-gray-100">
+                        <p className="text-[11px] font-semibold text-gray-500 mb-1.5">Available Active Coupons:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {availableCoupons.map((ac) => (
+                            <button
+                              key={ac.code}
+                              type="button"
+                              onClick={() => {
+                                setCouponInput(ac.code);
+                                applyCoupon(ac.code);
+                              }}
+                              className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-xs font-mono font-bold transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                            >
+                              <Tag className="w-3 h-3 text-amber-700" />
+                              <span>{ac.code}</span>
+                              <span className="text-[10px] text-amber-700 font-normal">
+                                ({ac.type === "percent" ? `${ac.value}% OFF` : `₹${ac.value} OFF`})
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400 mt-1.5">
+                        Enter active promo code created by store admin
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

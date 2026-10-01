@@ -11,7 +11,7 @@ from app.database.schemas.coupon import (
     CouponValidateRequest,
     CouponValidateResponse,
 )
-from app.security import get_current_user, require_admin
+from app.security import get_current_user, get_optional_current_user, require_admin
 from app.services.coupon_service import CouponService
 
 router = APIRouter(prefix="/coupons", tags=["Coupons"])
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/coupons", tags=["Coupons"])
 
 @router.post("/validate", response_model=CouponValidateResponse)
 def validate_coupon(
-    payload: CouponValidateRequest, current_user: dict = Depends(get_current_user)
+    payload: CouponValidateRequest, current_user: Optional[dict] = Depends(get_optional_current_user)
 ):
     """
     Server-side coupon validation (replaces the old client-only fake
@@ -32,8 +32,9 @@ def validate_coupon(
     """
     db = get_database()
     service = CouponService(db)
+    user_id = current_user.get("id") if current_user else None
     result = service.validate(
-        payload.code, payload.subtotal, user_id=current_user.get("id")
+        payload.code, payload.subtotal, user_id=user_id
     )
     return result
 
@@ -44,19 +45,21 @@ def get_public_active_coupons():
     db = get_database()
     coupons_collection = db["coupons"]
     try:
-        coupons = list(coupons_collection.find({"is_active": True}).sort("discount_value", -1).limit(5))
+        coupons = list(coupons_collection.find({"is_active": True}).sort("created_at", -1).limit(6))
         result = []
         for c in coupons:
             result.append({
                 "code": c.get("code", ""),
                 "description": c.get("description", ""),
-                "discount_type": c.get("discount_type", "percentage"),
-                "discount_value": c.get("discount_value", 10),
+                "type": c.get("type", "percent"),
+                "value": c.get("value", 10),
                 "min_order_value": c.get("min_order_value", 0),
+                "max_discount": c.get("max_discount"),
             })
         return result
     except Exception:
         return []
+
 
 
 # ── Admin: coupon CRUD ────────────────────────────────────────────────────────

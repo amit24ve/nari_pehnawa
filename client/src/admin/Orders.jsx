@@ -175,9 +175,17 @@ const Orders = () => {
       total: o.total_amount || 0,
       status: displayStatus,
       raw_status: rawStatus,
-      payment_status: o.payment_status || "pending",
-      payment_method: o.payment_method || "COD",
-      date: o.created_at ? new Date(o.created_at).toISOString().split("T")[0] : "N/A",
+      date: o.created_at
+        ? new Date(o.created_at).toLocaleString("en-IN", {
+            timeZone: "Asia/Kolkata",
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }) + " IST"
+        : "N/A",
       created_at: o.created_at || "N/A",
       items: (o.items || []).map((item) => ({
         product_id: item.product_id,
@@ -494,6 +502,7 @@ const Orders = () => {
     `).join("");
 
     const orderDate = order.created_at ? new Date(order.created_at).toLocaleDateString("en-IN", {
+      timeZone: "Asia/Kolkata",
       day: "2-digit", month: "2-digit", year: "numeric"
     }) : "—";
 
@@ -1712,7 +1721,17 @@ const Orders = () => {
                     {selectedOrder.status.replace(/_/g, " ")}
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-500 mt-1">Placed on: {selectedOrder.created_at} • Channel ID: {selectedOrder.customerId}</p>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Placed on: {selectedOrder.created_at ? new Date(selectedOrder.created_at).toLocaleString("en-IN", {
+                    timeZone: "Asia/Kolkata",
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                  }) + " IST" : "—"} • Channel ID: {selectedOrder.customerId}
+                </p>
               </div>
               <button
                 onClick={() => setShowDetailsModal(false)}
@@ -1746,7 +1765,15 @@ const Orders = () => {
                     // Retain all completed stages up to cancellation point
                     steps.push({
                       label: "Order Placed",
-                      desc: selectedOrder.created_at || "Order registered",
+                      desc: selectedOrder.created_at ? new Date(selectedOrder.created_at).toLocaleString("en-IN", {
+                        timeZone: "Asia/Kolkata",
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: true,
+                      }) + " IST" : "Order registered",
                       state: "done"
                     });
 

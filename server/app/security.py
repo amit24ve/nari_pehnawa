@@ -63,8 +63,30 @@ def get_current_user(payload: dict = Depends(verify_token)) -> dict:
     }
 
 
+optional_security = HTTPBearer(auto_error=False)
+
+
+def get_optional_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Security(optional_security)) -> Optional[dict]:
+    """Get current user if token provided, else return None without throwing 401"""
+    if not credentials or not credentials.credentials:
+        return None
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        if not user_id:
+            return None
+        return {
+            "id": user_id,
+            "email": payload.get("email"),
+            "role": payload.get("role", "customer")
+        }
+    except Exception:
+        return None
+
+
 def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
     """Require admin role"""
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
+

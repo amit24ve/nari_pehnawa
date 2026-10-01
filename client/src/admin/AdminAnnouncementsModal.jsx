@@ -305,22 +305,87 @@ const AdminAnnouncementsModal = () => {
     }
   };
 
+  // IST Helpers
+  const getISTDateTimeString = (dateObj = new Date()) => {
+    const d = dateObj instanceof Date ? dateObj : new Date(dateObj);
+    if (isNaN(d.getTime())) return "";
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    const parts = formatter.formatToParts(d);
+    const map = {};
+    parts.forEach((p) => {
+      map[p.type] = p.value;
+    });
+    const hour = map.hour === "24" ? "00" : map.hour;
+    return `${map.year}-${map.month}-${map.day}T${hour}:${map.minute}`;
+  };
+
+  const formatToReadableIST = (dateInput) => {
+    if (!dateInput) return "—";
+    try {
+      const d = new Date(dateInput);
+      if (isNaN(d.getTime())) return String(dateInput);
+      return (
+        d.toLocaleString("en-IN", {
+          timeZone: "Asia/Kolkata",
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }) + " IST"
+      );
+    } catch (e) {
+      return String(dateInput);
+    }
+  };
+
+  const handleDealTypeChange = (newType) => {
+    let updated = { ...flashSaleConfig, deal_type: newType };
+    if (newType === "percentage") {
+      const disc = updated.discount_percentage || 30;
+      updated.discount_percentage = disc;
+      updated.deal_text = `FLAT ${disc}% OFF`;
+    } else if (newType === "bogo") {
+      updated.buy_qty = 1;
+      updated.get_free_qty = 1;
+      updated.deal_text = "BUY 1 GET 1 FREE (BOGO)";
+    } else if (newType === "buy2get1") {
+      updated.buy_qty = 2;
+      updated.get_free_qty = 1;
+      updated.deal_text = "BUY 2 GET 1 FREE";
+    } else if (newType === "buy3get1") {
+      updated.buy_qty = 3;
+      updated.get_free_qty = 1;
+      updated.deal_text = "BUY 3 GET 1 FREE";
+    }
+    setFlashSaleConfig(updated);
+  };
+
   const handleOpenNewCampaign = () => {
     setEditingCampaignId("new");
     setFlashSaleConfig({
       is_active: true,
       title: "Grand Launch Flash Deal",
       subtitle: "Limited Time Exclusive Offer on Handcrafted Kurtis",
-      deal_type: "percentage",
-      deal_text: "FLAT 30% OFF",
+      deal_type: "bogo",
+      deal_text: "BUY 1 GET 1 FREE (BOGO)",
       buy_qty: 1,
       get_free_qty: 1,
       discount_percentage: 30,
       target_type: "all",
       target_category: "",
       target_product_ids: [],
-      start_time: new Date().toISOString().slice(0, 16),
-      end_time: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
+      start_time: getISTDateTimeString(new Date()),
+      end_time: getISTDateTimeString(new Date(Date.now() + 86400000)),
       banner_image: "",
       sync_to_topbar: true,
     });
@@ -342,8 +407,8 @@ const AdminAnnouncementsModal = () => {
       target_type: camp.target_type || "all",
       target_category: camp.target_category || "",
       target_product_ids: camp.target_product_ids || [],
-      start_time: camp.start_time ? camp.start_time.slice(0, 16) : "",
-      end_time: camp.end_time ? camp.end_time.slice(0, 16) : "",
+      start_time: camp.start_time ? camp.start_time.slice(0, 16) : getISTDateTimeString(new Date()),
+      end_time: camp.end_time ? camp.end_time.slice(0, 16) : getISTDateTimeString(new Date(Date.now() + 86400000)),
       banner_image: camp.banner_image || "",
       sync_to_topbar: true,
     });
@@ -1229,42 +1294,111 @@ const AdminAnnouncementsModal = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="block font-semibold text-slate-700 mb-1">Deal Type</label>
-                      <select
-                        value={flashSaleConfig.deal_type}
-                        onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, deal_type: e.target.value })}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs"
-                      >
-                        <option value="percentage">Percentage Discount (%)</option>
-                        <option value="bogo">BOGO (Buy 1 Get 1)</option>
-                        <option value="buy2get1">Buy 2 Get 1 Free</option>
-                        <option value="buy3get1">Buy 3 Get 1 Free</option>
-                      </select>
+                  {/* Deal Type & Dynamic Controls */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Deal Type</label>
+                        <select
+                          value={flashSaleConfig.deal_type}
+                          onChange={(e) => handleDealTypeChange(e.target.value)}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 text-xs font-semibold focus:ring-2 focus:ring-[#0891b2] outline-none cursor-pointer"
+                        >
+                          <option value="percentage">Percentage Discount (%)</option>
+                          <option value="bogo">BOGO (Buy 1 Get 1 Free)</option>
+                          <option value="buy2get1">Buy 2 Get 1 Free</option>
+                          <option value="buy3get1">Buy 3 Get 1 Free</option>
+                        </select>
+                      </div>
+
+                      {/* Dynamic Value Input depending on Deal Type */}
+                      {flashSaleConfig.deal_type === "percentage" ? (
+                        <div>
+                          <label className="block font-semibold text-slate-700 mb-1">Discount %</label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min="1"
+                              max="100"
+                              value={flashSaleConfig.discount_percentage}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value) || 0;
+                                setFlashSaleConfig((prev) => ({
+                                  ...prev,
+                                  discount_percentage: val,
+                                  deal_text: prev.deal_text.startsWith("FLAT") || !prev.deal_text
+                                    ? `FLAT ${val}% OFF`
+                                    : prev.deal_text,
+                                }));
+                              }}
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 text-xs font-bold focus:ring-2 focus:ring-[#0891b2] outline-none"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">%</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block font-semibold text-slate-700 mb-1 text-[11px]">Buy Qty</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="20"
+                              value={flashSaleConfig.buy_qty || (flashSaleConfig.deal_type === "buy2get1" ? 2 : flashSaleConfig.deal_type === "buy3get1" ? 3 : 1)}
+                              onChange={(e) =>
+                                setFlashSaleConfig({
+                                  ...flashSaleConfig,
+                                  buy_qty: parseInt(e.target.value) || 1,
+                                })
+                              }
+                              className="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-2 text-slate-900 text-xs font-bold focus:ring-2 focus:ring-[#0891b2] outline-none text-center"
+                            />
+                          </div>
+                          <div>
+                            <label className="block font-semibold text-slate-700 mb-1 text-[11px]">Get Free</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="10"
+                              value={flashSaleConfig.get_free_qty || 1}
+                              onChange={(e) =>
+                                setFlashSaleConfig({
+                                  ...flashSaleConfig,
+                                  get_free_qty: parseInt(e.target.value) || 1,
+                                })
+                              }
+                              className="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-2 text-slate-900 text-xs font-bold focus:ring-2 focus:ring-[#0891b2] outline-none text-center"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Deal Badge / Promo Text</label>
+                        <input
+                          type="text"
+                          value={flashSaleConfig.deal_text}
+                          onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, deal_text: e.target.value })}
+                          placeholder={
+                            flashSaleConfig.deal_type === "bogo"
+                              ? "BUY 1 GET 1 FREE (BOGO)"
+                              : flashSaleConfig.deal_type === "buy2get1"
+                              ? "BUY 2 GET 1 FREE"
+                              : flashSaleConfig.deal_type === "buy3get1"
+                              ? "BUY 3 GET 1 FREE"
+                              : "FLAT 30% OFF"
+                          }
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 text-xs font-bold focus:ring-2 focus:ring-[#0891b2] outline-none"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block font-semibold text-slate-700 mb-1">Discount %</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={flashSaleConfig.discount_percentage}
-                        onChange={(e) =>
-                          setFlashSaleConfig({ ...flashSaleConfig, discount_percentage: parseInt(e.target.value) || 0 })
-                        }
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-semibold text-slate-700 mb-1">Deal Badge / Text</label>
-                      <input
-                        type="text"
-                        value={flashSaleConfig.deal_text}
-                        onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, deal_text: e.target.value })}
-                        placeholder="FLAT 30% OFF"
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs"
-                      />
+
+                    {/* Live Badge Preview */}
+                    <div className="flex items-center justify-between bg-white border border-dashed border-slate-200 rounded-lg p-2 text-xs">
+                      <span className="text-slate-500 font-medium">Customer Banner Badge Preview:</span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-900 border border-amber-400/40 font-black tracking-wide text-[11px]">
+                        {flashSaleConfig.deal_text || "OFFER"}
+                      </span>
                     </div>
                   </div>
 
@@ -1358,25 +1492,30 @@ const AdminAnnouncementsModal = () => {
                   </div>
 
                   {/* Scheduling (IST) */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-semibold text-slate-700 mb-1">Start Time (IST)</label>
-                      <input
-                        type="datetime-local"
-                        value={flashSaleConfig.start_time}
-                        onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, start_time: e.target.value })}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-slate-900 text-xs"
-                      />
+                  <div className="space-y-1">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">Start Time (IST)</label>
+                        <input
+                          type="datetime-local"
+                          value={flashSaleConfig.start_time}
+                          onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, start_time: e.target.value })}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-slate-900 text-xs focus:ring-2 focus:ring-[#0891b2] outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">End Time (IST)</label>
+                        <input
+                          type="datetime-local"
+                          value={flashSaleConfig.end_time}
+                          onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, end_time: e.target.value })}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-slate-900 text-xs focus:ring-2 focus:ring-[#0891b2] outline-none"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block font-semibold text-slate-700 mb-1">End Time (IST)</label>
-                      <input
-                        type="datetime-local"
-                        value={flashSaleConfig.end_time}
-                        onChange={(e) => setFlashSaleConfig({ ...flashSaleConfig, end_time: e.target.value })}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-slate-900 text-xs"
-                      />
-                    </div>
+                    <p className="text-[10px] text-slate-500 font-medium">
+                      ⏰ Schedules are in Indian Standard Time (IST). Active now: {formatToReadableIST(new Date())}
+                    </p>
                   </div>
 
                   {/* Banner Image */}
