@@ -405,10 +405,17 @@ def get_user_by_email(email: str):
 
 @router.put("/{user_id}", response_model=User)
 def update_user(user_id: str, user_update: UserUpdate, current_user: dict = Depends(get_current_user)):
-    """Update user information (User can update own profile, Admin can update any)"""
+    """Update user information (User can update own profile, Admin can update any user)"""
     db = get_database()
     users_collection = db["users"]
     try:
+        # Check permissions: must be admin or updating own account
+        is_admin = current_user.get("role") == "admin" or current_user.get("is_admin")
+        is_self = str(current_user.get("id")) == str(user_id)
+        
+        if not is_admin and not is_self:
+            raise HTTPException(status_code=403, detail="You do not have permission to update this user")
+
         # Check if user exists
         existing_user = users_collection.find_one({"_id": ObjectId(user_id)})
         if not existing_user:
@@ -417,6 +424,21 @@ def update_user(user_id: str, user_update: UserUpdate, current_user: dict = Depe
         # Prepare update data (exclude None values)
         update_data = {k: v for k, v in user_update.model_dump().items() if v is not None}
         
+        # Email & Phone are permanent unique identifiers and locked from editing
+        update_data.pop("phone", None)
+        update_data.pop("email", None)
+        if not is_admin:
+            update_data.pop("role", None)
+            update_data.pop("is_admin", None)
+            update_data.pop("status", None)
+
+        # Handle name update
+        if "name" in update_data:
+            clean_name = str(update_data["name"]).strip()
+            if clean_name:
+                update_data["name"] = clean_name
+                update_data["full_name"] = clean_name
+
         # Handle password update if passed
         if "password" in update_data:
             pwd = str(update_data.pop("password", "")).strip()
@@ -425,178 +447,14 @@ def update_user(user_id: str, user_update: UserUpdate, current_user: dict = Depe
                     raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
                 update_data["password_hash"] = get_password_hash(pwd)
 
-        if "role" in update_data:
+        if "role" in update_data and is_admin:
             update_data["is_admin"] = (update_data["role"] == "admin")
 
-        if not update_data:
-            raise HTTPException(status_code=400, detail="No fields to update")
-        
-        # Update user
-        users_collection.update_one(
-            {"_id": ObjectId(user_id)},
-            {"$set": update_data}
-        )
-        
-        # Get updated user
-        updated_user = users_collection.find_one({"_id": ObjectId(user_id)})
-        updated_user["id"] = str(updated_user["_id"])
-        if "name" not in updated_user or not updated_user["name"]:
-            updated_user["name"] = updated_user.get("full_name") or "User"
-        updated_user.pop("_id", None)
-        updated_user.pop("password_hash", None)
-        
-        return updated_user
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/{user_id}/reset-password")
-def admin_reset_user_password(user_id: str, payload: dict, current_user: dict = Depends(require_admin)):
-    """Admin endpoint to reset any user's password directly"""
-    db = get_database()
-    users_collection = db["users"]
-    try:
-        new_password = payload.get("password") or payload.get("new_password")
-        if not new_password or len(str(new_password).strip()) < 6:
-            raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
-
-        user = users_collection.find_one({"_id": ObjectId(user_id)})
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        users_collection.update_one(
-            {"_id": ObjectId(user_id)},
-            {"$set": {"password_hash": get_password_hash(str(new_password).strip())}}
-        )
-
-        return {"success": True, "message": "Password updated successfully"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.put("/me", response_model=User)
-def update_current_user_profile_v2(user_update: UserUpdate, current_user: dict = Depends(get_current_user)):
-    """Update current authenticated user's profile"""
-    db = get_database()
-    users_collection = db["users"]
-    try:
-        user_id = current_user.get("id")
-        
-        # Prepare update data (exclude None values and restricted fields)
-        update_data = {k: v for k, v in user_update.model_dump().items() if v is not None}
-        
-        # Remove fields that users shouldn't be able to update themselves
-        update_data.pop("role", None)
-        update_data.pop("is_admin", None)
-        update_data.pop("status", None)
-        
-        if not update_data:
-            raise HTTPException(status_code=400, detail="No fields to update")
-        
-        # Check if email is being changed and if it's already taken
-        if "email" in update_data:
-            existing = users_collection.find_one({
-                "email": update_data["email"],
-                "_id": {"$ne": ObjectId(user_id)}
-            })
-            if existing:
-                raise HTTPException(status_code=400, detail="Email already in use")
-        
-        # Update user
-        users_collection.update_one(
-            {"_id": ObjectId(user_id)},
-            {"$set": update_data}
-        )
-        
-        # Get updated user
-        updated_user = users_collection.find_one({"_id": ObjectId(user_id)})
-        updated_user["id"] = str(updated_user["_id"])
-        if "name" not in updated_user or not updated_user["name"]:
-            updated_user["name"] = updated_user.get("full_name") or "User"
-        updated_user.pop("_id", None)
-        updated_user.pop("password_hash", None)
-        
-        return updated_user
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ===== Other User Routes =====
-@router.get("/{user_id}", response_model=User)
-def get_user(user_id: str, current_user: dict = Depends(get_current_user)):
-    """Get a specific user by ID (Authenticated users only)"""
-    db = get_database()
-    users_collection = db["users"]
-    try:
-        user = users_collection.find_one({"_id": ObjectId(user_id)})
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        user["id"] = str(user["_id"])
-        if "name" not in user or not user["name"]:
-            user["name"] = user.get("full_name") or "User"
-        user.pop("_id", None)
-        user.pop("password_hash", None)
-        return user
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/email/{email}", response_model=User)
-def get_user_by_email(email: str):
-    """Get a user by email address"""
-    db = get_database()
-    users_collection = db["users"]
-    try:
-        user = users_collection.find_one({"email": email})
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        user["id"] = str(user["_id"])
-        if "name" not in user or not user["name"]:
-            user["name"] = user.get("full_name") or "User"
-        user.pop("_id", None)
-        user.pop("password_hash", None)
-        return user
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.put("/{user_id}", response_model=User)
-def update_user(user_id: str, user_update: UserUpdate, current_user: dict = Depends(get_current_user)):
-    """Update user information (User can update own profile, Admin can update any)"""
-    db = get_database()
-    users_collection = db["users"]
-    try:
-        # Check if user exists
-        existing_user = users_collection.find_one({"_id": ObjectId(user_id)})
-        if not existing_user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        # Prepare update data (exclude None values)
-        update_data = {k: v for k, v in user_update.model_dump().items() if v is not None}
-        
-        # Handle password update if passed
-        if "password" in update_data:
-            pwd = str(update_data.pop("password", "")).strip()
-            if pwd:
-                if len(pwd) < 6:
-                    raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
-                update_data["password_hash"] = get_password_hash(pwd)
-
-        if "role" in update_data:
-            update_data["is_admin"] = (update_data["role"] == "admin")
+        if "status" in update_data and is_admin:
+            update_data["is_active"] = (update_data["status"] == "active")
 
         if not update_data:
-            raise HTTPException(status_code=400, detail="No fields to update")
+            raise HTTPException(status_code=400, detail="No valid fields provided for update")
         
         # Update user
         users_collection.update_one(

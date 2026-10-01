@@ -244,12 +244,14 @@ const Users = () => {
     );
 
     const handleEdit = (user) => {
+        if (!user) return;
         setSelectedUser(user);
         setFormData({
             name: user.full_name || user.name || "",
             email: user.email || "",
-            role: user.role || "customer",
-            status: user.is_active !== false ? "active" : "inactive",
+            phone: user.phone || "",
+            role: user.role || (user.is_admin ? "admin" : "customer"),
+            status: user.status === "inactive" || user.is_active === false ? "inactive" : "active",
             password: "",
         });
         setShowPassword(false);
@@ -268,6 +270,10 @@ const Users = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!formData.name || !formData.name.trim()) {
+            alert("Please enter a valid user name");
+            return;
+        }
         if (formData.password && formData.password.trim().length > 0 && formData.password.trim().length < 6) {
             alert("Password must be at least 6 characters long");
             return;
@@ -279,10 +285,9 @@ const Users = () => {
             const userId = selectedUser.id || selectedUser._id;
 
             const payload = {
-                name: formData.name,
-                email: formData.email,
+                name: formData.name.trim(),
                 role: formData.role,
-                is_active: formData.status === "active",
+                status: formData.status,
             };
 
             if (formData.password && formData.password.trim().length >= 6) {
@@ -307,7 +312,10 @@ const Users = () => {
             }
 
             setShowEditModal(false);
-            fetchUsers();
+            await fetchUsers();
+            if (showViewModal && (viewDetails?.user?.id === userId || viewDetails?.user?._id === userId)) {
+                handleViewUser(userId);
+            }
         } catch (err) {
             console.error("Error updating user:", err);
             alert("Failed to update user: " + err.message);
@@ -821,11 +829,11 @@ const Users = () => {
                         <div className="bg-gradient-to-r from-[#0891b2] to-[#06b6d4] px-6 py-4 text-white flex justify-between items-center shadow-sm">
                             <div>
                                 <h3 className="text-base sm:text-lg font-bold">Edit User Profile</h3>
-                                <p className="text-xs text-cyan-100 mt-0.5">Update profile details, permissions, and password</p>
+                                <p className="text-xs text-cyan-100 mt-0.5">Update user name, role permissions, account status, and password</p>
                             </div>
                             <button
                                 onClick={() => setShowEditModal(false)}
-                                className="text-white/80 hover:text-white transition p-2 hover:bg-white/10 rounded-xl"
+                                className="text-white/80 hover:text-white transition p-2 hover:bg-white/10 rounded-xl cursor-pointer"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -833,57 +841,95 @@ const Users = () => {
 
                         {/* Form */}
                         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* Security Notice for Locked Phone & Email */}
+                            <div className="bg-cyan-50 border border-cyan-200 rounded-2xl p-3.5 flex items-start gap-3 text-xs text-cyan-950">
+                                <Shield className="w-4 h-4 text-[#0891b2] flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                                        Full Name *
+                                    <span className="font-bold text-[#0891b2]">Security Policy:</span> Phone number &amp; Email address are permanent unique sign-in credentials and cannot be modified. Full Name, User Role, Status, and Password can be updated.
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {/* Full Name (Editable) */}
+                                <div className="sm:col-span-2">
+                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                                        <span>Full Name *</span>
+                                        <span className="text-[10px] bg-cyan-50 text-[#0891b2] border border-cyan-200 px-2 py-0.5 rounded-full font-bold">Editable</span>
                                     </label>
                                     <input
                                         type="text"
                                         required
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-[#0891b2] focus:bg-white transition"
-                                        placeholder="Enter full name"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-[#0891b2] focus:bg-white transition font-medium"
+                                        placeholder="Enter customer full name"
                                     />
                                 </div>
 
+                                {/* Email Address (Locked / Read-only) */}
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                                        Email Address *
+                                    <label className="block text-xs font-bold text-slate-500 mb-1.5 flex items-center justify-between">
+                                        <span className="flex items-center gap-1.5">
+                                            <Mail className="w-3.5 h-3.5 text-slate-400" /> Email Address
+                                        </span>
+                                        <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded flex items-center gap-1 font-semibold">
+                                            <Lock className="w-2.5 h-2.5" /> Locked
+                                        </span>
                                     </label>
                                     <input
                                         type="email"
-                                        required
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-[#0891b2] focus:bg-white transition"
-                                        placeholder="user@example.com"
+                                        disabled
+                                        value={formData.email || "No email on file"}
+                                        className="w-full bg-slate-100/90 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-500 cursor-not-allowed select-none font-medium"
+                                        title="Email is a unique sign-in identifier and cannot be changed"
                                     />
                                 </div>
 
+                                {/* Phone Number (Locked / Read-only) */}
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                                        User Role *
+                                    <label className="block text-xs font-bold text-slate-500 mb-1.5 flex items-center justify-between">
+                                        <span className="flex items-center gap-1.5">
+                                            <Phone className="w-3.5 h-3.5 text-slate-400" /> Phone Number
+                                        </span>
+                                        <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded flex items-center gap-1 font-semibold">
+                                            <Lock className="w-2.5 h-2.5" /> Locked
+                                        </span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        disabled
+                                        value={formData.phone || "No phone number on file"}
+                                        className="w-full bg-slate-100/90 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-500 cursor-not-allowed select-none font-medium"
+                                        title="Phone number is a unique sign-in identifier and cannot be changed"
+                                    />
+                                </div>
+
+                                {/* User Role (Editable) */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                                        <span>User Role *</span>
+                                        <span className="text-[10px] bg-cyan-50 text-[#0891b2] border border-cyan-200 px-2 py-0.5 rounded-full font-bold">Editable</span>
                                     </label>
                                     <select
                                         value={formData.role}
                                         onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-[#0891b2] cursor-pointer"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-[#0891b2] cursor-pointer font-medium"
                                     >
                                         <option value="customer">Customer</option>
                                         <option value="admin">Admin</option>
                                     </select>
                                 </div>
 
+                                {/* Account Status (Editable) */}
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                                        Account Status *
+                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                                        <span>Account Status *</span>
+                                        <span className="text-[10px] bg-cyan-50 text-[#0891b2] border border-cyan-200 px-2 py-0.5 rounded-full font-bold">Editable</span>
                                     </label>
                                     <select
                                         value={formData.status}
                                         onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-[#0891b2] cursor-pointer"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-[#0891b2] cursor-pointer font-medium"
                                     >
                                         <option value="active">Active</option>
                                         <option value="inactive">Inactive</option>
@@ -911,7 +957,7 @@ const Users = () => {
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                                         >
                                             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>
@@ -919,7 +965,7 @@ const Users = () => {
                                     <button
                                         type="button"
                                         onClick={handleGenerateRandomPassword}
-                                        className="py-2 px-3 bg-white hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-slate-200 flex-shrink-0"
+                                        className="py-2 px-3 bg-white hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-slate-200 flex-shrink-0 cursor-pointer"
                                     >
                                         <RefreshCw className="w-3.5 h-3.5 text-[#0891b2]" /> Generate Password
                                     </button>
@@ -932,14 +978,14 @@ const Users = () => {
                                     type="button"
                                     onClick={() => setShowEditModal(false)}
                                     disabled={submitting}
-                                    className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition disabled:opacity-50"
+                                    className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition disabled:opacity-50 cursor-pointer"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="flex-1 px-4 py-2.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                                    className="flex-1 px-4 py-2.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
                                 >
                                     {submitting ? (
                                         <>
@@ -1236,13 +1282,23 @@ const Users = () => {
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="p-4 border-t border-slate-200 bg-white flex justify-end">
+                        <div className="p-4 border-t border-slate-200 bg-white flex justify-between items-center gap-3">
+                            <button
+                                onClick={() => {
+                                    if (viewDetails?.user) {
+                                        handleEdit(viewDetails.user);
+                                    }
+                                }}
+                                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                            >
+                                <Edit className="w-3.5 h-3.5 text-[#0891b2]" /> Edit Profile
+                            </button>
                             <button
                                 onClick={() => {
                                     setShowViewModal(false);
                                     setViewDetails(null);
                                 }}
-                                className="px-6 py-2.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-xs font-bold transition shadow-sm"
+                                className="px-6 py-2.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
                             >
                                 Close
                             </button>
