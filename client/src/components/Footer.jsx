@@ -340,55 +340,45 @@ const Footer = () => {
           2. TRUST BADGES ROW (UN-BOXED DIRECTLY ON BACKGROUND)
       ══════════════════════════════════════════════════════════════ */}
       <div className="relative z-10 max-w-[1280px] mx-auto px-6 md:px-10 py-8">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 md:gap-8 justify-items-center">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 justify-items-center">
 
-          <div className="flex items-center gap-3 w-full max-w-[200px]">
-            <div className="p-2.5 rounded-full bg-[#8B0000] text-white border border-[#8B0000] shadow-md">
-              <Truck className="w-5 h-5" />
+          <div className="flex items-center gap-3 w-full max-w-[240px]">
+            <div className="p-2.5 rounded-full bg-[#8B0000] text-white border border-[#8B0000] shadow-md flex-shrink-0">
+              <Award className="w-5 h-5" />
             </div>
             <div className="text-left">
-              <div className="text-xs font-black text-[#8B0000] uppercase tracking-wider leading-none mb-1 drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]">FREE SHIPPING</div>
-              <div className="text-[10px] text-[#3a0808] font-extrabold leading-tight drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">On first order</div>
+              <div className="text-xs font-black text-[#8B0000] uppercase tracking-wider leading-none mb-1 drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]">AUTHENTIC FABRICS</div>
+              <div className="text-[10px] text-[#3a0808] font-extrabold leading-tight drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">100% Pure Handcrafted</div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 w-full max-w-[200px]">
-            <div className="p-2.5 rounded-full bg-[#8B0000] text-white border border-[#8B0000] shadow-md">
+          <div className="flex items-center gap-3 w-full max-w-[240px]">
+            <div className="p-2.5 rounded-full bg-[#8B0000] text-white border border-[#8B0000] shadow-md flex-shrink-0">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div className="text-left">
               <div className="text-xs font-black text-[#8B0000] uppercase tracking-wider leading-none mb-1 drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]">100% SECURE</div>
-              <div className="text-[10px] text-[#3a0808] font-extrabold leading-tight drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">Safe Checkout</div>
+              <div className="text-[10px] text-[#3a0808] font-extrabold leading-tight drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">Encrypted Safe Checkout</div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 w-full max-w-[200px]">
-            <div className="p-2.5 rounded-full bg-[#8B0000] text-white border border-[#8B0000] shadow-md">
-              <Award className="w-5 h-5" />
+          <div className="flex items-center gap-3 w-full max-w-[240px]">
+            <div className="p-2.5 rounded-full bg-[#8B0000] text-white border border-[#8B0000] shadow-md flex-shrink-0">
+              <CheckCircle className="w-5 h-5" />
             </div>
             <div className="text-left">
               <div className="text-xs font-black text-[#8B0000] uppercase tracking-wider leading-none mb-1 drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]">PREMIUM QUALITY</div>
-              <div className="text-[10px] text-[#3a0808] font-extrabold leading-tight drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">Authentic Fabrics</div>
+              <div className="text-[10px] text-[#3a0808] font-extrabold leading-tight drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">Traditional Ka Tadka</div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 w-full max-w-[200px]">
-            <div className="p-2.5 rounded-full bg-[#8B0000] text-white border border-[#8B0000] shadow-md">
-              <RefreshCw className="w-5 h-5" />
-            </div>
-            <div className="text-left">
-              <div className="text-xs font-black text-[#8B0000] uppercase tracking-wider leading-none mb-1 drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]">EASY RETURNS</div>
-              <div className="text-[10px] text-[#3a0808] font-extrabold leading-tight drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">7 Days Exchange</div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 col-span-2 sm:col-span-1 w-full max-w-[200px] justify-center lg:justify-start">
-            <div className="p-2.5 rounded-full bg-[#8B0000] text-white border border-[#8B0000] shadow-md">
+          <div className="flex items-center gap-3 w-full max-w-[240px]">
+            <div className="p-2.5 rounded-full bg-[#8B0000] text-white border border-[#8B0000] shadow-md flex-shrink-0">
               <Headset className="w-5 h-5" />
             </div>
             <div className="text-left">
               <div className="text-xs font-black text-[#8B0000] uppercase tracking-wider leading-none mb-1 drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]">24/7 SUPPORT</div>
-              <div className="text-[10px] text-[#3a0808] font-extrabold leading-tight drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">Always Available</div>
+              <div className="text-[10px] text-[#3a0808] font-extrabold leading-tight drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">Dedicated Customer Care</div>
             </div>
           </div>
 

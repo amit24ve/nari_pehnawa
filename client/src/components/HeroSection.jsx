@@ -49,12 +49,12 @@ const HeroSection = () => {
   const [showJarModal, setShowJarModal] = useState(false);
   const [jarConfig, setJarConfig] = useState({
     is_enabled: true,
-    pill_text: "🎁 Launch Offer - First 5 Orders",
-    pill_subtext: "Free Mystery Jar →",
+    pill_text: "🎁 Launch Offer | Free Jhumka with Every Kurti",
+    pill_subtext: "View Offers →",
     image_url: "/mystery_jewelry_jar.jpg",
     title: "🎉 Grand Launch Offer 🎁",
-    overlay_text: "First 5 Orders Get a Free Mystery Jewellery Jar!",
-    description: "Grand Launching Special: First 5 customer orders will receive this handcrafted luxury glass jar with red ribbon, filled with premium surprise jewelry inside with your delivery parcel!",
+    overlay_text: "First 5 Orders Get Free Mystery Jar + Free Jhumka Set with Every Kurti!",
+    description: "Grand Launching Celebration: The first 5 customer orders will receive a handcrafted luxury glass jar filled with surprise jewelry! PLUS, receive a complimentary matching Jhumka Set with every single kurti in your order!",
     button_text: "Shop Now & Claim Gift",
     button_link: "/new-arrivals",
   });

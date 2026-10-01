@@ -53,12 +53,12 @@ class MysteryJarOfferConfig(BaseModel):
     is_enabled: bool = True
     show_in_topbar: bool = Field(True, description="Whether to also display this launching offer in top bar ticker")
     ticker_text: Optional[str] = Field(None, description="Custom top bar ticker message text (optional)")
-    pill_text: str = Field("🎁 Launch Offer - First 5 Orders", description="Text on slider button")
-    pill_subtext: str = Field("Free Mystery Jar →", description="Subtext / link on slider button")
+    pill_text: str = Field("Launch Offer | Free Jhumka with Every Kurti", description="Text on slider button")
+    pill_subtext: str = Field("View Offers →", description="Subtext / link on slider button")
     image_url: str = Field("/mystery_jewelry_jar.jpg", description="Jar photo URL")
-    title: str = Field("🎉 Grand Launch Offer 🎁", description="Modal Title")
-    overlay_text: str = Field("First 5 Orders Get a Free Mystery Jewellery Jar!", description="Text displayed directly on image")
-    description: Optional[str] = Field("Grand Launching Special: First 5 customer orders will receive this handcrafted luxury glass jar with red ribbon, filled with premium surprise jewelry inside with your delivery parcel!", description="Modal description")
+    title: str = Field("🎉 Grand Launch Offer", description="Modal Title")
+    overlay_text: str = Field("First 5 Orders Get Free Mystery Jar + Free Jhumka Set with Every Kurti!", description="Text displayed directly on image")
+    description: Optional[str] = Field("Grand Launching Celebration: The first 5 customer orders will receive a handcrafted luxury glass jar filled with surprise jewelry! PLUS, receive a complimentary matching Jhumka Set with every single kurti in your order!", description="Modal description")
     button_text: str = Field("Shop Now & Claim Gift", description="Button text")
     button_link: str = Field("/new-arrivals", description="Button link")
 
@@ -157,13 +157,13 @@ def get_mystery_jar_offer_config():
         return {
             "is_enabled": True,
             "show_in_topbar": True,
-            "ticker_text": "Grand Launch Offer: First 5 Orders Get a Free Mystery Jewellery Jar! 🎁",
-            "pill_text": "🎁 Launch Offer - First 5 Orders",
-            "pill_subtext": "Free Mystery Jar →",
+            "ticker_text": "Grand Launch Offer: First 5 Orders Get Free Mystery Jewellery Jar + Free Jhumka Set with Every Kurti! 🎁",
+            "pill_text": "🎁 Launch Offer | Free Jhumka with Every Kurti",
+            "pill_subtext": "View Offers →",
             "image_url": "/mystery_jewelry_jar.jpg",
             "title": "🎉 Grand Launch Offer 🎁",
-            "overlay_text": "First 5 Orders Get a Free Mystery Jewellery Jar!",
-            "description": "Grand Launching Special: First 5 customer orders will receive this handcrafted luxury glass jar with red ribbon, filled with premium surprise jewelry inside with your delivery parcel!",
+            "overlay_text": "First 5 Orders Get Free Mystery Jar + Free Jhumka Set with Every Kurti!",
+            "description": "Grand Launching Celebration: The first 5 customer orders will receive a handcrafted luxury glass jar filled with surprise jewelry! PLUS, receive a complimentary matching Jhumka Set with every single kurti in your order!",
             "button_text": "Shop Now & Claim Gift",
             "button_link": "/new-arrivals",
         }
