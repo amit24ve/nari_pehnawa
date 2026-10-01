@@ -49,12 +49,12 @@ const HeroSection = () => {
   const [showJarModal, setShowJarModal] = useState(false);
   const [jarConfig, setJarConfig] = useState({
     is_enabled: true,
-    pill_text: "Free Mystery Jewellery Jar",
-    pill_subtext: "View Gift →",
+    pill_text: "🎁 Launch Offer - First 5 Orders",
+    pill_subtext: "Free Mystery Jar →",
     image_url: "/mystery_jewelry_jar.jpg",
-    title: "Free Mystery Jewellery Jar 🎁",
-    overlay_text: "Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!",
-    description: "Receive this handcrafted luxury glass jar with red ribbon, filled with premium surprise jewelry inside with your delivery parcel!",
+    title: "🎉 Grand Launch Offer 🎁",
+    overlay_text: "First 5 Orders Get a Free Mystery Jewellery Jar!",
+    description: "Grand Launching Special: First 5 customer orders will receive this handcrafted luxury glass jar with red ribbon, filled with premium surprise jewelry inside with your delivery parcel!",
     button_text: "Shop Now & Claim Gift",
     button_link: "/new-arrivals",
   });
@@ -299,10 +299,10 @@ const HeroSection = () => {
               {/* Text Overlay directly on the Image */}
               <div className="absolute bottom-3 left-3 right-3 text-white space-y-1">
                 <div className="text-[10px] font-black uppercase tracking-wider text-[#ffe29a] bg-[#8B0000]/90 px-2 py-0.5 rounded-md inline-block shadow">
-                  🎁 DAILY TOP 5 ORDERS
+                  🎉 GRAND LAUNCH OFFER
                 </div>
                 <h4 className="text-base sm:text-lg font-black font-serif text-white leading-tight drop-shadow-md">
-                  {jarConfig.overlay_text || "Top 5 Orders of the Day Get a Free Mystery Jewellery Jar!"}
+                  {jarConfig.overlay_text || "First 5 Orders Get a Free Mystery Jewellery Jar!"}
                 </h4>
               </div>
             </div>
