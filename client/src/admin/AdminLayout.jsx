@@ -131,7 +131,7 @@ const AdminLayout = () => {
                         Hero Sections
                     </NavItem>
                     <NavItem to="/admin/announcements" icon={Megaphone}>
-                        Announcements
+                        Offers &amp; Announcements
                     </NavItem>
                     <NavItem to="/admin/inquiries" icon={MessageSquare}>
                         Inquiries
@@ -398,7 +398,7 @@ const AdminLayout = () => {
                                     icon={Megaphone}
                                     onClick={closeMobileMenu}
                                 >
-                                    Announcements
+                                    Offers &amp; Announcements
                                 </NavItem>
                                 <NavItem
                                     to="/admin/reviews"
