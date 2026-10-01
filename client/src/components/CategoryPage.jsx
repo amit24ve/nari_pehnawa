@@ -96,6 +96,8 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0 }) 
         <img
           src={resolveImageUrl(product.image, DEFAULT_FALLBACK_IMAGE)}
           alt={product.name}
+          loading="lazy"
+          decoding="async"
           onError={(e) => {
             e.target.onerror = null;
             e.target.src = DEFAULT_FALLBACK_IMAGE;

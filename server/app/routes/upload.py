@@ -135,12 +135,39 @@ async def upload_multiple_images(
         "video/quicktime": "mov",
     }
     saved_urls = []
+    import io
+    from PIL import Image, ImageOps
+
     for file in files:
         if file.content_type not in ALLOWED_MIME:
             continue
         content = await file.read()
         if len(content) > MAX_SIZE_MB * 1024 * 1024:
             continue
+
+        is_image = file.content_type in {"image/jpeg", "image/png", "image/webp", "image/avif"}
+        if is_image:
+            try:
+                img = Image.open(io.BytesIO(content))
+                img = ImageOps.exif_transpose(img)
+                max_dimension = 2048
+                if img.width > max_dimension or img.height > max_dimension:
+                    img.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
+
+                filename = f"{uuid.uuid4().hex}.webp"
+                dest = UPLOAD_DIR / filename
+
+                if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+                    img.save(dest, "WEBP", quality=82, method=6)
+                else:
+                    img = img.convert("RGB")
+                    img.save(dest, "WEBP", quality=82, method=6)
+
+                saved_urls.append(f"/api/uploads/{filename}")
+                continue
+            except Exception:
+                pass
+
         ext = ext_map.get(file.content_type, "jpg")
         filename = f"{uuid.uuid4().hex}.{ext}"
         dest = UPLOAD_DIR / filename

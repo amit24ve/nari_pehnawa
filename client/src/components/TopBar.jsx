@@ -81,17 +81,12 @@ const TopBar = () => {
   const contentElement = (
     <div className="flex items-center justify-center gap-2 sm:gap-2.5 text-xs sm:text-[13px] font-medium tracking-wide text-white transition-opacity duration-300">
       <span className="text-sm">{current.icon || "✨"}</span>
-      <span className="font-semibold text-white/95 truncate max-w-[280px] sm:max-w-md md:max-w-xl">
+      <span className="font-semibold text-white/95 truncate max-w-[320px] sm:max-w-xl md:max-w-2xl">
         {current.text}
       </span>
-      {current.sub_text && (
-        <span className="hidden sm:inline-block font-mono font-bold text-[#ffe29a] bg-black/25 px-2 py-0.5 rounded border border-[#d4af37]/30 text-[11px]">
-          {current.sub_text}
-        </span>
-      )}
       {current.link && (
-        <span className="hidden md:inline-flex items-center gap-0.5 text-[#ffe29a] hover:underline font-bold text-[11px] ml-1">
-          SHOP NOW &rarr;
+        <span className="hidden md:inline-flex items-center gap-1 text-[#ffe29a] font-bold text-[11px] ml-1.5 opacity-90 group-hover:opacity-100 hover:underline">
+          Shop Now &rarr;
         </span>
       )}
     </div>
