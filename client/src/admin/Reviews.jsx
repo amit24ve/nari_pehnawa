@@ -14,6 +14,7 @@ import {
   Trash2,
   RefreshCw,
   Camera,
+  Check,
   X
 } from 'lucide-react';
 
@@ -345,7 +346,19 @@ const Reviews = () => {
                   <div className="flex items-center gap-2">
                     {renderStars(r.rating)}
                     <span className="text-xs text-slate-300">•</span>
-                    <span className="text-xs text-slate-400 font-medium">{r.created_at ? new Date(r.created_at).toLocaleDateString() : "Recently"}</span>
+                    <span className="text-xs text-slate-400 font-medium">
+                      {r.created_at
+                        ? new Date(r.created_at).toLocaleString("en-IN", {
+                            timeZone: "Asia/Kolkata",
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          }) + " IST"
+                        : "Recently"}
+                    </span>
                   </div>
 
                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
