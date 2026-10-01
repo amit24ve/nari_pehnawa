@@ -339,6 +339,20 @@ def update_current_user_profile_v2(user_update: UserUpdate, current_user: dict =
             if existing:
                 raise HTTPException(status_code=400, detail="Email already in use")
         
+        # Handle name update and sync
+        if "name" in update_data:
+            clean_name = str(update_data["name"]).strip()
+            if clean_name:
+                update_data["name"] = clean_name
+                update_data["full_name"] = clean_name
+                rev_filter = [{"user_id": str(user_id)}]
+                if user.get("email"):
+                    rev_filter.append({"user_email": user.get("email")})
+                db["reviews"].update_many(
+                    {"$or": rev_filter},
+                    {"$set": {"user_name": clean_name, "reviewer_name": clean_name}}
+                )
+
         # Update user
         users_collection.update_one(
             {"_id": ObjectId(user_id)},
@@ -438,6 +452,15 @@ def update_user(user_id: str, user_update: UserUpdate, current_user: dict = Depe
             if clean_name:
                 update_data["name"] = clean_name
                 update_data["full_name"] = clean_name
+                # Cascade update to all reviews written by this user
+                existing_email = existing_user.get("email")
+                rev_filter = [{"user_id": str(user_id)}]
+                if existing_email:
+                    rev_filter.append({"user_email": existing_email})
+                db["reviews"].update_many(
+                    {"$or": rev_filter},
+                    {"$set": {"user_name": clean_name, "reviewer_name": clean_name}}
+                )
 
         # Handle password update if passed
         if "password" in update_data:

@@ -8,6 +8,10 @@ class ReviewBase(BaseModel):
     product_name: Optional[str] = None
     user_id: Optional[str] = "unknown"
     user_name: Optional[str] = "Anonymous"
+    reviewer_name: Optional[str] = None
+    user_email: Optional[str] = None
+    user_phone: Optional[str] = None
+    user_avatar: Optional[str] = None
     rating: float = Field(ge=1, le=5)
     title: Optional[str] = None
     comment: Optional[str] = None

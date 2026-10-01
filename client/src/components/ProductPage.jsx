@@ -537,7 +537,7 @@ const ProductPage = () => {
     setReviewSubmitting(true);
     setReviewFeedback(null);
     try {
-      const authorName = user?.name || "Verified Customer";
+      const authorName = user?.full_name || user?.name || (user?.email ? user.email.split("@")[0] : "Verified Customer");
       const token = localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
       const headers = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;

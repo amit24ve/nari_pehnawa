@@ -140,8 +140,8 @@ const Reviews = () => {
     }
   };
 
-  const getUserName = (r) => r.user_name || r.user?.name || "Anonymous";
-  const getUserEmail = (r) => r.user_email || r.user?.email || "N/A";
+  const getUserName = (r) => r.user_name || r.reviewer_name || r.user?.full_name || r.user?.name || "Anonymous";
+  const getUserEmail = (r) => r.user_email || r.user_phone || r.phone || r.user?.email || r.user?.phone || "Verified Customer";
   const getProductName = (r) => r.product_name || r.product?.name || "Kurti Item";
 
   const getInitials = (name) => {
