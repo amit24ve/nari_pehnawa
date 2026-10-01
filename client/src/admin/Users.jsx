@@ -1012,23 +1012,27 @@ const Users = () => {
                                 </div>
                             ) : viewDetails ? (
                                 <>
-                                    {/* Stats Banner */}
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    {/* Stats Banner (5 Columns) */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                                         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-                                            <span className="text-slate-400 text-xs block mb-1 font-semibold">Total Orders</span>
-                                            <span className="text-2xl font-black font-mono text-slate-800">{viewDetails.stats?.total_orders || 0}</span>
+                                            <span className="text-slate-400 text-xs block mb-1 font-semibold">Active Orders</span>
+                                            <span className="text-2xl font-black font-mono text-slate-800">{viewDetails.stats?.active_orders ?? viewDetails.stats?.total_orders ?? 0}</span>
                                         </div>
                                         <div className="bg-white border border-cyan-200 rounded-2xl p-4 shadow-sm">
                                             <span className="text-[#0891b2] text-xs block mb-1 font-semibold">Total Spend</span>
                                             <span className="text-2xl font-black font-mono text-[#0891b2]">₹{(viewDetails.stats?.total_spent || 0).toLocaleString("en-IN")}</span>
                                         </div>
-                                        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                                        <div className="bg-white border border-emerald-200 rounded-2xl p-4 shadow-sm">
                                             <span className="text-emerald-600 text-xs block mb-1 font-semibold">Delivered</span>
                                             <span className="text-2xl font-black font-mono text-emerald-600">{viewDetails.stats?.delivered_orders || 0}</span>
                                         </div>
-                                        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                                        <div className="bg-white border border-blue-200 rounded-2xl p-4 shadow-sm">
                                             <span className="text-blue-600 text-xs block mb-1 font-semibold">In Transit</span>
                                             <span className="text-2xl font-black font-mono text-blue-600">{viewDetails.stats?.in_transit_orders || 0}</span>
+                                        </div>
+                                        <div className="bg-white border border-red-200 rounded-2xl p-4 shadow-sm">
+                                            <span className="text-red-600 text-xs block mb-1 font-semibold">Cancelled</span>
+                                            <span className="text-2xl font-black font-mono text-red-600">{viewDetails.stats?.cancelled_orders || 0}</span>
                                         </div>
                                     </div>
 
@@ -1129,67 +1133,97 @@ const Users = () => {
                                         </h4>
                                         {viewDetails.orders && viewDetails.orders.length > 0 ? (
                                             <div className="space-y-3">
-                                                {viewDetails.orders.map((ord, idx) => (
-                                                    <div key={idx} className="bg-white border border-slate-200 hover:border-cyan-400 transition rounded-2xl p-4 shadow-sm">
-                                                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-3">
-                                                            <div>
-                                                                <span className="font-bold text-[#0891b2] text-sm font-mono">
-                                                                    Order #{ord.order_id}
-                                                                </span>
-                                                                <span className="text-xs text-slate-400 block mt-0.5">
-                                                                    Placed on: <strong className="text-slate-700 font-medium">{ord.created_at_ist}</strong>
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                                                                    ord.status === 'delivered' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                                                                    ord.status === 'cancelled' ? 'bg-red-50 text-red-700 border border-red-200' :
-                                                                    'bg-cyan-50 text-[#0891b2] border border-cyan-200'
-                                                                }`}>
-                                                                    {ord.status.toUpperCase()}
-                                                                </span>
-                                                                <span className="font-bold text-slate-900 text-sm font-mono">
-                                                                    ₹{ord.total.toLocaleString("en-IN")}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Items Summary */}
-                                                        {ord.items && ord.items.length > 0 && (
-                                                            <div className="space-y-1.5 mb-3 bg-slate-50 p-3 rounded-xl text-xs border border-slate-100">
-                                                                {ord.items.map((it, itemIdx) => (
-                                                                    <div key={itemIdx} className="flex justify-between items-center text-slate-700">
-                                                                        <span className="truncate pr-2">
-                                                                            {it.name || it.product_name} <span className="text-slate-400 font-bold">x{it.quantity}</span>
-                                                                        </span>
-                                                                        <span className="font-bold text-slate-900 whitespace-nowrap font-mono">
-                                                                            ₹{((it.price || 0) * (it.quantity || 1)).toLocaleString("en-IN")}
-                                                                        </span>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        )}
-
-                                                        {/* Shipment & Live Tracking Information */}
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
-                                                            <div className="text-slate-500">
-                                                                <span>Payment: </span>
-                                                                <strong className="text-slate-800 uppercase">{ord.payment_status}</strong> ({ord.payment_method})
-                                                            </div>
-                                                            {ord.awb_code ? (
-                                                                <div className="text-right sm:text-right text-[#0891b2] font-semibold flex items-center justify-end gap-1.5 bg-cyan-50 px-2.5 py-1 rounded-lg border border-cyan-200">
-                                                                    <Truck className="w-3.5 h-3.5 text-[#0891b2]" />
-                                                                    <span>AWB: <strong className="text-slate-800 font-mono">{ord.awb_code}</strong></span>
-                                                                    {ord.courier_name && <span className="text-slate-500 font-normal">({ord.courier_name})</span>}
+                                                {viewDetails.orders.map((ord, idx) => {
+                                                    const isCancelled = ['cancelled', 'canceled', 'failed'].includes((ord.status || '').toLowerCase());
+                                                    return (
+                                                        <div key={idx} className={`bg-white border transition rounded-2xl p-4 shadow-sm ${
+                                                            isCancelled ? 'border-red-200 hover:border-red-400 bg-red-50/20' : 'border-slate-200 hover:border-cyan-400'
+                                                        }`}>
+                                                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-3">
+                                                                <div>
+                                                                    <span className={`font-bold text-sm font-mono ${isCancelled ? 'text-red-700' : 'text-[#0891b2]'}`}>
+                                                                        Order #{ord.order_number || ord.order_id}
+                                                                    </span>
+                                                                    <span className="text-xs text-slate-400 block mt-0.5">
+                                                                        Placed on: <strong className="text-slate-700 font-medium">{ord.created_at_ist}</strong>
+                                                                    </span>
                                                                 </div>
-                                                            ) : (
-                                                                <div className="text-right text-slate-400">
-                                                                    Shipment: <span className="text-slate-600 font-medium">{ord.shipment_status || "Pending Dispatch"}</span>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                                                                        ord.status === 'delivered' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                                                        isCancelled ? 'bg-red-50 text-red-700 border border-red-200' :
+                                                                        'bg-cyan-50 text-[#0891b2] border border-cyan-200'
+                                                                    }`}>
+                                                                        {ord.status.toUpperCase()}
+                                                                    </span>
+                                                                    <span className={`font-bold text-sm font-mono ${isCancelled ? 'text-slate-400 line-through' : 'text-slate-900'}`}>
+                                                                        ₹{ord.total.toLocaleString("en-IN")}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Items Summary with Images */}
+                                                            {ord.items && ord.items.length > 0 && (
+                                                                <div className="space-y-2 mb-3 bg-slate-50 p-3 rounded-xl text-xs border border-slate-100">
+                                                                    {ord.items.map((it, itemIdx) => {
+                                                                        const imgUrl = it.product_image || it.image || it.image_url;
+                                                                        return (
+                                                                            <div key={itemIdx} className="flex items-center gap-3 text-slate-700">
+                                                                                {imgUrl && (
+                                                                                    <img
+                                                                                        src={imgUrl.startsWith("http") ? imgUrl : `${API_BASE_URL}${imgUrl.startsWith('/') ? '' : '/'}${imgUrl}`}
+                                                                                        alt={it.name || it.product_name}
+                                                                                        className="w-10 h-10 rounded-lg object-cover border border-slate-200 flex-shrink-0"
+                                                                                        onError={(e) => { e.target.style.display = 'none'; }}
+                                                                                    />
+                                                                                )}
+                                                                                <div className="flex-1 min-w-0">
+                                                                                    <p className="font-semibold text-slate-800 truncate">
+                                                                                        {it.name || it.product_name || "Product Item"}
+                                                                                    </p>
+                                                                                    <p className="text-[11px] text-slate-500 flex items-center gap-2">
+                                                                                        {it.size && <span>Size: <strong className="text-slate-700">{it.size}</strong></span>}
+                                                                                        {it.color && <span>Color: <strong className="text-slate-700">{it.color}</strong></span>}
+                                                                                        <span>Qty: <strong className="text-slate-700">{it.quantity || 1}</strong></span>
+                                                                                    </p>
+                                                                                </div>
+                                                                                <span className="font-bold text-slate-900 whitespace-nowrap font-mono">
+                                                                                    ₹{((it.price || 0) * (it.quantity || 1)).toLocaleString("en-IN")}
+                                                                                </span>
+                                                                            </div>
+                                                                        );
+                                                                    })}
                                                                 </div>
                                                             )}
+
+                                                            {/* Cancellation details if present */}
+                                                            {isCancelled && ord.cancellation_reason && (
+                                                                <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
+                                                                    <strong>Cancellation Reason:</strong> {ord.cancellation_reason}
+                                                                </div>
+                                                            )}
+
+                                                            {/* Shipment & Live Tracking Information */}
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
+                                                                <div className="text-slate-500">
+                                                                    <span>Payment: </span>
+                                                                    <strong className="text-slate-800 uppercase">{ord.payment_status}</strong> ({ord.payment_method})
+                                                                </div>
+                                                                {ord.awb_code ? (
+                                                                    <div className="text-right sm:text-right text-[#0891b2] font-semibold flex items-center justify-end gap-1.5 bg-cyan-50 px-2.5 py-1 rounded-lg border border-cyan-200">
+                                                                        <Truck className="w-3.5 h-3.5 text-[#0891b2]" />
+                                                                        <span>AWB: <strong className="text-slate-800 font-mono">{ord.awb_code}</strong></span>
+                                                                        {ord.courier_name && <span className="text-slate-500 font-normal">({ord.courier_name})</span>}
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="text-right text-slate-400">
+                                                                        Shipment: <span className="text-slate-600 font-medium">{ord.shipment_status || "Pending Dispatch"}</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         ) : (
                                             <div className="p-4 bg-white border border-slate-200 rounded-2xl text-center text-xs text-slate-400 shadow-sm">

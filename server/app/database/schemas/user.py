@@ -14,6 +14,7 @@ class User(BaseModel):
     joined_date: Optional[str] = None
     last_login: Optional[str] = None
     orders_count: Optional[int] = 0
+    cancelled_orders_count: Optional[int] = 0
     phone: Optional[str] = None
     bio: Optional[str] = None
     auth_provider: Optional[str] = None

@@ -35,6 +35,8 @@ def get_user_detailed_view(user_id: str, current_user: dict = Depends(require_ad
         elif created_raw:
             try:
                 dt = datetime.fromisoformat(str(created_raw).replace("Z", "+00:00"))
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
                 created_ist = dt.astimezone(ZoneInfo("Asia/Kolkata")).strftime("%d %b %Y, %I:%M %p IST")
             except Exception:
                 created_ist = str(created_raw)
@@ -80,20 +82,26 @@ def get_user_detailed_view(user_id: str, current_user: dict = Depends(require_ad
         orders_query = {"$or": user_order_filters}
         orders_cursor = orders_collection.find(orders_query).sort("_id", -1)
         orders = []
-        total_spent = 0
+        total_spent = 0.0
         delivered_count = 0
         in_transit_count = 0
+        cancelled_count = 0
+        active_orders_count = 0
 
         for o in orders_cursor:
-            order_id = o.get("order_id") or str(o.get("_id"))
+            order_id = o.get("order_number") or o.get("order_id") or str(o.get("_id"))
             total = float(o.get("total_amount") or o.get("total") or 0)
-            total_spent += total
-            
             status = (o.get("status") or "pending").lower()
-            if status in ["delivered", "complete", "completed"]:
-                delivered_count += 1
-            elif status in ["shipped", "in_transit", "dispatched", "out_for_delivery"]:
-                in_transit_count += 1
+
+            if status in ["cancelled", "canceled", "failed"]:
+                cancelled_count += 1
+            else:
+                active_orders_count += 1
+                total_spent += total
+                if status in ["delivered", "complete", "completed"]:
+                    delivered_count += 1
+                elif status in ["shipped", "in_transit", "dispatched", "out_for_delivery"]:
+                    in_transit_count += 1
 
             # Format order created_at to IST
             o_created_raw = o.get("created_at")
@@ -105,13 +113,17 @@ def get_user_detailed_view(user_id: str, current_user: dict = Depends(require_ad
             elif o_created_raw:
                 try:
                     dt = datetime.fromisoformat(str(o_created_raw).replace("Z", "+00:00"))
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=timezone.utc)
                     o_created_ist = dt.astimezone(ZoneInfo("Asia/Kolkata")).strftime("%d %b %Y, %I:%M %p IST")
                 except Exception:
                     o_created_ist = str(o_created_raw)
 
+            shipping_info = o.get("shipping") or {}
             orders.append({
                 "id": str(o.get("_id")),
                 "order_id": order_id,
+                "order_number": o.get("order_number") or order_id,
                 "created_at_ist": o_created_ist,
                 "total": total,
                 "items_count": len(o.get("items") or []),
@@ -119,11 +131,12 @@ def get_user_detailed_view(user_id: str, current_user: dict = Depends(require_ad
                 "status": status,
                 "payment_status": o.get("payment_status") or "pending",
                 "payment_method": o.get("payment_method") or "Online",
-                "shipping_address": o.get("shipping_address") or "",
-                "phone": o.get("phone") or "",
-                "awb_code": o.get("awb_code") or o.get("tracking_number") or "",
-                "courier_name": o.get("courier_name") or o.get("courier_company_id") or "",
-                "shipment_status": o.get("shipment_status") or status
+                "shipping_address": o.get("shipping_address") or {},
+                "phone": o.get("phone") or o.get("customer_phone") or "",
+                "awb_code": shipping_info.get("awb") or o.get("awb_code") or o.get("tracking_number") or "",
+                "courier_name": shipping_info.get("courier_name") or o.get("courier_name") or "",
+                "shipment_status": shipping_info.get("shipment_status") or o.get("shipment_status") or status,
+                "cancellation_reason": o.get("cancellation_reason") or o.get("cancel_reason") or ""
             })
 
         return {
@@ -131,7 +144,9 @@ def get_user_detailed_view(user_id: str, current_user: dict = Depends(require_ad
             "addresses": addresses,
             "orders": orders,
             "stats": {
-                "total_orders": len(orders),
+                "total_orders": active_orders_count,
+                "active_orders": active_orders_count,
+                "cancelled_orders": cancelled_count,
                 "total_spent": total_spent,
                 "delivered_orders": delivered_count,
                 "in_transit_orders": in_transit_count
@@ -227,7 +242,18 @@ def get_users(
                 user_orders_query.append({"phone": user.get("phone")})
                 user_orders_query.append({"customer_phone": user.get("phone")})
 
-            user["orders_count"] = orders_collection.count_documents({"$or": user_orders_query})
+            user["orders_count"] = orders_collection.count_documents({
+                "$and": [
+                    {"$or": user_orders_query},
+                    {"status": {"$nin": ["cancelled", "canceled", "failed"]}}
+                ]
+            })
+            user["cancelled_orders_count"] = orders_collection.count_documents({
+                "$and": [
+                    {"$or": user_orders_query},
+                    {"status": {"$in": ["cancelled", "canceled", "failed"]}}
+                ]
+            })
             user["coins_balance"] = int(user.get("coins_balance", 0) or 0)
             user["coins_earned_total"] = int(user.get("coins_earned_total", 0) or 0)
             user["coins_spent_total"] = int(user.get("coins_spent_total", 0) or 0)
@@ -256,8 +282,24 @@ def get_current_user_profile(current_user: dict = Depends(get_current_user)):
         user["id"] = str(user["_id"])
         if "name" not in user or not user["name"]:
             user["name"] = user.get("full_name") or "User"
+
+        user_order_filters = [{"user_id": user_id}]
+        if user.get("email"):
+            user_order_filters.extend([{"customer_email": user.get("email")}, {"email": user.get("email")}])
+        if user.get("phone"):
+            user_order_filters.extend([{"customer_phone": user.get("phone")}, {"phone": user.get("phone")}])
+
         user["orders_count"] = orders_collection.count_documents({
-            "$or": [{"user_id": user_id}, {"customer_email": user.get("email")}, {"email": user.get("email")}]
+            "$and": [
+                {"$or": user_order_filters},
+                {"status": {"$nin": ["cancelled", "canceled", "failed"]}}
+            ]
+        })
+        user["cancelled_orders_count"] = orders_collection.count_documents({
+            "$and": [
+                {"$or": user_order_filters},
+                {"status": {"$in": ["cancelled", "canceled", "failed"]}}
+            ]
         })
         user.pop("_id", None)
         user.pop("password_hash", None)

@@ -5,7 +5,8 @@ from app.database import get_database
 from app.security import verify_password, create_access_token
 from app.services.mobile_session_service import issue_refresh
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from urllib.parse import urlencode
 import requests
 
@@ -65,7 +66,8 @@ def phone_send_otp(request: PhoneSendOTPRequest):
 
     # Generate 6-digit OTP code
     otp_code = f"{random.randint(100000, 999999)}"
-    expires_at = datetime.now() + timedelta(minutes=10)
+    now_utc = datetime.now(timezone.utc)
+    expires_at = now_utc + timedelta(minutes=10)
 
     # Store OTP record in Mongo
     otps.delete_many({"phone": phone_clean})
@@ -73,7 +75,7 @@ def phone_send_otp(request: PhoneSendOTPRequest):
         "phone": phone_clean,
         "otp": otp_code,
         "expires_at": expires_at,
-        "created_at": datetime.now()
+        "created_at": now_utc
     })
 
     # Dispatch via APITxT SMS Provider
@@ -98,7 +100,7 @@ def phone_send_otp(request: PhoneSendOTPRequest):
 def phone_resend_otp(request: PhoneResendOTPRequest):
     """Resend OTP via APITxT SMS Provider"""
     import random
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
 
     phone_clean = normalize_indian_phone(request.phone)
     if not phone_clean or len(phone_clean) != 10:
@@ -109,14 +111,15 @@ def phone_resend_otp(request: PhoneResendOTPRequest):
 
     # Generate fresh OTP code
     otp_code = f"{random.randint(100000, 999999)}"
-    expires_at = datetime.now() + timedelta(minutes=10)
+    now_utc = datetime.now(timezone.utc)
+    expires_at = now_utc + timedelta(minutes=10)
 
     otps.delete_many({"phone": phone_clean})
     otps.insert_one({
         "phone": phone_clean,
         "otp": otp_code,
         "expires_at": expires_at,
-        "created_at": datetime.now()
+        "created_at": now_utc
     })
 
     # Dispatch via APITxT SMS Provider
@@ -132,8 +135,6 @@ def phone_resend_otp(request: PhoneResendOTPRequest):
 @router.post("/phone/verify-otp")
 def phone_verify_otp(request: PhoneVerifyOTPRequest):
     """Verify phone OTP and log in or auto-register user"""
-    from datetime import datetime
-
     phone_clean = normalize_indian_phone(request.phone)
     otp_input = request.otp.strip()
 
@@ -147,12 +148,19 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
     otps = db["otps"]
     users = db["users"]
 
+    now_utc = datetime.now(timezone.utc)
+    today_ist = datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d")
+
     # 1. Check local Mongo OTP record
     otp_record = otps.find_one({"phone": phone_clean, "otp": otp_input})
     is_valid_db = False
     if otp_record:
-        if otp_record.get("expires_at") and otp_record.get("expires_at") >= datetime.now():
-            is_valid_db = True
+        exp = otp_record.get("expires_at")
+        if isinstance(exp, datetime):
+            if exp.tzinfo is None:
+                exp = exp.replace(tzinfo=timezone.utc)
+            if exp >= now_utc:
+                is_valid_db = True
         otps.delete_one({"_id": otp_record["_id"]})
 
     if not is_valid_db:
@@ -177,7 +185,7 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
             # Link phone to existing account
             users.update_one(
                 {"_id": user_by_email["_id"]},
-                {"$set": {"phone": phone_clean, "is_phone_verified": True, "last_login": datetime.now().strftime("%Y-%m-%d")}}
+                {"$set": {"phone": phone_clean, "is_phone_verified": True, "last_login": today_ist}}
             )
             user = users.find_one({"_id": user_by_email["_id"]})
         else:
@@ -199,14 +207,14 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
                 "auth_provider": "phone_otp",
                 "is_phone_verified": True,
                 "is_email_verified": bool(custom_email),
-                "joined_date": datetime.now().strftime("%Y-%m-%d"),
-                "last_login": datetime.now().strftime("%Y-%m-%d"),
+                "joined_date": today_ist,
+                "last_login": today_ist,
                 "orders_count": 0,
                 "coins_balance": 0,
                 "coins_earned_total": 0,
                 "coins_spent_total": 0,
                 "addresses": [],
-                "created_at": datetime.now()
+                "created_at": now_utc
             }
             if custom_email:
                 new_user_data["email"] = custom_email
@@ -217,7 +225,7 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
         update_fields = {
             "phone": phone_clean,
             "is_phone_verified": True,
-            "last_login": datetime.now().strftime("%Y-%m-%d")
+            "last_login": today_ist
         }
         if request.name and request.name.strip() and (user.get("name") in [None, "", f"User {phone_clean[-4:]}"]):
             update_fields["name"] = request.name.strip()
@@ -319,7 +327,8 @@ def send_otp(request: SendOTPRequest):
 
     # Generate 6-digit OTP
     otp_code = f"{random.randint(100000, 999999)}"
-    expires_at = datetime.now() + timedelta(minutes=10)
+    now_utc = datetime.now(timezone.utc)
+    expires_at = now_utc + timedelta(minutes=10)
 
     # Store OTP in DB
     otps = db["otps"]
@@ -328,7 +337,7 @@ def send_otp(request: SendOTPRequest):
         "email": request.email,
         "otp": otp_code,
         "expires_at": expires_at,
-        "created_at": datetime.now()
+        "created_at": now_utc
     })
 
     # Send Email via NotificationService
@@ -368,7 +377,7 @@ def send_otp(request: SendOTPRequest):
 def forgot_password_send_otp(request: ForgotPasswordSendOTPRequest):
     """Send reset password OTP to email"""
     import random
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
     from app.services.notification_service import NotificationService
 
     db = get_database()
@@ -381,7 +390,8 @@ def forgot_password_send_otp(request: ForgotPasswordSendOTPRequest):
 
     # Generate 6-digit OTP
     otp_code = f"{random.randint(100000, 999999)}"
-    expires_at = datetime.now() + timedelta(minutes=10)
+    now_utc = datetime.now(timezone.utc)
+    expires_at = now_utc + timedelta(minutes=10)
 
     # Store OTP in DB
     otps = db["otps"]
@@ -390,7 +400,7 @@ def forgot_password_send_otp(request: ForgotPasswordSendOTPRequest):
         "email": request.email,
         "otp": otp_code,
         "expires_at": expires_at,
-        "created_at": datetime.now()
+        "created_at": now_utc
     })
 
     # Send Email via NotificationService
@@ -430,7 +440,7 @@ def forgot_password_send_otp(request: ForgotPasswordSendOTPRequest):
 def forgot_password_reset(request: ForgotPasswordResetRequest):
     """Verify OTP and reset password"""
     from app.security import get_password_hash
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     db = get_database()
     users = db["users"]
@@ -446,8 +456,13 @@ def forgot_password_reset(request: ForgotPasswordResetRequest):
     if not otp_record:
         raise HTTPException(status_code=400, detail="Invalid OTP code")
 
-    if otp_record.get("expires_at") and otp_record.get("expires_at") < datetime.now():
-        raise HTTPException(status_code=400, detail="OTP code has expired. Please request a new code.")
+    now_utc = datetime.now(timezone.utc)
+    exp = otp_record.get("expires_at")
+    if isinstance(exp, datetime):
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        if exp < now_utc:
+            raise HTTPException(status_code=400, detail="OTP code has expired. Please request a new code.")
 
     # OTP is valid — delete used OTP record
     otps.delete_one({"_id": otp_record["_id"]})
@@ -536,11 +551,19 @@ def register(request: RegisterRequest):
         if not otp_record:
             raise HTTPException(status_code=400, detail="Invalid verification OTP code.")
 
-        if otp_record.get("expires_at") and otp_record.get("expires_at") < datetime.now():
-            raise HTTPException(status_code=400, detail="OTP code has expired. Please request a new code.")
+        now_utc = datetime.now(timezone.utc)
+        exp = otp_record.get("expires_at")
+        if isinstance(exp, datetime):
+            if exp.tzinfo is None:
+                exp = exp.replace(tzinfo=timezone.utc)
+            if exp < now_utc:
+                raise HTTPException(status_code=400, detail="OTP code has expired. Please request a new code.")
 
         # Delete used OTP record
         otps.delete_one({"_id": otp_record["_id"]})
+
+    now_utc = datetime.now(timezone.utc)
+    today_ist = datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d")
 
     # Create new user
     user_data = {
@@ -551,9 +574,9 @@ def register(request: RegisterRequest):
         "is_admin": False,
         "is_email_verified": True,
         "auth_provider": "email_password",
-        "created_at": datetime.now(),
-        "joined_date": datetime.now().strftime("%Y-%m-%d"),
-        "last_login": datetime.now().strftime("%Y-%m-%d"),
+        "created_at": now_utc,
+        "joined_date": today_ist,
+        "last_login": today_ist,
         "orders_count": 0,
         "coins_balance": 0,
         "coins_earned_total": 0,
@@ -679,6 +702,9 @@ def google_callback(code: Optional[str] = None, error: Optional[str] = None, sta
     users = db["users"]
     user = users.find_one({"email": email})
 
+    now_utc = datetime.now(timezone.utc)
+    today_ist = datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d")
+
     if user:
         # Never let Google sign-in touch an admin account
         if user.get("role") == "admin" or user.get("is_admin"):
@@ -690,7 +716,7 @@ def google_callback(code: Optional[str] = None, error: Optional[str] = None, sta
                 "$set": {
                     "google_id": google_id,
                     "avatar": picture,
-                    "last_login": datetime.now().strftime("%Y-%m-%d"),
+                    "last_login": today_ist,
                 }
             },
         )
@@ -706,14 +732,14 @@ def google_callback(code: Optional[str] = None, error: Optional[str] = None, sta
             "auth_provider": "google",
             "google_id": google_id,
             "avatar": picture,
-            "joined_date": datetime.now().strftime("%Y-%m-%d"),
-            "last_login": datetime.now().strftime("%Y-%m-%d"),
+            "joined_date": today_ist,
+            "last_login": today_ist,
             "orders_count": 0,
             "coins_balance": 0,
             "coins_earned_total": 0,
             "coins_spent_total": 0,
             "addresses": [],
-            "created_at": datetime.now()
+            "created_at": now_utc
         }
         result = users.insert_one(new_user)
         user = users.find_one({"_id": result.inserted_id})

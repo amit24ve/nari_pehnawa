@@ -8,7 +8,8 @@ from app.security import get_current_user, require_admin
 from app.services.inventory_service import InventoryService, StockLineItem
 from app.services.notification_service import NotificationService
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 import random
 import string
 
@@ -76,7 +77,7 @@ def _log_order_status_change(
             "changed_by": changed_by,
             "changed_by_role": changed_by_role,
             "reason": reason,
-            "created_at": datetime.now(),
+            "created_at": datetime.now(timezone.utc),
         }
     )
 
@@ -126,7 +127,7 @@ def create_order(order: OrderCreate, current_user: dict = Depends(get_current_us
         order_data["order_number"] = generate_order_number()
         order_data["status"] = "pending"
         order_data["payment_status"] = "pending"
-        order_data["created_at"] = datetime.now()
+        order_data["created_at"] = datetime.now(timezone.utc)
         
         result = orders_collection.insert_one(order_data)
         order_data["_id"] = str(result.inserted_id)
@@ -833,8 +834,8 @@ def request_order_cancellation(
         "user_id": current_user.get("id"),
         "reason": payload.reason,
         "status": "requested",
-        "created_at": datetime.now(),
-        "updated_at": datetime.now(),
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
     }
 
     # Auto-approve: COD + not yet shipped -> nothing to refund, low risk.
@@ -869,7 +870,7 @@ def _finalise_cancellation(db, order: dict, order_id: str, cancellation_id: str,
 
     db["orders"].update_one(
         {"_id": order["_id"]},
-        {"$set": {"status": "cancelled", "updated_at": datetime.now()}},
+        {"$set": {"status": "cancelled", "updated_at": datetime.now(timezone.utc)}},
     )
     _log_order_status_change(
         db, order_id, previous_status, "cancelled",
@@ -936,8 +937,8 @@ def _finalise_cancellation(db, order: dict, order_id: str, cancellation_id: str,
             "reason": "Order cancelled",
             "status": "initiated",
             "attempts": 0,
-            "created_at": datetime.now(),
-            "updated_at": datetime.now(),
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
         }
         refund_result = db["refunds"].insert_one(refund_doc)
         refund_id = str(refund_result.inserted_id)
@@ -1027,7 +1028,7 @@ def review_cancellation_request(
                 "$set": {
                     "status": "rejected",
                     "admin_notes": action.get("admin_notes", ""),
-                    "updated_at": datetime.now(),
+                    "updated_at": datetime.now(timezone.utc),
                 }
             },
         )
@@ -1035,11 +1036,11 @@ def review_cancellation_request(
 
     db["cancellations"].update_one(
         {"_id": coid},
-        {"$set": {"status": "approved", "updated_at": datetime.now()}},
+        {"$set": {"status": "approved", "updated_at": datetime.now(timezone.utc)}},
     )
     _finalise_cancellation(db, order, order_id, cancellation_id, auto=False)
     db["cancellations"].update_one(
-        {"_id": coid}, {"$set": {"status": "completed", "updated_at": datetime.now()}}
+        {"_id": coid}, {"$set": {"status": "completed", "updated_at": datetime.now(timezone.utc)}}
     )
 
     return {"cancellation_id": cancellation_id, "status": "completed"}

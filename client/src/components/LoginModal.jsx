@@ -456,9 +456,6 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
               </div>
 
               <div className="space-y-1">
-                <span className="inline-block px-3 py-0.5 bg-emerald-100 text-emerald-800 text-[11px] font-bold rounded-full uppercase tracking-wider">
-                  Account Verified &amp; Active
-                </span>
                 <h3 className="text-xl sm:text-2xl font-serif font-black text-gray-900">
                   Welcome to Nari Pehnawa!
                 </h3>
@@ -470,9 +467,9 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
               {/* User Details Summary Card */}
               <div className="bg-neutral-50 border border-gray-200 rounded-2xl p-3.5 text-left text-xs space-y-2">
                 <div className="flex items-center justify-between text-gray-500 border-b border-gray-200/80 pb-2">
-                  <span className="font-medium">User Profile</span>
-                  <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                    Active Member
+                  <span className="font-medium text-gray-700">Account Details</span>
+                  <span className="text-xs text-gray-500">
+                    Active
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-gray-700">
@@ -489,11 +486,11 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                 </div>
               </div>
 
-              <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-2xl text-left text-xs text-amber-950 flex items-start gap-2.5">
-                <UserCheck className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+              <div className="p-3 bg-neutral-50 border border-gray-200 rounded-2xl text-left text-xs text-gray-700 flex items-start gap-2.5">
+                <UserCheck className="w-4 h-4 text-emerald-700 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-bold">Account created &amp; logged in seamlessly!</p>
-                  <p className="text-amber-800 mt-0.5 text-[11px]">
+                  <p className="font-bold text-gray-900">Account logged in successfully</p>
+                  <p className="text-gray-600 mt-0.5 text-[11px]">
                     {pendingCheckout
                       ? "You can now complete your pending order checkout without any interruption."
                       : "Track your orders, save addresses, and earn reward coins on every order."}
@@ -673,25 +670,14 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                             </button>
                           </div>
 
-                          {/* Existing vs New User Indicator */}
-                          {phoneIsExistingUser ? (
-                            <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 font-semibold flex items-center gap-2">
-                              <UserCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                              <span>
-                                Welcome back{phoneUserName ? `, ${phoneUserName}` : ""}! Enter the OTP code sent to your phone.
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="p-2.5 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-950 font-semibold flex items-start gap-2">
-                              <Sparkles className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                              <div>
-                                <p className="font-bold">New to Nari Pehnawa?</p>
-                                <p className="text-[11px] text-amber-800 mt-0.5">
-                                  Please enter your Full Name below. Your account will be created automatically upon OTP verification.
-                                </p>
-                              </div>
-                            </div>
-                          )}
+                          {/* Existing vs New User Guidance */}
+                          <p className="text-xs text-gray-600">
+                            {phoneIsExistingUser ? (
+                              <>Welcome back{phoneUserName ? `, ${phoneUserName}` : ""}! Enter the OTP code sent to your phone.</>
+                            ) : (
+                              <>Please enter your Full Name below to create your account.</>
+                            )}
+                          </p>
 
                           <div>
                             <label className="block text-xs font-bold text-gray-700 mb-1.5">
