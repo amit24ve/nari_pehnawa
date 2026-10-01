@@ -133,11 +133,11 @@ const HeroSection = () => {
       <section className="relative overflow-hidden bg-white select-none mx-0 sm:mx-2.5 shadow-sm">
         <style>{`
           .home-hero-slider {
-            height: clamp(260px, 60vw, 380px);
+            height: clamp(280px, 64vw, 400px);
           }
           @media(min-width: 768px) {
             .home-hero-slider {
-              height: clamp(450px, calc(40.14vw - 8px), 580px);
+              height: clamp(470px, calc(40.14vw + 12px), 600px);
             }
           }
         `}</style>
@@ -152,11 +152,11 @@ const HeroSection = () => {
                 className="absolute inset-0 transition-opacity duration-700 bg-stone-900"
                 style={{ opacity: i === current ? 1 : 0, zIndex: i === current ? 1 : 0 }}
               >
-                {/* Background image — matching Category hero mobile proportion & full visibility */}
+                {/* Background image — matching Category hero mobile proportion & full visibility from top */}
                 <img
                   src={resolvedSrc}
                   alt={slide.alt || slide.title || "Nari Pehnawa"}
-                  className="w-full h-full object-cover object-center sm:object-top transition-transform duration-1000 ease-out"
+                  className="w-full h-full object-cover object-top transition-transform duration-1000 ease-out"
                   loading={i === 0 ? "eager" : "lazy"}
                   decoding={i === 0 ? "sync" : "async"}
                   onError={(e) => {
