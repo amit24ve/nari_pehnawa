@@ -164,14 +164,18 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
     setSendingOtp(false);
 
     if (res.ok) {
-      if (authView === "signup" && res.data?.is_existing_user) {
-        setError("Number is already exist! This mobile number is already registered. Please log in.");
-        setPhoneIsExistingUser(true);
+      const isExisting = Boolean(res.data?.is_existing_user);
+      setPhoneIsExistingUser(isExisting);
+      if (res.data?.name && !fullName) {
+        setPhoneUserName(res.data.name);
+      }
+
+      if (authView === "signup" && isExisting) {
+        setError(`This mobile number (+91 ${cleanPhone}) is already registered with an account. Please log in.`);
         return;
       }
+
       setPhoneOtpSent(true);
-      setPhoneIsExistingUser(res.data?.is_existing_user);
-      if (res.data?.name && !fullName) setPhoneUserName(res.data.name);
       setResendTimer(30);
       setSuccessMsg(`OTP sent to +91 ${cleanPhone}`);
     } else {
@@ -206,23 +210,30 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
       return;
     }
 
+    const userNameToSubmit = (fullName.trim() || phoneUserName.trim());
+
+    // If it's a new customer / not an existing user, Full Name is STRICTLY MANDATORY!
+    if (!phoneIsExistingUser && !userNameToSubmit) {
+      setError("Please enter your Full Name. Name is mandatory to create your account.");
+      return;
+    }
+
     setError("");
     setSuccessMsg("");
     setLoading(true);
 
-    const userNameToSubmit = fullName.trim() || phoneUserName.trim() || undefined;
     const userEmailToSubmit = phoneUserEmail.trim() || undefined;
 
     const res = await verifyPhoneOtp({
       phone: cleanPhone,
       otp: cleanOtp,
-      name: userNameToSubmit,
+      name: userNameToSubmit || undefined,
       email: userEmailToSubmit,
     });
     setLoading(false);
 
     if (res.ok) {
-      if (res.is_new_user || authView === "signup") {
+      if (res.is_new_user || authView === "signup" || !phoneIsExistingUser) {
         setRegisteredUserData(res.user);
         setRegistrationSuccess(true);
       } else {
@@ -662,6 +673,26 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                             </button>
                           </div>
 
+                          {/* Existing vs New User Indicator */}
+                          {phoneIsExistingUser ? (
+                            <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 font-semibold flex items-center gap-2">
+                              <UserCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                              <span>
+                                Welcome back{phoneUserName ? `, ${phoneUserName}` : ""}! Enter the OTP code sent to your phone.
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="p-2.5 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-950 font-semibold flex items-start gap-2">
+                              <Sparkles className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p className="font-bold">New to Nari Pehnawa?</p>
+                                <p className="text-[11px] text-amber-800 mt-0.5">
+                                  Please enter your Full Name below. Your account will be created automatically upon OTP verification.
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
                           <div>
                             <label className="block text-xs font-bold text-gray-700 mb-1.5">
                               Enter 6-Digit OTP Code
@@ -678,6 +709,47 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                             />
                           </div>
 
+                          {/* If new user, require Name */}
+                          {!phoneIsExistingUser && (
+                            <div className="space-y-3 pt-1 border-t border-gray-100">
+                              <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">
+                                  Your Full Name <span className="text-red-500 font-black">*</span>
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type="text"
+                                    required
+                                    value={fullName || phoneUserName}
+                                    onChange={(e) => {
+                                      setFullName(e.target.value);
+                                      setPhoneUserName(e.target.value);
+                                    }}
+                                    placeholder="e.g. Priya Sharma"
+                                    className="w-full px-3.5 py-2.5 bg-neutral-50 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:border-[#8B0000]"
+                                  />
+                                  <UserIcon className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">
+                                  Email Address (Optional)
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type="email"
+                                    value={phoneUserEmail}
+                                    onChange={(e) => setPhoneUserEmail(e.target.value)}
+                                    placeholder="you@example.com (optional)"
+                                    className="w-full px-3.5 py-2.5 bg-neutral-50 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:border-[#8B0000]"
+                                  />
+                                  <Mail className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
                           <div className="flex items-center justify-between text-xs pt-0.5">
                             <span className="text-gray-500">Didn't receive code?</span>
                             <button
@@ -692,17 +764,17 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
 
                           <button
                             type="submit"
-                            disabled={phoneOtp.length < 4 || loading}
+                            disabled={phoneOtp.length < 4 || (!phoneIsExistingUser && !(fullName.trim() || phoneUserName.trim())) || loading}
                             className="w-full py-3 bg-[#8B0000] hover:bg-[#700000] text-white font-bold rounded-xl shadow-md transition text-sm disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
                           >
                             {loading ? (
                               <>
                                 <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                                <span>Verifying OTP...</span>
+                                <span>{phoneIsExistingUser ? "Verifying OTP..." : "Creating Account..."}</span>
                               </>
                             ) : (
                               <>
-                                <span>Verify &amp; Login</span>
+                                <span>{phoneIsExistingUser ? "Verify & Login" : "Verify & Create Account"}</span>
                                 <ArrowRight className="w-4 h-4" />
                               </>
                             )}
@@ -1206,14 +1278,37 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                     <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-600" />
                     <span>{error}</span>
                   </div>
-                  {(error.includes("already exist") || error.includes("already registered")) && authView === "signup" && (
+
+                  {/* If user tries to create an account that already exists */}
+                  {(error.toLowerCase().includes("already exist") || error.toLowerCase().includes("already registered")) && (
                     <button
                       type="button"
-                      onClick={() => switchView("login")}
+                      onClick={() => {
+                        switchView("login");
+                        if (signupMethod === "email") setLoginMethod("email");
+                        if (signupMethod === "phone") setLoginMethod("phone");
+                      }}
                       className="mt-1 px-4 py-1.5 bg-[#8B0000] hover:bg-[#700000] text-white font-bold rounded-lg text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
                     >
                       <LogIn className="w-3.5 h-3.5" />
                       <span>Switch to Login</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  )}
+
+                  {/* If user tries to login with an account that doesn't exist */}
+                  {(error.toLowerCase().includes("no account found") || error.toLowerCase().includes("user not found") || error.toLowerCase().includes("create an account")) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        switchView("signup");
+                        if (loginMethod === "email") setSignupMethod("email");
+                        if (loginMethod === "phone") setSignupMethod("phone");
+                      }}
+                      className="mt-1 px-4 py-1.5 bg-[#8B0000] hover:bg-[#700000] text-white font-bold rounded-lg text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>Create New Account</span>
                       <ArrowRight className="w-3 h-3" />
                     </button>
                   )}

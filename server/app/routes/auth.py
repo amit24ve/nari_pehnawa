@@ -182,8 +182,14 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
             user = users.find_one({"_id": user_by_email["_id"]})
         else:
             # Create new user with complete customer schema
+            user_name = request.name.strip() if request.name and request.name.strip() else None
+            if not user_name:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Please enter your Full Name."
+                )
+
             is_new_user = True
-            user_name = request.name.strip() if request.name and request.name.strip() else f"User {phone_clean[-4:]}"
             new_user_data = {
                 "phone": phone_clean,
                 "name": user_name,
@@ -465,26 +471,19 @@ def login(request: LoginRequest):
     db = get_database()
     users = db["users"]
 
-    print(f"DEBUG: Login attempt for email: {request.email}")
-    user = users.find_one({"email": request.email})
+    user = users.find_one({"email": request.email.strip().lower()})
     if not user:
-        print(f"DEBUG: User not found for email: {request.email}")
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(
+            status_code=404,
+            detail="No account found with this email address. Please create an account."
+        )
 
-    print(f"DEBUG: User found: {user.get('email')}")
     hashed = user.get("password_hash")
-    print(f"DEBUG: Has password_hash: {hashed is not None}")
-
-    if not hashed:
-        print("DEBUG: No password hash found")
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-
-    pwd_valid = verify_password(request.password, hashed)
-    print(f"DEBUG: Password valid: {pwd_valid}")
-
-    if not pwd_valid:
-        print("DEBUG: Password verification failed")
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not hashed or not verify_password(request.password, hashed):
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect password. Please try again or reset your password."
+        )
 
     # Create access token
     token = create_access_token({
@@ -518,6 +517,9 @@ def register(request: RegisterRequest):
     """Register new user endpoint (supports direct signup or email OTP verification)"""
     from app.security import get_password_hash
     from datetime import datetime
+
+    if not request.name or not request.name.strip():
+        raise HTTPException(status_code=400, detail="Please enter your Full Name. Name is mandatory.")
 
     db = get_database()
     users = db["users"]
