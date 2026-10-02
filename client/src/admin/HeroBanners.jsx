@@ -323,6 +323,8 @@ const HeroBanners = () => {
       loading: true,
       likers: [],
       totalLikes: 0,
+      registeredLikes: 0,
+      guestLikes: 0,
       searchQuery: "",
     });
 
@@ -337,6 +339,8 @@ const HeroBanners = () => {
         loading: false,
         likers: data.likers || [],
         totalLikes: data.total_likes || 0,
+        registeredLikes: data.registered_likes || 0,
+        guestLikes: data.guest_likes || 0,
       }));
     } catch (e) {
       setLikersModal((prev) => ({ ...prev, loading: false }));
@@ -1015,6 +1019,16 @@ const HeroBanners = () => {
                         <span>{reel.likes || 0} Likes</span>
                       </button>
                     </div>
+                    {reel.registered_likes !== undefined && (
+                      <div className="flex items-center gap-2 mt-1.5 text-[10px]">
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
+                          Reg: {reel.registered_likes || 0}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-semibold">
+                          Guest: {reel.guest_likes || 0}
+                        </span>
+                      </div>
+                    )}
                     <span className="text-[10px] text-slate-400 truncate block mt-1">Link: {reel.product_link}</span>
                   </div>
 
@@ -1750,7 +1764,7 @@ const HeroBanners = () => {
                     Reel Likes &amp; Customer Tracker
                   </h3>
                   <p className="text-xs text-slate-500 line-clamp-1">
-                    {likersModal.reelTitle} • <strong className="text-rose-600 font-bold">{likersModal.totalLikes} Total Likes</strong>
+                    {likersModal.reelTitle}
                   </p>
                 </div>
               </div>
@@ -1761,6 +1775,22 @@ const HeroBanners = () => {
               >
                 <X className="w-5 h-5" />
               </button>
+            </div>
+
+            {/* Like Breakdown Stats */}
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-2.5 text-center">
+                <span className="text-[10px] uppercase font-bold text-rose-600 block">Total Likes</span>
+                <span className="text-base sm:text-lg font-black text-rose-700">{likersModal.totalLikes}</span>
+              </div>
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-2.5 text-center">
+                <span className="text-[10px] uppercase font-bold text-emerald-600 block">Registered Users</span>
+                <span className="text-base sm:text-lg font-black text-emerald-700">{likersModal.registeredLikes || 0}</span>
+              </div>
+              <div className="bg-slate-100 border border-slate-200 rounded-2xl p-2.5 text-center">
+                <span className="text-[10px] uppercase font-bold text-slate-600 block">Guest Likes</span>
+                <span className="text-base sm:text-lg font-black text-slate-700">{likersModal.guestLikes || 0}</span>
+              </div>
             </div>
 
             {/* Search filter if many likers */}

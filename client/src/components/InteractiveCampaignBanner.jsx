@@ -1,31 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Heart, Sparkles, ArrowRight, Check } from "lucide-react";
 import { resolveImageUrl, DEFAULT_HERO_FALLBACK } from "../utils/imageUrl";
 import { useAuth } from "../context/AuthProvider";
+import { getGuestHeaders, getPersistentGuestId } from "../utils/guestIdentity";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 const VOTED_STORAGE_KEY = "nari_campaign_user_voted_slot";
 
-const getToken = () =>
-  localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
-
-const getVisitorId = () => {
-  try {
-    let vid = localStorage.getItem("nari_visitor_id");
-    if (!vid) {
-      vid = "v_" + Math.random().toString(36).substring(2, 10) + "_" + Date.now().toString(36);
-      localStorage.setItem("nari_visitor_id", vid);
-    }
-    return vid;
-  } catch (_) {
-    return "v_guest";
-  }
-};
-
 const InteractiveCampaignBanner = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const votingInProgressRef = useRef(false);
 
   const [campaign, setCampaign] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -44,12 +30,7 @@ const InteractiveCampaignBanner = () => {
 
   // Fetch active campaign from server with visitor id and optional auth header
   useEffect(() => {
-    const token = getToken();
-    const visitorId = getVisitorId();
-    const headers = {
-      "X-Visitor-Id": visitorId,
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    };
+    const headers = getGuestHeaders();
 
     fetch(`${API_BASE_URL}/campaign/active`, { headers })
       .then((r) => (r.ok ? r.json() : null))
@@ -76,6 +57,9 @@ const InteractiveCampaignBanner = () => {
 
     // If already voted for this exact slot, do nothing
     if (userVotedSlot === slotId) return;
+
+    if (votingInProgressRef.current) return;
+    votingInProgressRef.current = true;
 
     const previousVotedSlot = userVotedSlot;
 
@@ -106,15 +90,13 @@ const InteractiveCampaignBanner = () => {
 
     // Send vote to server with visitor ID & optional token
     try {
-      const token = getToken();
-      const visitorId = getVisitorId();
+      const headers = {
+        "Content-Type": "application/json",
+        ...getGuestHeaders(),
+      };
       const res = await fetch(`${API_BASE_URL}/campaign/vote`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Visitor-Id": visitorId,
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers,
         body: JSON.stringify({
           slot_id: slotId,
           product_id: slot.product?.id,
@@ -128,10 +110,36 @@ const InteractiveCampaignBanner = () => {
         }
         if (data.user_voted_slot !== undefined) {
           setUserVotedSlot(data.user_voted_slot);
+          try {
+            if (data.user_voted_slot !== null) {
+              localStorage.setItem(VOTED_STORAGE_KEY, String(data.user_voted_slot));
+            }
+          } catch (e) {}
         }
+      } else {
+        // Rollback on failure
+        setUserVotedSlot(previousVotedSlot);
+        try {
+          if (previousVotedSlot !== null) {
+            localStorage.setItem(VOTED_STORAGE_KEY, String(previousVotedSlot));
+          } else {
+            localStorage.removeItem(VOTED_STORAGE_KEY);
+          }
+        } catch (e) {}
       }
     } catch (err) {
       console.error("Vote failed:", err);
+      // Rollback on error
+      setUserVotedSlot(previousVotedSlot);
+      try {
+        if (previousVotedSlot !== null) {
+          localStorage.setItem(VOTED_STORAGE_KEY, String(previousVotedSlot));
+        } else {
+          localStorage.removeItem(VOTED_STORAGE_KEY);
+        }
+      } catch (e) {}
+    } finally {
+      votingInProgressRef.current = false;
     }
   };
 

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getGuestHeaders, getPersistentGuestId } from "../utils/guestIdentity";
 
 const AuthContext = createContext(null);
 
@@ -126,9 +127,13 @@ export const AuthProvider = ({ children }) => {
             import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
         try {
+            const guestHeaders = getGuestHeaders();
             const res = await fetch(`${API_URL}/auth/login`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    ...guestHeaders
+                },
                 body: JSON.stringify({ email, password }),
             });
 
@@ -145,6 +150,23 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem("token", token);
                 localStorage.setItem("neel_admin_user", JSON.stringify(u));
                 setUser(u);
+
+                // Explicit migration sync in background
+                try {
+                    const vid = getPersistentGuestId();
+                    if (vid) {
+                        fetch(`${API_URL}/reels/migrate-guest-likes`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                            body: JSON.stringify({ guest_id: vid })
+                        }).catch(() => {});
+                        fetch(`${API_URL}/campaign/migrate-guest-votes`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                            body: JSON.stringify({ guest_id: vid })
+                        }).catch(() => {});
+                    }
+                } catch (_) {}
 
                 // Redirect admin users to admin dashboard
                 if (u.role === "admin" || u.is_admin) {
@@ -191,6 +213,23 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem("token", token);
             localStorage.setItem("neel_admin_user", JSON.stringify(u));
             setUser(u);
+
+            // Trigger guest migration on token login as well
+            try {
+                const vid = getPersistentGuestId();
+                if (vid) {
+                    fetch(`${API_URL}/reels/migrate-guest-likes`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ guest_id: vid })
+                    }).catch(() => {});
+                    fetch(`${API_URL}/campaign/migrate-guest-votes`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ guest_id: vid })
+                    }).catch(() => {});
+                }
+            } catch (_) {}
 
             return { ok: true, user: u };
         } catch (err) {
@@ -245,9 +284,13 @@ export const AuthProvider = ({ children }) => {
             import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
         try {
+            const guestHeaders = getGuestHeaders();
             const res = await fetch(`${API_URL}/auth/phone/verify-otp`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    ...guestHeaders
+                },
                 body: JSON.stringify({ phone, otp, name, email }),
             });
 
@@ -263,6 +306,23 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem("token", token);
                 localStorage.setItem("neel_admin_user", JSON.stringify(u));
                 setUser(u);
+
+                // Migration sync in background
+                try {
+                    const vid = getPersistentGuestId();
+                    if (vid) {
+                        fetch(`${API_URL}/reels/migrate-guest-likes`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                            body: JSON.stringify({ guest_id: vid })
+                        }).catch(() => {});
+                        fetch(`${API_URL}/campaign/migrate-guest-votes`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                            body: JSON.stringify({ guest_id: vid })
+                        }).catch(() => {});
+                    }
+                } catch (_) {}
 
                 if (u.role === "admin" || u.is_admin) {
                     navigate("/admin/dashboard");

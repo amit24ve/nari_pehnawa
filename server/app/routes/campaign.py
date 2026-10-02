@@ -30,6 +30,39 @@ def _get_optional_user_id(request: Request) -> Optional[str]:
         return None
 
 
+def _extract_identity(
+    request: Request,
+    x_visitor_id: Optional[str] = None,
+    x_guest_id: Optional[str] = None
+) -> tuple[Optional[str], Optional[str]]:
+    """Returns (user_id, visitor_id) from token, headers, query, or client fallback."""
+    user_id = _get_optional_user_id(request)
+
+    visitor_id = None
+    if x_visitor_id and x_visitor_id.strip():
+        visitor_id = x_visitor_id.strip()
+    elif x_guest_id and x_guest_id.strip():
+        visitor_id = x_guest_id.strip()
+    else:
+        v_hdr = (
+            request.headers.get("x-visitor-id")
+            or request.headers.get("x-guest-id")
+            or request.headers.get("X-Visitor-Id")
+            or request.headers.get("X-Guest-Id")
+        )
+        if v_hdr and v_hdr.strip():
+            visitor_id = v_hdr.strip()
+        else:
+            v_param = request.query_params.get("visitor_id") or request.query_params.get("guest_id")
+            if v_param and v_param.strip():
+                visitor_id = v_param.strip()
+            elif not user_id:
+                client_ip = request.client.host if request.client else "unknown"
+                visitor_id = f"ip_{client_ip}"
+
+    return user_id, visitor_id
+
+
 class SlotConfig(BaseModel):
     slot_id: int
     tag: str = "Special Pick"
@@ -66,12 +99,13 @@ class CampaignUpdate(BaseModel):
 class VoteRequest(BaseModel):
     slot_id: int
     product_id: Optional[str] = None
+    visitor_id: Optional[str] = None
+    guest_id: Optional[str] = None
 
 
 def _ensure_default_campaign(db) -> dict:
     doc = db["campaign_showcase"].find_one({"key": "active_campaign"})
     if not doc:
-        # Grab first 4 products to pre-populate
         sample_products = list(db["products"].find({}, {"_id": 1}).limit(4))
         slots = []
         for i in range(4):
@@ -81,7 +115,7 @@ def _ensure_default_campaign(db) -> dict:
                 "tag": DEFAULT_TAGS[i],
                 "product_id": pid,
                 "custom_image": "",
-                "votes": (4 - i) * 35 + 42, # Realistic initial votes
+                "votes": (4 - i) * 35 + 42,
                 "rating": round(4.7 + (0.1 * (i % 3)), 1)
             })
 
@@ -115,10 +149,47 @@ def _ensure_default_campaign(db) -> dict:
     return doc
 
 
+def migrate_guest_campaign_votes(db, guest_id: str, user_id: str):
+    """Migrate anonymous guest vote to user account upon login/register without duplicate records."""
+    if not guest_id or not user_id:
+        return {"migrated": 0}
+
+    guest_votes = list(db["campaign_votes"].find({"$or": [{"visitor_id": guest_id}, {"guest_id": guest_id}]}))
+    migrated_count = 0
+
+    for gv in guest_votes:
+        existing_user_vote = db["campaign_votes"].find_one({"user_id": str(user_id)})
+        if existing_user_vote:
+            db["campaign_votes"].delete_one({"_id": gv["_id"]})
+        else:
+            db["campaign_votes"].update_one(
+                {"_id": gv["_id"]},
+                {"$set": {"user_id": str(user_id), "is_registered": True}}
+            )
+            migrated_count += 1
+
+    return {"migrated": migrated_count}
+
+
+@router.post("/migrate-guest-votes")
+def migrate_guest_votes_endpoint(
+    request: Request,
+    x_visitor_id: Optional[str] = Header(None, alias="X-Visitor-Id"),
+    x_guest_id: Optional[str] = Header(None, alias="X-Guest-Id"),
+    current_user: dict = Depends(get_current_user)
+):
+    """Migrate guest votes to the currently authenticated user"""
+    db = get_database()
+    _, visitor_id = _extract_identity(request, x_visitor_id, x_guest_id)
+    user_id = str(current_user.get("id"))
+    return migrate_guest_campaign_votes(db, visitor_id, user_id)
+
+
 @router.get("/active")
 def get_active_campaign(
     request: Request,
     x_visitor_id: Optional[str] = Header(None, alias="X-Visitor-Id"),
+    x_guest_id: Optional[str] = Header(None, alias="X-Guest-Id"),
 ):
     """Public endpoint to get the active campaign with populated products and votes."""
     db = get_database()
@@ -129,9 +200,7 @@ def get_active_campaign(
 
     slots = campaign.get("slots", [])
 
-    # Check optional logged-in user or guest visitor
-    user_id = _get_optional_user_id(request)
-    visitor_id = x_visitor_id.strip() if x_visitor_id else None
+    user_id, visitor_id = _extract_identity(request, x_visitor_id, x_guest_id)
     user_voted_slot = None
 
     queries = []
@@ -139,6 +208,7 @@ def get_active_campaign(
         queries.append({"user_id": str(user_id)})
     if visitor_id:
         queries.append({"visitor_id": visitor_id})
+        queries.append({"guest_id": visitor_id})
 
     if queries:
         existing_vote = db["campaign_votes"].find_one({"$or": queries})
@@ -167,7 +237,6 @@ def get_active_campaign(
             except Exception:
                 pass
 
-        # Fallback if product was deleted or none selected
         if not product_data:
             fallback_prod = db["products"].find_one()
             if fallback_prod:
@@ -224,16 +293,15 @@ def vote_campaign_product(
     data: VoteRequest,
     request: Request,
     x_visitor_id: Optional[str] = Header(None, alias="X-Visitor-Id"),
+    x_guest_id: Optional[str] = Header(None, alias="X-Guest-Id"),
 ):
     """Voting endpoint: Supports both guest visitors and logged in users. Enforces exactly ONE choice among the 4 slots."""
     db = get_database()
     campaign = _ensure_default_campaign(db)
 
-    user_id = _get_optional_user_id(request)
-    visitor_id = x_visitor_id.strip() if x_visitor_id else None
-    if not user_id and not visitor_id:
-        client_ip = request.client.host if request.client else "unknown"
-        visitor_id = f"ip_{client_ip}"
+    user_id, visitor_id = _extract_identity(request, x_visitor_id, x_guest_id)
+    if not visitor_id and data:
+        visitor_id = data.visitor_id or data.guest_id
 
     new_slot_id = data.slot_id
 
@@ -247,6 +315,7 @@ def vote_campaign_product(
         queries.append({"user_id": str(user_id)})
     if visitor_id:
         queries.append({"visitor_id": visitor_id})
+        queries.append({"guest_id": visitor_id})
 
     existing_vote = db["campaign_votes"].find_one({"$or": queries}) if queries else None
 
@@ -271,8 +340,10 @@ def vote_campaign_product(
         update_fields = {"slot_id": new_slot_id, "updated_at": datetime.now()}
         if user_id:
             update_fields["user_id"] = str(user_id)
+            update_fields["is_registered"] = True
         if visitor_id:
             update_fields["visitor_id"] = visitor_id
+            update_fields["guest_id"] = visitor_id
 
         db["campaign_votes"].update_one(
             {"_id": existing_vote["_id"]},
@@ -287,19 +358,25 @@ def vote_campaign_product(
             "slot_id": new_slot_id,
             "product_id": data.product_id,
             "created_at": datetime.now(),
+            "is_registered": bool(user_id)
         }
         if user_id:
             doc["user_id"] = str(user_id)
         if visitor_id:
             doc["visitor_id"] = visitor_id
+            doc["guest_id"] = visitor_id
 
-        db["campaign_votes"].insert_one(doc)
+        try:
+            db["campaign_votes"].insert_one(doc)
+        except Exception:
+            pass  # Duplicate caught by unique index
 
     # Save updated slots back to campaign_showcase
     db["campaign_showcase"].update_one(
         {"key": "active_campaign"},
         {"$set": {"slots": slots, "updated_at": datetime.now()}}
     )
+    clear_api_cache()
 
     return {
         "success": True,
@@ -314,11 +391,21 @@ def get_admin_campaign_config(_admin=Depends(require_admin)):
     db = get_database()
     campaign = _ensure_default_campaign(db)
 
-    # Remove internal _id for clean JSON
     campaign_out = dict(campaign)
     campaign_out["id"] = str(campaign_out.pop("_id"))
 
-    # Fetch product options for picker
+    # Calculate actual votes analytics
+    total_votes = db["campaign_votes"].count_documents({})
+    registered_votes = db["campaign_votes"].count_documents({"user_id": {"$exists": True, "$ne": None}})
+    guest_votes = max(0, total_votes - registered_votes)
+
+    slots = campaign_out.get("slots", [])
+    for s in slots:
+        sid = s.get("slot_id")
+        s["total_votes_db"] = db["campaign_votes"].count_documents({"slot_id": sid})
+        s["registered_votes"] = db["campaign_votes"].count_documents({"slot_id": sid, "user_id": {"$exists": True, "$ne": None}})
+        s["guest_votes"] = max(0, s["total_votes_db"] - s["registered_votes"])
+
     products = list(db["products"].find({}, {"name": 1, "price": 1, "image": 1, "category": 1}).sort("name", 1))
     for p in products:
         p["id"] = str(p.pop("_id"))
@@ -326,6 +413,11 @@ def get_admin_campaign_config(_admin=Depends(require_admin)):
     return {
         "campaign": campaign_out,
         "products": products,
+        "analytics": {
+            "total_votes": total_votes,
+            "registered_votes": registered_votes,
+            "guest_votes": guest_votes
+        }
     }
 
 
