@@ -311,6 +311,9 @@ const HeroBanners = () => {
     loading: false,
     likers: [],
     totalLikes: 0,
+    baseLikes: 0,
+    guestLikes: 0,
+    userLikes: 0,
     searchQuery: "",
   });
 
@@ -322,9 +325,10 @@ const HeroBanners = () => {
       reelId,
       loading: true,
       likers: [],
-      totalLikes: 0,
-      registeredLikes: 0,
-      guestLikes: 0,
+      totalLikes: reel.likes || 0,
+      baseLikes: reel.base_likes || 0,
+      guestLikes: reel.guest_likes || 0,
+      userLikes: reel.user_likes || 0,
       searchQuery: "",
     });
 
@@ -338,9 +342,10 @@ const HeroBanners = () => {
         ...prev,
         loading: false,
         likers: data.likers || [],
-        totalLikes: data.total_likes || 0,
-        registeredLikes: data.registered_likes || 0,
-        guestLikes: data.guest_likes || 0,
+        totalLikes: data.total_likes ?? prev.totalLikes,
+        baseLikes: data.base_likes ?? prev.baseLikes,
+        guestLikes: data.guest_likes ?? prev.guestLikes,
+        userLikes: data.user_likes ?? prev.userLikes,
       }));
     } catch (e) {
       setLikersModal((prev) => ({ ...prev, loading: false }));
@@ -431,6 +436,7 @@ const HeroBanners = () => {
       const reelId = editingReel ? (editingReel._id || editingReel.id) : null;
       const url = editingReel ? `${API_BASE}/reels/${reelId}` : `${API_BASE}/reels/`;
       const method = editingReel ? "PUT" : "POST";
+      const baseLikesVal = (reelForm.likes !== "" && reelForm.likes !== undefined && !isNaN(reelForm.likes)) ? Math.max(0, parseInt(reelForm.likes, 10)) : 0;
       const payload = {
         title: reelForm.title.trim(),
         video_url: reelForm.video_url.trim(),
@@ -439,7 +445,9 @@ const HeroBanners = () => {
         original_price: reelForm.original_price ? Number(reelForm.original_price) : null,
         product_link: reelForm.product_link || "/category/anarkali-kurtis",
         views: reelForm.views ? String(reelForm.views).trim() : "0",
-        likes: (reelForm.likes !== "" && reelForm.likes !== undefined && !isNaN(reelForm.likes)) ? Math.max(0, parseInt(reelForm.likes, 10)) : 0,
+        likes: baseLikesVal,
+        base_likes: baseLikesVal,
+        base_like_count: baseLikesVal,
         order: Number(reelForm.order) || 0,
         is_active: reelForm.is_active !== false,
       };
@@ -482,7 +490,7 @@ const HeroBanners = () => {
       original_price: reel.original_price || "",
       product_link: reel.product_link || "/category/anarkali-kurtis",
       views: reel.views || "0",
-      likes: reel.likes ?? 0,
+      likes: reel.base_likes !== undefined ? reel.base_likes : (reel.likes ?? 0),
       order: reel.order || 0,
       is_active: reel.is_active !== false
     });
@@ -502,7 +510,7 @@ const HeroBanners = () => {
           setReelForm((prev) => ({
             ...prev,
             views: eng.views !== undefined ? String(eng.views) : prev.views,
-            likes: eng.likes !== undefined ? eng.likes : prev.likes,
+            likes: eng.base_likes !== undefined ? eng.base_likes : (eng.likes !== undefined ? eng.likes : prev.likes),
           }));
         }
       }
@@ -1019,16 +1027,6 @@ const HeroBanners = () => {
                         <span>{reel.likes || 0} Likes</span>
                       </button>
                     </div>
-                    {reel.registered_likes !== undefined && (
-                      <div className="flex items-center gap-2 mt-1.5 text-[10px]">
-                        <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
-                          Reg: {reel.registered_likes || 0}
-                        </span>
-                        <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-semibold">
-                          Guest: {reel.guest_likes || 0}
-                        </span>
-                      </div>
-                    )}
                     <span className="text-[10px] text-slate-400 truncate block mt-1">Link: {reel.product_link}</span>
                   </div>
 
@@ -1450,7 +1448,7 @@ const HeroBanners = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">Likes Count</label>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Base Like Count (Admin Starting Likes)</label>
                   <input
                     type="number"
                     min="0"
@@ -1459,6 +1457,9 @@ const HeroBanners = () => {
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0891b2]"
                     placeholder="0"
                   />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Base count is preserved. New user/guest likes will dynamically add to this.
+                  </p>
                 </div>
               </div>
 
@@ -1764,7 +1765,7 @@ const HeroBanners = () => {
                     Reel Likes &amp; Customer Tracker
                   </h3>
                   <p className="text-xs text-slate-500 line-clamp-1">
-                    {likersModal.reelTitle}
+                    {likersModal.reelTitle} • <strong className="text-rose-600 font-bold">{likersModal.totalLikes} Total Likes</strong>
                   </p>
                 </div>
               </div>
@@ -1777,19 +1778,23 @@ const HeroBanners = () => {
               </button>
             </div>
 
-            {/* Like Breakdown Stats */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
-              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-2.5 text-center">
-                <span className="text-[10px] uppercase font-bold text-rose-600 block">Total Likes</span>
-                <span className="text-base sm:text-lg font-black text-rose-700">{likersModal.totalLikes}</span>
+            {/* Likes Breakdown Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+              <div className="bg-rose-50 border border-rose-200/80 rounded-2xl p-2.5 text-center">
+                <div className="text-[10px] font-bold text-rose-600 uppercase tracking-wider">Total Likes</div>
+                <div className="text-lg font-black text-rose-700">{likersModal.totalLikes}</div>
               </div>
-              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-2.5 text-center">
-                <span className="text-[10px] uppercase font-bold text-emerald-600 block">Registered Users</span>
-                <span className="text-base sm:text-lg font-black text-emerald-700">{likersModal.registeredLikes || 0}</span>
+              <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-2.5 text-center">
+                <div className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Base Likes</div>
+                <div className="text-lg font-black text-amber-800">{likersModal.baseLikes}</div>
               </div>
-              <div className="bg-slate-100 border border-slate-200 rounded-2xl p-2.5 text-center">
-                <span className="text-[10px] uppercase font-bold text-slate-600 block">Guest Likes</span>
-                <span className="text-base sm:text-lg font-black text-slate-700">{likersModal.guestLikes || 0}</span>
+              <div className="bg-blue-50 border border-blue-200/80 rounded-2xl p-2.5 text-center">
+                <div className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Guest Likes</div>
+                <div className="text-lg font-black text-blue-700">{likersModal.guestLikes}</div>
+              </div>
+              <div className="bg-emerald-50 border border-emerald-200/80 rounded-2xl p-2.5 text-center">
+                <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">User Likes</div>
+                <div className="text-lg font-black text-emerald-700">{likersModal.userLikes}</div>
               </div>
             </div>
 

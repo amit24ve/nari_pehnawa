@@ -70,40 +70,6 @@ def _get_optional_user(request: Request) -> Optional[dict]:
     return None
 
 
-def _extract_identity(
-    request: Request,
-    x_visitor_id: Optional[str] = None,
-    x_guest_id: Optional[str] = None
-) -> tuple[Optional[str], Optional[str]]:
-    """Returns (user_id, visitor_id) from token, headers, query, or client fallback."""
-    user = _get_optional_user(request)
-    user_id = str(user.get("id")) if user else None
-
-    visitor_id = None
-    if x_visitor_id and x_visitor_id.strip():
-        visitor_id = x_visitor_id.strip()
-    elif x_guest_id and x_guest_id.strip():
-        visitor_id = x_guest_id.strip()
-    else:
-        v_hdr = (
-            request.headers.get("x-visitor-id")
-            or request.headers.get("x-guest-id")
-            or request.headers.get("X-Visitor-Id")
-            or request.headers.get("X-Guest-Id")
-        )
-        if v_hdr and v_hdr.strip():
-            visitor_id = v_hdr.strip()
-        else:
-            v_param = request.query_params.get("visitor_id") or request.query_params.get("guest_id")
-            if v_param and v_param.strip():
-                visitor_id = v_param.strip()
-            elif not user_id:
-                client_ip = request.client.host if request.client else "unknown"
-                visitor_id = f"ip_{client_ip}"
-
-    return user_id, visitor_id
-
-
 class ReelBase(BaseModel):
     title: str
     video_url: str
@@ -113,6 +79,10 @@ class ReelBase(BaseModel):
     product_link: Optional[str] = None
     views: Optional[str] = "0"
     likes: Optional[int] = 0
+    base_likes: Optional[int] = 0
+    base_like_count: Optional[int] = 0
+    guest_likes: Optional[int] = 0
+    user_likes: Optional[int] = 0
     order: Optional[int] = 0
     is_active: bool = True
 
@@ -130,6 +100,8 @@ class ReelUpdate(BaseModel):
     product_link: Optional[str] = None
     views: Optional[str] = None
     likes: Optional[int] = None
+    base_likes: Optional[int] = None
+    base_like_count: Optional[int] = None
     order: Optional[int] = None
     is_active: Optional[bool] = None
 
@@ -137,8 +109,6 @@ class ReelUpdate(BaseModel):
 class ReelOut(ReelBase):
     id: str
     liked: Optional[bool] = False
-    registered_likes: Optional[int] = 0
-    guest_likes: Optional[int] = 0
 
     class Config:
         populate_by_name = True
@@ -146,8 +116,6 @@ class ReelOut(ReelBase):
 
 class ReelLikePayload(BaseModel):
     action: Optional[str] = None  # "like", "unlike", or None/empty for toggle
-    visitor_id: Optional[str] = None
-    guest_id: Optional[str] = None
 
 
 class ReelCommentCreate(BaseModel):
@@ -159,66 +127,49 @@ def _fmt(doc: dict) -> dict:
     return doc
 
 
-def migrate_guest_reel_likes(db, guest_id: str, user_id: str):
-    """Migrate anonymous guest likes to user account upon login/register without duplicate records."""
-    if not guest_id or not user_id:
-        return {"migrated": 0}
+def _get_reel_likes_data(db, reel_doc: dict) -> dict:
+    """
+    Calculates the exact like breakdown and combined total for a reel without losing existing admin/base counts.
+    Base like count is preserved as base_like_count.
+    Total Likes = base_like_count + unique active likes in reel_likes collection.
+    """
+    reel_id = str(reel_doc.get("_id") or reel_doc.get("id"))
+    
+    # Base Like Count (Admin starting count)
+    base_like_count = reel_doc.get("base_like_count")
+    if base_like_count is None:
+        base_like_count = reel_doc.get("base_likes")
+    if base_like_count is None:
+        base_like_count = int(reel_doc.get("likes") or 0)
+    base_like_count = max(0, int(base_like_count))
 
-    user = None
-    if ObjectId.is_valid(user_id):
-        user = db["users"].find_one({"_id": ObjectId(user_id)})
-    if not user:
-        user = db["users"].find_one({"id": str(user_id)})
+    # Query active likes in reel_likes collection
+    guest_likes_count = db["reel_likes"].count_documents({
+        "reel_id": reel_id,
+        "$or": [
+            {"user_id": None},
+            {"user_id": {"$exists": False}},
+            {"is_registered": False}
+        ]
+    })
 
-    user_name = (user.get("full_name") or user.get("name") or "Registered Customer") if user else "Registered Customer"
-    user_email = user.get("email") if user else None
-    user_phone = user.get("phone") if user else None
+    user_likes_count = db["reel_likes"].count_documents({
+        "reel_id": reel_id,
+        "user_id": {"$ne": None, "$exists": True},
+        "is_registered": {"$ne": False}
+    })
 
-    guest_likes = list(db["reel_likes"].find({"$or": [{"visitor_id": guest_id}, {"guest_id": guest_id}]}))
-    migrated_count = 0
+    total_active_likes = db["reel_likes"].count_documents({"reel_id": reel_id})
+    total_likes = base_like_count + total_active_likes
 
-    for gl in guest_likes:
-        reel_id = gl.get("reel_id")
-        if not reel_id:
-            continue
-        existing_user_like = db["reel_likes"].find_one({"reel_id": reel_id, "user_id": str(user_id)})
-        if existing_user_like:
-            db["reel_likes"].delete_one({"_id": gl["_id"]})
-        else:
-            db["reel_likes"].update_one(
-                {"_id": gl["_id"]},
-                {"$set": {
-                    "user_id": str(user_id),
-                    "user_name": user_name,
-                    "user_email": user_email,
-                    "user_phone": user_phone,
-                    "is_registered": True
-                }}
-            )
-            migrated_count += 1
-
-        actual_cnt = db["reel_likes"].count_documents({"reel_id": reel_id})
-        try:
-            oid = ObjectId(reel_id) if ObjectId.is_valid(reel_id) else reel_id
-            db["watch_buy_reels"].update_one({"$or": [{"_id": oid}, {"id": reel_id}]}, {"$set": {"likes": actual_cnt}})
-        except Exception:
-            pass
-
-    return {"migrated": migrated_count}
-
-
-@router.post("/migrate-guest-likes")
-def migrate_guest_likes_endpoint(
-    request: Request,
-    x_visitor_id: Optional[str] = Header(None, alias="X-Visitor-Id"),
-    x_guest_id: Optional[str] = Header(None, alias="X-Guest-Id"),
-    current_user: dict = Depends(get_current_user)
-):
-    """Migrate guest likes to the currently authenticated user"""
-    db = get_database()
-    _, visitor_id = _extract_identity(request, x_visitor_id, x_guest_id)
-    user_id = str(current_user.get("id"))
-    return migrate_guest_reel_likes(db, visitor_id, user_id)
+    return {
+        "base_likes": base_like_count,
+        "base_like_count": base_like_count,
+        "guest_likes": guest_likes_count,
+        "user_likes": user_likes_count,
+        "total_likes": total_likes,
+        "active_likes": total_active_likes
+    }
 
 
 @router.get("/", response_model=List[ReelOut])
@@ -226,22 +177,24 @@ def get_reels(
     request: Request,
     active_only: bool = True,
     x_visitor_id: Optional[str] = Header(None, alias="X-Visitor-Id"),
-    x_guest_id: Optional[str] = Header(None, alias="X-Guest-Id"),
+    x_guest_id: Optional[str] = Header(None, alias="X-Guest-Id")
 ):
     db = get_database()
     query = {"is_active": True} if active_only else {}
     collection = db["watch_buy_reels"]
     reels = list(collection.find(query).sort("order", 1))
 
-    user_id, visitor_id = _extract_identity(request, x_visitor_id, x_guest_id)
+    user = _get_optional_user(request)
+    user_id = str(user.get("id")) if user else None
+    guest_id = (x_guest_id or x_visitor_id or "").strip() or None
 
     user_liked_reels = set()
     queries = []
     if user_id:
-        queries.append({"user_id": str(user_id)})
-    if visitor_id:
-        queries.append({"visitor_id": visitor_id})
-        queries.append({"guest_id": visitor_id})
+        queries.append({"user_id": user_id})
+    if guest_id:
+        queries.append({"guest_id": guest_id})
+        queries.append({"visitor_id": guest_id})
     if queries:
         likes_docs = list(db["reel_likes"].find({"$or": queries}, {"reel_id": 1}))
         user_liked_reels = {str(d.get("reel_id")) for d in likes_docs if d.get("reel_id")}
@@ -249,14 +202,14 @@ def get_reels(
     out = []
     for r in reels:
         rid = str(r["_id"])
-        # Accurate real-time counts
-        total_likes = max(0, int(r.get("likes") or 0))
-        r["likes"] = total_likes
+        likes_info = _get_reel_likes_data(db, r)
+        r["likes"] = likes_info["total_likes"]
+        r["base_likes"] = likes_info["base_likes"]
+        r["base_like_count"] = likes_info["base_like_count"]
+        r["guest_likes"] = likes_info["guest_likes"]
+        r["user_likes"] = likes_info["user_likes"]
         r["views"] = str(r.get("views") or "0")
         r["liked"] = (rid in user_liked_reels)
-        # Breakdown metrics for admin
-        r["registered_likes"] = db["reel_likes"].count_documents({"reel_id": rid, "user_id": {"$exists": True, "$ne": None}})
-        r["guest_likes"] = max(0, total_likes - r["registered_likes"])
         out.append(_fmt(r))
 
     return out
@@ -272,26 +225,39 @@ def _reel_or_404(db, reel_id: str) -> ObjectId:
     return oid
 
 
-def _engagement(db, reel_id: str, user_id: Optional[str] = None, visitor_id: Optional[str] = None) -> dict:
-    reel = db["watch_buy_reels"].find_one({"_id": ObjectId(reel_id)}) or {}
-    current_likes = max(0, int(reel.get("likes") or 0))
+def _engagement(db, reel_id: str, user_id: Optional[str] = None, visitor_id: Optional[str] = None, guest_id: Optional[str] = None) -> dict:
+    oid = ObjectId(reel_id) if ObjectId.is_valid(reel_id) else reel_id
+    reel = db["watch_buy_reels"].find_one({"_id": oid}) or {}
+    likes_info = _get_reel_likes_data(db, reel)
 
+    g_id = guest_id or visitor_id
     liked = False
     queries = []
     if user_id:
         queries.append({"user_id": str(user_id)})
-    if visitor_id:
-        queries.append({"visitor_id": visitor_id})
-        queries.append({"guest_id": visitor_id})
+    if g_id:
+        queries.append({"guest_id": str(g_id)})
+        queries.append({"visitor_id": str(g_id)})
+
     if queries:
-        liked = bool(db["reel_likes"].find_one({"reel_id": reel_id, "$or": queries}))
+        liked = bool(db["reel_likes"].find_one({"reel_id": str(reel_id), "$or": queries}))
 
     return {
-        "reel_id": reel_id,
-        "likes": current_likes,
+        "reel_id": str(reel_id),
+        "likes": likes_info["total_likes"],
+        "base_likes": likes_info["base_likes"],
+        "base_like_count": likes_info["base_like_count"],
+        "guest_likes": likes_info["guest_likes"],
+        "user_likes": likes_info["user_likes"],
         "views": str(reel.get("views") or "0"),
-        "comments": db["reel_comments"].count_documents({"reel_id": reel_id}),
+        "comments": db["reel_comments"].count_documents({"reel_id": str(reel_id)}),
         "liked": liked,
+        "breakdown": {
+            "total": likes_info["total_likes"],
+            "base": likes_info["base_likes"],
+            "guest": likes_info["guest_likes"],
+            "user": likes_info["user_likes"]
+        }
     }
 
 
@@ -300,12 +266,14 @@ def get_reel_engagement(
     reel_id: str,
     request: Request,
     x_visitor_id: Optional[str] = Header(None, alias="X-Visitor-Id"),
-    x_guest_id: Optional[str] = Header(None, alias="X-Guest-Id"),
+    x_guest_id: Optional[str] = Header(None, alias="X-Guest-Id")
 ):
     db = get_database()
     _reel_or_404(db, reel_id)
-    user_id, visitor_id = _extract_identity(request, x_visitor_id, x_guest_id)
-    return _engagement(db, reel_id, user_id, visitor_id)
+    user = _get_optional_user(request)
+    user_id = str(user.get("id")) if user else None
+    guest_id = (x_guest_id or x_visitor_id or "").strip() or None
+    return _engagement(db, reel_id, user_id, guest_id, guest_id)
 
 
 @router.get("/{reel_id}/engagement/me")
@@ -313,25 +281,44 @@ def get_my_reel_engagement(
     reel_id: str,
     request: Request,
     x_visitor_id: Optional[str] = Header(None, alias="X-Visitor-Id"),
-    x_guest_id: Optional[str] = Header(None, alias="X-Guest-Id"),
+    x_guest_id: Optional[str] = Header(None, alias="X-Guest-Id")
 ):
     db = get_database()
     _reel_or_404(db, reel_id)
-    user_id, visitor_id = _extract_identity(request, x_visitor_id, x_guest_id)
-    return _engagement(db, reel_id, user_id, visitor_id)
+    user = _get_optional_user(request)
+    user_id = str(user.get("id")) if user else None
+    guest_id = (x_guest_id or x_visitor_id or "").strip() or None
+    return _engagement(db, reel_id, user_id, guest_id, guest_id)
+
+
+@router.get("/{reel_id}/like-status")
+def get_reel_like_status(
+    reel_id: str,
+    request: Request,
+    x_visitor_id: Optional[str] = Header(None, alias="X-Visitor-Id"),
+    x_guest_id: Optional[str] = Header(None, alias="X-Guest-Id")
+):
+    """Check like status and get total like count with breakdown for a reel"""
+    db = get_database()
+    _reel_or_404(db, reel_id)
+    user = _get_optional_user(request)
+    user_id = str(user.get("id")) if user else None
+    guest_id = (x_guest_id or x_visitor_id or "").strip() or None
+    return _engagement(db, reel_id, user_id, guest_id, guest_id)
 
 
 @router.get("/likes-sync")
 def get_reels_likes_sync():
-    """Lightweight real-time sync endpoint returning current likes and views map for all active reels."""
+    """Lightweight real-time sync endpoint returning current total likes and views map for all active reels."""
     db = get_database()
-    reels = list(db["watch_buy_reels"].find({"is_active": True}, {"_id": 1, "likes": 1, "views": 1}))
+    reels = list(db["watch_buy_reels"].find({"is_active": True}))
 
     likes_map = {}
     views_map = {}
     for r in reels:
         rid = str(r["_id"])
-        likes_map[rid] = max(0, int(r.get("likes") or 0))
+        likes_info = _get_reel_likes_data(db, r)
+        likes_map[rid] = likes_info["total_likes"]
         views_map[rid] = str(r.get("views") or "0")
     return {"likes": likes_map, "views": views_map}
 
@@ -387,70 +374,56 @@ async def toggle_reel_like(
     db = get_database()
     oid = _reel_or_404(db, reel_id)
 
-    user_id, visitor_id = _extract_identity(request, x_visitor_id, x_guest_id)
-    if not visitor_id and payload:
-        visitor_id = payload.visitor_id or payload.guest_id
+    user = _get_optional_user(request)
+    user_id = str(user.get("id")) if user else None
+    guest_id = (x_guest_id or x_visitor_id or "").strip() or None
+
+    if not user_id and not guest_id:
+        client_ip = request.client.host if request.client else "unknown"
+        guest_id = f"ip_{client_ip}"
 
     user_info = None
     if user_id:
         try:
+            from bson import ObjectId
             user_info = db["users"].find_one({"_id": ObjectId(user_id)})
         except Exception:
             pass
 
     queries = []
     if user_id:
-        queries.append({"user_id": str(user_id)})
-    if visitor_id:
-        queries.append({"visitor_id": visitor_id})
-        queries.append({"guest_id": visitor_id})
+        queries.append({"user_id": user_id})
+    if guest_id:
+        queries.append({"guest_id": guest_id})
+        queries.append({"visitor_id": guest_id})
 
     existing = db["reel_likes"].find_one({"reel_id": reel_id, "$or": queries}) if queries else None
 
     action = payload.action.lower().strip() if (payload and payload.action) else None
-
-    user_name = (user_info.get("full_name") or user_info.get("name") or "Registered Customer") if user_info else "Registered Customer"
-    user_email = user_info.get("email") if user_info else None
-    user_phone = user_info.get("phone") if user_info else None
 
     if action == "like":
         if not existing:
             doc = {
                 "reel_id": reel_id,
                 "created_at": datetime.now(),
-                "is_registered": bool(user_id)
+                "is_registered": bool(user_id),
             }
             if user_id:
-                doc["user_id"] = str(user_id)
-                doc["user_name"] = user_name
-                doc["user_email"] = user_email
-                doc["user_phone"] = user_phone
-            if visitor_id:
-                doc["visitor_id"] = visitor_id
-                doc["guest_id"] = visitor_id
-            try:
-                db["reel_likes"].insert_one(doc)
-            except Exception:
-                pass  # Duplicate caught by unique index
-        elif user_id and not existing.get("user_id"):
-            # Upgrade guest record with registered user info
-            db["reel_likes"].update_one(
-                {"_id": existing["_id"]},
-                {"$set": {
-                    "user_id": str(user_id),
-                    "user_name": user_name,
-                    "user_email": user_email,
-                    "user_phone": user_phone,
-                    "is_registered": True
-                }}
-            )
+                doc["user_id"] = user_id
+                doc["user_name"] = (user_info.get("full_name") or user_info.get("name") or user.get("name") or "Registered Customer") if (user_info or user) else "Registered Customer"
+                doc["user_email"] = (user_info.get("email") or user.get("email")) if (user_info or user) else None
+                doc["user_phone"] = (user_info.get("phone") or user.get("phone")) if (user_info or user) else None
+            if guest_id:
+                doc["guest_id"] = guest_id
+                doc["visitor_id"] = guest_id
+            db["reel_likes"].insert_one(doc)
         liked = True
     elif action == "unlike":
         if existing:
             db["reel_likes"].delete_one({"_id": existing["_id"]})
         liked = False
     else:
-        # Default toggle behavior
+        # Default toggle
         if existing:
             db["reel_likes"].delete_one({"_id": existing["_id"]})
             liked = False
@@ -458,45 +431,54 @@ async def toggle_reel_like(
             doc = {
                 "reel_id": reel_id,
                 "created_at": datetime.now(),
-                "is_registered": bool(user_id)
+                "is_registered": bool(user_id),
             }
             if user_id:
-                doc["user_id"] = str(user_id)
-                doc["user_name"] = user_name
-                doc["user_email"] = user_email
-                doc["user_phone"] = user_phone
-            if visitor_id:
-                doc["visitor_id"] = visitor_id
-                doc["guest_id"] = visitor_id
-            try:
-                db["reel_likes"].insert_one(doc)
-            except Exception:
-                pass
+                doc["user_id"] = user_id
+                doc["user_name"] = (user_info.get("full_name") or user_info.get("name") or user.get("name") or "Registered Customer") if (user_info or user) else "Registered Customer"
+                doc["user_email"] = (user_info.get("email") or user.get("email")) if (user_info or user) else None
+                doc["user_phone"] = (user_info.get("phone") or user.get("phone")) if (user_info or user) else None
+            if guest_id:
+                doc["guest_id"] = guest_id
+                doc["visitor_id"] = guest_id
+            db["reel_likes"].insert_one(doc)
             liked = True
 
-    # Real-time accurate recount from database collection
-    actual_likes = db["reel_likes"].count_documents({"reel_id": reel_id})
+    # Recalculate total likes without overwriting/decreasing base likes
+    reel_doc = db["watch_buy_reels"].find_one({"_id": oid}) or {}
+    likes_info = _get_reel_likes_data(db, reel_doc)
+
     db["watch_buy_reels"].update_one(
         {"_id": oid},
-        {"$set": {"likes": actual_likes}}
+        {"$set": {
+            "likes": likes_info["total_likes"],
+            "base_like_count": likes_info["base_like_count"],
+            "base_likes": likes_info["base_likes"]
+        }}
     )
 
-    try:
-        clear_api_cache()
-    except Exception:
-        pass
-
-    engagement = _engagement(db, reel_id, user_id, visitor_id)
-    engagement["likes"] = actual_likes
-    engagement["liked"] = liked
+    clear_api_cache()
 
     # Broadcast to all live connected devices/phones in real-time
     try:
-        await reel_ws_manager.broadcast_like(reel_id, actual_likes)
+        await reel_ws_manager.broadcast_like(reel_id, likes_info["total_likes"])
     except Exception:
         pass
 
-    return engagement
+    engagement = _engagement(db, reel_id, user_id, guest_id, guest_id)
+    return {**engagement, "liked": liked}
+
+
+@router.delete("/{reel_id}/like")
+async def remove_reel_like(
+    reel_id: str,
+    request: Request,
+    x_visitor_id: Optional[str] = Header(None, alias="X-Visitor-Id"),
+    x_guest_id: Optional[str] = Header(None, alias="X-Guest-Id")
+):
+    """Explicit endpoint to unlike a reel"""
+    payload = ReelLikePayload(action="unlike")
+    return await toggle_reel_like(reel_id, request, payload, x_visitor_id, x_guest_id)
 
 
 @router.get("/{reel_id}/comments")
@@ -537,7 +519,13 @@ def create_reel(data: ReelCreate, _admin=Depends(require_admin)):
     doc = data.model_dump()
     if not doc.get("thumbnail"):
         doc["thumbnail"] = "/placeholder-reel.webp"
+    
+    admin_likes = int(doc.get("likes") or 0)
+    doc["base_like_count"] = admin_likes
+    doc["base_likes"] = admin_likes
+    doc["likes"] = admin_likes
     doc["created_at"] = datetime.now()
+    
     result = db["watch_buy_reels"].insert_one(doc)
     doc["_id"] = result.inserted_id
     clear_api_cache()
@@ -555,12 +543,28 @@ def update_reel(reel_id: str, data: ReelUpdate, _admin=Depends(require_admin)):
 
     update = {k: v for k, v in data.model_dump().items() if v is not None}
     update["updated_at"] = datetime.now()
+
+    # If admin specified likes, update base_like_count and recalculate total
+    if "likes" in update:
+        new_base = max(0, int(update.pop("likes")))
+        update["base_like_count"] = new_base
+        update["base_likes"] = new_base
+        user_likes_count = db["reel_likes"].count_documents({"reel_id": reel_id})
+        update["likes"] = new_base + user_likes_count
+
     result = db["watch_buy_reels"].find_one_and_update(
         filter_q, {"$set": update}, return_document=True
     )
     if not result:
         raise HTTPException(status_code=404, detail="Reel not found")
+    
     clear_api_cache()
+    likes_info = _get_reel_likes_data(db, result)
+    result["likes"] = likes_info["total_likes"]
+    result["base_likes"] = likes_info["base_likes"]
+    result["base_like_count"] = likes_info["base_like_count"]
+    result["guest_likes"] = likes_info["guest_likes"]
+    result["user_likes"] = likes_info["user_likes"]
     return _fmt(result)
 
 
@@ -575,6 +579,8 @@ def delete_reel(reel_id: str, _admin=Depends(require_admin)):
     result = db["watch_buy_reels"].delete_one(filter_q)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Reel not found")
+    # Clean up associated likes
+    db["reel_likes"].delete_many({"reel_id": reel_id})
     clear_api_cache()
     return {"success": True}
 
@@ -598,9 +604,11 @@ def toggle_reel(reel_id: str, _admin=Depends(require_admin)):
 
 @router.get("/{reel_id}/likers")
 def get_reel_likers(reel_id: str, _admin=Depends(require_admin)):
-    """Admin only: List all users and guests who liked this reel, with profile details & timestamp."""
+    """Admin only: List all users who liked this reel, with profile details, breakdown & timestamp."""
     db = get_database()
-    _reel_or_404(db, reel_id)
+    oid = _reel_or_404(db, reel_id)
+    reel = db["watch_buy_reels"].find_one({"_id": oid}) or {}
+    likes_info = _get_reel_likes_data(db, reel)
 
     likes = list(db["reel_likes"].find({"reel_id": reel_id}).sort("created_at", -1))
 
@@ -618,9 +626,6 @@ def get_reel_likers(reel_id: str, _admin=Depends(require_admin)):
             users_map[str(u["_id"])] = u
 
     results = []
-    registered_count = 0
-    guest_count = 0
-
     for l in likes:
         uid = l.get("user_id")
         u_info = users_map.get(uid, {}) if uid else {}
@@ -630,27 +635,24 @@ def get_reel_likers(reel_id: str, _admin=Depends(require_admin)):
         created_at_dt = l.get("created_at")
         date_str = created_at_dt.strftime("%d %b %Y, %I:%M %p") if isinstance(created_at_dt, datetime) else str(created_at_dt or "N/A")
 
-        is_reg = bool(uid)
-        if is_reg:
-            registered_count += 1
-        else:
-            guest_count += 1
-
         results.append({
             "id": str(l["_id"]),
             "user_id": uid,
             "user_name": name,
             "user_email": email,
             "user_phone": phone,
+            "guest_id": l.get("guest_id") or l.get("visitor_id"),
             "visitor_id": l.get("visitor_id") or l.get("guest_id"),
-            "is_registered": is_reg,
+            "is_registered": bool(uid),
             "liked_at": date_str
         })
 
     return {
         "reel_id": reel_id,
-        "total_likes": len(results),
-        "registered_likes": registered_count,
-        "guest_likes": guest_count,
+        "total_likes": likes_info["total_likes"],
+        "base_likes": likes_info["base_likes"],
+        "base_like_count": likes_info["base_like_count"],
+        "guest_likes": likes_info["guest_likes"],
+        "user_likes": likes_info["user_likes"],
         "likers": results
     }

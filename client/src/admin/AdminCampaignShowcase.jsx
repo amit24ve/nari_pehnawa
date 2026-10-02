@@ -90,12 +90,6 @@ const AdminCampaignShowcase = () => {
   const fullBannerFileRef = useRef(null);
   const slotImgFileRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
 
-  const [votingStats, setVotingStats] = useState({
-    total_votes: 0,
-    registered_votes: 0,
-    guest_votes: 0
-  });
-
   // Fetch campaign config and product options
   const fetchConfig = async () => {
     setLoading(true);
@@ -112,11 +106,6 @@ const AdminCampaignShowcase = () => {
           slots: data.campaign.slots || [],
         });
       }
-      setVotingStats({
-        total_votes: data.total_votes || 0,
-        registered_votes: data.registered_votes || 0,
-        guest_votes: data.guest_votes || 0,
-      });
       if (Array.isArray(data.products)) {
         setProductsList(data.products);
       }
@@ -289,37 +278,6 @@ const AdminCampaignShowcase = () => {
           <button onClick={() => setSuccess(null)}><X className="w-4 h-4" /></button>
         </div>
       )}
-
-      {/* ── LIVE VOTING ANALYTICS BREAKDOWN ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600">
-            <Flame className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs uppercase font-bold text-slate-500">Total Campaign Votes</p>
-            <p className="text-2xl font-black text-slate-900 mt-0.5">{votingStats.total_votes || 0}</p>
-          </div>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
-            <Check className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs uppercase font-bold text-slate-500">Registered User Votes</p>
-            <p className="text-2xl font-black text-emerald-700 mt-0.5">{votingStats.registered_votes || 0}</p>
-          </div>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600">
-            <Sparkles className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs uppercase font-bold text-slate-500">Guest User Votes</p>
-            <p className="text-2xl font-black text-slate-700 mt-0.5">{votingStats.guest_votes || 0}</p>
-          </div>
-        </div>
-      </div>
 
       {/* ── LIVE PREVIEW BANNER ── */}
       <div className="space-y-3">

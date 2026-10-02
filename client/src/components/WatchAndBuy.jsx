@@ -19,7 +19,6 @@ import {
   Loader2
 } from "lucide-react";
 import { resolveImageUrl, DEFAULT_FALLBACK_IMAGE } from "../utils/imageUrl";
-import { getPersistentGuestId, getGuestHeaders } from "../utils/guestIdentity";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
@@ -28,7 +27,6 @@ const WatchAndBuy = () => {
   const scrollContainerRef = useRef(null);
   const touchStartY = useRef(0);
   const wheelDebounceRef = useRef(false);
-  const likingInProgressRef = useRef({});
 
   const [videoProducts, setVideoProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,8 +43,28 @@ const WatchAndBuy = () => {
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
 
+  const getVisitorId = () => {
+    try {
+      let vid = localStorage.getItem("nari_guest_id") || localStorage.getItem("nari_visitor_id");
+      if (!vid) {
+        vid = "guest_" + Math.random().toString(36).substring(2, 10) + "_" + Date.now().toString(36);
+        localStorage.setItem("nari_guest_id", vid);
+        localStorage.setItem("nari_visitor_id", vid);
+      }
+      return vid;
+    } catch (_) {
+      return "guest_user";
+    }
+  };
+
   useEffect(() => {
-    const headers = getGuestHeaders();
+    const visitorId = getVisitorId();
+    const token = localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
+    const headers = {
+      "X-Visitor-Id": visitorId,
+      "X-Guest-Id": visitorId,
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    };
 
     fetch(`${API_BASE_URL}/reels/?active_only=true`, { headers })
       .then((res) => {
@@ -63,13 +81,7 @@ const WatchAndBuy = () => {
               serverLikedMap[vid] = true;
             }
           });
-          setLikedReels((prev) => {
-            const merged = { ...prev, ...serverLikedMap };
-            try {
-              localStorage.setItem("nari_liked_reels", JSON.stringify(merged));
-            } catch (_) {}
-            return merged;
-          });
+          setLikedReels((prev) => ({ ...prev, ...serverLikedMap }));
         } else {
           setVideoProducts([]);
         }
@@ -83,6 +95,7 @@ const WatchAndBuy = () => {
 
   // Real-time live like & view synchronization across devices (3-second lightweight polling)
   useEffect(() => {
+    // 3-second lightweight delta sync so all devices stay 100% in sync without firewall/port errors
     const syncReelsData = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/reels/likes-sync`);
@@ -138,7 +151,7 @@ const WatchAndBuy = () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...getGuestHeaders(),
+        "X-Visitor-Id": getVisitorId(),
       }
     })
       .then((res) => (res.ok ? res.json() : null))
@@ -178,13 +191,6 @@ const WatchAndBuy = () => {
 
   const toggleLike = async (reelId) => {
     if (!reelId) return;
-
-    // Debounce / race-condition protection: ignore if a request for this reel is currently inflight
-    if (likingInProgressRef.current[reelId]) {
-      return;
-    }
-    likingInProgressRef.current[reelId] = true;
-
     const isCurrentlyLiked = !!likedReels[reelId];
     const newLikedState = !isCurrentlyLiked;
 
@@ -203,19 +209,22 @@ const WatchAndBuy = () => {
           const curLikes = Math.max(0, Number(v.likes || 0));
           return {
             ...v,
-            likes: newLikedState ? curLikes + 1 : Math.max(0, curLikes - 1),
-            liked: newLikedState
+            likes: newLikedState ? curLikes + 1 : Math.max(0, curLikes - 1)
           };
         }
         return v;
       })
     );
 
-    // 3. Send to backend with persistent guest ID and optional user token
+    // 3. Send to backend with visitor ID and optional token
     try {
+      const token = localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
+      const visitorId = getVisitorId();
       const headers = {
         "Content-Type": "application/json",
-        ...getGuestHeaders()
+        "X-Visitor-Id": visitorId,
+        "X-Guest-Id": visitorId,
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
       };
       const res = await fetch(`${API_BASE_URL}/reels/${reelId}/like`, {
         method: "POST",
@@ -243,56 +252,9 @@ const WatchAndBuy = () => {
             })
           );
         }
-      } else {
-        // Rollback on failure
-        setLikedReels((prev) => {
-          const rollback = { ...prev, [reelId]: isCurrentlyLiked };
-          try {
-            localStorage.setItem("nari_liked_reels", JSON.stringify(rollback));
-          } catch (_) {}
-          return rollback;
-        });
-        setVideoProducts((prev) =>
-          prev.map((v) => {
-            const vid = v.id || v._id;
-            if (vid === reelId) {
-              const curLikes = Math.max(0, Number(v.likes || 0));
-              return {
-                ...v,
-                likes: isCurrentlyLiked ? curLikes + 1 : Math.max(0, curLikes - 1),
-                liked: isCurrentlyLiked
-              };
-            }
-            return v;
-          })
-        );
       }
     } catch (e) {
       console.error("Error toggling like:", e);
-      // Rollback on network error
-      setLikedReels((prev) => {
-        const rollback = { ...prev, [reelId]: isCurrentlyLiked };
-        try {
-          localStorage.setItem("nari_liked_reels", JSON.stringify(rollback));
-        } catch (_) {}
-        return rollback;
-      });
-      setVideoProducts((prev) =>
-        prev.map((v) => {
-          const vid = v.id || v._id;
-          if (vid === reelId) {
-            const curLikes = Math.max(0, Number(v.likes || 0));
-            return {
-              ...v,
-              likes: isCurrentlyLiked ? curLikes + 1 : Math.max(0, curLikes - 1),
-              liked: isCurrentlyLiked
-            };
-          }
-          return v;
-        })
-      );
-    } finally {
-      likingInProgressRef.current[reelId] = false;
     }
   };
 

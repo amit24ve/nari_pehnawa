@@ -133,11 +133,7 @@ def phone_resend_otp(request: PhoneResendOTPRequest):
 
 
 @router.post("/phone/verify-otp")
-def phone_verify_otp(
-    request: PhoneVerifyOTPRequest,
-    x_visitor_id: Optional[str] = Header(None),
-    x_guest_id: Optional[str] = Header(None)
-):
+def phone_verify_otp(request: PhoneVerifyOTPRequest):
     """Verify phone OTP and log in or auto-register user"""
     phone_clean = normalize_indian_phone(request.phone)
     otp_input = request.otp.strip()
@@ -238,17 +234,6 @@ def phone_verify_otp(
 
         users.update_one({"_id": user["_id"]}, {"$set": update_fields})
         user = users.find_one({"_id": user["_id"]})
-
-    # Migrate guest likes and votes if visitor_id is supplied
-    guest_identifier = x_visitor_id or x_guest_id
-    if guest_identifier:
-        try:
-            from app.routes.reels import migrate_guest_reel_likes
-            from app.routes.campaign import migrate_guest_campaign_votes
-            migrate_guest_reel_likes(db, guest_identifier, str(user["_id"]))
-            migrate_guest_campaign_votes(db, guest_identifier, str(user["_id"]))
-        except Exception:
-            pass
 
     # Issue JWT token
     token = create_access_token({
@@ -496,11 +481,7 @@ def forgot_password_reset(request: ForgotPasswordResetRequest):
 
 
 @router.post("/login")
-def login(
-    request: LoginRequest,
-    x_visitor_id: Optional[str] = Header(None),
-    x_guest_id: Optional[str] = Header(None)
-):
+def login(request: LoginRequest):
     """Login endpoint - returns access token and user info"""
     db = get_database()
     users = db["users"]
@@ -518,17 +499,6 @@ def login(
             status_code=401,
             detail="Incorrect password. Please try again or reset your password."
         )
-
-    # Migrate guest likes and votes if visitor_id is supplied
-    guest_identifier = x_visitor_id or x_guest_id
-    if guest_identifier:
-        try:
-            from app.routes.reels import migrate_guest_reel_likes
-            from app.routes.campaign import migrate_guest_campaign_votes
-            migrate_guest_reel_likes(db, guest_identifier, str(user["_id"]))
-            migrate_guest_campaign_votes(db, guest_identifier, str(user["_id"]))
-        except Exception:
-            pass
 
     # Create access token
     token = create_access_token({
@@ -558,11 +528,7 @@ def login(
 
 
 @router.post("/register")
-def register(
-    request: RegisterRequest,
-    x_visitor_id: Optional[str] = Header(None),
-    x_guest_id: Optional[str] = Header(None)
-):
+def register(request: RegisterRequest):
     """Register new user endpoint (supports direct signup or email OTP verification)"""
     from app.security import get_password_hash
     from datetime import datetime
@@ -618,30 +584,19 @@ def register(
         "addresses": []
     }
 
-    result = users.insert_one(user_data)
-    new_user_id = result.inserted_id
 
-    # Migrate guest likes and votes if visitor_id is supplied
-    guest_identifier = x_visitor_id or x_guest_id
-    if guest_identifier:
-        try:
-            from app.routes.reels import migrate_guest_reel_likes
-            from app.routes.campaign import migrate_guest_campaign_votes
-            migrate_guest_reel_likes(db, guest_identifier, str(new_user_id))
-            migrate_guest_campaign_votes(db, guest_identifier, str(new_user_id))
-        except Exception:
-            pass
+    result = users.insert_one(user_data)
 
     # Create access token
     token = create_access_token({
-        "sub": str(new_user_id),
+        "sub": str(result.inserted_id),
         "email": request.email,
         "role": "customer"
     })
 
     # Prepare user response
     user_out = {
-        "id": str(new_user_id),
+        "id": str(result.inserted_id),
         "email": request.email,
         "name": request.name,
         "role": "customer"
@@ -649,7 +604,7 @@ def register(
 
     return {
         "access_token": token,
-        "refresh_token": issue_refresh(db, new_user_id),
+        "refresh_token": issue_refresh(db, result.inserted_id),
         "token_type": "bearer",
         "user": user_out
     }

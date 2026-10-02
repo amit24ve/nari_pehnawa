@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthProvider";
 import { useNavigate } from "react-router-dom";
-import { getGuestHeaders } from "../utils/guestIdentity";
 
 const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
   const {
@@ -302,10 +301,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
       };
       const res = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          ...getGuestHeaders()
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
