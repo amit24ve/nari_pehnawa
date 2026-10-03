@@ -411,23 +411,30 @@ const WatchAndBuy = () => {
                     {/* Gradient Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/30 pointer-events-none"></div>
 
-                    {/* Watch Reel Play Badge */}
-                    <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 z-10 border border-white/20">
-                      <Play className="w-3 h-3 fill-white text-white" /> WATCH REEL
-                    </div>
-
-                    {/* Views & Likes Count */}
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 z-10">
-                      <div className="bg-black/60 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-white/20">
-                        <Eye className="w-3.5 h-3.5 text-[#d4af37]" />
-                        {video.views ? `${video.views}` : "0"}
+                    {/* Top Bar: Combined Views + Likes Capsule & Watch Reel Badge */}
+                    <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 right-2.5 sm:right-3 flex items-center justify-between pointer-events-none z-10 gap-1.5">
+                      {/* Single Unified Capsule for Views + Likes */}
+                      <div className="bg-black/65 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-2 border border-white/20 shadow-md">
+                        <span className="flex items-center gap-1">
+                          <Eye className="w-3.5 h-3.5 text-[#d4af37]" />
+                          <span>{video.views ? `${video.views}` : "0"}</span>
+                        </span>
+                        {video.likes !== undefined && Number(video.likes) > 0 && (
+                          <>
+                            <span className="w-px h-3 bg-white/30" />
+                            <span className="flex items-center gap-1">
+                              <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+                              <span>{video.likes}</span>
+                            </span>
+                          </>
+                        )}
                       </div>
-                      {video.likes !== undefined && Number(video.likes) > 0 && (
-                        <div className="bg-black/60 backdrop-blur-sm text-white text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1 border border-white/20">
-                          <Heart className="w-3.5 h-3.5 fill-red-500 text-red-500" />
-                          {video.likes}
-                        </div>
-                      )}
+
+                      {/* Watch Reel Play Badge */}
+                      <div className="bg-black/65 backdrop-blur-md text-white text-[10px] sm:text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-white/20 shadow-md flex-shrink-0">
+                        <Play className="w-2.5 sm:w-3 h-2.5 sm:h-3 fill-white text-white" />
+                        <span className="tracking-wide">WATCH REEL</span>
+                      </div>
                     </div>
 
                     {/* Bottom Embedded Product Overlay Card */}
