@@ -1,7 +1,8 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Star, Heart, Quote } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Heart, Quote, Loader2 } from "lucide-react";
 import { SectionHeading } from "./NariHeadingDecoration";
+import { resolveImageUrl, DEFAULT_FALLBACK_IMAGE } from "../utils/imageUrl";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
@@ -17,56 +18,56 @@ const WomenOfNariPehnawa = () => {
     {
       id: "w-1",
       customerName: "Pooja Roy",
-      image: "https://images.pexels.com/photos/1536619/pexels-photo-1536619.jpeg?auto=compress&cs=tinysrgb&w=500&h=700&dpr=1",
+      image: "/product_1_sky_bloom.jpg",
       rating: 5,
       review: "Love this suit! 😍 It's very pretty and got so many compliments! 💕",
-      productName: "Blush Pink Anarkali Kurta Set",
-      link: "/category/anarkali-kurtis"
+      productName: "Sky Bloom – Blue Floral Printed Halter Neck Top",
+      link: "/category/halter-neck-top"
     },
     {
       id: "w-2",
       customerName: "Sneha Reddy",
-      image: "https://images.pexels.com/photos/2220321/pexels-photo-2220321.jpeg?auto=compress&cs=tinysrgb&w=500&h=700&dpr=1",
+      image: "/product_2_olive_bloom.jpg",
       rating: 5,
       review: "I ordered this especially for Diwali, and it did not disappoint. Perfect ensemble! 😊",
-      productName: "Ivory Chikankari Silk Kurti",
-      link: "/category/chikankari-kurtis"
+      productName: "Olive Bloom – Green Floral Printed Back-Tie Kurti",
+      link: "/category/sleeveless-kurtis"
     },
     {
       id: "w-3",
       customerName: "Ananya Iyer",
-      image: "https://images.pexels.com/photos/3622608/pexels-photo-3622608.jpeg?auto=compress&cs=tinysrgb&w=500&h=700&dpr=1",
+      image: "/product_3_black_floral.jpg",
       rating: 5,
       review: "Thank you for the stunning dress, it's the perfect occasion outfit. 💖",
-      productName: "Deep Maroon Embroidered Anarkali",
-      link: "/category/embroidered-kurtis"
+      productName: "Black Floral Printed Sleeveless Kurti",
+      link: "/category/black-floral-kurtis"
     },
     {
       id: "w-4",
       customerName: "Divya Sen",
-      image: "https://images.pexels.com/photos/2916450/pexels-photo-2916450.jpeg?auto=compress&cs=tinysrgb&w=500&h=700&dpr=1",
+      image: "/product_4_coral_pink.jpg",
       rating: 5,
       review: "Wore this to a friend's wedding, cannot explain how awesome it looked! 😊",
-      productName: "Navy Blue Palazzo Kurti Set",
-      link: "/category/palazzo-set-kurtis"
+      productName: "Coral Pink V-Neck Full Sleeve Kurti",
+      link: "/category/full-sleeve-v-neck"
     },
     {
       id: "w-5",
       customerName: "Kavya Sharma",
-      image: "https://images.pexels.com/photos/2899764/pexels-photo-2899764.jpeg?auto=compress&cs=tinysrgb&w=500&h=700&dpr=1",
+      image: "/product_1_sky_bloom.jpg",
       rating: 5,
       review: "Vibrant colours, soft fabric — beautiful Nari Pehnawa collection! 😊",
-      productName: "Multicolor Printed Kurti",
-      link: "/category/printed-kurtis"
+      productName: "Sky Bloom – Floral Printed Outfit",
+      link: "/category/halter-neck-top"
     },
     {
       id: "w-6",
       customerName: "Ritu Verma",
-      image: "https://images.pexels.com/photos/3622618/pexels-photo-3622618.jpeg?auto=compress&cs=tinysrgb&w=500&h=700&dpr=1",
+      image: "/product_2_olive_bloom.jpg",
       rating: 5,
       review: "Exactly as shown in the pictures. The colour is so bright and fitting is top notch! 😊",
-      productName: "Festive Kurti Set - Royal Red",
-      link: "/category/anarkali-kurtis"
+      productName: "Olive Bloom – Festive Kurti",
+      link: "/category/sleeveless-kurtis"
     }
   ];
 
@@ -75,10 +76,11 @@ const WomenOfNariPehnawa = () => {
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
+          const fallbacks = getFallbackTestimonials();
           const mapped = data.slice(0, 10).map((rev, idx) => ({
             id: rev._id || `rev-${idx}`,
             customerName: rev.user_name || rev.user?.name || "Happy Customer",
-            image: rev.image || getFallbackTestimonials()[idx % 6].image,
+            image: rev.image ? resolveImageUrl(rev.image, fallbacks[idx % fallbacks.length].image) : fallbacks[idx % fallbacks.length].image,
             rating: rev.rating || 5,
             review: rev.comment || "Loved the outfit quality!",
             productName: rev.product_name || rev.product?.name || "Nari Pehnawa Kurti Set",
@@ -133,7 +135,12 @@ const WomenOfNariPehnawa = () => {
           <div className="w-24 h-1 bg-gradient-to-r from-transparent via-[#8B0000] to-transparent mx-auto mt-3"></div>
         </div>
 
-        {/* Scrollable Gallery with Arrows */}
+        {loading ? (
+          <div className="flex justify-center items-center py-16">
+            <Loader2 className="w-8 h-8 text-[#8B0000] animate-spin" />
+          </div>
+        ) : (
+        /* Scrollable Gallery with Arrows */
         <div className="relative">
           {/* Left Arrow */}
           {showLeftArrow && (
@@ -170,8 +177,12 @@ const WomenOfNariPehnawa = () => {
                 {/* Image Card */}
                 <div className="relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 mb-3 bg-white border border-gray-100">
                   <img
-                    src={testimonial.image}
+                    src={resolveImageUrl(testimonial.image, DEFAULT_FALLBACK_IMAGE)}
                     alt={testimonial.productName}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = DEFAULT_FALLBACK_IMAGE;
+                    }}
                     className="w-full h-[330px] object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-[11px] font-bold text-gray-800 flex items-center gap-1 shadow-md">
@@ -199,6 +210,7 @@ const WomenOfNariPehnawa = () => {
             ))}
           </div>
         </div>
+        )}
       </div>
     </section>
   );

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthProvider";
 import { useNavigate } from "react-router-dom";
+import { resolveImageUrl, DEFAULT_FALLBACK_IMAGE } from "../utils/imageUrl";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
@@ -455,8 +456,12 @@ const AIChatbot = () => {
                             className="flex items-center gap-2.5 p-2 bg-white border border-stone-200 hover:border-[#8B0000] rounded-xl transition-all hover:shadow-md cursor-pointer group"
                           >
                             <img
-                              src={prod.image || "/placeholder.jpg"}
+                              src={resolveImageUrl(prod.image, DEFAULT_FALLBACK_IMAGE)}
                               alt={prod.name}
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = DEFAULT_FALLBACK_IMAGE;
+                              }}
                               className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-stone-100"
                             />
                             <div className="flex-1 min-w-0">

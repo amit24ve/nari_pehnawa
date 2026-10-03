@@ -48,7 +48,7 @@ import { resolveImageUrl, DEFAULT_FALLBACK_IMAGE } from "../utils/imageUrl";
 import { trackViewContent, trackAddToCart, getMetaCatalogId } from "../utils/metaPixel";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
-const FALLBACK_IMG = "https://images.pexels.com/photos/5704849/pexels-photo-5704849.jpeg?auto=compress&cs=tinysrgb&w=600";
+const FALLBACK_IMG = DEFAULT_FALLBACK_IMAGE;
 const RECENTLY_VIEWED_KEY = "nari_recently_viewed";
 
 const slugify = (name = "") =>

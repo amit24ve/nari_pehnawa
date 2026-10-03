@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
 import { trackCustomEvent } from "./VisitorTracker";
 import { trackInitiateCheckout, trackPurchase } from "../utils/metaPixel";
+import { resolveImageUrl, DEFAULT_FALLBACK_IMAGE } from "../utils/imageUrl";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
@@ -483,10 +484,13 @@ const CheckoutModal = ({
                     <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2.5 bg-white p-2 rounded-lg border border-amber-100 shadow-2xs">
                       <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 mx-auto sm:mx-0">
                         <img
-                          src={it.image || it.product_image || "/product_1_sky_bloom.jpg"}
+                          src={resolveImageUrl(it.image || it.product_image, DEFAULT_FALLBACK_IMAGE)}
                           alt={it.name || it.product_name}
                           className="w-full h-full object-cover"
-                          onError={(e) => { e.target.src = "/product_1_sky_bloom.jpg"; }}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = DEFAULT_FALLBACK_IMAGE;
+                          }}
                         />
                       </div>
                       <div className="min-w-0 flex-1 text-center sm:text-left">

@@ -6,12 +6,7 @@ import { resolveImageUrl, DEFAULT_HERO_FALLBACK } from "../utils/imageUrl";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
-// Reliable Pexels URL builder — uses the w/h combo that Pexels CDN always serves
-const px = (id, w = 1400, h = 800) =>
-  `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}&h=${h}&dpr=1`;
-
-// Hero slides — use the site's own Nari Pehnawa model/fashion images first,
-// with Pexels as secondary slides
+// Fallback hero slides using local Nari Pehnawa brand banners
 const FALLBACK_SLIDES = [
   {
     id: "f1",

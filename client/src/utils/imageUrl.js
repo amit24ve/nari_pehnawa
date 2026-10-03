@@ -1,10 +1,8 @@
 const API_BASE = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
-export const DEFAULT_FALLBACK_IMAGE =
-  "https://images.pexels.com/photos/5704849/pexels-photo-5704849.jpeg?auto=compress&cs=tinysrgb&w=1200";
+export const DEFAULT_FALLBACK_IMAGE = "/product_1_sky_bloom.jpg";
 
-export const DEFAULT_HERO_FALLBACK =
-  "https://images.pexels.com/photos/3622608/pexels-photo-3622608.jpeg?auto=compress&cs=tinysrgb&w=1600";
+export const DEFAULT_HERO_FALLBACK = "/hero_slide_1.png";
 
 /**
  * Resolves any image URL (relative uploads, API uploads, CDN, or local public files)

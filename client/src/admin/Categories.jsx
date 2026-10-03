@@ -913,7 +913,7 @@ const Categories = () => {
                                             setImgError(false);
                                         }}
                                         className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
-                                        placeholder="https://images.unsplash.com/photo-xxx"
+                                        placeholder="e.g. /category_anarkali.png or https://.../image.webp"
                                     />
                                 )}
 
