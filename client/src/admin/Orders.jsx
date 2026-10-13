@@ -224,6 +224,7 @@ const Orders = () => {
       signature_verified: o.signature_verified || (["captured", "completed", "paid"].includes((o.payment_status || "").toLowerCase()) || o.razorpay_payment_id ? "Verified" : (o.payment_method === "COD" ? "COD Mode" : "Pending")),
       refund_id: o.refund_id || "N/A",
       refund_status: o.refund_status || "N/A",
+      collab_ref: o.collab_ref || o.order_data?.collab_ref || null,
     };
   };
 
@@ -1442,6 +1443,12 @@ const Orders = () => {
                       <td className="py-3.5 px-6">
                         <div className="font-mono font-semibold text-slate-800">{o.id}</div>
                         <div className="text-[9px] text-slate-400 mt-0.5">{o.date}</div>
+                        {o.collab_ref && (
+                          <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                            <span>Collab:</span>
+                            <span className="font-mono">{o.collab_ref}</span>
+                          </div>
+                        )}
                       </td>
                       <td className="py-3.5 px-6">
                         <div className="font-semibold text-slate-800">{o.customer}</div>

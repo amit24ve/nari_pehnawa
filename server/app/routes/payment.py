@@ -485,6 +485,15 @@ def verify_razorpay_payment(data: dict, current_user: dict = Depends(get_current
 
     _record_initial_order_log(db, order_id, "confirmed", "Razorpay payment captured")
 
+    # Influencer collaboration referral attribution
+    collab_ref = order_data.get("collab_ref") or order_data.get("coupon_code")
+    if collab_ref:
+        try:
+            from app.services.collaboration_service import CollaborationService
+            CollaborationService(db).attribute_order_if_eligible(order_id, collab_ref, order_data)
+        except Exception as collab_err:
+            print(f"[Collab] Razorpay order attribution note: {collab_err}")
+
     # ── Inventory: reduce stock now that payment has captured ────────────
     # Payment already happened at this point (Razorpay widget completed),
     # so we can't cleanly refuse the order over a stock race. We still try
@@ -761,6 +770,15 @@ def create_cod_order(order_data: dict, current_user: dict = Depends(get_current_
         raise HTTPException(status_code=500, detail=f"COD order creation failed: {e}")
 
     _record_initial_order_log(db, order_id, "confirmed", "COD order placed")
+
+    # Influencer collaboration referral attribution
+    collab_ref = order_data.get("collab_ref") or order_data.get("coupon_code")
+    if collab_ref:
+        try:
+            from app.services.collaboration_service import CollaborationService
+            CollaborationService(db).attribute_order_if_eligible(order_id, collab_ref, order_data)
+        except Exception as collab_err:
+            print(f"[Collab] COD order attribution note: {collab_err}")
 
     if stock_items:
         try:

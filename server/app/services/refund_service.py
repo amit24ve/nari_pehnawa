@@ -133,6 +133,17 @@ class RefundService:
                     {"_id": payment["_id"]},
                     {"$set": {"status": "refunded", "updated_at": datetime.now()}},
                 )
+
+                # Influencer collaboration commission adjustment
+                try:
+                    from app.services.collaboration_service import CollaborationService
+                    CollaborationService(self.db).handle_refund_reversal(
+                        order_id=refund["order_id"],
+                        refund_amount=float(refund["amount"]),
+                        is_partial=bool(refund.get("return_id")),
+                    )
+                except Exception as collab_err:
+                    print(f"[Collab] Refund reversal note: {collab_err}")
             except Exception as exc:
                 self.refunds.update_one(
                     {"_id": ObjectId(refund_id)},

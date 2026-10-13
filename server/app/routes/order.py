@@ -174,6 +174,16 @@ def create_order(order: OrderCreate, current_user: dict = Depends(get_current_us
             changed_by=current_user.get("id", "unknown"), changed_by_role="customer",
             reason="Order created",
         )
+
+        # Influencer collaboration referral attribution
+        collab_ref = order_data.get("collab_ref") or order_data.get("coupon_code")
+        if collab_ref:
+            try:
+                from app.services.collaboration_service import CollaborationService
+                CollaborationService(db).attribute_order_if_eligible(order_data["_id"], collab_ref, order_data)
+            except Exception as collab_err:
+                print(f"[Collab] Order attribution note: {collab_err}")
+
         return order_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -777,6 +787,13 @@ def update_order_status(order_id: str, status_data: dict, current_user: dict = D
                 )
             except Exception as coin_err:
                 print(f"[Coins] Error reversing coins for order {order_id}: {coin_err}")
+
+        # Influencer collaboration commission lifecycle updates
+        try:
+            from app.services.collaboration_service import CollaborationService
+            CollaborationService(db).on_order_status_updated(order_id, status, previous_status)
+        except Exception as collab_err:
+            print(f"[Collab] Status update note: {collab_err}")
 
         _notify_status_change(db, result, status)
 

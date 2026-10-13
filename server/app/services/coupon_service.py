@@ -19,6 +19,7 @@ from app.database.schemas.coupon import CouponType
 
 class CouponService:
     def __init__(self, db: Database):
+        self.db = db
         self.coupons = db["coupons"]
         self.orders = db["orders"]
 
@@ -32,11 +33,33 @@ class CouponService:
         Checks (in order): coupon exists & active, within valid date window,
         subtotal meets min_order_value, global usage_limit not exceeded,
         per-user usage_limit_per_user not exceeded (requires user_id).
+        Also supports active Influencer collaboration follower discount codes.
         """
         code_norm = code.strip().upper()
         coupon = self.coupons.find_one({"code": code_norm})
 
         if not coupon:
+            # Check if this code belongs to an active Influencer Collaboration with follower discount
+            try:
+                collab = self.db["collab_creators"].find_one({"referral_code": code_norm, "status": "active"})
+                if collab:
+                    disc_rate = float(collab.get("customer_discount_rate") or 0.0)
+                    if disc_rate > 0:
+                        disc_amt = round((subtotal * disc_rate) / 100.0, 2)
+                        creator_name = collab.get("name", "Influencer")
+                        return {
+                            "valid": True,
+                            "code": code_norm,
+                            "type": "percent",
+                            "value": disc_rate,
+                            "discount_amount": disc_amt,
+                            "free_shipping": False,
+                            "message": f"Special {disc_rate}% OFF applied via {creator_name}'s referral!",
+                            "collab_ref": code_norm,
+                        }
+            except Exception as e:
+                print(f"[CouponService] Collab coupon check note: {e}")
+
             return self._invalid(code_norm, "Invalid coupon code.")
 
         if not coupon.get("is_active", True):

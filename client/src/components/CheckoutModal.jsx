@@ -19,6 +19,7 @@ import { useAuth } from "../context/AuthProvider";
 import { trackCustomEvent } from "./VisitorTracker";
 import { trackInitiateCheckout, trackPurchase } from "../utils/metaPixel";
 import { resolveImageUrl, DEFAULT_FALLBACK_IMAGE } from "../utils/imageUrl";
+import { getActiveCollabRef } from "../utils/collabAttribution";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
@@ -307,6 +308,7 @@ const CheckoutModal = ({
     coin_discount: coinDiscount,
     coins_earned: potentialCoinsToEarn,
     customer_email: address.email || user?.email || "",
+    collab_ref: getActiveCollabRef() || undefined,
   });
 
   const handleRazorpayPayment = async () => {

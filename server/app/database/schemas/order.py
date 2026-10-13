@@ -107,6 +107,7 @@ class OrderBase(BaseModel):
     coins_used: Optional[int] = 0
     coin_discount: Optional[float] = 0.0
     coins_earned: Optional[int] = 0
+    collab_ref: Optional[str] = None
 
 
 class OrderCreate(OrderBase):

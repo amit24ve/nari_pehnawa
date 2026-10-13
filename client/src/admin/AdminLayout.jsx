@@ -20,6 +20,7 @@ import {
     Sparkles,
     MessageSquare,
     Megaphone,
+    Share2,
 } from "lucide-react";
 import logoImg from "../assets/logo.png";
 
@@ -141,6 +142,9 @@ const AdminLayout = () => {
                     </NavItem>
                     <NavItem to="/admin/payment-history" icon={CreditCard}>
                         Payments
+                    </NavItem>
+                    <NavItem to="/admin/collaborations" icon={Share2}>
+                        Influencer Collabs
                     </NavItem>
                     <NavItem to="/admin/settings" icon={Settings}>
                         Settings
@@ -413,6 +417,13 @@ const AdminLayout = () => {
                                     onClick={closeMobileMenu}
                                 >
                                     Payments
+                                </NavItem>
+                                <NavItem
+                                    to="/admin/collaborations"
+                                    icon={Share2}
+                                    onClick={closeMobileMenu}
+                                >
+                                    Influencer Collabs
                                 </NavItem>
                                 <NavItem
                                     to="/admin/settings"

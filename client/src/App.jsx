@@ -45,6 +45,8 @@ import Visitors from "./admin/Visitors";
 import HeroBanners from "./admin/HeroBanners";
 import Inquiries from "./admin/Inquiries";
 import AdminAnnouncementsModal from "./admin/AdminAnnouncementsModal";
+import Collaborations from "./admin/Collaborations";
+import CreatorDashboard from "./components/CreatorDashboard";
 import RequireAuth from "./admin/RequireAuth";
 import { AuthProvider } from "./context/AuthProvider";
 import { WishlistProvider } from "./context/WishlistProvider";
@@ -281,12 +283,22 @@ function App() {
                                         path="inquiries"
                                         element={<Inquiries />}
                                     />
+                                    <Route
+                                        path="collaborations"
+                                        element={<Collaborations />}
+                                    />
                                 </Route>
 
                                 {/* Google Sign-In redirect landing page - No Navbar/Footer */}
                                 <Route
                                     path="/auth/google/success"
                                     element={<GoogleAuthCallback />}
+                                />
+
+                                {/* Private Creator Dashboard - Token-based, No Login Required */}
+                                <Route
+                                    path="/collab/:token"
+                                    element={<CreatorDashboard />}
                                 />
 
                                 {/* Standalone Owner, Founders, & About pages */}

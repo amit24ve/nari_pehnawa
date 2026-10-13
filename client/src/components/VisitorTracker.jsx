@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
+import { captureReferral } from "../utils/collabAttribution";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
@@ -91,6 +92,9 @@ const VisitorTracker = () => {
 
   // 1. Session start & User merge logic
   useEffect(() => {
+    // Capture influencer referral link parameters immediately
+    captureReferral();
+
     if (location.pathname.startsWith("/admin")) return;
 
     const visitorId = getVisitorId();
