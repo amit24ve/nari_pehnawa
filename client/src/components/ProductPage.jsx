@@ -1083,25 +1083,23 @@ const ProductPage = () => {
               </div>
             </div>
 
-            {/* Live Flash Sale Event Banner */}
+            {/* Live Flash Sale Event Banner (Clean Editorial Ribbon, No Card) */}
             {(product.sale_title || product.deal_text) && (
-              <div className="bg-gradient-to-r from-[#8B0000] via-rose-800 to-amber-700 text-white p-3 sm:p-3.5 rounded-2xl shadow-sm flex items-center justify-between gap-3 flex-wrap">
+              <div className="py-2.5 px-3 border-l-2 border-[#8B0000] bg-rose-50/40 flex items-center justify-between gap-3 flex-wrap text-gray-900">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-                    <Flame className="w-5 h-5 fill-white text-white animate-pulse" />
-                  </div>
+                  <Flame className="w-4 h-4 text-[#8B0000] animate-pulse shrink-0" />
                   <div>
-                    <span className="text-[10px] uppercase font-extrabold tracking-wider bg-white/20 px-2 py-0.5 rounded text-amber-200">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-[#8B0000] block">
                       {product.sale_title || "Special Festive Offer"}
                     </span>
-                    <h3 className="font-extrabold text-sm sm:text-base leading-tight mt-0.5">
+                    <p className="font-bold text-sm text-gray-900 leading-tight">
                       {product.deal_text || "Special Promotional Deal"}
-                    </h3>
+                    </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] font-semibold text-rose-100 block">⚡ Limited Period Offer</span>
-                  <span className="text-xs font-bold text-amber-300">IST Live</span>
+                  <span className="text-[10px] font-medium text-gray-500 block">⚡ Limited Period Offer</span>
+                  <span className="text-xs font-bold text-[#8B0000]">IST Live</span>
                 </div>
               </div>
             )}
@@ -1322,240 +1320,176 @@ const ProductPage = () => {
               </form>
 
               {pincodeStatus === "valid" && (
-                <div className="text-xs text-emerald-700 bg-emerald-50 p-2.5 rounded-lg border border-emerald-200 space-y-1">
-                  <p className="font-bold">✓ Servicable Pincode</p>
-                  <p>{pincodeMsg}</p>
+                <div className="text-xs text-emerald-700 space-y-0.5 pt-1">
+                  <p className="font-bold flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Servicable Pincode
+                  </p>
+                  <p className="text-gray-600">{pincodeMsg}</p>
                 </div>
               )}
               {pincodeStatus === "invalid" && (
-                <p className="text-xs text-red-600 font-semibold">{pincodeMsg}</p>
+                <p className="text-xs text-red-600 font-semibold pt-1">{pincodeMsg}</p>
               )}
             </div>
           </div>
         </div>
 
-        {/* ═══════ FULL-WIDTH KEY HIGHLIGHTS & FABRIC SPECIFICATIONS (PURE CLEAN TEXT, NO CARDS) ═══════ */}
-        <div className="mt-10 sm:mt-12 pt-8 border-t border-gray-200 w-full space-y-6">
-          <div className="border-b border-gray-200 pb-3">
-            <h3 className="text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 font-serif flex items-center gap-2">
-              <span className="text-[#8B0000]">✦</span> Key Highlights &amp; Fabric Details
-            </h3>
+        {/* ═══════ PRODUCT DETAILS & SPECIFICATIONS (CLEAN EDITORIAL, NO CARDS) ═══════ */}
+        <div className="mt-12 pt-8 border-t border-gray-200 w-full space-y-8">
+          <div className="border-b border-gray-200 pb-4">
+            <h2 className="text-lg sm:text-xl font-serif font-bold tracking-tight text-gray-900 flex items-center gap-2">
+              <span className="text-[#8B0000]">✦</span> Product Overview &amp; Specifications
+            </h2>
+            <p className="text-xs text-gray-500 mt-1">
+              Detailed craftsmanship, fabric composition, and silhouette guide
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start w-full">
-            {/* Left Column: Key Highlights Bullet Points (Pure Text, No Box) */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900">
-                Design &amp; Craftsmanship Highlights
-              </h4>
-              {product.highlights && product.highlights.length > 0 ? (
-                <ul className="text-xs sm:text-sm text-gray-800 space-y-2.5 leading-relaxed">
-                  {product.highlights.map((hl, idx) => (
-                    <li key={idx} className="flex items-start gap-2.5">
-                      <span className="text-[#8B0000] font-bold text-sm leading-none mt-0.5">•</span>
-                      <span className="text-gray-900 font-medium">{hl}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                  {product.description || "Authentic handcrafted ethnic wear designed for elegance and all-day comfort."}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start w-full">
+            {/* Left Column (7 cols): Story, Key Highlights & Stylist's Note */}
+            <div className="lg:col-span-7 space-y-6">
+              
+              {/* Product Story / Description */}
+              <div className="space-y-2">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-gray-900">
+                  About The Product
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  {product.description ||
+                    `Elevate your ethnic fashion quotient with the stunning ${product.name} from Nari Pehnawa. Crafted with precision craftsmanship and rich color tones, this piece combines Indian elegance with day-long comfort.`}
                 </p>
+              </div>
+
+              {/* Key Highlights (Admin Added Highlights - 100% visible, clean bullets) */}
+              {product.highlights && product.highlights.length > 0 && (
+                <div className="space-y-2.5 pt-2">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-gray-900">
+                    Key Highlights
+                  </h3>
+                  <ul className="text-xs sm:text-sm text-gray-800 space-y-2 leading-relaxed">
+                    {product.highlights.map((hl, idx) => (
+                      <li key={idx} className="flex items-start gap-2.5">
+                        <span className="text-[#8B0000] font-bold text-sm leading-none mt-0.5">•</span>
+                        <span className="text-gray-900 font-medium">{hl}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Stylist's Note / Tip (Admin Added - Clean Quote Accent, No Card) */}
+              {product.style_tip && (
+                <div className="pt-3 border-l-2 border-[#8B0000] pl-4 space-y-1">
+                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-widest flex items-center gap-1.5">
+                    💡 Stylist’s Note
+                  </h4>
+                  <p className="text-xs sm:text-sm text-gray-700 leading-relaxed italic">
+                    "{product.style_tip}"
+                  </p>
+                </div>
               )}
             </div>
 
-            {/* Right Column: Fabric & Silhouette Details (Clean Key-Value Text, No Cards) */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900">
-                Fabric &amp; Silhouette Details
-              </h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6 text-xs sm:text-sm">
+            {/* Right Column (5 cols): Complete Specifications Matrix (Clean Rows, Zero Cards) */}
+            <div className="lg:col-span-5 space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-gray-900 border-b border-gray-200 pb-2">
+                Specifications Matrix
+              </h3>
+              
+              <div className="w-full text-xs sm:text-sm divide-y divide-gray-100">
                 {product.fabric && (
-                  <div>
-                    <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Fabric</span>
-                    <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.fabric}</span>
-                  </div>
-                )}
-                {product.sleeve_type && (
-                  <div>
-                    <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Sleeve Style</span>
-                    <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.sleeve_type}</span>
+                  <div className="py-2.5 flex justify-between gap-4">
+                    <span className="text-gray-500 font-medium w-36 shrink-0">Fabric</span>
+                    <span className="font-semibold text-gray-900 text-right">{product.fabric}</span>
                   </div>
                 )}
                 {product.pattern && (
-                  <div>
-                    <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Pattern</span>
-                    <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.pattern}</span>
+                  <div className="py-2.5 flex justify-between gap-4">
+                    <span className="text-gray-500 font-medium w-36 shrink-0">Pattern / Work</span>
+                    <span className="font-semibold text-gray-900 text-right">{product.pattern}</span>
+                  </div>
+                )}
+                {product.sleeve_type && (
+                  <div className="py-2.5 flex justify-between gap-4">
+                    <span className="text-gray-500 font-medium w-36 shrink-0">Sleeve Style</span>
+                    <span className="font-semibold text-gray-900 text-right">{product.sleeve_type}</span>
                   </div>
                 )}
                 {product.fit_type && (
-                  <div>
-                    <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Fit Type</span>
-                    <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.fit_type}</span>
+                  <div className="py-2.5 flex justify-between gap-4">
+                    <span className="text-gray-500 font-medium w-36 shrink-0">Fit Type</span>
+                    <span className="font-semibold text-gray-900 text-right">{product.fit_type}</span>
                   </div>
                 )}
                 {product.occasion && (
-                  <div>
-                    <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Occasion</span>
-                    <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.occasion}</span>
+                  <div className="py-2.5 flex justify-between gap-4">
+                    <span className="text-gray-500 font-medium w-36 shrink-0">Occasion</span>
+                    <span className="font-semibold text-gray-900 text-right">{product.occasion}</span>
                   </div>
                 )}
                 {product.country_of_origin && (
-                  <div>
-                    <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Origin</span>
-                    <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.country_of_origin}</span>
+                  <div className="py-2.5 flex justify-between gap-4">
+                    <span className="text-gray-500 font-medium w-36 shrink-0">Country of Origin</span>
+                    <span className="font-semibold text-gray-900 text-right">{product.country_of_origin}</span>
+                  </div>
+                )}
+                {product.hsn_code && (
+                  <div className="py-2.5 flex justify-between gap-4">
+                    <span className="text-gray-500 font-medium w-36 shrink-0">HSN Code</span>
+                    <span className="font-semibold text-gray-900 text-right">{product.hsn_code}</span>
                   </div>
                 )}
                 {product.wash_care && (
-                  <div className="col-span-2 sm:col-span-3">
-                    <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Wash &amp; Care</span>
-                    <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.wash_care}</span>
+                  <div className="py-2.5 flex justify-between gap-4">
+                    <span className="text-gray-500 font-medium w-36 shrink-0">Wash &amp; Care</span>
+                    <span className="font-semibold text-gray-900 text-right">{product.wash_care}</span>
                   </div>
                 )}
-                {product.return_policy && (
-                  <div className="col-span-2 sm:col-span-3">
-                    <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Return &amp; Exchange</span>
-                    <span className="font-bold text-gray-900 text-xs sm:text-sm">
-                      {product.is_returnable === false ? "Non-Returnable (Final Sale)" : product.return_policy}
-                    </span>
+                <div className="py-2.5 flex justify-between gap-4">
+                  <span className="text-gray-500 font-medium w-36 shrink-0">Return &amp; Exchange</span>
+                  <span className="font-semibold text-gray-900 text-right">
+                    {product.is_returnable === false
+                      ? (product.return_policy || "Non-Returnable (Final Sale)")
+                      : (product.return_policy || "Easy 15-Day Returns")}
+                  </span>
+                </div>
+                {Array.isArray(product.specifications) && product.specifications.map((spec, idx) => (
+                  <div key={idx} className="py-2.5 flex justify-between gap-4">
+                    <span className="text-gray-500 font-medium w-36 shrink-0">{spec.name || spec.key || spec.title}</span>
+                    <span className="font-semibold text-gray-900 text-right">{spec.value}</span>
                   </div>
-                )}
+                ))}
               </div>
             </div>
           </div>
         </div>
 
-        {/* ═══════ FULL-WIDTH EXTENDED DETAILS SECTION ═══════ */}
-        <div className="mt-10 pt-6 border-t border-gray-200 space-y-10">
-
-          {/* Full Specifications & Description Accordion (Clean, No Card) */}
-          <div className="space-y-6">
-            <Accordion title="Complete Product Specifications & Story" defaultOpen icon={Award}>
-              <div className="space-y-8 pt-3">
-                
-                {/* Rich Story & Style Tips */}
-                <div className="space-y-4">
-                  <h4 className="text-sm font-bold uppercase tracking-wider text-gray-800 border-b pb-2 mb-2">
-                    Product Overview
-                  </h4>
-                  <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
-                    {product.description ||
-                      `Elevate your ethnic fashion quotient with the stunning ${product.name} from Nari Pehnawa. Crafted with precision craftsmanship and rich color tones, this piece combines Indian elegance with day-long comfort.`}
-                  </p>
-                  
-                  {product.style_tip && (
-                    <div className="pt-2 border-t border-gray-100 space-y-1 max-w-2xl">
-                      <h5 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1">
-                        💡 Style Tip
-                      </h5>
-                      <p className="text-xs sm:text-sm text-gray-700 leading-relaxed italic">{product.style_tip}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Specs Table */}
-                <div className="space-y-3">
-                  <h4 className="text-sm font-bold uppercase tracking-wider text-gray-800 border-b pb-2">
-                    Specifications Matrix
-                  </h4>
-                  <div className="max-w-2xl overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <tbody>
-                        {product.fabric && (
-                          <tr className="border-b border-gray-100">
-                            <td className="py-2.5 pr-4 font-semibold text-gray-700 w-44 align-top">Fabric</td>
-                            <td className="py-2.5 text-gray-600">{product.fabric}</td>
-                          </tr>
-                        )}
-                        {product.pattern && (
-                          <tr className="border-b border-gray-100">
-                            <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Pattern / Work</td>
-                            <td className="py-2.5 text-gray-600">{product.pattern}</td>
-                          </tr>
-                        )}
-                        {product.sleeve_type && (
-                          <tr className="border-b border-gray-100">
-                            <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Sleeve Style</td>
-                            <td className="py-2.5 text-gray-600">{product.sleeve_type}</td>
-                          </tr>
-                        )}
-                        {product.fit_type && (
-                          <tr className="border-b border-gray-100">
-                            <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Fit Type</td>
-                            <td className="py-2.5 text-gray-600">{product.fit_type}</td>
-                          </tr>
-                        )}
-                        {product.occasion && (
-                          <tr className="border-b border-gray-100">
-                            <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Occasion</td>
-                            <td className="py-2.5 text-gray-600">{product.occasion}</td>
-                          </tr>
-                        )}
-                        {product.country_of_origin && (
-                          <tr className="border-b border-gray-100">
-                            <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Country of Origin</td>
-                            <td className="py-2.5 text-gray-600">{product.country_of_origin}</td>
-                          </tr>
-                        )}
-                        {product.hsn_code && (
-                          <tr className="border-b border-gray-100">
-                            <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">HSN Code</td>
-                            <td className="py-2.5 text-gray-600">{product.hsn_code}</td>
-                          </tr>
-                        )}
-                        {product.wash_care && (
-                          <tr className="border-b border-gray-100">
-                            <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Wash & Care</td>
-                            <td className="py-2.5 text-gray-600">{product.wash_care}</td>
-                          </tr>
-                        )}
-                        <tr className="border-b border-gray-100">
-                          <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Return & Exchange</td>
-                          <td className="py-2.5 text-gray-600 font-medium">
-                            {product.is_returnable === false
-                              ? (product.return_policy || "Non-Returnable (Final Sale)")
-                              : (product.return_policy || "Easy 15-Day Returns")}
-                          </td>
-                        </tr>
-                        {/* Custom specifications from Admin if configured */}
-                        {Array.isArray(product.specifications) && product.specifications.map((spec, idx) => (
-                          <tr key={idx} className="border-b border-gray-100 last:border-b-0">
-                            <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">{spec.name || spec.key || spec.title}</td>
-                            <td className="py-2.5 text-gray-600">{spec.value}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-              </div>
-            </Accordion>
-          </div>
-
-          {/* Frequently Bought Together Bundle (Clean Text Layout, No Card) */}
+          {/* Frequently Bought Together Bundle (Clean Editorial, No Cards) */}
           {bundleProducts.length > 0 && (
             <div className="pt-8 border-t border-gray-200 space-y-4">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <ShoppingBag className="w-5 h-5 text-[#8B0000]" /> Frequently Bought Together
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center pt-2">
+              <div className="border-b border-gray-100 pb-2.5">
+                <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                  <ShoppingBag className="w-4 h-4 text-[#8B0000]" /> Frequently Bought Together
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">Complement your look with matching handcrafted pieces</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 items-center pt-1">
                 
                 {/* Main Product */}
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                <div className="flex items-center gap-3 py-2 px-1 border-b md:border-b-0 md:border-r border-gray-100 md:pr-4">
                   <div className="relative shrink-0">
                     <img
                       src={images[0] || FALLBACK_IMG}
                       alt={product.name}
-                      className="w-14 h-16 object-cover rounded-lg"
+                      className="w-14 h-16 object-cover rounded-md"
                     />
-                    <span className="absolute -top-1.5 -left-1.5 bg-[#8B0000] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                    <span className="absolute -top-1 -left-1 bg-[#8B0000] text-white text-[9px] font-bold px-1 py-0.2 rounded">
                       Main
                     </span>
                   </div>
                   <div className="text-xs min-w-0">
                     <p className="font-bold text-gray-900 truncate">{product.name}</p>
-                    <p className="text-[#8B0000] font-bold">₹{product.price}</p>
+                    <p className="text-[#8B0000] font-bold mt-0.5">₹{product.price}</p>
                   </div>
                 </div>
 
@@ -1565,8 +1499,8 @@ const ProductPage = () => {
                   return (
                     <div
                       key={bundleItem.id}
-                      className={`flex items-center gap-3 p-3 rounded-xl border transition-colors cursor-pointer ${
-                        isChecked ? "bg-amber-50/40 border-amber-300" : "bg-gray-50 border-gray-200 opacity-60"
+                      className={`flex items-center gap-3 py-2 px-1 border-b md:border-b-0 md:border-r last:border-r-0 border-gray-100 md:pr-4 transition-opacity cursor-pointer ${
+                        isChecked ? "opacity-100" : "opacity-50"
                       }`}
                       onClick={() =>
                         setSelectedBundleMap((prev) => ({
@@ -1579,16 +1513,16 @@ const ProductPage = () => {
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => {}}
-                        className="rounded text-[#8B0000] focus:ring-[#8B0000] h-4 w-4 shrink-0"
+                        className="rounded text-[#8B0000] focus:ring-[#8B0000] h-4 w-4 shrink-0 cursor-pointer"
                       />
                       <img
                         src={bundleItem.image || (bundleItem.images && bundleItem.images[0]) || FALLBACK_IMG}
                         alt={bundleItem.name}
-                        className="w-14 h-16 object-cover rounded-lg shrink-0"
+                        className="w-14 h-16 object-cover rounded-md shrink-0"
                       />
                       <div className="text-xs min-w-0 flex-1">
                         <p className="font-bold text-gray-900 truncate">{bundleItem.name}</p>
-                        <p className="text-[#8B0000] font-bold">₹{bundleItem.price}</p>
+                        <p className="text-[#8B0000] font-bold mt-0.5">₹{bundleItem.price}</p>
                       </div>
                     </div>
                   );
@@ -1738,8 +1672,8 @@ const ProductPage = () => {
               </div>
             )}
 
-            {/* Verified Customer Reviews Cards (Dynamic from Backend API - only admin-approved reviews) */}
-            <div className="space-y-4 pt-4 border-t border-gray-100">
+            {/* Verified Customer Reviews (Clean Stream, No Cards) */}
+            <div className="divide-y divide-gray-100 pt-2 border-t border-gray-100">
               {dbReviews && dbReviews.length > 0 ? (
                 dbReviews.map((rev) => {
                 const rId = rev._id || rev.id;
@@ -1747,7 +1681,7 @@ const ProductPage = () => {
                 const currentHelpful = helpfulVotes[rId] ? baseHelpful + 1 : baseHelpful;
                 const formattedDate = rev.created_at ? new Date(rev.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : "Recent";
                 return (
-                  <div key={rId} className="p-4 bg-gray-50/80 rounded-xl border border-gray-100 space-y-2.5 text-xs">
+                  <div key={rId} className="py-4 space-y-2 text-xs">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-gray-900">{rev.user_name || rev.reviewer_name || "Customer"}</span>
@@ -1794,16 +1728,16 @@ const ProductPage = () => {
                 );
               })
             ) : (
-              <div className="py-8 text-center bg-gray-50/60 rounded-2xl border border-dashed border-gray-200">
-                <Star className="w-8 h-8 text-amber-400/60 mx-auto mb-2" />
-                <p className="text-sm font-bold text-gray-700">No reviews yet for this kurti</p>
-                <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto mb-3">
+              <div className="py-8 text-center space-y-2">
+                <Star className="w-7 h-7 text-amber-400/70 mx-auto" />
+                <p className="text-sm font-bold text-gray-800">No reviews yet for this kurti</p>
+                <p className="text-xs text-gray-500 max-w-sm mx-auto">
                   Verified buyers who ordered this kurti can leave a review after logging in.
                 </p>
                 <button
                   type="button"
                   onClick={handleOpenReviewModal}
-                  className="px-4 py-2 bg-[#8B0000] hover:bg-[#6B0000] text-white rounded-xl text-xs font-bold shadow-sm transition inline-flex items-center gap-1.5 cursor-pointer"
+                  className="mt-2 px-4 py-2 bg-[#8B0000] hover:bg-[#6B0000] text-white rounded-lg text-xs font-bold transition inline-flex items-center gap-1.5 cursor-pointer"
                 >
                   <Pencil className="w-3.5 h-3.5" /> {user ? "Write a Review" : "Login to Review"}
                 </button>
@@ -1826,7 +1760,7 @@ const ProductPage = () => {
               </button>
             </div>
 
-            <div className="space-y-3.5 text-xs">
+            <div className="divide-y divide-gray-100 text-xs">
               {(product.q_and_a && product.q_and_a.length > 0
                 ? product.q_and_a
                 : [
@@ -1834,12 +1768,12 @@ const ProductPage = () => {
                     { q: "Does the color bleed on first wash?", a: "All Nari Pehnawa fabrics are pre-washed and color-fast. We recommend gentle cold wash." },
                   ]
               ).map((item, idx) => (
-                <div key={idx} className="space-y-1 bg-gray-50/60 p-3 rounded-xl border border-gray-100">
-                  <p className="font-bold text-gray-900 flex items-center gap-1.5">
-                    <span className="text-[#8B0000]">Q:</span> {item.q}
+                <div key={idx} className="py-3.5 space-y-1">
+                  <p className="font-bold text-gray-900 text-xs sm:text-sm flex items-center gap-2">
+                    <span className="text-[#8B0000] font-bold">Q.</span> {item.q}
                   </p>
-                  <p className="text-gray-600 pl-4 border-l-2 border-[#8B0000] font-medium leading-relaxed">
-                    A: {item.a}
+                  <p className="text-gray-600 pl-4 border-l-2 border-[#8B0000] font-normal leading-relaxed text-xs sm:text-sm">
+                    {item.a}
                   </p>
                 </div>
               ))}
@@ -1885,7 +1819,6 @@ const ProductPage = () => {
           )}
 
         </div>
-      </div>
 
       {/* ── Size Guide Modal (Exact Kurti Size Chart) ── */}
       {showSizeChart && (
@@ -1948,7 +1881,7 @@ const ProductPage = () => {
               </div>
 
               {/* Kurti Diagram Illustration */}
-              <div className="md:col-span-4 flex flex-col items-center justify-center p-3 bg-red-50/30 rounded-2xl border border-red-100">
+              <div className="md:col-span-4 flex flex-col items-center justify-center p-3">
                 <svg
                   viewBox="0 0 200 320"
                   className="w-full max-w-[160px] h-auto"
@@ -1992,7 +1925,7 @@ const ProductPage = () => {
             </div>
 
             {/* How to Measure Guidelines */}
-            <div className="mt-6 pt-4 border-t border-gray-100 bg-gray-50/80 rounded-2xl p-4">
+            <div className="mt-6 pt-4 border-t border-gray-100">
               <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-2">
                 How to Measure Your Body:
               </h4>
@@ -2095,12 +2028,12 @@ const ProductPage = () => {
 
             {/* Modal Body */}
             <form onSubmit={handleSubmitReview} className="p-6 md:p-8 space-y-6">
-              {/* Product Info Preview */}
-              <div className="flex items-center gap-4 p-3.5 bg-rose-50/40 rounded-2xl border border-rose-100">
+              {/* Product Info Preview (Clean Layout, No Card) */}
+              <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
                 {product?.image ? (
-                  <img src={product.image} alt={product.name} className="w-16 h-16 rounded-xl object-cover border border-rose-200/60 shadow-xs" />
+                  <img src={product.image} alt={product.name} className="w-16 h-16 rounded-xl object-cover border border-gray-200 shadow-xs" />
                 ) : (
-                  <div className="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center text-gray-400">
+                  <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
                     <Package className="w-7 h-7" />
                   </div>
                 )}
@@ -2111,8 +2044,8 @@ const ProductPage = () => {
                 </div>
               </div>
 
-              {/* Overall Rating (Center Aligned - Mandatory) */}
-              <div className="bg-gray-50/80 rounded-2xl p-5 border border-gray-200/70 text-center flex flex-col items-center justify-center">
+              {/* Overall Rating (Clean Layout, No Card Box) */}
+              <div className="py-2 text-center flex flex-col items-center justify-center border-b border-gray-100 pb-5">
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
                   Overall Rating <span className="text-red-500">*</span>
                 </label>
