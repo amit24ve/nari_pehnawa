@@ -145,7 +145,9 @@ const Products = () => {
         hsn_code: "621133",
         wash_care: "Hand Wash or Gentle Machine Wash in Cold Water",
         offer_code: "",
-        offer_text: ""
+        offer_text: "",
+        highlights: "",
+        style_tip: ""
     };
 
     const [formData, setFormData] = useState(emptyForm);
@@ -415,6 +417,10 @@ const Products = () => {
                 return_policy: formData.return_policy || "Easy 15-Day Returns",
                 offer_code: formData.offer_code || null,
                 offer_text: formData.offer_text || null,
+                highlights: formData.highlights
+                    ? formData.highlights.split("\n").map(h => h.trim()).filter(Boolean)
+                    : [],
+                style_tip: formData.style_tip ? formData.style_tip.trim() : null,
                 delivery_charge: formData.delivery_charge !== "" ? parseFloat(formData.delivery_charge) : 0.0,
                 pickup_location: formData.pickup_location || "Home",
                 warehouse_stock: formData.warehouse_stock || {},
@@ -601,7 +607,9 @@ const Products = () => {
             hsn_code: product.hsn_code || "621133",
             wash_care: product.wash_care || "Hand Wash or Gentle Machine Wash in Cold Water",
             offer_code: product.offer_code || "",
-            offer_text: product.offer_text || ""
+            offer_text: product.offer_text || "",
+            highlights: Array.isArray(product.highlights) ? product.highlights.join("\n") : (product.highlights || ""),
+            style_tip: product.style_tip || ""
         });
         setShowEditModal(true);
     };
@@ -2152,6 +2160,30 @@ const Products = () => {
                                             onChange={(e) => setFormData({ ...formData, wash_care: e.target.value })}
                                             className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
                                             placeholder="e.g. Hand Wash or Gentle Machine Wash in Cold Water"
+                                        />
+                                    </div>
+                                    <div className="sm:col-span-2 lg:col-span-3">
+                                        <label className="block text-slate-700 font-bold mb-1.5 text-xs">
+                                            ✨ Key Highlights (Optional — enter each bullet on a new line)
+                                        </label>
+                                        <textarea
+                                            rows={3}
+                                            value={formData.highlights}
+                                            onChange={(e) => setFormData({ ...formData, highlights: e.target.value })}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
+                                            placeholder={"100% Pure Premium Cotton with Artisanal Handcrafting\nBreathable & Comfortable Silhouette for All-Day Wear\nPre-Shrunk Material with Vivid Color Fastness"}
+                                        />
+                                    </div>
+                                    <div className="sm:col-span-2 lg:col-span-3">
+                                        <label className="block text-slate-700 font-bold mb-1.5 text-xs">
+                                            💡 Styling Tip (Optional)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={formData.style_tip}
+                                            onChange={(e) => setFormData({ ...formData, style_tip: e.target.value })}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
+                                            placeholder="e.g. Pair with oxidized silver jhumkas and ethnic mojaris for a royal look"
                                         />
                                     </div>
                                 </div>

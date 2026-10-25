@@ -301,22 +301,6 @@ const HeroSection = () => {
             );
           })}
 
-          {/* Arrow buttons */}
-          <button
-            onClick={prev}
-            className="absolute left-1.5 sm:left-3 md:left-5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 md:w-11 md:h-11 bg-white/20 hover:bg-white/40 border border-white/30 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-all hover:scale-105 cursor-pointer shadow-md"
-            aria-label="Previous slide"
-          >
-            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-          <button
-            onClick={next}
-            className="absolute right-1.5 sm:right-3 md:right-5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 md:w-11 md:h-11 bg-white/20 hover:bg-white/40 border border-white/30 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-all hover:scale-105 cursor-pointer shadow-md"
-            aria-label="Next slide"
-          >
-            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-
           {/* Dot indicators — positioned at bottom */}
           <div className="absolute bottom-2 sm:bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 sm:gap-2">
             {slides.map((_, i) => (

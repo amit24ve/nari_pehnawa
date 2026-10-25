@@ -234,14 +234,16 @@ const ProductPage = () => {
     setActiveImg((prev) => (prev + 1) % count);
   }, [product?.images, product?.image]);
 
-  // Auto-slide product images every 3.5s (pauses on hover, touch, or when zoomed in)
+  const didSwipe = useRef(false);
+
+  // Auto-slide product images gently every 6.5s (pauses on hover, touch, or when zoomed in)
   useEffect(() => {
     const count = product?.images?.length || 0;
     if (count <= 1 || sliderPaused || isZoomed || isHovered) return;
 
     const interval = setInterval(() => {
       setActiveImg((prev) => (prev + 1) % count);
-    }, 3500);
+    }, 6500);
 
     return () => clearInterval(interval);
   }, [product?.images?.length, sliderPaused, isZoomed, isHovered]);
@@ -255,13 +257,17 @@ const ProductPage = () => {
 
   const handleImgTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX;
+    didSwipe.current = false;
+    setSliderPaused(true);
   };
   const handleImgTouchMove = (e) => {
     touchEndX.current = e.touches[0].clientX;
   };
   const handleImgTouchEnd = () => {
+    setSliderPaused(false);
     const diff = touchStartX.current - touchEndX.current;
-    if (Math.abs(diff) > 40 && touchEndX.current !== 0) {
+    if (Math.abs(diff) > 35 && touchEndX.current !== 0) {
+      didSwipe.current = true;
       if (diff > 0) handleNextImg();
       else handlePrevImg();
     }
@@ -858,7 +864,13 @@ const ProductPage = () => {
                 setZoomPos({ x: 50, y: 50 });
               }}
               onMouseMove={handleImgMouseMove}
-              onClick={() => setIsZoomed((prev) => !prev)}
+              onClick={() => {
+                if (didSwipe.current) {
+                  didSwipe.current = false;
+                  return;
+                }
+                setIsZoomed((prev) => !prev);
+              }}
               onTouchStart={handleImgTouchStart}
               onTouchMove={handleImgTouchMove}
               onTouchEnd={handleImgTouchEnd}
@@ -1002,8 +1014,8 @@ const ProductPage = () => {
               </div>
             )}
 
-            {/* Social Proof & Urgency Bar */}
-            <div className="bg-amber-50/80 rounded-xl p-3 border border-amber-200/60 flex items-center justify-between gap-2 flex-wrap text-xs text-amber-900 font-medium w-full">
+            {/* Social Proof & Urgency Bar (Clean Text, No Card) */}
+            <div className="flex items-center justify-between gap-2 flex-wrap text-xs text-amber-900 font-medium py-1.5 w-full">
               <div className="flex items-center gap-1.5">
                 <Flame className="w-4 h-4 text-amber-600 animate-pulse" />
                 <span><strong>{viewersCount ?? (product.viewers_count || 14)} people</strong> viewing right now</span>
@@ -1094,8 +1106,8 @@ const ProductPage = () => {
               </div>
             )}
 
-            {/* Dynamic Price & Coupon Badges */}
-            <div className="p-4 bg-gray-50/80 rounded-2xl border border-gray-100 space-y-2.5">
+            {/* Dynamic Price & Coupon Badges (Clean Typography, No Card) */}
+            <div className="py-3 border-y border-gray-100 space-y-2.5">
               <div className="flex items-baseline gap-3 flex-wrap">
                 <span className="text-3xl font-extrabold text-gray-900">
                   ₹{(product.price || 0).toLocaleString("en-IN")}
@@ -1286,8 +1298,8 @@ const ProductPage = () => {
 
             {addedMsg && <p className="text-xs text-emerald-600 font-bold">✓ {addedMsg}</p>}
 
-            {/* Pincode Servicability Checker */}
-            <div className="bg-gray-50 rounded-2xl p-4 border border-gray-200/80 space-y-2.5">
+            {/* Pincode Servicability Checker (Clean Text, No Card) */}
+            <div className="pt-3 border-t border-gray-100 space-y-2.5">
               <span className="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-[#8B0000]" /> Check Delivery & Servicability
               </span>
@@ -1322,69 +1334,92 @@ const ProductPage = () => {
           </div>
         </div>
 
-        {/* ═══════ FULL-WIDTH KEY HIGHLIGHTS & FABRIC SPECIFICATIONS (COVERS BOTH SIDES ON DESKTOP) ═══════ */}
-        <div className="mt-8 sm:mt-10 bg-gradient-to-br from-[#FFF9F6] via-white to-amber-50/60 rounded-2xl sm:rounded-3xl p-4 sm:p-7 md:p-8 border border-amber-200/80 shadow-xs w-full">
-          <div className="flex items-center gap-2 mb-4 sm:mb-6 border-b border-amber-200/60 pb-3">
-            <Sparkles className="w-5 h-5 text-[#8B0000]" />
-            <h3 className="text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 font-serif">
-              Key Highlights &amp; Fabric Specifications
+        {/* ═══════ FULL-WIDTH KEY HIGHLIGHTS & FABRIC SPECIFICATIONS (PURE CLEAN TEXT, NO CARDS) ═══════ */}
+        <div className="mt-10 sm:mt-12 pt-8 border-t border-gray-200 w-full space-y-6">
+          <div className="border-b border-gray-200 pb-3">
+            <h3 className="text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 font-serif flex items-center gap-2">
+              <span className="text-[#8B0000]">✦</span> Key Highlights &amp; Fabric Details
             </h3>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-start w-full">
-            {/* Left Column: Key Highlights Bullet Points */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start w-full">
+            {/* Left Column: Key Highlights Bullet Points (Pure Text, No Box) */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900/90 flex items-center gap-1.5">
-                <span>✨</span> Design &amp; Craftsmanship Highlights
+              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900">
+                Design &amp; Craftsmanship Highlights
               </h4>
-              <ul className="text-xs sm:text-sm text-gray-800 space-y-2.5 leading-relaxed">
-                {(product.highlights && product.highlights.length > 0
-                  ? product.highlights
-                  : [
-                      "100% Premium Quality Fabric & Authentic Handcrafted Stitching",
-                      "Breathable, Ultra-Comfortable Silhouette Designed for All-Day Wear",
-                      "Pre-Shrunk Material with Vivid, Long-Lasting Color Fastness",
-                      "Versatile Design Ideal for Festive Gatherings, Office & Casual Outings",
-                    ]
-                ).map((hl, idx) => (
-                  <li key={idx} className="flex items-start gap-2.5 bg-white/70 p-2.5 rounded-xl border border-amber-100/80 shadow-2xs">
-                    <span className="text-[#8B0000] font-bold text-sm leading-none mt-0.5">•</span>
-                    <span className="text-gray-900 font-medium">{hl}</span>
-                  </li>
-                ))}
-              </ul>
+              {product.highlights && product.highlights.length > 0 ? (
+                <ul className="text-xs sm:text-sm text-gray-800 space-y-2.5 leading-relaxed">
+                  {product.highlights.map((hl, idx) => (
+                    <li key={idx} className="flex items-start gap-2.5">
+                      <span className="text-[#8B0000] font-bold text-sm leading-none mt-0.5">•</span>
+                      <span className="text-gray-900 font-medium">{hl}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                  {product.description || "Authentic handcrafted ethnic wear designed for elegance and all-day comfort."}
+                </p>
+              )}
             </div>
 
-            {/* Right Column: Fabric & Silhouette Matrix */}
+            {/* Right Column: Fabric & Silhouette Details (Clean Key-Value Text, No Cards) */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900/90 flex items-center gap-1.5">
-                <span>🧵</span> Fabric &amp; Silhouette Details
+              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900">
+                Fabric &amp; Silhouette Details
               </h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
-                <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-amber-200/60 shadow-2xs">
-                  <span className="text-gray-500 block text-[10px] uppercase tracking-wider font-semibold">Fabric</span>
-                  <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.fabric || "Cotton Blend"}</span>
-                </div>
-                <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-amber-200/60 shadow-2xs">
-                  <span className="text-gray-500 block text-[10px] uppercase tracking-wider font-semibold">Sleeve Style</span>
-                  <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.sleeve_type || "3/4 Sleeves"}</span>
-                </div>
-                <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-amber-200/60 shadow-2xs">
-                  <span className="text-gray-500 block text-[10px] uppercase tracking-wider font-semibold">Pattern</span>
-                  <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.pattern || "Floral Print"}</span>
-                </div>
-                <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-amber-200/60 shadow-2xs">
-                  <span className="text-gray-500 block text-[10px] uppercase tracking-wider font-semibold">Fit Type</span>
-                  <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.fit_type || "Comfort Fit"}</span>
-                </div>
-                <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-amber-200/60 shadow-2xs">
-                  <span className="text-gray-500 block text-[10px] uppercase tracking-wider font-semibold">Occasion</span>
-                  <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.occasion || "Festive & Casual"}</span>
-                </div>
-                <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-amber-200/60 shadow-2xs">
-                  <span className="text-gray-500 block text-[10px] uppercase tracking-wider font-semibold">Origin</span>
-                  <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.country_of_origin || "India 🇮🇳"}</span>
-                </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6 text-xs sm:text-sm">
+                {product.fabric && (
+                  <div>
+                    <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Fabric</span>
+                    <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.fabric}</span>
+                  </div>
+                )}
+                {product.sleeve_type && (
+                  <div>
+                    <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Sleeve Style</span>
+                    <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.sleeve_type}</span>
+                  </div>
+                )}
+                {product.pattern && (
+                  <div>
+                    <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Pattern</span>
+                    <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.pattern}</span>
+                  </div>
+                )}
+                {product.fit_type && (
+                  <div>
+                    <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Fit Type</span>
+                    <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.fit_type}</span>
+                  </div>
+                )}
+                {product.occasion && (
+                  <div>
+                    <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Occasion</span>
+                    <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.occasion}</span>
+                  </div>
+                )}
+                {product.country_of_origin && (
+                  <div>
+                    <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Origin</span>
+                    <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.country_of_origin}</span>
+                  </div>
+                )}
+                {product.wash_care && (
+                  <div className="col-span-2 sm:col-span-3">
+                    <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Wash &amp; Care</span>
+                    <span className="font-bold text-gray-900 text-xs sm:text-sm">{product.wash_care}</span>
+                  </div>
+                )}
+                {product.return_policy && (
+                  <div className="col-span-2 sm:col-span-3">
+                    <span className="text-gray-400 block text-[10px] uppercase tracking-wider font-semibold">Return &amp; Exchange</span>
+                    <span className="font-bold text-gray-900 text-xs sm:text-sm">
+                      {product.is_returnable === false ? "Non-Returnable (Final Sale)" : product.return_policy}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1393,8 +1428,8 @@ const ProductPage = () => {
         {/* ═══════ FULL-WIDTH EXTENDED DETAILS SECTION ═══════ */}
         <div className="mt-10 pt-6 border-t border-gray-200 space-y-10">
 
-          {/* Full Specifications & Description Accordion */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs space-y-6">
+          {/* Full Specifications & Description Accordion (Clean, No Card) */}
+          <div className="space-y-6">
             <Accordion title="Complete Product Specifications & Story" defaultOpen icon={Award}>
               <div className="space-y-8 pt-3">
                 
@@ -1409,11 +1444,11 @@ const ProductPage = () => {
                   </p>
                   
                   {product.style_tip && (
-                    <div className="bg-amber-50/80 rounded-xl p-4 border border-amber-200/70 space-y-1 max-w-2xl">
-                      <h5 className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1">
+                    <div className="pt-2 border-t border-gray-100 space-y-1 max-w-2xl">
+                      <h5 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1">
                         💡 Style Tip
                       </h5>
-                      <p className="text-xs text-amber-800 leading-relaxed">{product.style_tip}</p>
+                      <p className="text-xs sm:text-sm text-gray-700 leading-relaxed italic">{product.style_tip}</p>
                     </div>
                   )}
                 </div>
@@ -1426,38 +1461,54 @@ const ProductPage = () => {
                   <div className="max-w-2xl overflow-x-auto">
                     <table className="w-full text-sm">
                       <tbody>
-                        <tr className="border-b border-gray-100">
-                          <td className="py-2.5 pr-4 font-semibold text-gray-700 w-44 align-top">Fabric</td>
-                          <td className="py-2.5 text-gray-600">{product.fabric || "Cotton Blend"}</td>
-                        </tr>
-                        <tr className="border-b border-gray-100">
-                          <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Pattern / Work</td>
-                          <td className="py-2.5 text-gray-600">{product.pattern || "Embroidered / Printed"}</td>
-                        </tr>
-                        <tr className="border-b border-gray-100">
-                          <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Sleeve Style</td>
-                          <td className="py-2.5 text-gray-600">{product.sleeve_type || "3/4 Sleeves"}</td>
-                        </tr>
-                        <tr className="border-b border-gray-100">
-                          <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Fit Type</td>
-                          <td className="py-2.5 text-gray-600">{product.fit_type || "Regular Comfort Fit"}</td>
-                        </tr>
-                        <tr className="border-b border-gray-100">
-                          <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Occasion</td>
-                          <td className="py-2.5 text-gray-600">{product.occasion || "Festive, Casual, Office Wear"}</td>
-                        </tr>
-                        <tr className="border-b border-gray-100">
-                          <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Country of Origin</td>
-                          <td className="py-2.5 text-gray-600">{product.country_of_origin || "India 🇮🇳"}</td>
-                        </tr>
-                        <tr className="border-b border-gray-100">
-                          <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">HSN Code</td>
-                          <td className="py-2.5 text-gray-600">{product.hsn_code || "621133"}</td>
-                        </tr>
-                        <tr className="border-b border-gray-100">
-                          <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Wash & Care</td>
-                          <td className="py-2.5 text-gray-600">{product.wash_care || "Hand Wash or Gentle Machine Wash in Cold Water"}</td>
-                        </tr>
+                        {product.fabric && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2.5 pr-4 font-semibold text-gray-700 w-44 align-top">Fabric</td>
+                            <td className="py-2.5 text-gray-600">{product.fabric}</td>
+                          </tr>
+                        )}
+                        {product.pattern && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Pattern / Work</td>
+                            <td className="py-2.5 text-gray-600">{product.pattern}</td>
+                          </tr>
+                        )}
+                        {product.sleeve_type && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Sleeve Style</td>
+                            <td className="py-2.5 text-gray-600">{product.sleeve_type}</td>
+                          </tr>
+                        )}
+                        {product.fit_type && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Fit Type</td>
+                            <td className="py-2.5 text-gray-600">{product.fit_type}</td>
+                          </tr>
+                        )}
+                        {product.occasion && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Occasion</td>
+                            <td className="py-2.5 text-gray-600">{product.occasion}</td>
+                          </tr>
+                        )}
+                        {product.country_of_origin && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Country of Origin</td>
+                            <td className="py-2.5 text-gray-600">{product.country_of_origin}</td>
+                          </tr>
+                        )}
+                        {product.hsn_code && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">HSN Code</td>
+                            <td className="py-2.5 text-gray-600">{product.hsn_code}</td>
+                          </tr>
+                        )}
+                        {product.wash_care && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Wash & Care</td>
+                            <td className="py-2.5 text-gray-600">{product.wash_care}</td>
+                          </tr>
+                        )}
                         <tr className="border-b border-gray-100">
                           <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Return & Exchange</td>
                           <td className="py-2.5 text-gray-600 font-medium">
@@ -1482,9 +1533,9 @@ const ProductPage = () => {
             </Accordion>
           </div>
 
-          {/* Frequently Bought Together Bundle */}
+          {/* Frequently Bought Together Bundle (Clean Text Layout, No Card) */}
           {bundleProducts.length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs space-y-4">
+            <div className="pt-8 border-t border-gray-200 space-y-4">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <ShoppingBag className="w-5 h-5 text-[#8B0000]" /> Frequently Bought Together
               </h3>
@@ -1599,8 +1650,8 @@ const ProductPage = () => {
             </div>
           )}
 
-          {/* Customer Reviews & Photo Gallery */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs space-y-6">
+          {/* Customer Reviews & Photo Gallery (Clean Text Layout, No Card) */}
+          <div className="pt-8 border-t border-gray-200 space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-4 border-b border-gray-100 pb-4">
               <div className="text-left">
                 <SectionHeading className="text-xl md:text-2xl">
@@ -1761,8 +1812,8 @@ const ProductPage = () => {
           </div>
         </div>
 
-          {/* Q&A Accordion (100% Dynamic from product.q_and_a API) */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs space-y-4">
+          {/* Q&A Accordion (Clean Text, No Card) */}
+          <div className="pt-8 border-t border-gray-200 space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2 border-b border-gray-100 pb-3">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <HelpCircle className="w-5 h-5 text-[#8B0000]" /> Questions & Answers
