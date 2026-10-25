@@ -106,6 +106,7 @@ function MainLayout() {
 
                     {/* Product detail page — full page, not a modal */}
                     <Route path="/product/:productId" element={<ProductPage />} />
+                    <Route path="/p/:productId" element={<ProductPage />} />
 
                     {/* "Virtual" filter categories (not real DB categories) */}
                     <Route

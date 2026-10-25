@@ -1,29 +1,22 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
 const TopBar = () => {
   const [announcements, setAnnouncements] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const timerRef = useRef(null);
 
   // Fetch dynamic announcements from backend
   const loadAnnouncements = useCallback(() => {
     fetch(`${API_BASE_URL}/announcements/?_t=${Date.now()}`)
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => {
-        if (Array.isArray(data)) {
-          setAnnouncements(data);
-          if (currentIndex >= data.length) {
-            setCurrentIndex(0);
-          }
+        if (Array.isArray(data) && data.length > 0) {
+          setAnnouncements(data.filter((a) => a.is_active !== false));
         }
       })
       .catch(() => {});
-  }, [currentIndex]);
+  }, []);
 
   useEffect(() => {
     loadAnnouncements();
@@ -46,101 +39,85 @@ const TopBar = () => {
     };
   }, [loadAnnouncements]);
 
-  // Auto-rotate slider every 4 seconds
-  useEffect(() => {
-    if (announcements.length <= 1 || isPaused) return;
-
-    timerRef.current = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % announcements.length);
-    }, 4000);
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [announcements.length, isPaused]);
-
   if (!announcements || announcements.length === 0) {
     return null;
   }
 
-  const current = announcements[currentIndex] || announcements[0];
-  if (!current) return null;
-
-  const handlePrev = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setCurrentIndex((prev) => (prev - 1 + announcements.length) % announcements.length);
-  };
-
-  const handleNext = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setCurrentIndex((prev) => (prev + 1) % announcements.length);
-  };
-
-  const contentElement = (
-    <div className="flex items-center justify-center gap-2 sm:gap-2.5 text-xs sm:text-[13px] font-medium tracking-wide text-white transition-opacity duration-300">
-      <span className="text-sm">{current.icon || "✨"}</span>
-      <span className="font-semibold text-white/95 truncate max-w-[320px] sm:max-w-xl md:max-w-2xl">
-        {current.text}
-      </span>
-      {current.link && (
-        <span className="hidden md:inline-flex items-center gap-1 text-[#ffe29a] font-bold text-[11px] ml-1.5 opacity-90 group-hover:opacity-100 hover:underline">
-          Shop Now &rarr;
-        </span>
-      )}
-    </div>
-  );
+  // Create a repeated array to ensure a seamless continuous infinite scroll
+  // Repeat enough times so there are no empty gaps across wide viewports
+  const baseItems = announcements.length < 4
+    ? [...announcements, ...announcements, ...announcements, ...announcements]
+    : announcements;
+  const marqueeItems = [...baseItems, ...baseItems];
 
   return (
-    <div
-      className="relative z-50 bg-gradient-to-r from-[#580C1F] via-[#7B1128] to-[#580C1F] text-white border-b border-[#d4af37]/30 select-none overflow-hidden"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-    >
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-[34px] sm:h-[38px] flex items-center justify-between">
-        {/* Left arrow (if multiple announcements) */}
-        {announcements.length > 1 ? (
-          <button
-            onClick={handlePrev}
-            aria-label="Previous announcement"
-            className="p-1 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition flex-shrink-0 cursor-pointer"
-          >
-            <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          </button>
-        ) : (
-          <div className="w-6" />
-        )}
+    <div className="relative z-50 bg-gradient-to-r from-[#4A0A19] via-[#7B1128] to-[#4A0A19] text-white border-b border-[#d4af37]/30 select-none overflow-hidden h-[34px] sm:h-[38px] flex items-center">
+      <style>{`
+        @keyframes npTopMarquee {
+          0% {
+            transform: translate3d(0, 0, 0);
+          }
+          100% {
+            transform: translate3d(-50%, 0, 0);
+          }
+        }
+        .np-marquee-track {
+          display: flex;
+          align-items: center;
+          width: max-content;
+          will-change: transform;
+          animation: npTopMarquee 32s linear infinite;
+        }
+        .np-marquee-track:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
 
-        {/* Center content */}
-        <div className="flex-1 text-center px-2 min-w-0">
-          {current.link ? (
+      {/* Subtle edge fades for smooth entrance and exit */}
+      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-r from-[#4A0A19] to-transparent z-10" />
+      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-l from-[#4A0A19] to-transparent z-10" />
+
+      {/* Infinite scrolling track */}
+      <div className="np-marquee-track">
+        {marqueeItems.map((item, idx) => {
+          const content = (
+            <div className="inline-flex items-center gap-2 sm:gap-2.5 text-xs sm:text-[13px] font-medium tracking-wide text-white px-6 sm:px-8 group cursor-pointer">
+              <span className="text-sm flex-shrink-0 animate-pulse">{item.icon || "✨"}</span>
+              <span className="font-semibold text-white/95 whitespace-nowrap">
+                {item.text}
+              </span>
+              {item.sub_text && (
+                <span className="hidden sm:inline text-white/70 text-xs">
+                  ({item.sub_text})
+                </span>
+              )}
+              {item.link && (
+                <span className="inline-flex items-center gap-1 text-[#ffe29a] font-bold text-[11px] ml-1 bg-white/10 px-2 py-0.5 rounded-full hover:bg-white/20 transition-colors whitespace-nowrap">
+                  Shop Now &rarr;
+                </span>
+              )}
+              <span className="text-[#d4af37]/60 ml-4 select-none">✦</span>
+            </div>
+          );
+
+          return item.link ? (
             <Link
-              to={current.link}
+              key={`${item.id || idx}-${idx}`}
+              to={item.link}
               className="inline-block hover:opacity-95 transition-opacity"
             >
-              {contentElement}
+              {content}
             </Link>
           ) : (
-            contentElement
-          )}
-        </div>
-
-        {/* Right arrow */}
-        {announcements.length > 1 ? (
-          <button
-            onClick={handleNext}
-            aria-label="Next announcement"
-            className="p-1 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition flex-shrink-0 cursor-pointer"
-          >
-            <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          </button>
-        ) : (
-          <div className="w-6" />
-        )}
+            <span key={`${item.id || idx}-${idx}`} className="inline-block">
+              {content}
+            </span>
+          );
+        })}
       </div>
     </div>
   );
 };
 
 export default TopBar;
+

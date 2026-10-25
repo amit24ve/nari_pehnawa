@@ -82,15 +82,43 @@ const HeroSection = () => {
     });
   }, [current, slides]);
 
-  // Auto-advance every 5.5 s
+  const [isPaused, setIsPaused] = useState(false);
+  const touchStartX = React.useRef(0);
+  const touchEndX = React.useRef(0);
+
+  // Auto-advance every 2.2s (~2 seconds as requested) with Ken Burns zoom effect
   useEffect(() => {
-    const t = setInterval(next, 5500);
+    if (isPaused || slides.length <= 1) return;
+    const t = setInterval(next, 2200);
     return () => clearInterval(t);
-  }, [next]);
+  }, [next, isPaused, slides.length]);
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchMove = (e) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = () => {
+    const diff = touchStartX.current - touchEndX.current;
+    if (Math.abs(diff) > 40 && touchEndX.current !== 0) {
+      if (diff > 0) next();
+      else prev();
+    }
+    touchStartX.current = 0;
+    touchEndX.current = 0;
+  };
 
   return (
     <>
-      <section className="relative overflow-hidden bg-white select-none mx-0 sm:mx-2.5 shadow-sm">
+      <section
+        className="relative overflow-hidden bg-white select-none mx-0 sm:mx-2.5 shadow-sm"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <style>{`
           .home-hero-slider {
             height: clamp(280px, 64vw, 400px);
@@ -99,6 +127,14 @@ const HeroSection = () => {
             .home-hero-slider {
               height: clamp(470px, calc(40.14vw + 12px), 600px);
             }
+          }
+          .hero-zoom-active {
+            transform: scale(1.08);
+            transition: transform 2200ms cubic-bezier(0.25, 1, 0.5, 1), opacity 700ms ease-in-out;
+          }
+          .hero-zoom-idle {
+            transform: scale(1.0);
+            transition: transform 700ms ease-out, opacity 700ms ease-in-out;
           }
         `}</style>
         <div className="home-hero-slider relative w-full">
@@ -112,11 +148,11 @@ const HeroSection = () => {
                 className="absolute inset-0 transition-opacity duration-700 bg-stone-900"
                 style={{ opacity: i === current ? 1 : 0, zIndex: i === current ? 1 : 0 }}
               >
-                {/* Background image — matching Category hero mobile proportion & full visibility from top */}
+                {/* Background image with Ken Burns slow zoom */}
                 <img
                   src={resolvedSrc}
                   alt={slide.alt || slide.title || "Nari Pehnawa"}
-                  className="w-full h-full object-cover object-top transition-transform duration-1000 ease-out"
+                  className={`w-full h-full object-cover object-top ${i === current ? "hero-zoom-active" : "hero-zoom-idle"}`}
                   loading={i === 0 ? "eager" : "lazy"}
                   decoding={i === 0 ? "sync" : "async"}
                   onError={(e) => {

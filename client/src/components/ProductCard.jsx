@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, Star, Flame, Zap } from "lucide-react";
+import { Heart, Star, Flame, Zap, Share2 } from "lucide-react";
+import ProductShareModal from "./ProductShareModal";
 import { resolveImageUrl, DEFAULT_FALLBACK_IMAGE } from "../utils/imageUrl";
 
 // Organic Pebble fluid curve shapes inspired by Image 2
@@ -20,6 +21,7 @@ const ProductCard = ({
 }) => {
     const [hearted, setHearted] = useState(isWishlisted || false);
     const [isHovered, setIsHovered] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => setHearted(isWishlisted), [isWishlisted]);
@@ -79,6 +81,20 @@ const ProductCard = ({
                         NEW
                     </span>
                 ) : null}
+
+                {/* Share Button */}
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setShowShareModal(true);
+                    }}
+                    className="absolute top-3 right-12 z-30 bg-white/90 hover:bg-white p-2 rounded-full shadow-md transition-transform hover:scale-110 border border-gray-100 text-gray-700 hover:text-[#8B0000] cursor-pointer"
+                    aria-label="Share product"
+                    title="Share product"
+                >
+                    <Share2 className="w-4 h-4" />
+                </button>
 
                 {/* Wishlist Button - Always 100% visible on top right */}
                 <button
@@ -151,6 +167,12 @@ const ProductCard = ({
                     )}
                 </div>
             </div>
+            {/* Product Share & Copy Link Modal */}
+            <ProductShareModal
+                isOpen={showShareModal}
+                onClose={() => setShowShareModal(false)}
+                product={product}
+            />
         </div>
     );
 };

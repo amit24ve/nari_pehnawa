@@ -16,7 +16,9 @@ import {
   X,
   Loader2,
   ChevronRight,
+  ChevronLeft,
   ZoomIn,
+  ZoomOut,
   Share2,
   Copy,
   Check,
@@ -41,6 +43,7 @@ import { useWishlist } from "../context/WishlistProvider";
 import { useCart } from "../context/CartProvider";
 import { useAuth } from "../context/AuthProvider";
 import ProductCard from "./ProductCard";
+import ProductShareModal from "./ProductShareModal";
 import ImageZoomModal from "./ImageZoomModal";
 import CheckoutModal from "./CheckoutModal";
 import useSEO from "../hooks/useSEO";
@@ -202,10 +205,69 @@ const ProductPage = () => {
   const [reviewStats, setReviewStats] = useState(null);
   const [lightboxImage, setLightboxImage] = useState(null);
   const [activeImg, setActiveImg] = useState(0);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  const [isHovered, setIsHovered] = useState(false);
+  const [sliderPaused, setSliderPaused] = useState(false);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
   const [selectedSize, setSelectedSize] = useState(null);
   const [selectedColor, setSelectedColor] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [addedMsg, setAddedMsg] = useState("");
+
+  const handlePrevImg = useCallback((e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const count = product?.images?.length > 0 ? product.images.length : (product?.image ? 1 : 1);
+    setActiveImg((prev) => (prev - 1 + count) % count);
+  }, [product?.images, product?.image]);
+
+  const handleNextImg = useCallback((e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const count = product?.images?.length > 0 ? product.images.length : (product?.image ? 1 : 1);
+    setActiveImg((prev) => (prev + 1) % count);
+  }, [product?.images, product?.image]);
+
+  // Auto-slide product images every 3.5s (pauses on hover, touch, or when zoomed in)
+  useEffect(() => {
+    const count = product?.images?.length || 0;
+    if (count <= 1 || sliderPaused || isZoomed || isHovered) return;
+
+    const interval = setInterval(() => {
+      setActiveImg((prev) => (prev + 1) % count);
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [product?.images?.length, sliderPaused, isZoomed, isHovered]);
+
+  const handleImgMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    setZoomPos({ x, y });
+  };
+
+  const handleImgTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleImgTouchMove = (e) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+  const handleImgTouchEnd = () => {
+    const diff = touchStartX.current - touchEndX.current;
+    if (Math.abs(diff) > 40 && touchEndX.current !== 0) {
+      if (diff > 0) handleNextImg();
+      else handlePrevImg();
+    }
+    touchStartX.current = 0;
+    touchEndX.current = 0;
+  };
 
   // Modals & Sliders
   const [showSizeChart, setShowSizeChart] = useState(false);
@@ -654,11 +716,29 @@ const ProductPage = () => {
     }, 600);
   };
 
-  /* ── Share Modal Link Copy ── */
-  const copyProductLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
+  /* ── Canonical Product Link Copy ── */
+  const copyProductLink = async (e) => {
+    if (e) e.stopPropagation();
+    const canonicalId = product?._id || product?.id || productId;
+    const canonicalUrl = `https://naripehnawa.com/product/${canonicalId}`;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(canonicalUrl);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = canonicalUrl;
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    } catch (err) {
+      console.error("Failed to copy canonical product link:", err);
+    }
   };
 
   /* ── Helpful Review Vote ── */
@@ -765,28 +845,43 @@ const ProductPage = () => {
           {/* ═══════ LEFT: Sticky Image Gallery & Video Preview ═══════ */}
           <div className="w-full lg:sticky lg:top-24 space-y-3.5">
             <div
-              className="relative w-full rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 cursor-zoom-in group flex items-center justify-center min-h-[340px] sm:min-h-[480px] max-h-[580px] shadow-sm"
-              onClick={() => setShowZoom(true)}
+              className="relative w-full rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center min-h-[340px] sm:min-h-[480px] max-h-[580px] shadow-sm select-none"
+              style={{ cursor: isZoomed ? "zoom-out" : "zoom-in" }}
+              onMouseEnter={() => {
+                setIsHovered(true);
+                setSliderPaused(true);
+              }}
+              onMouseLeave={() => {
+                setIsHovered(false);
+                setIsZoomed(false);
+                setSliderPaused(false);
+                setZoomPos({ x: 50, y: 50 });
+              }}
+              onMouseMove={handleImgMouseMove}
+              onClick={() => setIsZoomed((prev) => !prev)}
+              onTouchStart={handleImgTouchStart}
+              onTouchMove={handleImgTouchMove}
+              onTouchEnd={handleImgTouchEnd}
             >
               {discount > 0 && (
-                <span className="absolute top-3.5 left-3.5 z-10 bg-red-600 text-white text-xs font-extrabold px-3 py-1 rounded-md shadow-md uppercase tracking-wider">
+                <span className="absolute top-3.5 left-3.5 z-10 bg-red-600 text-white text-xs font-extrabold px-3 py-1 rounded-md shadow-md uppercase tracking-wider pointer-events-none">
                   {discount}% OFF
                 </span>
               )}
               {product.is_new && !discount && (
-                <span className="absolute top-3.5 left-3.5 z-10 bg-emerald-600 text-white text-xs font-extrabold px-3 py-1 rounded-md shadow-md uppercase tracking-wider">
+                <span className="absolute top-3.5 left-3.5 z-10 bg-emerald-600 text-white text-xs font-extrabold px-3 py-1 rounded-md shadow-md uppercase tracking-wider pointer-events-none">
                   NEW ARRIVAL
                 </span>
               )}
 
               {/* Floating Overlay Action Buttons on Mobile (Share & Wishlist) */}
-              <div className="absolute top-3.5 right-3.5 z-10 flex items-center gap-2">
+              <div className="absolute top-3.5 right-3.5 z-20 flex items-center gap-2">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowShareModal(true);
                   }}
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-white/90 shadow-md text-gray-700 hover:text-[#8B0000] hover:bg-white transition-all"
+                  className="w-9 h-9 flex items-center justify-center rounded-full bg-white/90 shadow-md text-gray-700 hover:text-[#8B0000] hover:bg-white transition-all cursor-pointer"
                   title="Share product"
                 >
                   <Share2 className="w-4 h-4" />
@@ -803,6 +898,31 @@ const ProductPage = () => {
                 </button>
               </div>
 
+              {/* Left Arrow Button for Image Slider */}
+              {images.length > 1 && !isZoomed && (
+                <button
+                  onClick={handlePrevImg}
+                  className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/85 hover:bg-white text-gray-800 shadow-md flex items-center justify-center backdrop-blur-sm transition-all hover:scale-105 cursor-pointer opacity-90 hover:opacity-100"
+                  aria-label="Previous image"
+                  title="Previous image"
+                >
+                  <ChevronLeft className="w-5 h-5 text-gray-800" />
+                </button>
+              )}
+
+              {/* Right Arrow Button for Image Slider */}
+              {images.length > 1 && !isZoomed && (
+                <button
+                  onClick={handleNextImg}
+                  className="absolute right-2.5 sm:right-3.5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/85 hover:bg-white text-gray-800 shadow-md flex items-center justify-center backdrop-blur-sm transition-all hover:scale-105 cursor-pointer opacity-90 hover:opacity-100"
+                  aria-label="Next image"
+                  title="Next image"
+                >
+                  <ChevronRight className="w-5 h-5 text-gray-800" />
+                </button>
+              )}
+
+              {/* Main Image with In-Place Zoom Magnifier */}
               <img
                 src={images[activeImg] || FALLBACK_IMG}
                 alt={product.name}
@@ -810,13 +930,39 @@ const ProductPage = () => {
                   e.target.onerror = null;
                   e.target.src = FALLBACK_IMG;
                 }}
-                className="w-full h-full max-h-[580px] object-cover sm:object-contain transition-transform duration-500 group-hover:scale-[1.03]"
+                className="w-full h-full max-h-[580px] object-cover sm:object-contain will-change-transform pointer-events-none select-none"
+                style={{
+                  transform: isZoomed ? "scale(2.3)" : (isHovered ? "scale(1.05)" : "scale(1)"),
+                  transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
+                  transition: isZoomed ? "transform 0.08s ease-out" : "transform 0.3s ease-out",
+                }}
               />
 
-              {/* Zoom hint icon */}
-              <div className="absolute bottom-3.5 right-3.5 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 shadow-lg group-hover:bg-white transition-colors">
-                <ZoomIn className="w-4 h-4 text-gray-700" />
-              </div>
+              {/* Counter Indicator Badge */}
+              {images.length > 1 && (
+                <div className="absolute bottom-3.5 left-3.5 z-10 bg-black/60 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1.5 pointer-events-none">
+                  <span>{activeImg + 1}</span>
+                  <span className="text-white/50">/</span>
+                  <span>{images.length}</span>
+                </div>
+              )}
+
+              {/* In-Place Zoom Toggle Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsZoomed((prev) => !prev);
+                }}
+                className={`absolute bottom-3.5 right-3.5 z-20 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full shadow-lg transition-all cursor-pointer ${
+                  isZoomed
+                    ? "bg-[#8B0000] text-white ring-2 ring-white"
+                    : "bg-white/90 text-gray-700 hover:bg-white hover:text-black"
+                }`}
+                title={isZoomed ? "Zoom out" : "Zoom in (in-place magnifier)"}
+                aria-label="Toggle zoom"
+              >
+                {isZoomed ? <ZoomOut className="w-4 h-4" /> : <ZoomIn className="w-4 h-4" />}
+              </button>
             </div>
 
             {/* Thumbnail Strip (Spans 100% full width matching main image with zero right gap) */}
@@ -1102,6 +1248,42 @@ const ProductPage = () => {
               </button>
             </div>
 
+            {/* Dual Product Sharing Actions */}
+            <div className="grid grid-cols-2 gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowShareModal(true)}
+                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100/80 border border-amber-200/80 text-amber-950 font-bold text-xs tracking-wide transition-all shadow-2xs active:scale-98 cursor-pointer"
+                title="Share this product"
+              >
+                <Share2 className="w-4 h-4 text-amber-700" />
+                <span>Share Product</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={copyProductLink}
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold tracking-wide transition-all shadow-2xs active:scale-98 cursor-pointer ${
+                  copiedLink
+                    ? "bg-emerald-600 border-emerald-600 text-white"
+                    : "bg-gray-50 hover:bg-gray-100/80 border-gray-200 text-gray-800"
+                }`}
+                title="Copy canonical product URL"
+              >
+                {copiedLink ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 text-gray-600" />
+                    <span>Copy Product Link</span>
+                  </>
+                )}
+              </button>
+            </div>
+
             {addedMsg && <p className="text-xs text-emerald-600 font-bold">✓ {addedMsg}</p>}
 
             {/* Pincode Servicability Checker */}
@@ -1210,38 +1392,6 @@ const ProductPage = () => {
 
         {/* ═══════ FULL-WIDTH EXTENDED DETAILS SECTION ═══════ */}
         <div className="mt-10 pt-6 border-t border-gray-200 space-y-10">
-          
-          {/* Trust Badges Bar */}
-          <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200/80 grid grid-cols-1 md:grid-cols-2 gap-6 shadow-xs">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-              {[
-                [ShieldCheck, "Premium Quality"],
-                [
-                  RotateCcw,
-                  product.is_returnable === false
-                    ? (product.return_policy || "Non-Returnable (Final Sale)")
-                    : (product.return_policy || "Easy 15-Day Returns")
-                ],
-                [CreditCard, "Secure Payments"],
-                [Truck, "Shiprocket Delivery"],
-              ].map(([Icon, label]) => (
-                <div key={label} className="flex flex-col items-center gap-1.5">
-                  <Icon className="w-6 h-6 text-[#8B0000]" />
-                  <span className="text-xs font-semibold text-gray-700 leading-tight">{label}</span>
-                </div>
-              ))}
-            </div>
-            <div className="flex flex-col items-center md:items-end justify-center border-t md:border-t-0 md:border-l border-gray-200 pt-4 md:pt-0 md:pl-6">
-              <p className="text-xs font-bold text-gray-600 mb-2">100% Safe & Encrypted Checkout</p>
-              <div className="flex items-center gap-2 flex-wrap justify-center">
-                {["Razorpay", "UPI", "Mastercard", "Visa", "PayPal", "Net Banking"].map((p) => (
-                  <span key={p} className="text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded px-2.5 py-1 shadow-xs">
-                    {p}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
 
           {/* Full Specifications & Description Accordion */}
           <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs space-y-6">
@@ -1310,16 +1460,10 @@ const ProductPage = () => {
                         </tr>
                         <tr className="border-b border-gray-100">
                           <td className="py-2.5 pr-4 font-semibold text-gray-700 align-top">Return & Exchange</td>
-                          <td className="py-2.5 text-gray-600">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
-                              product.is_returnable === false
-                                ? "bg-rose-100 text-rose-800"
-                                : "bg-emerald-100 text-emerald-800"
-                            }`}>
-                              {product.is_returnable === false
-                                ? (product.return_policy || "Non-Returnable (Final Sale)")
-                                : (product.return_policy || "Easy 15-Day Returns")}
-                            </span>
+                          <td className="py-2.5 text-gray-600 font-medium">
+                            {product.is_returnable === false
+                              ? (product.return_policy || "Non-Returnable (Final Sale)")
+                              : (product.return_policy || "Easy 15-Day Returns")}
                           </td>
                         </tr>
                         {/* Custom specifications from Admin if configured */}
@@ -1849,36 +1993,13 @@ const ProductPage = () => {
         </div>
       </div>
 
-      {/* ── Share Modal ── */}
-      {showShareModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/60" onClick={() => setShowShareModal(false)} />
-          <div className="relative bg-white rounded-2xl max-w-sm w-full p-6 z-10 shadow-2xl text-center space-y-4">
-            <h3 className="font-bold text-gray-900 text-base">Share Product</h3>
-            <p className="text-xs text-gray-500">{product.name}</p>
+      {/* ── Product Share & Copy Link Modal ── */}
+      <ProductShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        product={product}
+      />
 
-            <div className="flex justify-center gap-3">
-              <button
-                onClick={copyProductLink}
-                className="flex flex-col items-center gap-1.5 p-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
-              >
-                <Copy className="w-5 h-5 text-gray-700" />
-                <span className="text-[10px] font-semibold text-gray-700">{copiedLink ? "Copied!" : "Copy Link"}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Zoom Modal ── */}
-      {showZoom && (
-        <ImageZoomModal
-          images={images}
-          activeIndex={activeImg}
-          onChangeIndex={setActiveImg}
-          onClose={() => setShowZoom(false)}
-        />
-      )}
 
       {/* ── Checkout Modal ── */}
       <CheckoutModal
