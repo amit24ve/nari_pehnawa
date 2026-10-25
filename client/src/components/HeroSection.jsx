@@ -40,13 +40,19 @@ const FALLBACK_SLIDES = [
 const HeroSection = () => {
   const [slides, setSlides] = useState(FALLBACK_SLIDES);
   const [current, setCurrent] = useState(0);
+  const [prevIndex, setPrevIndex] = useState(null);
+  const [direction, setDirection] = useState("next"); // "next" | "prev"
+  const [slideCycle, setSlideCycle] = useState(0);
   const [animating, setAnimating] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const touchStartX = React.useRef(0);
+  const touchEndX = React.useRef(0);
   const navigate = useNavigate();
 
   // Fetch slides from backend (admin can manage them via Settings)
   useEffect(() => {
     fetch(`${API_BASE}/slider/?active_only=true`)
-      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setSlides(data);
@@ -57,17 +63,30 @@ const HeroSection = () => {
   }, []);
 
   const go = useCallback(
-    (idx) => {
-      if (animating) return;
+    (idx, dir = "next") => {
+      if (animating || idx === current) return;
       setAnimating(true);
-      setCurrent((idx + slides.length) % slides.length);
-      setTimeout(() => setAnimating(false), 700);
+      setDirection(dir);
+      setPrevIndex(current);
+      setCurrent(idx);
+      setSlideCycle((c) => c + 1);
+      setTimeout(() => {
+        setAnimating(false);
+        setPrevIndex(null);
+      }, 980);
     },
-    [animating, slides.length],
+    [animating, current]
   );
 
-  const next = useCallback(() => go(current + 1), [current, go]);
-  const prev = useCallback(() => go(current - 1), [current, go]);
+  const next = useCallback(() => {
+    const nextIdx = (current + 1) % slides.length;
+    go(nextIdx, "next");
+  }, [current, slides.length, go]);
+
+  const prev = useCallback(() => {
+    const prevIdx = (current - 1 + slides.length) % slides.length;
+    go(prevIdx, "prev");
+  }, [current, slides.length, go]);
 
   // Preload adjacent images into browser memory to eliminate any loading flicker
   useEffect(() => {
@@ -82,14 +101,10 @@ const HeroSection = () => {
     });
   }, [current, slides]);
 
-  const [isPaused, setIsPaused] = useState(false);
-  const touchStartX = React.useRef(0);
-  const touchEndX = React.useRef(0);
-
-  // Auto-advance every 2.2s (~2 seconds as requested) with Ken Burns zoom effect
+  // Auto-advance slowly every 5.5s (relaxed, slow pace so user can admire the zoom effect before sliding)
   useEffect(() => {
     if (isPaused || slides.length <= 1) return;
-    const t = setInterval(next, 2200);
+    const t = setInterval(next, 5500);
     return () => clearInterval(t);
   }, [next, isPaused, slides.length]);
 
@@ -128,31 +143,111 @@ const HeroSection = () => {
               height: clamp(470px, calc(40.14vw + 12px), 600px);
             }
           }
-          .hero-zoom-active {
-            transform: scale(1.08);
-            transition: transform 2200ms cubic-bezier(0.25, 1, 0.5, 1), opacity 700ms ease-in-out;
+          @keyframes heroKenBurnsSlow {
+            0% {
+              transform: scale(1.0);
+            }
+            100% {
+              transform: scale(1.09);
+            }
           }
-          .hero-zoom-idle {
-            transform: scale(1.0);
-            transition: transform 700ms ease-out, opacity 700ms ease-in-out;
+          .hero-kenburns-zoom {
+            animation: heroKenBurnsSlow 6.5s cubic-bezier(0.2, 0.8, 0.25, 1) forwards;
+            will-change: transform;
+          }
+          .hero-kenburns-hold {
+            transform: scale(1.09);
+            will-change: transform;
+          }
+
+          @keyframes heroSlideInRight {
+            0% {
+              transform: translate3d(100%, 0, 0);
+            }
+            100% {
+              transform: translate3d(0, 0, 0);
+            }
+          }
+          @keyframes heroSlideOutLeft {
+            0% {
+              transform: translate3d(0, 0, 0);
+            }
+            100% {
+              transform: translate3d(-100%, 0, 0);
+            }
+          }
+          @keyframes heroSlideInLeft {
+            0% {
+              transform: translate3d(-100%, 0, 0);
+            }
+            100% {
+              transform: translate3d(0, 0, 0);
+            }
+          }
+          @keyframes heroSlideOutRight {
+            0% {
+              transform: translate3d(0, 0, 0);
+            }
+            100% {
+              transform: translate3d(100%, 0, 0);
+            }
+          }
+
+          .hero-slide-enter-next {
+            animation: heroSlideInRight 950ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            z-index: 10;
+          }
+          .hero-slide-exit-next {
+            animation: heroSlideOutLeft 950ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            z-index: 5;
+          }
+          .hero-slide-enter-prev {
+            animation: heroSlideInLeft 950ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            z-index: 10;
+          }
+          .hero-slide-exit-prev {
+            animation: heroSlideOutRight 950ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            z-index: 5;
           }
         `}</style>
-        <div className="home-hero-slider relative w-full">
+        <div className="home-hero-slider relative w-full overflow-hidden">
           {slides.map((slide, i) => {
             const resolvedSrc = resolveImageUrl(slide.image, DEFAULT_HERO_FALLBACK);
             const hasText = Boolean(slide.title || slide.subtitle || (slide.cta_text && slide.cta_link && slide.cta_link !== "/"));
 
+            const isCurrent = i === current;
+            const isPrev = i === prevIndex;
+
+            let animClass = "opacity-0 pointer-events-none z-0";
+            if (animating) {
+              if (isCurrent) {
+                animClass = direction === "next" ? "hero-slide-enter-next" : "hero-slide-enter-prev";
+              } else if (isPrev) {
+                animClass = direction === "next" ? "hero-slide-exit-next" : "hero-slide-exit-prev";
+              }
+            } else if (isCurrent) {
+              animClass = "opacity-100 z-10 translate-x-0";
+            }
+
+            const imgKey = isCurrent
+              ? `hero-img-${i}-${slideCycle}`
+              : isPrev
+              ? `hero-img-${i}-${slideCycle - 1}`
+              : `hero-img-${i}-idle`;
+
             return (
               <div
                 key={slide.id || i}
-                className="absolute inset-0 transition-opacity duration-700 bg-stone-900"
-                style={{ opacity: i === current ? 1 : 0, zIndex: i === current ? 1 : 0 }}
+                className={`absolute inset-0 overflow-hidden bg-stone-900 ${animClass}`}
               >
-                {/* Background image with Ken Burns slow zoom */}
+                {/* Background image with slow Ken Burns zoom */}
                 <img
+                  key={imgKey}
                   src={resolvedSrc}
                   alt={slide.alt || slide.title || "Nari Pehnawa"}
-                  className={`w-full h-full object-cover object-top ${i === current ? "hero-zoom-active" : "hero-zoom-idle"}`}
+                  className={`w-full h-full object-cover object-top ${
+                    isCurrent ? "hero-kenburns-zoom" : isPrev ? "hero-kenburns-hold" : ""
+                  }`}
                   loading={i === 0 ? "eager" : "lazy"}
                   decoding={i === 0 ? "sync" : "async"}
                   onError={(e) => {
@@ -173,7 +268,7 @@ const HeroSection = () => {
                 )}
 
                 {/* Text overlay */}
-                {hasText && i === current && (
+                {hasText && (isCurrent || isPrev) && (
                   <div className="absolute inset-0 flex flex-col items-center justify-end pb-16 sm:pb-[68px] md:pb-[76px] px-4 sm:px-6 text-center z-10 pointer-events-none">
                     <div className="pointer-events-auto max-w-2xl">
                       {slide.title && (
@@ -227,7 +322,10 @@ const HeroSection = () => {
             {slides.map((_, i) => (
               <button
                 key={i}
-                onClick={() => go(i)}
+                onClick={() => {
+                  if (i > current) go(i, "next");
+                  else if (i < current) go(i, "prev");
+                }}
                 aria-label={`Go to slide ${i + 1}`}
                 className={`rounded-full transition-all duration-300 cursor-pointer ${
                   i === current

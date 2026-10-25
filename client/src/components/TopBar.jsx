@@ -66,7 +66,7 @@ const TopBar = () => {
           align-items: center;
           width: max-content;
           will-change: transform;
-          animation: npTopMarquee 32s linear infinite;
+          animation: npTopMarquee 80s linear infinite;
         }
         .np-marquee-track:hover {
           animation-play-state: paused;
