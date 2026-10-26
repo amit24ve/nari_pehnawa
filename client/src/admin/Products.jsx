@@ -115,26 +115,44 @@ const Products = () => {
         }
     };
 
+    // Available promotional deals for linking
+    const [availableCoupons, setAvailableCoupons] = useState([]);
+    const [availableFlashSales, setAvailableFlashSales] = useState([]);
+
+    const fetchPromotions = async () => {
+        try {
+            const token = getAuthToken();
+            const headers = { Authorization: `Bearer ${token}` };
+            fetch(`${API_BASE_URL}/coupons/`, { headers })
+                .then(r => r.ok ? r.json() : [])
+                .then(data => { if (Array.isArray(data)) setAvailableCoupons(data); })
+                .catch(() => {});
+            fetch(`${API_BASE_URL}/admin/flash-sales`, { headers })
+                .then(r => r.ok ? r.json() : [])
+                .then(data => { if (Array.isArray(data)) setAvailableFlashSales(data); })
+                .catch(() => {});
+        } catch (_) {}
+    };
+
     const emptyForm = {
         title: "",
         description: "",
         price: "",
         original_price: "",
         discount: "",
-        stock: "0",
+        stock: "40",
         category: "",
         department: "Clothing",
         image: "",
         images: [],
         sku: "",
         sizes: "S,M,L,XL",
+        size_stock: { "S": 10, "M": 10, "L": 10, "XL": 10 },
         colors: "",
         fabric: "",
         brand: "Nari Pehnawa",
         delivery_charge: "",
         pickup_location: "Home",
-        warehouse_stock: { "Home": 0, "home-1": 0 },
-        warehouse_size_stock: { "Home": {}, "home-1": {} },
         is_returnable: true,
         return_policy: "Easy 15-Day Returns",
         pattern: "",
@@ -144,95 +162,63 @@ const Products = () => {
         country_of_origin: "India 🇮🇳",
         hsn_code: "621133",
         wash_care: "Hand Wash or Gentle Machine Wash in Cold Water",
+        // ── Promotions, BOGO, Flash Sale, Coupon & Welcome Modal ──
+        deal_type: "none", // 'none' | 'bogo' | 'flash_sale'
+        is_bogo: false,
+        buy_qty: 1,
+        get_free_qty: 1,
+        sale_title: "",
+        deal_text: "",
         offer_code: "",
         offer_text: "",
+        in_flash_sale: false,
+        in_welcome_modal: false,
         highlights: "",
         style_tip: ""
     };
 
     const [formData, setFormData] = useState(emptyForm);
-    const [pickupLocations, setPickupLocations] = useState(DEFAULT_WAREHOUSES);
-    const [isSyncingWarehouses, setIsSyncingWarehouses] = useState(false);
-
-    const fetchPickupLocations = async (force = false) => {
-        try {
-            setIsSyncingWarehouses(true);
-            const res = await shippingApi.getPickupLocations();
-            const locationsList = Array.isArray(res) ? res : (res?.locations || res?.shipping_address || []);
-            if (locationsList && locationsList.length > 0) {
-                setPickupLocations(locationsList);
-                return locationsList;
-            }
-        } catch (e) {
-            console.warn("Dynamic pickup locations fetch failed:", e);
-        } finally {
-            setIsSyncingWarehouses(false);
-        }
-        return pickupLocations;
-    };
 
     const handleOpenAddModal = async () => {
         fetchCategories();
-        const liveLocations = await fetchPickupLocations(true);
-        const locs = (liveLocations && liveLocations.length > 0) ? liveLocations : pickupLocations;
-        const initialWhStock = {};
-        const initialWhSizeStock = {};
-        locs.forEach(loc => {
-            const name = loc.pickup_location || loc.name;
-            if (name) {
-                initialWhStock[name] = 0;
-                initialWhSizeStock[name] = {};
-            }
-        });
-        const primaryLoc = locs.find(l => l.is_primary_location)?.pickup_location || locs[0]?.pickup_location || "Home";
+        fetchPromotions();
         setFormData({
             ...emptyForm,
-            pickup_location: primaryLoc,
-            warehouse_stock: initialWhStock,
-            warehouse_size_stock: initialWhSizeStock
+            sizes: "S,M,L,XL",
+            size_stock: { "S": 10, "M": 10, "L": 10, "XL": 10 },
+            stock: "40",
+            pickup_location: "Home"
         });
         setShowAddModal(true);
     };
 
-    const handleWarehouseSizeStockChange = (whName, size, qty) => {
+    // Update single size quantity & recalculate total stock automatically
+    const handleSizeStockChange = (size, qty) => {
         const val = qty === "" ? "" : Math.max(0, parseInt(qty) || 0);
         setFormData(prev => {
-            const currentWhSize = { ...(prev.warehouse_size_stock || {}) };
-            const whSizes = { ...(currentWhSize[whName] || {}), [size]: val };
-            currentWhSize[whName] = whSizes;
-
-            const currentWhStock = { ...(prev.warehouse_stock || {}) };
-            const activeWhList = (pickupLocations.length > 0 ? pickupLocations : DEFAULT_WAREHOUSES).map(l => l.pickup_location);
-            
-            let grandTotal = 0;
-            activeWhList.forEach(wName => {
-                const sizesForWh = currentWhSize[wName] || {};
-                const sizeValues = Object.values(sizesForWh).filter(v => v !== "" && !isNaN(v));
-                if (sizeValues.length > 0) {
-                    const sum = sizeValues.reduce((a, b) => a + Number(b), 0);
-                    currentWhStock[wName] = sum;
-                }
-                grandTotal += Number(currentWhStock[wName] || 0);
-            });
-
+            const nextSizeStock = { ...(prev.size_stock || {}), [size]: val };
+            const sum = Object.values(nextSizeStock).reduce((acc, curr) => acc + (Number(curr) || 0), 0);
             return {
                 ...prev,
-                warehouse_size_stock: currentWhSize,
-                warehouse_stock: currentWhStock,
-                stock: grandTotal.toString()
+                size_stock: nextSizeStock,
+                stock: sum.toString()
             };
         });
     };
 
-    const handleWarehouseTotalStockChange = (whName, totalQty) => {
-        const val = totalQty === "" ? "" : Math.max(0, parseInt(totalQty) || 0);
+    // One-click stock preset helper (e.g. Set all sizes to 10, 25, 50)
+    const handleApplyPresetStock = (amount) => {
         setFormData(prev => {
-            const updatedStock = { ...(prev.warehouse_stock || {}), [whName]: val };
-            const grandTotal = Object.values(updatedStock).reduce((a, b) => a + (Number(b) || 0), 0);
+            const sizeList = (prev.sizes || "").split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
+            const nextSizeStock = {};
+            sizeList.forEach(sz => {
+                nextSizeStock[sz] = amount;
+            });
+            const total = sizeList.length * amount;
             return {
                 ...prev,
-                warehouse_stock: updatedStock,
-                stock: grandTotal.toString()
+                size_stock: nextSizeStock,
+                stock: total.toString()
             };
         });
     };
@@ -357,27 +343,21 @@ const Products = () => {
         e.preventDefault();
         try {
             const token = getAuthToken();
-            const parsedSizes = formData.sizes ? formData.sizes.split(",").map(s => s.trim()).filter(Boolean) : ["S", "M", "L", "XL"];
+            const parsedSizes = formData.sizes ? formData.sizes.split(",").map(s => s.trim().toUpperCase()).filter(Boolean) : ["S", "M", "L", "XL"];
             const parsedColors = formData.colors ? formData.colors.split(",").map(c => c.trim()).filter(Boolean) : [];
             
-            // Aggregate size_stock across warehouses
-            const aggregatedSizeStock = {};
-            const whSizeStock = formData.warehouse_size_stock || {};
-            Object.values(whSizeStock).forEach(whSizes => {
-                if (whSizes && typeof whSizes === "object") {
-                    Object.entries(whSizes).forEach(([sz, q]) => {
-                        const num = Number(q) || 0;
-                        if (num > 0) {
-                            aggregatedSizeStock[sz] = (aggregatedSizeStock[sz] || 0) + num;
-                        }
-                    });
-                }
-            });
+            // Clean size stock mapping without confusing warehouse splits
+            const finalSizeStock = {};
+            if (formData.size_stock && typeof formData.size_stock === "object") {
+                parsedSizes.forEach(sz => {
+                    const q = formData.size_stock[sz];
+                    finalSizeStock[sz] = q !== undefined && q !== "" ? Number(q) : 0;
+                });
+            }
 
-            // If warehouse_stock is specified, use sum of warehouses, otherwise formData.stock
-            const whStockValues = Object.values(formData.warehouse_stock || {});
-            const whTotalStock = whStockValues.reduce((a, b) => a + (Number(b) || 0), 0);
-            const totalStock = whTotalStock > 0 ? whTotalStock : (formData.stock ? parseInt(formData.stock) : 0);
+            // Calculate total stock directly from size quantities or stock input
+            const sizeStockSum = Object.values(finalSizeStock).reduce((a, b) => a + (Number(b) || 0), 0);
+            const totalStock = parsedSizes.length > 0 ? sizeStockSum : (formData.stock ? parseInt(formData.stock) : 0);
 
             const allImages = (formData.images && formData.images.length > 0)
                 ? formData.images.filter(Boolean)
@@ -403,7 +383,7 @@ const Products = () => {
                 is_new: true,
                 in_stock: totalStock > 0,
                 sizes: parsedSizes,
-                size_stock: Object.keys(aggregatedSizeStock).length > 0 ? aggregatedSizeStock : {},
+                size_stock: finalSizeStock,
                 colors: parsedColors,
                 fabric: formData.fabric || null,
                 pattern: formData.pattern || null,
@@ -415,16 +395,24 @@ const Products = () => {
                 wash_care: formData.wash_care || null,
                 is_returnable: formData.is_returnable !== false,
                 return_policy: formData.return_policy || "Easy 15-Day Returns",
+                // ── Promotions, BOGO, Flash Sale, Coupon & Welcome Modal ──
+                deal_type: formData.is_bogo ? "bogo" : (formData.deal_type || null),
+                is_bogo: !!formData.is_bogo,
+                buy_qty: formData.is_bogo ? (Number(formData.buy_qty) || 1) : null,
+                get_free_qty: formData.is_bogo ? (Number(formData.get_free_qty) || 1) : null,
+                sale_title: formData.sale_title || null,
+                deal_text: formData.is_bogo ? (formData.deal_text || "BUY 1 GET 1 FREE") : (formData.deal_text || null),
                 offer_code: formData.offer_code || null,
                 offer_text: formData.offer_text || null,
+                in_flash_sale: !!formData.in_flash_sale,
+                in_welcome_modal: !!formData.in_welcome_modal,
                 highlights: formData.highlights
                     ? formData.highlights.split("\n").map(h => h.trim()).filter(Boolean)
                     : [],
                 style_tip: formData.style_tip ? formData.style_tip.trim() : null,
                 delivery_charge: formData.delivery_charge !== "" ? parseFloat(formData.delivery_charge) : 0.0,
                 pickup_location: formData.pickup_location || "Home",
-                warehouse_stock: formData.warehouse_stock || {},
-                warehouse_size_stock: formData.warehouse_size_stock || {}
+                warehouse_stock: { "Home": totalStock, "home-1": 0 }
             };
 
             let res;
@@ -545,28 +533,8 @@ const Products = () => {
 
     const handleEdit = (product) => {
         fetchCategories();
-        fetchPickupLocations();
+        fetchPromotions();
         setEditingProductId(product.id || product._id);
-        const whStock = { ...(product.warehouse_stock || {}) };
-        const whSizeStock = { ...(product.warehouse_size_stock || {}) };
-
-        // Ensure all discovered Shiprocket warehouses have keys
-        pickupLocations.forEach(loc => {
-            const name = loc.pickup_location || loc.name;
-            if (name && whStock[name] === undefined) {
-                whStock[name] = 0;
-            }
-            if (name && !whSizeStock[name]) {
-                whSizeStock[name] = {};
-            }
-        });
-
-        // If no warehouse stock was previously allocated, allocate current stock to primary warehouse
-        const totalWhAllocated = Object.values(whStock).reduce((a, b) => a + Number(b || 0), 0);
-        if (totalWhAllocated === 0) {
-            const primaryName = pickupLocations.find(l => l.is_primary_location)?.pickup_location || pickupLocations[0]?.pickup_location || "Home";
-            whStock[primaryName] = Number(product.stock ?? product.stock_quantity ?? 0);
-        }
 
         const rawImages = Array.isArray(product.images) && product.images.length > 0
             ? product.images
@@ -577,26 +545,45 @@ const Products = () => {
             allImgs.unshift(primaryImg);
         }
 
+        const sizeList = Array.isArray(product.sizes)
+            ? product.sizes.map(s => String(s).trim().toUpperCase()).filter(Boolean)
+            : (product.sizes || "S,M,L,XL").split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
+
+        // Populate size_stock cleanly
+        const parsedSizeStock = {};
+        if (product.size_stock && typeof product.size_stock === "object" && Object.keys(product.size_stock).length > 0) {
+            sizeList.forEach(sz => {
+                parsedSizeStock[sz] = product.size_stock[sz] !== undefined ? product.size_stock[sz] : 0;
+            });
+        } else {
+            const totStock = Number(product.stock_quantity ?? product.stock ?? 0);
+            const perSize = sizeList.length > 0 ? Math.floor(totStock / sizeList.length) : totStock;
+            sizeList.forEach(sz => {
+                parsedSizeStock[sz] = perSize;
+            });
+        }
+
+        const isBogoDeal = product.deal_type === "bogo" || product.is_bogo === true;
+
         setFormData({
             title: product.title || product.name || "",
             description: product.description || "",
             price: product.price || "",
             original_price: product.original_price || "",
             discount: product.discount || "",
-            stock: (product.stock ?? product.stock_quantity ?? 0).toString(),
+            stock: (product.stock_quantity ?? product.stock ?? 0).toString(),
             category: product.category || "",
             department: product.department || (categoriesList.find(c => c.name === product.category)?.department || "Clothing"),
             image: primaryImg,
             images: allImgs,
             sku: product.sku || "",
-            sizes: Array.isArray(product.sizes) ? product.sizes.join(",") : (product.sizes || "S,M,L,XL"),
+            sizes: sizeList.join(","),
+            size_stock: parsedSizeStock,
             colors: Array.isArray(product.colors) ? product.colors.join(",") : (product.colors || ""),
             fabric: product.fabric || "",
             brand: product.brand || "Nari Pehnawa",
             delivery_charge: product.delivery_charge !== undefined && product.delivery_charge !== null ? product.delivery_charge : "",
-            pickup_location: product.pickup_location || pickupLocations[0]?.pickup_location || "Home",
-            warehouse_stock: whStock,
-            warehouse_size_stock: whSizeStock,
+            pickup_location: product.pickup_location || "Home",
             is_returnable: product.is_returnable !== false,
             return_policy: product.return_policy || "Easy 15-Day Returns",
             pattern: product.pattern || "",
@@ -606,8 +593,17 @@ const Products = () => {
             country_of_origin: product.country_of_origin || "India 🇮🇳",
             hsn_code: product.hsn_code || "621133",
             wash_care: product.wash_care || "Hand Wash or Gentle Machine Wash in Cold Water",
+            // ── Promotions, BOGO, Flash Sale, Coupon & Welcome Modal ──
+            deal_type: product.deal_type || (isBogoDeal ? "bogo" : "none"),
+            is_bogo: isBogoDeal,
+            buy_qty: product.buy_qty || 1,
+            get_free_qty: product.get_free_qty || 1,
+            sale_title: product.sale_title || "",
+            deal_text: product.deal_text || (isBogoDeal ? "BUY 1 GET 1 FREE" : ""),
             offer_code: product.offer_code || "",
             offer_text: product.offer_text || "",
+            in_flash_sale: !!product.in_flash_sale,
+            in_welcome_modal: !!product.in_welcome_modal,
             highlights: Array.isArray(product.highlights) ? product.highlights.join("\n") : (product.highlights || ""),
             style_tip: product.style_tip || ""
         });
@@ -1274,14 +1270,28 @@ const Products = () => {
                                                 )}
                                             </td>
 
-                                            {/* 5. Stock */}
+                                            {/* 5. Stock & Promotions */}
                                             <td className="py-3.5 px-6 font-mono text-gray-300 whitespace-nowrap">
-                                                <div className="font-bold text-white">{p.stock} units</div>
-                                                {p.warehouse_stock && Object.keys(p.warehouse_stock).length > 0 && (
-                                                    <div className="text-[10px] text-gray-400 font-sans mt-0.5">
-                                                        <span className="text-cyan-400 font-medium">Home: {p.warehouse_stock.Home ?? 0}</span> • <span className="text-slate-300 font-medium">home-1: {p.warehouse_stock['home-1'] ?? 0}</span>
+                                                <div className="font-bold text-[#1C1917] flex items-center gap-1.5">
+                                                    <span>{p.stock} units</span>
+                                                    {p.deal_type === 'bogo' && (
+                                                        <span className="text-[9px] font-extrabold bg-gradient-to-r from-amber-400 to-yellow-400 text-black px-1.5 py-0.5 rounded-md shadow-2xs">
+                                                            🎁 BOGO
+                                                        </span>
+                                                    )}
+                                                    {p.in_flash_sale && (
+                                                        <span className="text-[9px] font-extrabold bg-rose-100 text-rose-800 border border-rose-300 px-1.5 py-0.5 rounded-md">
+                                                            ⚡ Sale
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {p.size_stock && Object.keys(p.size_stock).length > 0 ? (
+                                                    <div className="text-[10px] text-[#785A18] font-sans mt-0.5 flex items-center gap-1.5 flex-wrap">
+                                                        {Object.entries(p.size_stock).slice(0, 5).map(([sz, q]) => (
+                                                            <span key={sz} className="font-semibold bg-[#F8F3E4] px-1 py-0.2 rounded border border-[#E8DCB8]">{sz}:{q}</span>
+                                                        ))}
                                                     </div>
-                                                )}
+                                                ) : null}
                                             </td>
 
                                             {/* 6. Status */}
@@ -2031,20 +2041,6 @@ const Products = () => {
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-slate-700 font-bold mb-1.5">Primary Dispatch Warehouse (Shiprocket)</label>
-                                    <select
-                                        value={formData.pickup_location || "Home"}
-                                        onChange={(e) => setFormData({ ...formData, pickup_location: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 cursor-pointer"
-                                    >
-                                        {(pickupLocations || []).map((loc) => (
-                                            <option key={loc.id || loc.pickup_location} value={loc.pickup_location} className="bg-white text-slate-900">
-                                                {loc.pickup_location} — {loc.city}, {loc.state} ({loc.pin_code}) {loc.is_primary_location ? "★ Primary" : ""}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
 
                                 <div>
                                     <label className="block text-slate-700 font-bold mb-1.5">Sizes (comma separated)</label>
@@ -2189,142 +2185,310 @@ const Products = () => {
                                 </div>
                             </div>
 
-                            {/* ── Product Festival Offer / Coupon ── */}
-                            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
-                                <div>
-                                    <span className="text-cyan-700 font-extrabold text-sm uppercase tracking-wide flex items-center gap-1.5">
-                                        🏷️ Product Special Coupon / Offer Code (Optional)
-                                    </span>
-                                    <p className="text-xs text-slate-500 mt-1">
-                                        Set a specific promo code or festival discount that customers can copy on this product page.
+                            {/* ── 1. Promotions, Flash Sale, BOGO & Announcements ── */}
+                            <div className="bg-[#FFFDF8] border border-[#E8DCB8] rounded-2xl p-4 sm:p-5 space-y-5 shadow-xs">
+                                <div className="border-b border-[#E8DCB8]/70 pb-3">
+                                    <div className="flex items-center justify-between flex-wrap gap-2">
+                                        <span className="text-[#8C6D15] font-extrabold text-sm uppercase tracking-wide flex items-center gap-2">
+                                            🔥 Promotions, Flash Sale, BOGO & Announcements
+                                        </span>
+                                        <span className="text-[11px] bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-0.5 rounded-full font-bold">
+                                            High Conversion Triggers
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-[#574B38] mt-1">
+                                        Configure Buy 1 Get 1 Free, Mega Flash Sale events, promo coupons, and Welcome Modal visibility.
                                     </p>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-slate-700 font-bold mb-1.5 text-xs">Offer / Coupon Code</label>
+
+                                {/* Option A: Buy 1 Get 1 Free (BOGO) */}
+                                <div className={`p-4 rounded-xl border transition-all ${
+                                    formData.is_bogo 
+                                        ? "bg-amber-50/80 border-amber-300 ring-1 ring-amber-300" 
+                                        : "bg-white border-slate-200"
+                                }`}>
+                                    <label className="flex items-center gap-3 cursor-pointer select-none">
                                         <input
-                                            type="text"
-                                            value={formData.offer_code}
-                                            onChange={(e) => setFormData({ ...formData, offer_code: e.target.value.toUpperCase() })}
-                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 font-mono font-bold transition"
-                                            placeholder="e.g. FESTIVE10, SALE20"
+                                            type="checkbox"
+                                            checked={!!formData.is_bogo}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked;
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    is_bogo: checked,
+                                                    deal_type: checked ? "bogo" : (prev.in_flash_sale ? "flash_sale" : "none"),
+                                                    deal_text: checked ? (prev.deal_text || "BUY 1 GET 1 FREE") : (prev.in_flash_sale ? prev.deal_text : ""),
+                                                    sale_title: checked ? (prev.sale_title || "🎁 Special Buy 1 Get 1 Free Offer") : prev.sale_title
+                                                }));
+                                            }}
+                                            className="w-4 h-4 text-amber-600 rounded border-slate-300 focus:ring-amber-500 cursor-pointer"
                                         />
-                                    </div>
-                                    <div>
-                                        <label className="block text-slate-700 font-bold mb-1.5 text-xs">Offer Banner Description</label>
+                                        <div>
+                                            <span className="font-extrabold text-sm text-[#1C1917] flex items-center gap-1.5">
+                                                🎁 Enable Buy 1 Get 1 Free (BOGO) Offer
+                                            </span>
+                                            <span className="text-xs text-[#574B38] block mt-0.5">
+                                                Customers get 1 item free when they add 2 to cart. Automatically applied at checkout!
+                                            </span>
+                                        </div>
+                                    </label>
+
+                                    {formData.is_bogo && (
+                                        <div className="mt-3.5 pt-3 border-t border-amber-200/80 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                            <div>
+                                                <label className="block text-slate-700 font-bold mb-1 text-xs">Buy Quantity</label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={formData.buy_qty || 1}
+                                                    onChange={(e) => setFormData({ ...formData, buy_qty: parseInt(e.target.value) || 1 })}
+                                                    className="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold text-[#1C1917]"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-slate-700 font-bold mb-1 text-xs">Get Free Quantity</label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={formData.get_free_qty || 1}
+                                                    onChange={(e) => setFormData({ ...formData, get_free_qty: parseInt(e.target.value) || 1 })}
+                                                    className="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold text-[#1C1917]"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-slate-700 font-bold mb-1 text-xs">Badge Text</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.deal_text || "BUY 1 GET 1 FREE"}
+                                                    onChange={(e) => setFormData({ ...formData, deal_text: e.target.value })}
+                                                    className="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold text-[#1C1917]"
+                                                    placeholder="BUY 1 GET 1 FREE"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Option B: Flash Sale / Mega Sale Event */}
+                                <div className={`p-4 rounded-xl border transition-all ${
+                                    formData.in_flash_sale 
+                                        ? "bg-rose-50/80 border-rose-300 ring-1 ring-rose-300" 
+                                        : "bg-white border-slate-200"
+                                }`}>
+                                    <label className="flex items-center gap-3 cursor-pointer select-none">
                                         <input
-                                            type="text"
-                                            value={formData.offer_text}
-                                            onChange={(e) => setFormData({ ...formData, offer_text: e.target.value })}
-                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
-                                            placeholder="e.g. Use Coupon FESTIVE10 for extra 10% OFF"
+                                            type="checkbox"
+                                            checked={!!formData.in_flash_sale}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked;
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    in_flash_sale: checked,
+                                                    sale_title: checked ? (prev.sale_title || "⚡ MEGA FLASH SALE") : prev.sale_title,
+                                                    deal_text: checked && !prev.is_bogo ? (prev.deal_text || "FLAT 30% OFF") : prev.deal_text
+                                                }));
+                                            }}
+                                            className="w-4 h-4 text-rose-600 rounded border-slate-300 focus:ring-rose-500 cursor-pointer"
                                         />
+                                        <div>
+                                            <span className="font-extrabold text-sm text-[#1C1917] flex items-center gap-1.5">
+                                                ⚡ Participate in Live Flash Sale / Mega Sale
+                                            </span>
+                                            <span className="text-xs text-[#574B38] block mt-0.5">
+                                                Display animated flash sale urgency banner & countdown ribbon on product detail page.
+                                            </span>
+                                        </div>
+                                    </label>
+
+                                    {formData.in_flash_sale && (
+                                        <div className="mt-3.5 pt-3 border-t border-rose-200/80 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-slate-700 font-bold mb-1 text-xs">Flash Sale Event Title</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.sale_title}
+                                                    onChange={(e) => setFormData({ ...formData, sale_title: e.target.value })}
+                                                    className="w-full bg-white border border-rose-300 rounded-xl px-3 py-2 text-xs font-bold text-[#1C1917]"
+                                                    placeholder="e.g. ⚡ MEGA FESTIVE FLASH SALE"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-slate-700 font-bold mb-1 text-xs">Flash Deal Tagline</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.deal_text}
+                                                    onChange={(e) => setFormData({ ...formData, deal_text: e.target.value })}
+                                                    className="w-full bg-white border border-rose-300 rounded-xl px-3 py-2 text-xs font-bold text-[#1C1917]"
+                                                    placeholder="e.g. FLAT 30% OFF / LIMITED STOCK"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Option C: Coupon & Promo Code Integration */}
+                                <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
+                                    <div className="flex items-center justify-between flex-wrap gap-2">
+                                        <span className="font-extrabold text-sm text-[#1C1917] flex items-center gap-1.5">
+                                            🏷️ Coupon & Promo Code for Product Page
+                                        </span>
+                                        {availableCoupons.length > 0 && (
+                                            <select
+                                                onChange={(e) => {
+                                                    const selected = availableCoupons.find(c => c.code === e.target.value);
+                                                    if (selected) {
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            offer_code: selected.code,
+                                                            offer_text: selected.description || `Use Coupon ${selected.code} for discount`
+                                                        }));
+                                                    }
+                                                }}
+                                                className="text-xs bg-[#FAF5E8] border border-[#E8DCB8] rounded-lg px-2.5 py-1 text-[#785A18] font-bold cursor-pointer"
+                                            >
+                                                <option value="">Quick Pick Active Coupon...</option>
+                                                {availableCoupons.map(c => (
+                                                    <option key={c.id || c.code} value={c.code}>
+                                                        {c.code} — {c.type === "percent" ? `${c.value}% OFF` : `₹${c.value} OFF`}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        )}
                                     </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-slate-700 font-bold mb-1 text-xs">Coupon Code (One-Click Copy on Product)</label>
+                                            <input
+                                                type="text"
+                                                value={formData.offer_code}
+                                                onChange={(e) => setFormData({ ...formData, offer_code: e.target.value.toUpperCase() })}
+                                                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs font-mono font-bold focus:border-[#D4AF37]"
+                                                placeholder="e.g. FESTIVE10, NARI20"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-slate-700 font-bold mb-1 text-xs">Coupon Description Banner</label>
+                                            <input
+                                                type="text"
+                                                value={formData.offer_text}
+                                                onChange={(e) => setFormData({ ...formData, offer_text: e.target.value })}
+                                                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs focus:border-[#D4AF37]"
+                                                placeholder="e.g. Use Coupon FESTIVE10 for extra 10% OFF"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Option D: Welcome Popup Modal Feature */}
+                                <div className={`p-4 rounded-xl border transition-all ${
+                                    formData.in_welcome_modal 
+                                        ? "bg-emerald-50/80 border-emerald-300 ring-1 ring-emerald-300" 
+                                        : "bg-white border-slate-200"
+                                }`}>
+                                    <label className="flex items-center gap-3 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={!!formData.in_welcome_modal}
+                                            onChange={(e) => setFormData({ ...formData, in_welcome_modal: e.target.checked })}
+                                            className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                                        />
+                                        <div>
+                                            <span className="font-extrabold text-sm text-[#1C1917] flex items-center gap-1.5">
+                                                🌟 Feature on First-Time Visitor Welcome Popup Modal
+                                            </span>
+                                            <span className="text-xs text-[#574B38] block mt-0.5">
+                                                Highlight this product listing as a featured collection deal when new visitors open the site.
+                                            </span>
+                                        </div>
+                                    </label>
                                 </div>
                             </div>
 
-                            {/* ── Multi-Warehouse Inventory & Variant Stock Allocation Card ── */}
-                            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 pb-3.5">
+                            {/* ── 2. Size Inventory & Simple Stock Allocation ── */}
+                            <div className="bg-[#FFFDF8] border border-[#E8DCB8] rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#E8DCB8]/70 pb-3">
                                     <div>
-                                        <div className="flex items-center gap-2.5 flex-wrap">
-                                            <span className="text-cyan-700 font-extrabold text-sm uppercase tracking-wide flex items-center gap-1.5">
-                                                <Building2 className="w-4 h-4 text-cyan-600" /> Shiprocket Multi-Warehouse Allocation
-                                            </span>
-                                            <span className="text-[11px] bg-cyan-100 text-cyan-800 border border-cyan-300 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1.5">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse"></span>
-                                                Dynamic Shiprocket ({pickupLocations.length} Warehouses)
-                                            </span>
-                                        </div>
-                                        <p className="text-xs text-slate-500 mt-1">
-                                            Manage stock per size for each Shiprocket warehouse. Totals sync automatically!
+                                        <span className="text-[#8C6D15] font-extrabold text-sm uppercase tracking-wide flex items-center gap-1.5">
+                                            <Package className="w-4 h-4 text-[#B8860B]" /> Size-wise Stock Allocation
+                                        </span>
+                                        <p className="text-xs text-[#574B38] mt-1">
+                                            Enter the quantity available for each size. Dispatch warehouse location is selected per order!
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-2.5 self-stretch sm:self-auto justify-between sm:justify-end">
-                                        <button
-                                            type="button"
-                                            onClick={() => fetchPickupLocations(true)}
-                                            disabled={isSyncingWarehouses}
-                                            className="px-3 py-2 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition active:scale-95 disabled:opacity-50 cursor-pointer shadow-sm"
-                                            title="Sync live warehouses from Shiprocket"
-                                        >
-                                            <RefreshCw className={`w-3.5 h-3.5 text-black ${isSyncingWarehouses ? "animate-spin" : ""}`} />
-                                            <span>{isSyncingWarehouses ? "Syncing..." : "Sync Shiprocket"}</span>
-                                        </button>
-                                        <div className="text-right bg-white px-3.5 py-1.5 rounded-xl border border-slate-200">
-                                            <span className="text-[10px] text-slate-500 block uppercase font-bold">Total Stock</span>
-                                            <span className="text-sm font-extrabold text-cyan-700 font-mono">{formData.stock || 0} units</span>
+                                    <div className="flex items-center gap-2 self-stretch sm:self-auto justify-between sm:justify-end">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[11px] text-[#574B38] font-bold">Quick Fill:</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleApplyPresetStock(10)}
+                                                className="px-2 py-1 bg-[#F4ECDA] hover:bg-[#E8DCB8] text-[#785A18] rounded-lg text-[11px] font-bold cursor-pointer transition"
+                                            >
+                                                10 each
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleApplyPresetStock(25)}
+                                                className="px-2 py-1 bg-[#F4ECDA] hover:bg-[#E8DCB8] text-[#785A18] rounded-lg text-[11px] font-bold cursor-pointer transition"
+                                            >
+                                                25 each
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleApplyPresetStock(50)}
+                                                className="px-2 py-1 bg-[#F4ECDA] hover:bg-[#E8DCB8] text-[#785A18] rounded-lg text-[11px] font-bold cursor-pointer transition"
+                                            >
+                                                50 each
+                                            </button>
+                                        </div>
+                                        <div className="text-right bg-white px-3 py-1.5 rounded-xl border border-[#E8DCB8]">
+                                            <span className="text-[9px] text-[#8C7A58] block uppercase font-extrabold">Total Stock</span>
+                                            <span className="text-sm font-extrabold text-[#B8860B] font-mono">{formData.stock || 0} units</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {(pickupLocations.length > 0 ? pickupLocations : DEFAULT_WAREHOUSES).map((wh) => {
-                                        const whCode = wh.pickup_location;
-                                        const whTotal = formData.warehouse_stock?.[whCode] ?? 0;
-                                        const parsedSizeList = formData.sizes ? formData.sizes.split(",").map(s => s.trim()).filter(Boolean) : [];
-
+                                {(() => {
+                                    const parsedSizes = formData.sizes ? formData.sizes.split(",").map(s => s.trim().toUpperCase()).filter(Boolean) : [];
+                                    if (parsedSizes.length === 0) {
                                         return (
-                                            <div key={whCode} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3.5 shadow-xs">
-                                                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                                                    <div>
-                                                        <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                                                            <span className="text-cyan-600">📍</span>
-                                                            <span>{whCode}</span>
-                                                            {wh.is_primary_location && (
-                                                                <span className="text-[10px] bg-cyan-100 text-cyan-800 px-2 py-0.5 rounded border border-cyan-300 font-bold">Primary</span>
-                                                            )}
-                                                            {formData.pickup_location === whCode && (
-                                                                <span className="text-[10px] bg-cyan-400 text-black font-bold px-2 py-0.5 rounded">Selected Dispatch</span>
-                                                            )}
-                                                        </div>
-                                                        <span className="text-xs text-slate-500 block mt-1 font-medium">{wh.city || "UP"}, PIN: {wh.pin_code || ""}</span>
-                                                    </div>
-                                                    <div className="text-right bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
-                                                        <span className="text-[10px] text-slate-500 block uppercase font-bold">Warehouse Qty</span>
-                                                        <span className="font-extrabold text-xs text-cyan-700 font-mono">{whTotal} units</span>
-                                                    </div>
-                                                </div>
+                                            <div>
+                                                <label className="block text-slate-700 font-bold mb-1.5 text-xs">Total Available Stock Quantity</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={formData.stock}
+                                                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                                                    className="w-full sm:w-48 bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-extrabold text-xs focus:border-[#D4AF37]"
+                                                    placeholder="0"
+                                                />
+                                            </div>
+                                        );
+                                    }
 
-                                                {parsedSizeList.length > 0 ? (
-                                                    <div className="space-y-2">
-                                                        <span className="text-[11px] text-slate-700 font-bold block uppercase tracking-wider">Quantities by Size:</span>
-                                                        <div className="grid grid-cols-4 gap-2.5">
-                                                            {parsedSizeList.map((sz) => {
-                                                                const qty = formData.warehouse_size_stock?.[whCode]?.[sz] ?? "";
-                                                                return (
-                                                                    <div key={sz} className="text-center bg-slate-50 p-2 rounded-xl border border-slate-200 focus-within:border-cyan-400 focus-within:ring-1 focus-within:ring-cyan-400 transition">
-                                                                        <span className="text-xs font-bold text-slate-800 font-mono block mb-1">{sz}</span>
-                                                                        <input
-                                                                            type="number"
-                                                                            min="0"
-                                                                            placeholder="0"
-                                                                            value={qty}
-                                                                            onChange={(e) => handleWarehouseSizeStockChange(whCode, sz, e.target.value)}
-                                                                            className="w-full bg-white border border-slate-300 rounded-lg py-1 text-center text-xs text-slate-900 font-extrabold font-mono focus:outline-none focus:border-cyan-400 placeholder-slate-400"
-                                                                        />
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div>
-                                                        <label className="text-xs text-slate-700 font-semibold block mb-1.5">Total Warehouse Stock</label>
+                                    return (
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                            {parsedSizes.map((sz) => {
+                                                const qty = formData.size_stock?.[sz] ?? 0;
+                                                return (
+                                                    <div key={sz} className="text-center bg-white p-3 rounded-xl border border-[#E8DCB8] focus-within:border-[#D4AF37] focus-within:ring-1 focus-within:ring-[#D4AF37] shadow-2xs transition">
+                                                        <span className="text-xs font-extrabold text-[#1C1917] font-mono block mb-1">
+                                                            Size {sz}
+                                                        </span>
                                                         <input
                                                             type="number"
                                                             min="0"
                                                             placeholder="0"
-                                                            value={whTotal}
-                                                            onChange={(e) => handleWarehouseTotalStockChange(whCode, e.target.value)}
-                                                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold font-mono focus:outline-none focus:border-cyan-400"
+                                                            value={qty}
+                                                            onChange={(e) => handleSizeStockChange(sz, e.target.value)}
+                                                            className="w-full bg-[#FAF6EC] border border-[#E8DCB8] rounded-lg py-1.5 text-center text-xs text-[#1C1917] font-extrabold font-mono focus:outline-none focus:border-[#D4AF37]"
                                                         />
+                                                        <span className="text-[9px] text-[#8C7A58] block mt-1">units</span>
                                                     </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                })()}
                             </div>
 
                             <div>
@@ -2340,7 +2504,7 @@ const Products = () => {
                             <div className="flex gap-3 pt-3 border-t border-slate-200">
                                 <button
                                     type="submit"
-                                    className="flex-1 py-3 px-4 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold rounded-xl shadow-md transition duration-200 text-xs flex items-center justify-center gap-2 cursor-pointer"
+                                    className="flex-1 py-3 px-4 bg-gradient-to-r from-[#E5C058] via-[#D4AF37] to-[#B8860B] hover:brightness-105 text-black font-extrabold rounded-xl shadow-md shadow-[#D4AF37]/30 transition duration-200 text-xs flex items-center justify-center gap-2 cursor-pointer"
                                 >
                                     {showEditModal ? "Update Product Listing" : "Publish Product Listing"}
                                 </button>

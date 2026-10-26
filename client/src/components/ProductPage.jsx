@@ -1083,8 +1083,30 @@ const ProductPage = () => {
               </div>
             </div>
 
+            {/* BOGO Offer Banner */}
+            {(product.deal_type === "bogo" || product.is_bogo) && (
+              <div className="p-3 rounded-xl border border-amber-300 bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-100/70 flex items-center justify-between gap-3 flex-wrap shadow-xs">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-8 h-8 rounded-full bg-amber-400 text-black flex items-center justify-center font-extrabold text-sm shrink-0 shadow-xs">
+                    🎁
+                  </span>
+                  <div>
+                    <span className="text-[10px] font-extrabold tracking-wider uppercase bg-amber-200 text-amber-900 px-2 py-0.5 rounded">
+                      BUY 1 GET 1 FREE OFFER
+                    </span>
+                    <p className="text-xs font-bold text-gray-900 mt-0.5">
+                      Buy 1 item, get 1 free! Add 2 to your cart, 1 will be 100% FREE at checkout.
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-extrabold text-amber-900 bg-amber-200 px-2.5 py-1 rounded-full border border-amber-300">
+                  Auto Applied in Cart ✨
+                </span>
+              </div>
+            )}
+
             {/* Live Flash Sale Event Banner (Clean Editorial Ribbon, No Card) */}
-            {(product.sale_title || product.deal_text) && (
+            {(product.sale_title || product.deal_text || product.in_flash_sale) && (
               <div className="py-2.5 px-3 border-l-2 border-[#8B0000] bg-rose-50/40 flex items-center justify-between gap-3 flex-wrap text-gray-900">
                 <div className="flex items-center gap-2.5">
                   <Flame className="w-4 h-4 text-[#8B0000] animate-pulse shrink-0" />
@@ -1093,7 +1115,7 @@ const ProductPage = () => {
                       {product.sale_title || "Special Festive Offer"}
                     </span>
                     <p className="font-bold text-sm text-gray-900 leading-tight">
-                      {product.deal_text || "Special Promotional Deal"}
+                      {product.deal_text || (product.deal_type === "bogo" ? "BUY 1 GET 1 FREE" : "Special Promotional Deal")}
                     </p>
                   </div>
                 </div>

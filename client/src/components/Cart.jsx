@@ -98,45 +98,67 @@ const Cart = () => {
   const subtotal = cartTotal;
 
   // Flash Sale Promotional Discount (BOGO, Buy 2 Get 1, Buy 3 Get 1)
+  // Flash Sale & Product-Level BOGO Promotional Discount
   const promoDiscount = useMemo(() => {
-    if (!activeSale || !activeSale.is_currently_live) return 0;
-
-    const qualifyingPrices = [];
+    // 1. Calculate discount for products with BOGO active on product
+    const productBogoPrices = [];
     cartItems.forEach((item) => {
-      let isQualifying = false;
-      if (activeSale.target_type === "all") {
-        isQualifying = true;
-      } else if (activeSale.target_type === "category") {
-        if (item.category && item.category.toLowerCase() === (activeSale.target_category || "").toLowerCase()) {
-          isQualifying = true;
-        }
-      } else if (activeSale.target_type === "custom_products") {
-        const pids = activeSale.target_product_ids || [];
-        if (pids.includes(item.product_id) || pids.includes(item.id)) {
-          isQualifying = true;
-        }
-      }
-      if (isQualifying) {
+      if (item.deal_type === "bogo" || item.is_bogo) {
         for (let i = 0; i < (item.quantity || 1); i++) {
-          qualifyingPrices.push(Number(item.price || 0));
+          productBogoPrices.push(Number(item.price || 0));
         }
       }
     });
 
-    if (qualifyingPrices.length === 0) return 0;
-    qualifyingPrices.sort((a, b) => a - b); // Cheapest items first
-
-    if (activeSale.deal_type === "bogo") {
-      const freeCount = Math.floor(qualifyingPrices.length / 2);
-      return qualifyingPrices.slice(0, freeCount).reduce((sum, p) => sum + p, 0);
-    } else if (activeSale.deal_type === "buy2get1") {
-      const freeCount = Math.floor(qualifyingPrices.length / 3);
-      return qualifyingPrices.slice(0, freeCount).reduce((sum, p) => sum + p, 0);
-    } else if (activeSale.deal_type === "buy3get1") {
-      const freeCount = Math.floor(qualifyingPrices.length / 4);
-      return qualifyingPrices.slice(0, freeCount).reduce((sum, p) => sum + p, 0);
+    let productBogoDiscount = 0;
+    if (productBogoPrices.length >= 2) {
+      productBogoPrices.sort((a, b) => a - b);
+      const freeCount = Math.floor(productBogoPrices.length / 2);
+      productBogoDiscount = productBogoPrices.slice(0, freeCount).reduce((sum, p) => sum + p, 0);
     }
-    return 0;
+
+    // 2. Calculate discount for active Flash Sale event
+    let flashSaleDiscount = 0;
+    if (activeSale && activeSale.is_currently_live) {
+      const qualifyingPrices = [];
+      cartItems.forEach((item) => {
+        if (item.deal_type === "bogo" || item.is_bogo) return; // avoid double counting
+        let isQualifying = false;
+        if (activeSale.target_type === "all") {
+          isQualifying = true;
+        } else if (activeSale.target_type === "category") {
+          if (item.category && item.category.toLowerCase() === (activeSale.target_category || "").toLowerCase()) {
+            isQualifying = true;
+          }
+        } else if (activeSale.target_type === "custom_products") {
+          const pids = activeSale.target_product_ids || [];
+          if (pids.includes(item.product_id) || pids.includes(item.id)) {
+            isQualifying = true;
+          }
+        }
+        if (isQualifying) {
+          for (let i = 0; i < (item.quantity || 1); i++) {
+            qualifyingPrices.push(Number(item.price || 0));
+          }
+        }
+      });
+
+      if (qualifyingPrices.length > 0) {
+        qualifyingPrices.sort((a, b) => a - b); // Cheapest items free
+        if (activeSale.deal_type === "bogo") {
+          const freeCount = Math.floor(qualifyingPrices.length / 2);
+          flashSaleDiscount = qualifyingPrices.slice(0, freeCount).reduce((sum, p) => sum + p, 0);
+        } else if (activeSale.deal_type === "buy2get1") {
+          const freeCount = Math.floor(qualifyingPrices.length / 3);
+          flashSaleDiscount = qualifyingPrices.slice(0, freeCount).reduce((sum, p) => sum + p, 0);
+        } else if (activeSale.deal_type === "buy3get1") {
+          const freeCount = Math.floor(qualifyingPrices.length / 4);
+          flashSaleDiscount = qualifyingPrices.slice(0, freeCount).reduce((sum, p) => sum + p, 0);
+        }
+      }
+    }
+
+    return productBogoDiscount + flashSaleDiscount;
   }, [activeSale, cartItems]);
 
   const couponDiscount = appliedCoupon

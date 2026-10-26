@@ -24,20 +24,27 @@ import {
 } from "lucide-react";
 import logoImg from "../assets/logo.png";
 
-const NavItem = ({ to, children, icon: Icon, onClick }) => (
+const NavItem = ({ to, children, icon: Icon, onClick, badge }) => (
     <NavLink
         to={to}
         onClick={onClick}
         className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+            `flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
                 isActive
-                    ? "bg-[#0891b2] text-white shadow-md shadow-[#0891b2]/15"
-                    : "text-gray-700 hover:bg-slate-50 hover:text-[#0891b2]"
+                    ? "bg-gradient-to-r from-[#E5C058] via-[#D4AF37] to-[#B8860B] text-black shadow-md shadow-[#D4AF37]/30"
+                    : "text-[#574B38] hover:bg-[#F4ECDA] hover:text-[#996515]"
             }`
         }
     >
-        {Icon && <Icon className="w-4 h-4" />}
-        {children}
+        <div className="flex items-center gap-3 min-w-0">
+            {Icon && <Icon className="w-4 h-4 shrink-0" />}
+            <span className="truncate">{children}</span>
+        </div>
+        {badge && (
+            <span className="text-[9px] uppercase font-extrabold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 ml-1.5 shrink-0">
+                {badge}
+            </span>
+        )}
     </NavLink>
 );
 
@@ -80,36 +87,36 @@ const AdminLayout = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 text-gray-800 flex">
+        <div className="min-h-screen bg-[#FAF6EC] text-gray-800 flex">
             {/* Desktop Sidebar */}
-            <aside className="bg-white w-64 border-r border-slate-200 hidden lg:flex lg:flex-col fixed top-0 left-0 h-screen z-30">
+            <aside className="bg-[#FFFDF8] w-64 border-r border-[#E8DCB8] hidden lg:flex lg:flex-col fixed top-0 left-0 h-screen z-30 shadow-xs">
                 {/* Header */}
-                <div className="p-4 border-b border-slate-100 flex-shrink-0">
+                <div className="p-4 border-b border-[#E8DCB8] flex-shrink-0 bg-gradient-to-b from-[#FFFDF8] to-[#FAF5E8]">
                     <Link
                         to="/admin"
-                        className="flex items-center gap-3 p-1 rounded-xl hover:bg-slate-50 transition"
+                        className="flex items-center gap-3 p-1 rounded-xl hover:bg-[#F4ECDA] transition"
                     >
                         <img
                             src={logoImg}
                             alt="logo"
-                            className="h-9 w-auto max-w-[70px] object-contain flex-shrink-0"
+                            className="h-9 w-auto max-w-[70px] object-contain flex-shrink-0 drop-shadow-xs"
                         />
                         <div className="min-w-0 flex-1">
                             <span
-                                className="font-bold text-lg leading-tight block whitespace-nowrap truncate"
-                                style={{ color: "#0891b2" }}
+                                className="font-extrabold text-lg leading-tight block whitespace-nowrap truncate tracking-wide"
+                                style={{ color: "#B8860B" }}
                             >
                                 Admin Panel
                             </span>
-                            <span className="text-[11px] text-gray-500 font-medium block whitespace-nowrap truncate">
-                                Management System
+                            <span className="text-[11px] text-[#8C7A58] font-semibold block whitespace-nowrap truncate">
+                                Nari Pehnawa Luxury
                             </span>
                         </div>
                     </Link>
                 </div>
 
                 {/* Navigation Links */}
-                <nav className="flex flex-col gap-1.5 p-4 flex-1 overflow-y-auto custom-scrollbar">
+                <nav className="flex flex-col gap-1 p-3.5 flex-1 overflow-y-auto custom-scrollbar">
                     <NavItem to="/admin" icon={LayoutDashboard}>
                         Dashboard
                     </NavItem>
@@ -124,6 +131,9 @@ const AdminLayout = () => {
                     </NavItem>
                     <NavItem to="/admin/orders" icon={ShoppingCart}>
                         Orders
+                    </NavItem>
+                    <NavItem to="/admin/sellers" icon={Store} badge="Portal">
+                        Seller Hub
                     </NavItem>
                     <NavItem to="/admin/categories" icon={FolderOpen}>
                         Categories
@@ -152,10 +162,10 @@ const AdminLayout = () => {
                 </nav>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-slate-100 flex-shrink-0">
+                <div className="p-3.5 border-t border-[#E8DCB8] flex-shrink-0 bg-[#FFFDF8]">
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-xl bg-red-600/90 hover:bg-red-600 text-white text-sm font-semibold transition shadow-md shadow-red-600/15"
+                        className="w-full flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-xl bg-red-600/90 hover:bg-red-600 text-white text-sm font-bold transition shadow-md shadow-red-600/20 cursor-pointer"
                     >
                         <LogOut className="w-4 h-4" />
                         Logout
@@ -166,19 +176,19 @@ const AdminLayout = () => {
             {/* Main Content */}
             <div className="flex-1 lg:ml-64 min-w-0 w-full flex flex-col min-h-screen overflow-x-hidden">
                 {/* Mobile/Tablet Header */}
-                <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200 shadow-sm">
+                <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-[#FFFDF8] border-b border-[#E8DCB8] shadow-xs">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => setOpen(true)}
-                            className="p-2 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition text-gray-700"
+                            className="p-2 bg-[#F8F3E4] border border-[#E8DCB8] rounded-xl hover:bg-[#F3EBD3] transition text-[#785A18]"
                         >
                             <Menu className="w-5 h-5" />
                         </button>
                         <Link to="/admin" className="flex items-center gap-2">
                             <img src={logoImg} alt="logo" className="h-8 object-contain" />
                             <span
-                                className="font-bold text-base"
-                                style={{ color: "#0891b2" }}
+                                className="font-extrabold text-base tracking-wide"
+                                style={{ color: "#B8860B" }}
                             >
                                 Admin
                             </span>
@@ -187,24 +197,25 @@ const AdminLayout = () => {
 
                     {/* Admin Profile - Mobile */}
                     <div className="flex items-center gap-2">
-                        <div className="hidden sm:flex items-center gap-3 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#d4af37] to-[#c49f2f] flex items-center justify-center shadow-lg">
-                                <span className="text-sm font-bold text-white">
+                        <div className="hidden sm:flex items-center gap-3 px-3 py-2 bg-[#F8F3E4] border border-[#E8DCB8] rounded-xl">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#E6C25B] via-[#D4AF37] to-[#B8860B] flex items-center justify-center shadow-md">
+                                <span className="text-sm font-extrabold text-black">
                                     {getInitials()}
                                 </span>
                             </div>
                             <div className="text-left min-w-0">
-                                <p className="text-xs font-medium text-white truncate max-w-[150px]">
+                                <p className="text-xs font-bold text-gray-900 truncate max-w-[150px]">
                                     {user?.full_name || user?.email || "Admin"}
                                 </p>
-                                <p className="text-[10px] text-gray-400 capitalize">
+                                <p className="text-[10px] text-[#8C7A58] capitalize font-medium">
                                     {user?.role || "Administrator"}
                                 </p>
                             </div>
                         </div>
                         <button
                             onClick={() => navigate("/")}
-                            className="text-sm text-gray-300 hover:text-white flex items-center gap-1 p-2 hover:bg-gray-800/50 rounded-lg transition"
+                            className="text-sm text-[#785A18] hover:text-[#B8860B] flex items-center gap-1 p-2 hover:bg-[#F8F3E4] rounded-xl transition"
+                            title="Go to store"
                         >
                             <Store className="w-4 h-4" />
                         </button>
@@ -212,11 +223,12 @@ const AdminLayout = () => {
                 </header>
 
                 {/* Desktop Header */}
-                <header className="hidden lg:block sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
-                    <div className="px-6 py-4 flex items-center justify-between">
+                <header className="hidden lg:block sticky top-0 z-40 bg-[#FFFDF8] border-b border-[#E8DCB8] shadow-xs">
+                    <div className="px-6 py-3.5 flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <h2 className="text-lg font-semibold text-gray-800">
-                                Dashboard
+                            <h2 className="text-base font-extrabold text-[#1C1917] tracking-tight flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-[#B8860B]" />
+                                Store Administration
                             </h2>
                         </div>
 
@@ -226,25 +238,25 @@ const AdminLayout = () => {
                                 onClick={() =>
                                     setShowProfileMenu(!showProfileMenu)
                                 }
-                                className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition text-gray-800"
+                                className="flex items-center gap-3 px-3.5 py-2 bg-[#FAF5E8] border border-[#E8DCB8] rounded-xl hover:bg-[#F3EBD3] transition text-gray-800 cursor-pointer shadow-xs"
                             >
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0891b2] to-[#06b6d4] flex items-center justify-center shadow-lg">
-                                    <span className="text-base font-bold text-white">
+                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#E6C25B] via-[#D4AF37] to-[#B8860B] flex items-center justify-center shadow-sm">
+                                    <span className="text-sm font-extrabold text-black">
                                         {getInitials()}
                                     </span>
                                 </div>
                                 <div className="text-left min-w-0 max-w-[200px]">
-                                    <p className="text-sm font-semibold text-gray-800 truncate">
+                                    <p className="text-xs font-bold text-[#1C1917] truncate">
                                         {user?.full_name ||
                                             user?.email ||
                                             "Admin User"}
                                     </p>
-                                    <p className="text-xs text-gray-500 capitalize">
+                                    <p className="text-[10px] text-[#8C7A58] font-medium capitalize">
                                         {user?.role || "Administrator"}
                                     </p>
                                 </div>
                                 <ChevronDown
-                                    className={`w-4 h-4 text-gray-400 transition-transform ${showProfileMenu ? "rotate-180" : ""}`}
+                                    className={`w-4 h-4 text-[#8C7A58] transition-transform ${showProfileMenu ? "rotate-180" : ""}`}
                                 />
                             </button>
 
@@ -329,25 +341,25 @@ const AdminLayout = () => {
                                     />
                                     <div className="min-w-0">
                                         <span
-                                            style={{ color: "#0891b2" }}
-                                            className="font-bold text-base leading-tight block whitespace-nowrap truncate"
+                                            style={{ color: "#B8860B" }}
+                                            className="font-extrabold text-base leading-tight block whitespace-nowrap truncate tracking-wide"
                                         >
                                             Admin Panel
                                         </span>
-                                        <span className="text-[11px] text-gray-500 font-medium block whitespace-nowrap truncate">
-                                            Management System
+                                        <span className="text-[11px] text-[#8C7A58] font-medium block whitespace-nowrap truncate">
+                                            Nari Pehnawa Luxury
                                         </span>
                                     </div>
                                 </div>
                                 <button
                                     onClick={closeMobileMenu}
-                                    className="p-2 rounded-lg hover:bg-slate-50 transition text-gray-500 flex-shrink-0"
+                                    className="p-2 rounded-xl hover:bg-[#F3EBD3] transition text-[#785A18] flex-shrink-0"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
 
-                            <nav className="flex flex-col gap-2 p-4 flex-1 overflow-y-auto custom-scrollbar">
+                            <nav className="flex flex-col gap-1 p-3.5 flex-1 overflow-y-auto custom-scrollbar">
                                 <NavItem
                                     to="/admin"
                                     icon={LayoutDashboard}
@@ -382,6 +394,14 @@ const AdminLayout = () => {
                                     onClick={closeMobileMenu}
                                 >
                                     Orders
+                                </NavItem>
+                                <NavItem
+                                    to="/admin/sellers"
+                                    icon={Store}
+                                    badge="Portal"
+                                    onClick={closeMobileMenu}
+                                >
+                                    Seller Hub
                                 </NavItem>
                                 <NavItem
                                     to="/admin/categories"

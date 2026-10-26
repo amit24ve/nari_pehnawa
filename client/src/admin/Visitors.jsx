@@ -652,66 +652,62 @@ const Visitors = () => {
   return (
     <div className={`p-4 md:p-6 space-y-6 min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-[#0b0f19] text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
       
-      {/* Header controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800/40 pb-6 print:hidden">
+      {/* Header controls - Aligned in a single clean row */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-[#E8DCB8]/60 pb-5 print:hidden">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className={`text-2xl md:text-3xl font-extrabold tracking-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              Visitor Analytics Dashboard
-            </h1>
-            <span className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-[#d4af37] text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1">
-              <Sparkles className="w-3 h-3" /> Live Clarity Analytics
-            </span>
-          </div>
-          <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            Track clicks, platform environments, conversion funnels, and scroll map overlays.
+          <h1 className={`text-2xl md:text-3xl font-extrabold tracking-tight ${isDarkMode ? 'text-white' : 'text-[#1C1917]'}`}>
+            Visitor Analytics Dashboard
+          </h1>
+          <p className={`text-xs md:text-sm mt-1 font-medium ${isDarkMode ? 'text-gray-400' : 'text-[#785A18]'}`}>
+            Live visitor intelligence, active sessions, conversions, and geo-footprint analytics.
           </p>
         </div>
 
-        {/* Buttons / Controls */}
-        <div className="flex flex-wrap items-center gap-3">
-          {notifications.length > 0 && (
-            <div className="relative group">
-              <button className="p-2.5 rounded-xl border border-red-500/30 bg-red-950/20 text-red-400">
-                <Bell className="w-4 h-4" />
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500"></span>
-              </button>
-              <div className="absolute right-0 top-12 w-64 bg-zinc-900 border border-zinc-800 rounded-xl p-3 shadow-xl hidden group-hover:block z-50 text-[10px] space-y-2">
-                <p className="font-bold border-b border-zinc-850 pb-1 mb-1">System Alerts</p>
-                {notifications.map((n, i) => (
-                  <p key={i} className="text-zinc-300">• {n}</p>
-                ))}
-              </div>
-            </div>
-          )}
-
+        {/* Action Controls in a Single Row */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Day / Night Theme Toggle */}
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
-            className={`p-2.5 rounded-xl border ${isDarkMode ? 'border-gray-800 bg-[#111827] text-gray-400 hover:text-white' : 'border-gray-200 bg-white text-gray-600 hover:text-black'} transition`}
-            title="Toggle Theme"
+            className={`px-3 py-2 rounded-xl border flex items-center gap-1.5 transition text-xs font-bold cursor-pointer ${
+              isDarkMode 
+                ? 'border-gray-800 bg-[#111827] text-amber-400 hover:text-white shadow-xs' 
+                : 'border-[#E8DCB8] bg-[#FFFDF8] text-[#785A18] hover:bg-[#F4ECDA] shadow-xs'
+            }`}
+            title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
           >
-            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {isDarkMode ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-[#B8860B]" />}
+            <span>{isDarkMode ? "Day Mode" : "Night Mode"}</span>
           </button>
           
+          {/* Reload Button */}
           <button
             onClick={fetchDashboard}
-            className={`p-2.5 rounded-xl border flex items-center gap-2 ${isDarkMode ? 'border-gray-800 bg-[#111827] hover:bg-gray-800' : 'border-gray-200 bg-white hover:bg-gray-100'} transition text-xs font-semibold`}
+            className={`px-3 py-2 rounded-xl border flex items-center gap-1.5 transition text-xs font-bold cursor-pointer ${
+              isDarkMode 
+                ? 'border-gray-800 bg-[#111827] text-gray-200 hover:bg-gray-800' 
+                : 'border-[#E8DCB8] bg-[#FFFDF8] text-[#574B38] hover:bg-[#F4ECDA] shadow-xs'
+            }`}
           >
-            <RefreshCw className="w-3.5 h-3.5" /> Reload
+            <RefreshCw className={`w-3.5 h-3.5 text-[#B8860B] ${loading ? "animate-spin" : ""}`} />
+            <span>Reload</span>
           </button>
 
+          {/* Export CSV Button */}
           <button
             onClick={handleExportCSV}
-            className="p-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 transition text-xs font-semibold flex items-center gap-2 text-gray-700 shadow-sm"
+            className="px-3.5 py-2 rounded-xl bg-[#FFFDF8] border border-[#E8DCB8] hover:bg-[#F4ECDA] transition text-xs font-bold flex items-center gap-1.5 text-[#574B38] shadow-xs cursor-pointer"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-600" /> Export CSV
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Export CSV</span>
           </button>
 
+          {/* Export Report Button */}
           <button
             onClick={handleExportPDF}
-            className="p-2.5 rounded-xl bg-[#0891b2] hover:bg-[#06b6d4] transition text-xs font-bold flex items-center gap-2 text-white shadow-sm border-none"
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#E5C058] via-[#D4AF37] to-[#B8860B] hover:brightness-105 transition text-xs font-extrabold flex items-center gap-1.5 text-black shadow-md shadow-[#D4AF37]/25 cursor-pointer border-none"
           >
-            <FileText className="w-4 h-4" /> Export Report
+            <FileText className="w-3.5 h-3.5 text-black" />
+            <span>Export Report</span>
           </button>
         </div>
       </div>
