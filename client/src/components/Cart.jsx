@@ -97,68 +97,58 @@ const Cart = () => {
   // ── Price calculations ───────────────────────────────────────────────
   const subtotal = cartTotal;
 
-  // Flash Sale Promotional Discount (BOGO, Buy 2 Get 1, Buy 3 Get 1)
-  // Flash Sale & Product-Level BOGO Promotional Discount
+  // Flash Sale Promotional Discount (BOGO, Buy 2 Get 1, Buy 3 Get 1, Buy 5 Get 1, Buy X Get Y, Percentage)
   const promoDiscount = useMemo(() => {
-    // 1. Calculate discount for products with BOGO active on product
-    const productBogoPrices = [];
+    if (!activeSale || !activeSale.is_currently_live) return 0;
+
+    const qualifyingPrices = [];
     cartItems.forEach((item) => {
-      if (item.deal_type === "bogo" || item.is_bogo) {
+      let isQualifying = false;
+      if (activeSale.target_type === "all") {
+        isQualifying = true;
+      } else if (activeSale.target_type === "category") {
+        if (item.category && item.category.toLowerCase() === (activeSale.target_category || "").toLowerCase()) {
+          isQualifying = true;
+        }
+      } else if (activeSale.target_type === "custom_products") {
+        const pids = activeSale.target_product_ids || [];
+        if (pids.includes(item.product_id) || pids.includes(item.id)) {
+          isQualifying = true;
+        }
+      }
+      if (item.on_sale || item.deal_type) {
+        isQualifying = true;
+      }
+      if (isQualifying) {
         for (let i = 0; i < (item.quantity || 1); i++) {
-          productBogoPrices.push(Number(item.price || 0));
+          qualifyingPrices.push(Number(item.price || 0));
         }
       }
     });
 
-    let productBogoDiscount = 0;
-    if (productBogoPrices.length >= 2) {
-      productBogoPrices.sort((a, b) => a - b);
-      const freeCount = Math.floor(productBogoPrices.length / 2);
-      productBogoDiscount = productBogoPrices.slice(0, freeCount).reduce((sum, p) => sum + p, 0);
+    if (qualifyingPrices.length === 0) return 0;
+    qualifyingPrices.sort((a, b) => a - b); // Cheapest items first for BOGO free calculation
+
+    if (activeSale.deal_type === "percentage") {
+      const discPercent = Number(activeSale.discount_percentage) || 0;
+      return Math.round(qualifyingPrices.reduce((sum, p) => sum + p, 0) * (discPercent / 100));
     }
 
-    // 2. Calculate discount for active Flash Sale event
-    let flashSaleDiscount = 0;
-    if (activeSale && activeSale.is_currently_live) {
-      const qualifyingPrices = [];
-      cartItems.forEach((item) => {
-        if (item.deal_type === "bogo" || item.is_bogo) return; // avoid double counting
-        let isQualifying = false;
-        if (activeSale.target_type === "all") {
-          isQualifying = true;
-        } else if (activeSale.target_type === "category") {
-          if (item.category && item.category.toLowerCase() === (activeSale.target_category || "").toLowerCase()) {
-            isQualifying = true;
-          }
-        } else if (activeSale.target_type === "custom_products") {
-          const pids = activeSale.target_product_ids || [];
-          if (pids.includes(item.product_id) || pids.includes(item.id)) {
-            isQualifying = true;
-          }
-        }
-        if (isQualifying) {
-          for (let i = 0; i < (item.quantity || 1); i++) {
-            qualifyingPrices.push(Number(item.price || 0));
-          }
-        }
-      });
+    // Dynamic Buy X Get Y logic
+    const buyQty = Number(activeSale.buy_qty) || (
+      activeSale.deal_type === "buy5get1" || activeSale.deal_type === "buy5get2" ? 5 :
+      activeSale.deal_type === "buy2get1" ? 2 :
+      activeSale.deal_type === "buy3get1" ? 3 : 1
+    );
+    const getFreeQty = Number(activeSale.get_free_qty) || (
+      activeSale.deal_type === "buy5get2" ? 2 : 1
+    );
+    const bundleSize = buyQty + getFreeQty;
+    if (bundleSize <= 0) return 0;
 
-      if (qualifyingPrices.length > 0) {
-        qualifyingPrices.sort((a, b) => a - b); // Cheapest items free
-        if (activeSale.deal_type === "bogo") {
-          const freeCount = Math.floor(qualifyingPrices.length / 2);
-          flashSaleDiscount = qualifyingPrices.slice(0, freeCount).reduce((sum, p) => sum + p, 0);
-        } else if (activeSale.deal_type === "buy2get1") {
-          const freeCount = Math.floor(qualifyingPrices.length / 3);
-          flashSaleDiscount = qualifyingPrices.slice(0, freeCount).reduce((sum, p) => sum + p, 0);
-        } else if (activeSale.deal_type === "buy3get1") {
-          const freeCount = Math.floor(qualifyingPrices.length / 4);
-          flashSaleDiscount = qualifyingPrices.slice(0, freeCount).reduce((sum, p) => sum + p, 0);
-        }
-      }
-    }
-
-    return productBogoDiscount + flashSaleDiscount;
+    const bundles = Math.floor(qualifyingPrices.length / bundleSize);
+    const freeCount = bundles * getFreeQty;
+    return qualifyingPrices.slice(0, freeCount).reduce((sum, p) => sum + p, 0);
   }, [activeSale, cartItems]);
 
   const couponDiscount = appliedCoupon
@@ -478,10 +468,9 @@ const Cart = () => {
                 {promoDiscount > 0 && (
                   <div className="flex justify-between text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded-lg border border-amber-200 font-semibold text-xs">
                     <span>
-                      {activeSale?.deal_type === 'bogo' ? '🎁 Buy 1 Get 1 Free Promo' :
-                       activeSale?.deal_type === 'buy2get1' ? '🎁 Buy 2 Get 1 Free Promo' :
-                       activeSale?.deal_type === 'buy3get1' ? '🎁 Buy 3 Get 1 Free Promo' :
-                       '⚡ Special Festive Deal'}
+                      {activeSale?.deal_text ||
+                       (activeSale?.deal_type === 'percentage' ? `⚡ ${activeSale.discount_percentage}% OFF Mega Sale` :
+                        `🎁 Buy ${activeSale?.buy_qty || 1} Get ${activeSale?.get_free_qty || 1} Free Offer`)}
                     </span>
                     <span>− ₹{promoDiscount.toLocaleString("en-IN")}</span>
                   </div>

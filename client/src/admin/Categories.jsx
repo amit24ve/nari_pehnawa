@@ -542,12 +542,12 @@ const Categories = () => {
 
             {/* Error */}
             {error && (
-                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-center gap-3">
-                    <X className="w-4 h-4 text-red-400 flex-shrink-0" />
-                    <p className="text-red-400 text-sm flex-1">{error}</p>
+                <div className="bg-slate-100 border border-slate-300 rounded-xl p-4 flex items-center gap-3">
+                    <X className="w-4 h-4 text-slate-600 flex-shrink-0" />
+                    <p className="text-slate-800 text-xs font-semibold flex-1">{error}</p>
                     <button
                         onClick={() => setError(null)}
-                        className="text-red-400/60 hover:text-red-400"
+                        className="text-slate-500 hover:text-slate-800"
                     >
                         <X className="w-4 h-4" />
                     </button>
@@ -707,7 +707,7 @@ const Categories = () => {
                                     </button>
                                     <button
                                         onClick={() => handleDelete(cat)}
-                                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-600/20 text-red-400 hover:bg-red-600/30 rounded-lg text-xs font-bold border border-red-500/30 transition-colors cursor-pointer"
+                                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 rounded-lg text-xs font-bold border border-slate-300 transition-colors cursor-pointer"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />{" "}
                                         Delete
@@ -974,7 +974,7 @@ const Categories = () => {
                                                     image: "",
                                                 })
                                             }
-                                            className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition-colors cursor-pointer"
+                                            className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center text-white hover:bg-slate-700 transition-colors cursor-pointer"
                                         >
                                             <X className="w-3.5 h-3.5" />
                                         </button>
@@ -1326,7 +1326,7 @@ const Categories = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleDeleteDepartment(d)}
-                                                        className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold cursor-pointer transition"
+                                                        className="p-1.5 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 rounded-lg text-xs font-bold cursor-pointer transition"
                                                         title="Delete Department"
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />

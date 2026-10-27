@@ -368,13 +368,13 @@ const Dashboard = () => {
 
   if (error) {
     return (
-      <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 text-center max-w-md mx-auto my-12">
-        <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-3" />
-        <h3 className="text-lg font-bold text-gray-800 mb-2">Dashboard Error</h3>
-        <p className="text-sm text-gray-500 mb-4">{error}</p>
+      <div className="bg-white border border-slate-300 rounded-2xl p-6 text-center max-w-md mx-auto my-12 shadow-sm">
+        <AlertTriangle className="w-12 h-12 text-slate-500 mx-auto mb-3" />
+        <h3 className="text-lg font-bold text-slate-900 mb-2">Dashboard Error</h3>
+        <p className="text-sm text-slate-500 mb-4">{error}</p>
         <button
           onClick={fetchDashboardData}
-          className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition"
+          className="px-6 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-semibold transition cursor-pointer"
         >
           Retry Load
         </button>

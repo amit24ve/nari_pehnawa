@@ -53,12 +53,6 @@ class ProductBase(BaseModel):
     specifications: Optional[Dict[str, str]] = {}
     offer_code: Optional[str] = None
     offer_text: Optional[str] = None
-    in_flash_sale: Optional[bool] = False
-    in_welcome_modal: Optional[bool] = False
-    is_bogo: Optional[bool] = False
-    seller_id: Optional[str] = None
-    seller_name: Optional[str] = None
-    seller_status: Optional[str] = "approved"
     sku: Optional[str] = None
     meta_catalog_id: Optional[str] = None
 
@@ -117,12 +111,6 @@ class ProductUpdate(BaseModel):
     specifications: Optional[Dict[str, str]] = None
     offer_code: Optional[str] = None
     offer_text: Optional[str] = None
-    in_flash_sale: Optional[bool] = None
-    in_welcome_modal: Optional[bool] = None
-    is_bogo: Optional[bool] = None
-    seller_id: Optional[str] = None
-    seller_name: Optional[str] = None
-    seller_status: Optional[str] = None
 
 
 class Product(ProductBase):

@@ -147,54 +147,52 @@
     }
 }
 
-/* ── Admin Panel Royal Golden Luxury Theme Overrides ── */
-div.min-h-screen.bg-slate-50,
-div.admin-theme {
-    background-color: #FAF6EC !important; /* Warm royal golden champagne ambient background */
+/* ── Admin Panel Clean Light Theme Overrides ── */
+div.min-h-screen.bg-slate-50 {
     color: #1f2937 !important;
 
-    /* Turn stark white or harsh dark backgrounds into warm golden luxury cards */
+    /* Turn dark backgrounds into white panels/cards */
     .bg-\[\#0b1220\], 
     .bg-\[\#0f1724\], 
     .bg-\[\#111827\], 
     .bg-gradient-to-br.from-\[\#111827\].to-\[\#1a2332\],
     .bg-gradient-to-br.from-\[\#111827\].to-\[\#1a2332\]\/50 {
         background-image: none !important;
-        background-color: #FFFDF8 !important;
+        background-color: #ffffff !important;
         color: #1f2937 !important;
-        border-color: #E8DCB8 !important;
-        box-shadow: 0 2px 8px 0 rgba(212, 175, 55, 0.08) !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
     }
 
     /* Gradients */
     .from-\[\#111827\] {
-        --tw-gradient-from: #FFFDF8 !important;
-        --tw-gradient-stops: #FFFDF8, #FFFDF8 !important;
+        --tw-gradient-from: #ffffff !important;
+        --tw-gradient-stops: #ffffff, #ffffff !important;
     }
     .to-\[\#1a2332\] {
-        --tw-gradient-to: #FFFDF8 !important;
+        --tw-gradient-to: #ffffff !important;
     }
 
     /* Table headers, alternate row backgrounds */
     .bg-\[\#0b1220\/60\] {
-        background-color: #F8F3E4 !important;
-        color: #785A18 !important;
-        border-bottom: 1px solid #E8DCB8 !important;
+        background-color: #f8fafc !important;
+        color: #475569 !important;
+        border-bottom: 1px solid #e2e8f0 !important;
     }
 
     /* Row hover states */
     .hover\:bg-\[\#0f1724\/50\]:hover, 
     .hover\:bg-\[\#0f1724\]\/50:hover, 
     .hover\:bg-gray-800\/50:hover {
-        background-color: #F8F3E4 !important;
+        background-color: #f8fafc !important;
     }
 
     /* Input wrappers and borders */
     .bg-\[\#0b1220\/50\], 
     .bg-\[\#0f1724\/50\], 
     .bg-\[\#111827\/50\] {
-        background-color: #FFFDF8 !important;
-        border-color: #E5D4A3 !important;
+        background-color: #f8fafc !important;
+        border-color: #cbd5e1 !important;
         color: #1f2937 !important;
     }
 
@@ -203,13 +201,13 @@ div.admin-theme {
     .text-gray-300, 
     .text-gray-400, 
     .text-gray-500 {
-        color: #574B38 !important;
+        color: #4b5563 !important;
     }
     .text-white {
-        color: #1C1917 !important;
+        color: #0f172a !important;
     }
 
-    /* Borders with warm golden touch */
+    /* Borders */
     .border-gray-800, 
     .border-gray-800\/50, 
     .border-gray-750, 
@@ -220,35 +218,34 @@ div.admin-theme {
     .border-\[\#421212\/30\],
     .border-red-950\/40,
     .border-red-950\/20 {
-        border-color: #E8DCB8 !important;
+        border-color: #e2e8f0 !important;
     }
 
-    /* Buttons / badges styling - Luxurious Royal Gold */
+    /* Buttons / badges styling */
     .bg-\[\#d4af37\] {
-        background: linear-gradient(135deg, #E6C25B 0%, #D4AF37 50%, #B8860B 100%) !important;
-        color: #1C1917 !important;
-        font-weight: 700 !important;
-        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25) !important;
+        background-color: #0891b2 !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 6px -1px rgba(8, 145, 178, 0.1) !important;
     }
     .hover\:bg-\[\#c49d2f\]:hover,
     .hover\:brightness-110:hover {
-        background: linear-gradient(135deg, #F0CF70 0%, #E0BA42 50%, #C49214 100%) !important;
-        color: #1C1917 !important;
+        background-color: #06b6d4 !important;
+        color: #ffffff !important;
     }
     .text-\[\#0f1724\] {
-        color: #1C1917 !important;
+        color: #ffffff !important;
     }
     .text-\[\#d4af37\] {
-        color: #B8860B !important;
+        color: #0891b2 !important;
     }
 
-    /* Focus and hover borders - Royal Gold Glow */
+    /* Focus and hover borders */
     .focus\:border-\[\#d4af37\]:focus {
-        border-color: #D4AF37 !important;
-        box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2) !important;
+        border-color: #0891b2 !important;
+        box-shadow: 0 0 0 1px #0891b2 !important;
     }
     .hover\:border-\[\#d4af37\]:hover {
-        border-color: #D4AF37 !important;
+        border-color: #0891b2 !important;
     }
     
     /* Toggle active slide status or general toggles */

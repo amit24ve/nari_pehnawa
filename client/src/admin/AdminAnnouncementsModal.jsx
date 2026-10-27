@@ -366,6 +366,20 @@ const AdminAnnouncementsModal = () => {
       updated.buy_qty = 3;
       updated.get_free_qty = 1;
       updated.deal_text = "BUY 3 GET 1 FREE";
+    } else if (newType === "buy5get1") {
+      updated.buy_qty = 5;
+      updated.get_free_qty = 1;
+      updated.deal_text = "BUY 5 GET 1 FREE";
+    } else if (newType === "buy5get2") {
+      updated.buy_qty = 5;
+      updated.get_free_qty = 2;
+      updated.deal_text = "BUY 5 GET 2 FREE";
+    } else {
+      const bQty = updated.buy_qty || 5;
+      const fQty = updated.get_free_qty || 1;
+      updated.buy_qty = bQty;
+      updated.get_free_qty = fQty;
+      updated.deal_text = `BUY ${bQty} GET ${fQty} FREE`;
     }
     setFlashSaleConfig(updated);
   };
@@ -992,7 +1006,7 @@ const AdminAnnouncementsModal = () => {
                             </button>
                             <button
                               onClick={() => handleDeleteItem(id)}
-                              className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg transition cursor-pointer"
+                              className="p-1.5 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 rounded-lg transition cursor-pointer"
                               title="Delete Slide"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -1308,6 +1322,9 @@ const AdminAnnouncementsModal = () => {
                           <option value="bogo">BOGO (Buy 1 Get 1 Free)</option>
                           <option value="buy2get1">Buy 2 Get 1 Free</option>
                           <option value="buy3get1">Buy 3 Get 1 Free</option>
+                          <option value="buy5get1">Buy 5 Get 1 Free (Special Mega Deal)</option>
+                          <option value="buy5get2">Buy 5 Get 2 Free</option>
+                          <option value="custom">Custom (Buy X Get Y Free)</option>
                         </select>
                       </div>
 
@@ -1339,34 +1356,40 @@ const AdminAnnouncementsModal = () => {
                       ) : (
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="block font-semibold text-slate-700 mb-1 text-[11px]">Buy Qty</label>
+                            <label className="block font-semibold text-slate-700 mb-1 text-[11px]">Buy Qty (e.g. 5)</label>
                             <input
                               type="number"
                               min="1"
                               max="20"
-                              value={flashSaleConfig.buy_qty || (flashSaleConfig.deal_type === "buy2get1" ? 2 : flashSaleConfig.deal_type === "buy3get1" ? 3 : 1)}
-                              onChange={(e) =>
+                              value={flashSaleConfig.buy_qty || (flashSaleConfig.deal_type === "buy5get1" || flashSaleConfig.deal_type === "buy5get2" ? 5 : flashSaleConfig.deal_type === "buy2get1" ? 2 : flashSaleConfig.deal_type === "buy3get1" ? 3 : 1)}
+                              onChange={(e) => {
+                                const b = parseInt(e.target.value) || 1;
+                                const f = flashSaleConfig.get_free_qty || 1;
                                 setFlashSaleConfig({
                                   ...flashSaleConfig,
-                                  buy_qty: parseInt(e.target.value) || 1,
-                                })
-                              }
+                                  buy_qty: b,
+                                  deal_text: `BUY ${b} GET ${f} FREE`,
+                                });
+                              }}
                               className="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-2 text-slate-900 text-xs font-bold focus:ring-2 focus:ring-[#0891b2] outline-none text-center"
                             />
                           </div>
                           <div>
-                            <label className="block font-semibold text-slate-700 mb-1 text-[11px]">Get Free</label>
+                            <label className="block font-semibold text-slate-700 mb-1 text-[11px]">Get Free Qty (e.g. 1)</label>
                             <input
                               type="number"
                               min="1"
                               max="10"
                               value={flashSaleConfig.get_free_qty || 1}
-                              onChange={(e) =>
+                              onChange={(e) => {
+                                const f = parseInt(e.target.value) || 1;
+                                const b = flashSaleConfig.buy_qty || 1;
                                 setFlashSaleConfig({
                                   ...flashSaleConfig,
-                                  get_free_qty: parseInt(e.target.value) || 1,
-                                })
-                              }
+                                  get_free_qty: f,
+                                  deal_text: `BUY ${b} GET ${f} FREE`,
+                                });
+                              }}
                               className="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-2 text-slate-900 text-xs font-bold focus:ring-2 focus:ring-[#0891b2] outline-none text-center"
                             />
                           </div>
@@ -1693,7 +1716,7 @@ const AdminAnnouncementsModal = () => {
                             </button>
                             <button
                               onClick={() => handleDeleteCoupon(id)}
-                              className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg transition cursor-pointer"
+                              className="p-1.5 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 rounded-lg transition cursor-pointer"
                               title="Delete Coupon"
                             >
                               <Trash2 className="w-3.5 h-3.5" />

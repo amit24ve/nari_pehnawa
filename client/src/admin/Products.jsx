@@ -26,6 +26,8 @@ import {
     Building2,
     Star,
     Image as ImageIcon,
+    Zap,
+    Flame,
 } from "lucide-react";
 import shippingApi from "../services/shippingApi";
 
@@ -60,6 +62,7 @@ const Products = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [editingProductId, setEditingProductId] = useState(null);
+    const [viewingProduct, setViewingProduct] = useState(null);
     const [sharingProduct, setSharingProduct] = useState(null);
     const [copiedLink, setCopiedLink] = useState(false);
     const [shareEmail, setShareEmail] = useState("");
@@ -69,6 +72,21 @@ const Products = () => {
     const [uploadingImage, setUploadingImage] = useState(false);
     const [showPrintCatalogModal, setShowPrintCatalogModal] = useState(false);
     const [showOnlyLowStock, setShowOnlyLowStock] = useState(true);
+
+    // Quick Mega Sale / BOGO Modal state
+    const [dealModalProduct, setDealModalProduct] = useState(null);
+    const [dealModalForm, setDealModalForm] = useState({
+        deal_type: "bogo",
+        buy_qty: 1,
+        get_free_qty: 1,
+        deal_text: "BUY 1 GET 1 FREE (BOGO)",
+        sale_price: "",
+        original_price: "",
+        sale_title: "Mega Festive Sale"
+    });
+    const [savingDeal, setSavingDeal] = useState(false);
+    const [dealSuccessMsg, setDealSuccessMsg] = useState("");
+    const [filterOnlyDeals, setFilterOnlyDeals] = useState(false);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -115,44 +133,27 @@ const Products = () => {
         }
     };
 
-    // Available promotional deals for linking
-    const [availableCoupons, setAvailableCoupons] = useState([]);
-    const [availableFlashSales, setAvailableFlashSales] = useState([]);
-
-    const fetchPromotions = async () => {
-        try {
-            const token = getAuthToken();
-            const headers = { Authorization: `Bearer ${token}` };
-            fetch(`${API_BASE_URL}/coupons/`, { headers })
-                .then(r => r.ok ? r.json() : [])
-                .then(data => { if (Array.isArray(data)) setAvailableCoupons(data); })
-                .catch(() => {});
-            fetch(`${API_BASE_URL}/admin/flash-sales`, { headers })
-                .then(r => r.ok ? r.json() : [])
-                .then(data => { if (Array.isArray(data)) setAvailableFlashSales(data); })
-                .catch(() => {});
-        } catch (_) {}
-    };
-
     const emptyForm = {
         title: "",
         description: "",
         price: "",
         original_price: "",
         discount: "",
-        stock: "40",
+        stock: "0",
         category: "",
         department: "Clothing",
         image: "",
         images: [],
         sku: "",
         sizes: "S,M,L,XL",
-        size_stock: { "S": 10, "M": 10, "L": 10, "XL": 10 },
         colors: "",
         fabric: "",
         brand: "Nari Pehnawa",
         delivery_charge: "",
-        pickup_location: "Home",
+        pickup_location: "",
+        size_stock: { "S": 0, "M": 0, "L": 0, "XL": 0 },
+        warehouse_stock: {},
+        warehouse_size_stock: {},
         is_returnable: true,
         return_policy: "Easy 15-Day Returns",
         pattern: "",
@@ -162,65 +163,216 @@ const Products = () => {
         country_of_origin: "India 🇮🇳",
         hsn_code: "621133",
         wash_care: "Hand Wash or Gentle Machine Wash in Cold Water",
-        // ── Promotions, BOGO, Flash Sale, Coupon & Welcome Modal ──
-        deal_type: "none", // 'none' | 'bogo' | 'flash_sale'
-        is_bogo: false,
-        buy_qty: 1,
+        offer_type: "none",
+        sale_title: "Mega Festive Sale",
+        deal_type: "buy5get1",
+        deal_text: "BUY 5 GET 1 FREE",
+        buy_qty: 5,
         get_free_qty: 1,
-        sale_title: "",
-        deal_text: "",
+        on_sale: false,
         offer_code: "",
         offer_text: "",
-        in_flash_sale: false,
-        in_welcome_modal: false,
         highlights: "",
         style_tip: ""
     };
 
     const [formData, setFormData] = useState(emptyForm);
+    const [pickupLocations, setPickupLocations] = useState(DEFAULT_WAREHOUSES);
+    const [isSyncingWarehouses, setIsSyncingWarehouses] = useState(false);
 
-    const handleOpenAddModal = async () => {
+    const fetchPickupLocations = async (force = false) => {
+        try {
+            setIsSyncingWarehouses(true);
+            const res = await shippingApi.getPickupLocations();
+            const locationsList = Array.isArray(res) ? res : (res?.locations || res?.shipping_address || []);
+            if (locationsList && locationsList.length > 0) {
+                setPickupLocations(locationsList);
+                return locationsList;
+            }
+        } catch (e) {
+            console.warn("Dynamic pickup locations fetch failed:", e);
+        } finally {
+            setIsSyncingWarehouses(false);
+        }
+        return pickupLocations;
+    };
+
+    const handleOpenAddModal = () => {
         fetchCategories();
-        fetchPromotions();
+        fetchPickupLocations();
         setFormData({
             ...emptyForm,
-            sizes: "S,M,L,XL",
-            size_stock: { "S": 10, "M": 10, "L": 10, "XL": 10 },
-            stock: "40",
-            pickup_location: "Home"
+            size_stock: { "S": 0, "M": 0, "L": 0, "XL": 0 },
+            stock: "0"
         });
         setShowAddModal(true);
     };
 
-    // Update single size quantity & recalculate total stock automatically
     const handleSizeStockChange = (size, qty) => {
         const val = qty === "" ? "" : Math.max(0, parseInt(qty) || 0);
         setFormData(prev => {
-            const nextSizeStock = { ...(prev.size_stock || {}), [size]: val };
-            const sum = Object.values(nextSizeStock).reduce((acc, curr) => acc + (Number(curr) || 0), 0);
+            const updatedSizeStock = { ...(prev.size_stock || {}), [size]: val };
+            const sizeValues = Object.values(updatedSizeStock).filter(v => v !== "" && !isNaN(v));
+            const totalStock = sizeValues.reduce((a, b) => a + Number(b), 0);
             return {
                 ...prev,
-                size_stock: nextSizeStock,
-                stock: sum.toString()
+                size_stock: updatedSizeStock,
+                stock: totalStock.toString()
             };
         });
     };
 
-    // One-click stock preset helper (e.g. Set all sizes to 10, 25, 50)
-    const handleApplyPresetStock = (amount) => {
+    const handleQuickAddAllSizes = (delta) => {
         setFormData(prev => {
-            const sizeList = (prev.sizes || "").split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
-            const nextSizeStock = {};
-            sizeList.forEach(sz => {
-                nextSizeStock[sz] = amount;
+            const parsedSizes = prev.sizes ? prev.sizes.split(",").map(s => s.trim()).filter(Boolean) : ["S", "M", "L", "XL"];
+            const updatedSizeStock = { ...(prev.size_stock || {}) };
+            parsedSizes.forEach(sz => {
+                const current = parseInt(updatedSizeStock[sz]) || 0;
+                updatedSizeStock[sz] = Math.max(0, current + delta);
             });
-            const total = sizeList.length * amount;
+            const sizeValues = Object.values(updatedSizeStock).filter(v => v !== "" && !isNaN(v));
+            const totalStock = sizeValues.reduce((a, b) => a + Number(b), 0);
             return {
                 ...prev,
-                size_stock: nextSizeStock,
-                stock: total.toString()
+                size_stock: updatedSizeStock,
+                stock: totalStock.toString()
             };
         });
+    };
+
+    const handleToggleSizePreset = (sizeName) => {
+        setFormData(prev => {
+            const currentList = prev.sizes ? prev.sizes.split(",").map(s => s.trim()).filter(Boolean) : [];
+            let newList;
+            const updatedSizeStock = { ...(prev.size_stock || {}) };
+            if (currentList.includes(sizeName)) {
+                newList = currentList.filter(s => s !== sizeName);
+                delete updatedSizeStock[sizeName];
+            } else {
+                newList = [...currentList, sizeName];
+                if (updatedSizeStock[sizeName] === undefined) {
+                    updatedSizeStock[sizeName] = 0;
+                }
+            }
+            const sizeValues = Object.values(updatedSizeStock).filter(v => v !== "" && !isNaN(v));
+            const totalStock = sizeValues.length > 0 ? sizeValues.reduce((a, b) => a + Number(b), 0) : (parseInt(prev.stock) || 0);
+            return {
+                ...prev,
+                sizes: newList.join(","),
+                size_stock: updatedSizeStock,
+                stock: totalStock.toString()
+            };
+        });
+    };
+
+    const handleOpenDealModal = (p) => {
+        setDealModalProduct(p);
+        setDealSuccessMsg("");
+        const curDealType = p.deal_type || (p.deal_text ? "custom" : "bogo");
+        setDealModalForm({
+            deal_type: curDealType,
+            buy_qty: p.buy_qty || (curDealType === "buy2get1" ? 2 : (curDealType === "buy5get1" ? 5 : 1)),
+            get_free_qty: p.get_free_qty || 1,
+            deal_text: p.deal_text || "BUY 1 GET 1 FREE (BOGO)",
+            sale_price: p.price ?? "",
+            original_price: p.original_price || (Math.round((Number(p.price) || 0) * 1.5)),
+            sale_title: p.sale_title || "Mega Festive Sale"
+        });
+    };
+
+    const handleSaveDealOffer = async (isDuplicate = false) => {
+        if (!dealModalProduct) return;
+        setSavingDeal(true);
+        setDealSuccessMsg("");
+        try {
+            const token = getAuthToken();
+            const headers = {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            };
+
+            const isNone = dealModalForm.deal_type === "none";
+            const newPrice = Number(dealModalForm.sale_price) || Number(dealModalProduct.price);
+            const newOrigPrice = Number(dealModalForm.original_price) || Number(dealModalProduct.original_price) || Math.round(newPrice * 1.5);
+
+            if (isDuplicate) {
+                // Clone product with 0 re-uploading needed!
+                const newTitle = `${dealModalProduct.title} - [${isNone ? "Special Offer" : dealModalForm.deal_text}]`;
+                const newSku = `${dealModalProduct.sku || "NP"}-BOGO-${Date.now().toString().slice(-4)}`;
+
+                const clonePayload = {
+                    title: newTitle,
+                    description: dealModalProduct.description || "",
+                    price: newPrice,
+                    original_price: newOrigPrice,
+                    category: dealModalProduct.category || "Uncategorized",
+                    department: dealModalProduct.department || "Clothing",
+                    brand: dealModalProduct.brand || "Nari Pehnawa",
+                    image: dealModalProduct.image,
+                    images: dealModalProduct.images || [],
+                    stock: dealModalProduct.stock || 0,
+                    size_stock: dealModalProduct.size_stock || {},
+                    sizes: dealModalProduct.sizes || "S,M,L,XL",
+                    sku: newSku,
+                    fabric: dealModalProduct.fabric || "",
+                    pattern: dealModalProduct.pattern || "",
+                    sleeve_style: dealModalProduct.sleeve_style || "",
+                    fit_type: dealModalProduct.fit_type || "",
+                    delivery_charge: dealModalProduct.delivery_charge || 0,
+                    is_returnable: dealModalProduct.is_returnable !== false,
+                    return_policy_badge: dealModalProduct.return_policy_badge || "Easy 15-Day Returns",
+                    on_sale: !isNone,
+                    offer_type: isNone ? "none" : "megasale",
+                    deal_type: isNone ? null : dealModalForm.deal_type,
+                    deal_text: isNone ? null : dealModalForm.deal_text,
+                    buy_qty: isNone ? null : dealModalForm.buy_qty,
+                    get_free_qty: isNone ? null : dealModalForm.get_free_qty,
+                    sale_title: isNone ? null : dealModalForm.sale_title,
+                };
+
+                const res = await fetch(`${API_BASE_URL}/products/`, {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify(clonePayload)
+                });
+                if (!res.ok) throw new Error("Failed to duplicate product listing");
+                setDealSuccessMsg("✅ Duplicated as new Mega Sale / BOGO listing successfully!");
+            } else {
+                // Update existing product
+                const updatePayload = {
+                    ...dealModalProduct,
+                    price: newPrice,
+                    original_price: newOrigPrice,
+                    on_sale: !isNone,
+                    offer_type: isNone ? "none" : "megasale",
+                    deal_type: isNone ? null : dealModalForm.deal_type,
+                    deal_text: isNone ? null : dealModalForm.deal_text,
+                    buy_qty: isNone ? null : dealModalForm.buy_qty,
+                    get_free_qty: isNone ? null : dealModalForm.get_free_qty,
+                    sale_title: isNone ? null : dealModalForm.sale_title,
+                };
+
+                const prodId = dealModalProduct.id || dealModalProduct._id;
+                const res = await fetch(`${API_BASE_URL}/products/${prodId}`, {
+                    method: "PUT",
+                    headers,
+                    body: JSON.stringify(updatePayload)
+                });
+                if (!res.ok) throw new Error("Failed to update product offer");
+                setDealSuccessMsg("✅ Mega Sale / BOGO deal & price updated successfully!");
+            }
+
+            await fetchProducts();
+            setTimeout(() => {
+                setDealModalProduct(null);
+                setDealSuccessMsg("");
+            }, 1200);
+        } catch (err) {
+            console.error("Deal error:", err);
+            alert("Error updating deal: " + err.message);
+        } finally {
+            setSavingDeal(false);
+        }
     };
 
     const getAuthToken = () => localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
@@ -343,21 +495,24 @@ const Products = () => {
         e.preventDefault();
         try {
             const token = getAuthToken();
-            const parsedSizes = formData.sizes ? formData.sizes.split(",").map(s => s.trim().toUpperCase()).filter(Boolean) : ["S", "M", "L", "XL"];
+            const parsedSizes = formData.sizes ? formData.sizes.split(",").map(s => s.trim()).filter(Boolean) : ["S", "M", "L", "XL"];
             const parsedColors = formData.colors ? formData.colors.split(",").map(c => c.trim()).filter(Boolean) : [];
             
-            // Clean size stock mapping without confusing warehouse splits
-            const finalSizeStock = {};
-            if (formData.size_stock && typeof formData.size_stock === "object") {
+            // Map clean size_stock from formData.size_stock
+            const cleanSizeStock = {};
+            if (parsedSizes.length > 0) {
                 parsedSizes.forEach(sz => {
-                    const q = formData.size_stock[sz];
-                    finalSizeStock[sz] = q !== undefined && q !== "" ? Number(q) : 0;
+                    const q = formData.size_stock?.[sz];
+                    cleanSizeStock[sz] = (q !== "" && !isNaN(q)) ? Math.max(0, parseInt(q)) : 0;
+                });
+            } else if (formData.size_stock && Object.keys(formData.size_stock).length > 0) {
+                Object.entries(formData.size_stock).forEach(([sz, q]) => {
+                    cleanSizeStock[sz] = (q !== "" && !isNaN(q)) ? Math.max(0, parseInt(q)) : 0;
                 });
             }
 
-            // Calculate total stock directly from size quantities or stock input
-            const sizeStockSum = Object.values(finalSizeStock).reduce((a, b) => a + (Number(b) || 0), 0);
-            const totalStock = parsedSizes.length > 0 ? sizeStockSum : (formData.stock ? parseInt(formData.stock) : 0);
+            const sizeStockSum = Object.values(cleanSizeStock).reduce((a, b) => a + Number(b), 0);
+            const totalStock = sizeStockSum > 0 ? sizeStockSum : (formData.stock ? Math.max(0, parseInt(formData.stock)) : 0);
 
             const allImages = (formData.images && formData.images.length > 0)
                 ? formData.images.filter(Boolean)
@@ -379,11 +534,11 @@ const Products = () => {
                 image: primaryImage,
                 images: orderedImages,
                 brand: formData.brand || "Nari Pehnawa",
-                on_sale: formData.discount ? parseInt(formData.discount) > 0 : false,
+                on_sale: formData.offer_type === "flash_sale" || Boolean(formData.on_sale) || (formData.discount ? parseInt(formData.discount) > 0 : false),
                 is_new: true,
                 in_stock: totalStock > 0,
-                sizes: parsedSizes,
-                size_stock: finalSizeStock,
+                sizes: parsedSizes.length > 0 ? parsedSizes : ["Free Size"],
+                size_stock: cleanSizeStock,
                 colors: parsedColors,
                 fabric: formData.fabric || null,
                 pattern: formData.pattern || null,
@@ -395,24 +550,22 @@ const Products = () => {
                 wash_care: formData.wash_care || null,
                 is_returnable: formData.is_returnable !== false,
                 return_policy: formData.return_policy || "Easy 15-Day Returns",
-                // ── Promotions, BOGO, Flash Sale, Coupon & Welcome Modal ──
-                deal_type: formData.is_bogo ? "bogo" : (formData.deal_type || null),
-                is_bogo: !!formData.is_bogo,
-                buy_qty: formData.is_bogo ? (Number(formData.buy_qty) || 1) : null,
-                get_free_qty: formData.is_bogo ? (Number(formData.get_free_qty) || 1) : null,
-                sale_title: formData.sale_title || null,
-                deal_text: formData.is_bogo ? (formData.deal_text || "BUY 1 GET 1 FREE") : (formData.deal_text || null),
-                offer_code: formData.offer_code || null,
-                offer_text: formData.offer_text || null,
-                in_flash_sale: !!formData.in_flash_sale,
-                in_welcome_modal: !!formData.in_welcome_modal,
+                offer_type: formData.offer_type || "none",
+                sale_title: formData.offer_type === "flash_sale" ? (formData.sale_title || "Mega Festive Sale") : null,
+                deal_type: formData.offer_type === "flash_sale" ? (formData.deal_type || "buy5get1") : null,
+                deal_text: formData.offer_type === "flash_sale" ? (formData.deal_text || "BUY 5 GET 1 FREE") : null,
+                buy_qty: formData.offer_type === "flash_sale" ? (parseInt(formData.buy_qty) || 5) : null,
+                get_free_qty: formData.offer_type === "flash_sale" ? (parseInt(formData.get_free_qty) || 1) : null,
+                offer_code: formData.offer_type === "coupon" || formData.offer_code ? formData.offer_code : null,
+                offer_text: formData.offer_type === "coupon" || formData.offer_text ? formData.offer_text : null,
                 highlights: formData.highlights
                     ? formData.highlights.split("\n").map(h => h.trim()).filter(Boolean)
                     : [],
                 style_tip: formData.style_tip ? formData.style_tip.trim() : null,
                 delivery_charge: formData.delivery_charge !== "" ? parseFloat(formData.delivery_charge) : 0.0,
-                pickup_location: formData.pickup_location || "Home",
-                warehouse_stock: { "Home": totalStock, "home-1": 0 }
+                pickup_location: formData.pickup_location || null,
+                warehouse_stock: { "All": totalStock },
+                warehouse_size_stock: { "Default": cleanSizeStock }
             };
 
             let res;
@@ -533,8 +686,32 @@ const Products = () => {
 
     const handleEdit = (product) => {
         fetchCategories();
-        fetchPromotions();
+        fetchPickupLocations();
         setEditingProductId(product.id || product._id);
+
+        let initialSizeStock = { ...(product.size_stock || {}) };
+        if (Object.keys(initialSizeStock).length === 0 && product.warehouse_size_stock) {
+            Object.values(product.warehouse_size_stock).forEach(whSizes => {
+                if (whSizes && typeof whSizes === "object") {
+                    Object.entries(whSizes).forEach(([sz, q]) => {
+                        const num = Number(q) || 0;
+                        if (num > 0) {
+                            initialSizeStock[sz] = (initialSizeStock[sz] || 0) + num;
+                        }
+                    });
+                }
+            });
+        }
+
+        const parsedSizes = Array.isArray(product.sizes)
+            ? product.sizes
+            : (product.sizes ? product.sizes.split(",").map(s => s.trim()).filter(Boolean) : ["S", "M", "L", "XL"]);
+
+        parsedSizes.forEach(sz => {
+            if (initialSizeStock[sz] === undefined) {
+                initialSizeStock[sz] = 0;
+            }
+        });
 
         const rawImages = Array.isArray(product.images) && product.images.length > 0
             ? product.images
@@ -545,45 +722,27 @@ const Products = () => {
             allImgs.unshift(primaryImg);
         }
 
-        const sizeList = Array.isArray(product.sizes)
-            ? product.sizes.map(s => String(s).trim().toUpperCase()).filter(Boolean)
-            : (product.sizes || "S,M,L,XL").split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
-
-        // Populate size_stock cleanly
-        const parsedSizeStock = {};
-        if (product.size_stock && typeof product.size_stock === "object" && Object.keys(product.size_stock).length > 0) {
-            sizeList.forEach(sz => {
-                parsedSizeStock[sz] = product.size_stock[sz] !== undefined ? product.size_stock[sz] : 0;
-            });
-        } else {
-            const totStock = Number(product.stock_quantity ?? product.stock ?? 0);
-            const perSize = sizeList.length > 0 ? Math.floor(totStock / sizeList.length) : totStock;
-            sizeList.forEach(sz => {
-                parsedSizeStock[sz] = perSize;
-            });
-        }
-
-        const isBogoDeal = product.deal_type === "bogo" || product.is_bogo === true;
-
         setFormData({
             title: product.title || product.name || "",
             description: product.description || "",
             price: product.price || "",
             original_price: product.original_price || "",
             discount: product.discount || "",
-            stock: (product.stock_quantity ?? product.stock ?? 0).toString(),
+            stock: (product.stock ?? product.stock_quantity ?? 0).toString(),
             category: product.category || "",
             department: product.department || (categoriesList.find(c => c.name === product.category)?.department || "Clothing"),
             image: primaryImg,
             images: allImgs,
             sku: product.sku || "",
-            sizes: sizeList.join(","),
-            size_stock: parsedSizeStock,
+            sizes: parsedSizes.join(","),
+            size_stock: initialSizeStock,
             colors: Array.isArray(product.colors) ? product.colors.join(",") : (product.colors || ""),
             fabric: product.fabric || "",
             brand: product.brand || "Nari Pehnawa",
             delivery_charge: product.delivery_charge !== undefined && product.delivery_charge !== null ? product.delivery_charge : "",
-            pickup_location: product.pickup_location || "Home",
+            pickup_location: product.pickup_location || "",
+            warehouse_stock: product.warehouse_stock || {},
+            warehouse_size_stock: product.warehouse_size_stock || {},
             is_returnable: product.is_returnable !== false,
             return_policy: product.return_policy || "Easy 15-Day Returns",
             pattern: product.pattern || "",
@@ -593,17 +752,15 @@ const Products = () => {
             country_of_origin: product.country_of_origin || "India 🇮🇳",
             hsn_code: product.hsn_code || "621133",
             wash_care: product.wash_care || "Hand Wash or Gentle Machine Wash in Cold Water",
-            // ── Promotions, BOGO, Flash Sale, Coupon & Welcome Modal ──
-            deal_type: product.deal_type || (isBogoDeal ? "bogo" : "none"),
-            is_bogo: isBogoDeal,
-            buy_qty: product.buy_qty || 1,
+            offer_type: product.offer_type || (product.offer_code ? "coupon" : (product.deal_type ? "megasale" : "none")),
+            sale_title: product.sale_title || "Mega Festive Sale",
+            deal_type: product.deal_type || (product.buy_qty ? (product.buy_qty === 5 ? "buy5get1" : "custom") : "buy5get1"),
+            deal_text: product.deal_text || "",
+            buy_qty: product.buy_qty || 5,
             get_free_qty: product.get_free_qty || 1,
-            sale_title: product.sale_title || "",
-            deal_text: product.deal_text || (isBogoDeal ? "BUY 1 GET 1 FREE" : ""),
+            on_sale: product.on_sale || false,
             offer_code: product.offer_code || "",
             offer_text: product.offer_text || "",
-            in_flash_sale: !!product.in_flash_sale,
-            in_welcome_modal: !!product.in_welcome_modal,
             highlights: Array.isArray(product.highlights) ? product.highlights.join("\n") : (product.highlights || ""),
             style_tip: product.style_tip || ""
         });
@@ -756,6 +913,7 @@ const Products = () => {
         const matchesCategory = filterCategory === "all" || product.category === filterCategory;
 
         if (!matchesDepartment || !matchesCategory) return false;
+        if (filterOnlyDeals && !product.deal_text && !product.on_sale && product.offer_type !== "megasale") return false;
         if (!q) return true;
 
         const matchesSearch = 
@@ -787,9 +945,9 @@ const Products = () => {
     const paginatedProducts = sortedProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const getStockBadge = (stock) => {
-        if (stock <= 0) return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20">Out of Stock</span>;
-        if (stock <= 5) return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">Low Stock</span>;
-        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/10 text-green-400 border border-green-500/20">In Stock</span>;
+        if (stock <= 0) return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300">Out of Stock</span>;
+        if (stock <= 5) return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-300">Low Stock</span>;
+        return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">In Stock</span>;
     };
 
     // Export capabilities
@@ -967,39 +1125,39 @@ const Products = () => {
         <div className="space-y-6">
             
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-800/40 pb-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-5">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">Products Management</h1>
-                    <p className="text-sm text-gray-400 mt-1">Manage catalog listings, active inventory warning stocks, and brands.</p>
+                    <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">Products Management</h1>
+                    <p className="text-sm text-slate-500 mt-1">Manage catalog listings, active inventory warning stocks, and brands.</p>
                 </div>
                 
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => setShowPrintCatalogModal(true)}
-                        className="p-2.5 bg-[#111827] border border-gray-800 rounded-xl hover:bg-gray-800 transition text-xs font-semibold text-white flex items-center gap-2 shadow-sm"
+                        className="p-2.5 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition text-xs font-semibold text-slate-700 flex items-center gap-2 shadow-xs cursor-pointer"
                         title="Open printable product catalog with QR codes"
                     >
-                        <Printer className="w-4 h-4 text-cyan-400" /> Print Catalog & QR
+                        <Printer className="w-4 h-4 text-slate-600" /> Print Catalog & QR
                     </button>
                     <button
                         onClick={handleExportCSV}
-                        className="p-2.5 bg-[#111827] border border-gray-800 rounded-xl hover:bg-gray-800 transition text-xs font-semibold text-white flex items-center gap-2"
+                        className="p-2.5 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition text-xs font-semibold text-slate-700 flex items-center gap-2 shadow-xs cursor-pointer"
                     >
-                        <Download className="w-4 h-4 text-cyan-400" /> Export CSV
+                        <Download className="w-4 h-4 text-slate-600" /> Export CSV
                     </button>
                     {activeTab === "brands" ? (
                         <button
                             onClick={() => setShowAddBrandModal(true)}
-                            className="flex items-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-md transition duration-200 cursor-pointer"
+                            className="flex items-center gap-2 bg-[#0891b2] hover:bg-[#0e7490] text-white font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-sm transition duration-200 cursor-pointer"
                         >
-                            <Plus className="w-4 h-4 text-black stroke-[2.5]" /> Add Brand
+                            <Plus className="w-4 h-4 text-white stroke-[2.5]" /> Add Brand
                         </button>
                     ) : (
                         <button
                             onClick={handleOpenAddModal}
-                            className="flex items-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-md transition duration-200 cursor-pointer"
+                            className="flex items-center gap-2 bg-[#0891b2] hover:bg-[#0e7490] text-white font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-sm transition duration-200 cursor-pointer"
                         >
-                            <Plus className="w-4 h-4 text-black stroke-[2.5]" /> Add Product
+                            <Plus className="w-4 h-4 text-white stroke-[2.5]" /> Add Product
                         </button>
                     )}
                 </div>
@@ -1009,84 +1167,84 @@ const Products = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div
                     onClick={() => { setActiveTab("products"); setFilterCategory("all"); setSearchQuery(""); setCurrentPage(1); }}
-                    className="bg-gradient-to-br from-[#111827] to-[#1e293b] border border-gray-800 p-4 rounded-2xl flex items-center gap-3 shadow-md cursor-pointer hover:border-cyan-500/50 transition transform hover:-translate-y-0.5 group"
+                    className="bg-white border border-slate-200 p-4 rounded-2xl flex items-center gap-3 shadow-xs cursor-pointer hover:border-[#0891b2]/50 hover:shadow-sm transition transform hover:-translate-y-0.5 group"
                     title="Click to view all product listings"
                 >
-                    <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-400 border border-cyan-500/20 group-hover:bg-cyan-500/20">
+                    <div className="p-3 bg-cyan-50 rounded-xl text-[#0891b2] border border-cyan-100 group-hover:bg-cyan-100">
                         <Package className="w-6 h-6" />
                     </div>
                     <div>
-                        <span className="text-[11px] text-gray-400 font-medium block uppercase tracking-wider">Total Listings</span>
-                        <span className="text-xl font-extrabold text-white font-mono">{filteredProducts.length} Products</span>
+                        <span className="text-[11px] text-slate-500 font-medium block uppercase tracking-wider">Total Listings</span>
+                        <span className="text-xl font-extrabold text-slate-900 font-mono">{filteredProducts.length} Products</span>
                     </div>
                 </div>
 
                 <div
                     onClick={() => { setActiveTab("inventory"); setShowOnlyLowStock(false); setCurrentPage(1); }}
-                    className="bg-gradient-to-br from-[#111827] to-[#1e293b] border border-gray-800 p-4 rounded-2xl flex items-center gap-3 shadow-md cursor-pointer hover:border-blue-500/50 transition transform hover:-translate-y-0.5 group"
+                    className="bg-white border border-slate-200 p-4 rounded-2xl flex items-center gap-3 shadow-xs cursor-pointer hover:border-blue-400 hover:shadow-sm transition transform hover:-translate-y-0.5 group"
                     title="Click to view full inventory stock"
                 >
-                    <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400 border border-blue-500/20 group-hover:bg-blue-500/20">
+                    <div className="p-3 bg-blue-50 rounded-xl text-blue-600 border border-blue-100 group-hover:bg-blue-100">
                         <Layers className="w-6 h-6" />
                     </div>
                     <div>
-                        <span className="text-[11px] text-gray-400 font-medium block uppercase tracking-wider">Total Inventory Stock</span>
-                        <span className="text-xl font-extrabold text-white font-mono">{totalStockUnits.toLocaleString("en-IN")} Units</span>
+                        <span className="text-[11px] text-slate-500 font-medium block uppercase tracking-wider">Total Inventory Stock</span>
+                        <span className="text-xl font-extrabold text-slate-900 font-mono">{totalStockUnits.toLocaleString("en-IN")} Units</span>
                     </div>
                 </div>
 
                 <div
                     onClick={() => { setActiveTab("inventory"); setShowOnlyLowStock(false); setCurrentPage(1); }}
-                    className="bg-gradient-to-br from-[#111827] to-[#1e293b] border border-gray-800 p-4 rounded-2xl flex items-center gap-3 shadow-md cursor-pointer hover:border-cyan-500/50 transition transform hover:-translate-y-0.5 group"
+                    className="bg-white border border-slate-200 p-4 rounded-2xl flex items-center gap-3 shadow-xs cursor-pointer hover:border-emerald-400 hover:shadow-sm transition transform hover:-translate-y-0.5 group"
                     title="Click to view inventory asset valuation"
                 >
-                    <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-400 border border-cyan-500/20 group-hover:bg-cyan-500/20">
+                    <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600 border border-emerald-100 group-hover:bg-emerald-100">
                         <IndianRupee className="w-6 h-6" />
                     </div>
                     <div>
-                        <span className="text-[11px] text-gray-400 font-medium block uppercase tracking-wider">Stock Valuation</span>
-                        <span className="text-xl font-extrabold text-cyan-400 font-mono">₹{totalStockValuation.toLocaleString("en-IN")}</span>
+                        <span className="text-[11px] text-slate-500 font-medium block uppercase tracking-wider">Stock Valuation</span>
+                        <span className="text-xl font-extrabold text-emerald-700 font-mono">₹{totalStockValuation.toLocaleString("en-IN")}</span>
                     </div>
                 </div>
 
                 <div
                     onClick={() => { setActiveTab("inventory"); setShowOnlyLowStock(true); setCurrentPage(1); }}
-                    className="bg-gradient-to-br from-[#111827] to-[#1e293b] border border-red-900/50 hover:border-red-500/80 p-4 rounded-2xl flex items-center gap-3 shadow-md cursor-pointer transition transform hover:-translate-y-0.5 group relative overflow-hidden"
+                    className="bg-white border border-amber-200 hover:border-amber-400 p-4 rounded-2xl flex items-center gap-3 shadow-xs cursor-pointer transition transform hover:-translate-y-0.5 group relative overflow-hidden"
                     title="Click to view & restock all low stock products"
                 >
-                    <div className="p-3 bg-red-500/10 rounded-xl text-red-400 border border-red-500/20 group-hover:bg-red-500/20">
-                        <ShieldAlert className="w-6 h-6 animate-pulse" />
+                    <div className="p-3 bg-amber-50 rounded-xl text-amber-700 border border-amber-200 group-hover:bg-amber-100">
+                        <ShieldAlert className="w-6 h-6" />
                     </div>
                     <div>
-                        <span className="text-[11px] text-gray-400 font-medium block uppercase tracking-wider">Low Stock Alerts</span>
-                        <span className="text-xl font-extrabold text-red-400 font-mono">{lowStockCount} Items</span>
-                        <span className="text-[10px] text-red-400/90 block mt-0.5 font-bold underline">Click to view & restock &rarr;</span>
+                        <span className="text-[11px] text-slate-500 font-medium block uppercase tracking-wider">Low Stock Alerts</span>
+                        <span className="text-xl font-extrabold text-amber-800 font-mono">{lowStockCount} Items</span>
+                        <span className="text-[10px] text-amber-700 block mt-0.5 font-bold underline">Click to view & restock &rarr;</span>
                     </div>
                 </div>
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-gray-800 gap-6">
+            <div className="flex border-b border-slate-200 gap-6">
                 <button
                     onClick={() => { setActiveTab("products"); setCurrentPage(1); }}
-                    className={`pb-3 text-sm font-bold relative transition ${activeTab === "products" ? "text-cyan-400" : "text-gray-400 hover:text-white"}`}
+                    className={`pb-3 text-sm font-bold relative transition cursor-pointer ${activeTab === "products" ? "text-[#0891b2]" : "text-slate-600 hover:text-slate-900"}`}
                 >
                     Product Catalog
-                    {activeTab === "products" && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-cyan-400 rounded-full"></span>}
+                    {activeTab === "products" && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#0891b2] rounded-full"></span>}
                 </button>
                 <button
                     onClick={() => { setActiveTab("inventory"); setCurrentPage(1); }}
-                    className={`pb-3 text-sm font-bold relative transition ${activeTab === "inventory" ? "text-cyan-400" : "text-gray-400 hover:text-white"}`}
+                    className={`pb-3 text-sm font-bold relative transition cursor-pointer ${activeTab === "inventory" ? "text-[#0891b2]" : "text-slate-600 hover:text-slate-900"}`}
                 >
                     Inventory Warnings
-                    {activeTab === "inventory" && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-cyan-400 rounded-full"></span>}
+                    {activeTab === "inventory" && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#0891b2] rounded-full"></span>}
                 </button>
                 <button
                     onClick={() => { setActiveTab("brands"); setCurrentPage(1); }}
-                    className={`pb-3 text-sm font-bold relative transition ${activeTab === "brands" ? "text-cyan-400" : "text-gray-400 hover:text-white"}`}
+                    className={`pb-3 text-sm font-bold relative transition cursor-pointer ${activeTab === "brands" ? "text-[#0891b2]" : "text-slate-600 hover:text-slate-900"}`}
                 >
                     Brands Manager
-                    {activeTab === "brands" && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-cyan-400 rounded-full"></span>}
+                    {activeTab === "brands" && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#0891b2] rounded-full"></span>}
                 </button>
             </div>
 
@@ -1100,12 +1258,31 @@ const Products = () => {
                             onClick={() => { setFilterDepartment("all"); setFilterCategory("all"); setCurrentPage(1); }}
                             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                                 filterDepartment === "all"
-                                    ? "bg-cyan-400 text-black shadow-sm font-black"
-                                    : "bg-[#111827] text-gray-400 hover:text-white border border-gray-800"
+                                    ? "bg-[#0891b2] text-white shadow-xs font-bold"
+                                    : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-300"
                             }`}
                         >
                             All Departments ({products.length})
                         </button>
+
+                        {/* Mega Sale & BOGO Quick Filter */}
+                        {(() => {
+                            const dealCount = products.filter(p => p.deal_text || p.on_sale || p.offer_type === "megasale").length;
+                            return (
+                                <button
+                                    type="button"
+                                    onClick={() => { setFilterOnlyDeals(prev => !prev); setCurrentPage(1); }}
+                                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                                        filterOnlyDeals
+                                            ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-xs font-extrabold ring-2 ring-amber-300"
+                                            : "bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300"
+                                    }`}
+                                >
+                                    <Zap className={`w-3.5 h-3.5 ${filterOnlyDeals ? "fill-white text-white" : "fill-amber-500 text-amber-600"}`} />
+                                    <span>⚡ Mega Sale & BOGO ({dealCount})</span>
+                                </button>
+                            );
+                        })()}
                         {(departmentsList.length > 0 ? departmentsList : availableDepartments.map(d => ({ name: d, icon: "📁" }))).map((dept) => {
                             const deptName = dept.name || dept;
                             const count = products.filter((p) => {
@@ -1120,8 +1297,8 @@ const Products = () => {
                                     onClick={() => { setFilterDepartment(deptName); setFilterCategory("all"); setCurrentPage(1); }}
                                     className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                                         isSelected
-                                            ? "bg-cyan-400 text-black shadow-sm font-black"
-                                            : "bg-[#111827] text-gray-400 hover:text-white border border-gray-800"
+                                            ? "bg-[#0891b2] text-white shadow-xs font-bold"
+                                            : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-300"
                                     }`}
                                 >
                                     <span>{dept.icon || "📁"}</span>
@@ -1133,27 +1310,27 @@ const Products = () => {
                     </div>
 
                     {/* Filters */}
-                    <div className="bg-gradient-to-br from-[#111827] to-[#1a2332] border border-gray-800/50 rounded-2xl p-4 shadow-lg">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <input
                                     type="text"
                                     placeholder="Search products by SKU or Name..."
                                     value={searchQuery}
                                     onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                                    className="w-full pl-10 pr-4 py-2.5 bg-[#0b1220] border border-gray-800 rounded-xl text-xs text-gray-200 focus:outline-none focus:border-cyan-400 transition"
+                                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#0891b2] transition"
                                 />
                             </div>
 
                             <div className="relative">
-                                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <select
                                     value={filterCategory}
                                     onChange={(e) => { setFilterCategory(e.target.value); setCurrentPage(1); }}
-                                    className="w-full pl-10 pr-4 py-2.5 bg-[#0b1220] border border-gray-800 rounded-xl text-xs text-gray-200 focus:outline-none focus:border-cyan-400 cursor-pointer"
+                                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#0891b2] cursor-pointer"
                                 >
-                                    <option value="all" className="bg-slate-900 text-white">
+                                    <option value="all">
                                         {filterDepartment === "all" ? `All Categories (${totalProducts})` : `All ${filterDepartment} Categories`}
                                     </option>
                                     {categoriesList && categoriesList.length > 0 ? (
@@ -1169,11 +1346,11 @@ const Products = () => {
                                                 groups[dept].push(cat);
                                             });
                                             return Object.entries(groups).map(([dept, cats]) => (
-                                                <optgroup key={dept} label={`📂 ${dept.toUpperCase()}`} className="bg-slate-800 text-cyan-300 font-bold">
+                                                <optgroup key={dept} label={`📂 ${dept.toUpperCase()}`} className="font-bold text-slate-700">
                                                     {cats.map((cat) => {
                                                         const count = products.filter(p => (p.category || "").toLowerCase() === (cat.name || "").toLowerCase()).length;
                                                         return (
-                                                            <option key={cat._id || cat.id} value={cat.name} className="bg-slate-900 text-white font-normal">
+                                                            <option key={cat._id || cat.id} value={cat.name} className="font-normal text-slate-900">
                                                                 {cat.name} ({count})
                                                             </option>
                                                         );
@@ -1188,7 +1365,7 @@ const Products = () => {
                             <select
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
-                                className="w-full px-4 py-2.5 bg-[#0b1220] border border-gray-800 rounded-xl text-xs text-gray-300 focus:outline-none focus:border-cyan-400 cursor-pointer"
+                                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#0891b2] cursor-pointer"
                             >
                                 <option value="newest">Sort by Newest First (Date)</option>
                                 <option value="stock_asc">Sort by Lowest Stock First (Restock Alert)</option>
@@ -1202,10 +1379,10 @@ const Products = () => {
                     </div>
 
                     {/* Product Table */}
-                    <div className="bg-gradient-to-br from-[#111827] to-[#1a2332] border border-gray-800/50 rounded-2xl shadow-lg overflow-hidden">
+                    <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full border-collapse text-left text-xs min-w-[950px]">
-                                <thead className="bg-[#0b1220]/60 text-gray-400 font-semibold border-b border-gray-800/80">
+                                <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
                                     <tr>
                                         <th className="py-4 px-6">Product</th>
                                         <th className="py-4 px-6">SKU</th>
@@ -1216,26 +1393,31 @@ const Products = () => {
                                         <th className="py-4 px-6 text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-800/40 text-gray-200">
+                                <tbody className="divide-y divide-slate-100 text-slate-800">
                                     {paginatedProducts.map((p, idx) => (
-                                        <tr key={p.id || p._id || idx} className="hover:bg-gray-800/20 transition">
+                                        <tr key={p.id || p._id || idx} className="hover:bg-slate-50/80 transition">
                                             {/* 1. Product */}
                                             <td className="py-3.5 px-6">
                                                 <div className="flex items-center gap-3 min-w-[200px]">
-                                                    <div className="w-10 h-10 bg-[#0b1220] border border-gray-800 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                                    <div className="w-10 h-10 bg-slate-100 border border-slate-200 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
                                                         {p.image ? (
                                                             <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
                                                         ) : (
-                                                            <Package className="w-5 h-5 text-gray-600" />
+                                                            <Package className="w-5 h-5 text-slate-400" />
                                                         )}
                                                     </div>
                                                     <div>
-                                                        <div className="font-semibold text-white truncate max-w-[220px]" title={p.title}>{p.title}</div>
-                                                        <div className="flex items-center gap-1.5 flex-wrap mt-0.5 text-[10px] text-gray-500">
-                                                            <span className="text-gray-400 font-medium">{p.brand || "Nari Pehnawa"}</span>
-                                                            {p.pickup_location && (
-                                                                <span className="px-1.5 py-0.5 rounded bg-cyan-950/40 text-cyan-400 border border-cyan-800/40 text-[9px] font-semibold">
-                                                                    📍 {p.pickup_location}
+                                                        <div className="font-bold text-slate-900 truncate max-w-[220px]" title={p.title}>{p.title}</div>
+                                                        <div className="flex items-center gap-1.5 flex-wrap mt-0.5 text-[10px]">
+                                                            <span className="text-slate-500 font-medium">{p.brand || "Nari Pehnawa"}</span>
+                                                            {p.deal_text && (
+                                                                <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300 text-[9px] font-bold">
+                                                                    ⚡ {p.deal_text}
+                                                                </span>
+                                                            )}
+                                                            {p.offer_code && !p.deal_text && (
+                                                                <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 text-[9px] font-bold">
+                                                                    🏷️ {p.offer_code}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -1244,15 +1426,15 @@ const Products = () => {
                                             </td>
 
                                             {/* 2. SKU */}
-                                            <td className="py-3.5 px-6 font-mono text-xs text-gray-400 font-medium whitespace-nowrap">
+                                            <td className="py-3.5 px-6 font-mono text-xs text-slate-500 font-medium whitespace-nowrap">
                                                 {p.sku || "—"}
                                             </td>
 
                                             {/* 3. Category & Department */}
                                             <td className="py-3.5 px-6">
                                                 <div className="flex flex-col gap-1 items-start min-w-[120px]">
-                                                    <span className="text-gray-200 font-semibold">{p.category || "Uncategorized"}</span>
-                                                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-700/50 whitespace-nowrap">
+                                                    <span className="text-slate-900 font-semibold">{p.category || "Uncategorized"}</span>
+                                                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 whitespace-nowrap">
                                                         {p.department || (categoriesList.find(c => c.name?.toLowerCase() === p.category?.toLowerCase())?.department || "Clothing")}
                                                     </span>
                                                 </div>
@@ -1260,38 +1442,32 @@ const Products = () => {
 
                                             {/* 4. Price */}
                                             <td className="py-3.5 px-6 whitespace-nowrap font-mono">
-                                                <div className="font-bold text-white text-xs">
+                                                <div className="font-bold text-slate-900 text-xs">
                                                     ₹{Number(p.price || 0).toLocaleString()}
                                                 </div>
                                                 {p.original_price && Number(p.original_price) > Number(p.price) && (
-                                                    <div className="text-[10px] text-gray-500 line-through">
+                                                    <div className="text-[10px] text-slate-400 line-through">
                                                         ₹{Number(p.original_price).toLocaleString()}
                                                     </div>
                                                 )}
                                             </td>
 
-                                            {/* 5. Stock & Promotions */}
-                                            <td className="py-3.5 px-6 font-mono text-gray-300 whitespace-nowrap">
-                                                <div className="font-bold text-[#1C1917] flex items-center gap-1.5">
-                                                    <span>{p.stock} units</span>
-                                                    {p.deal_type === 'bogo' && (
-                                                        <span className="text-[9px] font-extrabold bg-gradient-to-r from-amber-400 to-yellow-400 text-black px-1.5 py-0.5 rounded-md shadow-2xs">
-                                                            🎁 BOGO
+                                            {/* 5. Stock */}
+                                            <td className="py-3.5 px-6 font-mono whitespace-nowrap">
+                                                <div className="font-extrabold text-slate-900 text-sm">
+                                                    {p.stock ?? 0} <span className="text-xs font-semibold text-slate-500">units</span>
+                                                </div>
+                                                <div className="text-[11px] font-sans mt-0.5">
+                                                    {Number(p.stock) > 0 ? (
+                                                        <span className="text-emerald-700 font-bold inline-flex items-center gap-1">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> In Stock
                                                         </span>
-                                                    )}
-                                                    {p.in_flash_sale && (
-                                                        <span className="text-[9px] font-extrabold bg-rose-100 text-rose-800 border border-rose-300 px-1.5 py-0.5 rounded-md">
-                                                            ⚡ Sale
+                                                    ) : (
+                                                        <span className="text-rose-600 font-bold inline-flex items-center gap-1">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Out of Stock
                                                         </span>
                                                     )}
                                                 </div>
-                                                {p.size_stock && Object.keys(p.size_stock).length > 0 ? (
-                                                    <div className="text-[10px] text-[#785A18] font-sans mt-0.5 flex items-center gap-1.5 flex-wrap">
-                                                        {Object.entries(p.size_stock).slice(0, 5).map(([sz, q]) => (
-                                                            <span key={sz} className="font-semibold bg-[#F8F3E4] px-1 py-0.2 rounded border border-[#E8DCB8]">{sz}:{q}</span>
-                                                        ))}
-                                                    </div>
-                                                ) : null}
                                             </td>
 
                                             {/* 6. Status */}
@@ -1303,29 +1479,40 @@ const Products = () => {
                                             <td className="py-3.5 px-6 text-right whitespace-nowrap">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button
+                                                        onClick={() => handleOpenDealModal(p)}
+                                                        className={`p-2 rounded-xl transition cursor-pointer shadow-2xs flex items-center gap-1 font-bold text-xs ${
+                                                            p.deal_text
+                                                                ? "bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-400 ring-1 ring-amber-300"
+                                                                : "bg-white hover:bg-amber-50 text-slate-600 hover:text-amber-800 border border-slate-300"
+                                                        }`}
+                                                        title={p.deal_text ? `Active Deal: ${p.deal_text} (Click to manage deal / duplicate)` : "Set Mega Sale / BOGO Deal & Price"}
+                                                    >
+                                                        <Zap className={`w-4 h-4 ${p.deal_text ? "fill-amber-500 text-amber-700" : "text-amber-600"}`} />
+                                                    </button>
+                                                    <button
                                                         onClick={() => setSharingProduct(p)}
-                                                        className="p-2 bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 rounded-xl transition cursor-pointer"
+                                                        className="p-2 bg-white hover:bg-slate-100 text-slate-600 border border-slate-300 rounded-xl transition cursor-pointer shadow-2xs"
                                                         title="Share Product & QR Code"
                                                     >
                                                         <Share2 className="w-4 h-4" />
                                                     </button>
                                                     <button
-                                                        onClick={() => window.open(`/product/${p.id || p._id}`, "_blank")}
-                                                        className="p-2 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 rounded-xl transition cursor-pointer"
-                                                        title="View Product"
+                                                        onClick={() => setViewingProduct(p)}
+                                                        className="p-2 bg-white hover:bg-slate-100 text-slate-600 hover:text-cyan-700 border border-slate-300 rounded-xl transition cursor-pointer shadow-2xs"
+                                                        title="View Product Details"
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleEdit(p)}
-                                                        className="p-2 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl transition cursor-pointer font-bold shadow-sm"
+                                                        className="p-2 bg-[#0891b2] hover:bg-[#0e7490] text-white rounded-xl transition cursor-pointer font-bold shadow-2xs"
                                                         title="Edit Product"
                                                     >
                                                         <Edit2 className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(p.id || p._id)}
-                                                        className="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-500/30 rounded-xl transition cursor-pointer"
+                                                        className="p-2 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 rounded-xl transition cursor-pointer shadow-2xs"
                                                         title="Delete Product"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -1338,8 +1525,8 @@ const Products = () => {
                             </table>
                         </div>
                         {filteredProducts.length === 0 && (
-                            <div className="p-12 text-center text-gray-500 flex flex-col items-center justify-center gap-2">
-                                <Package className="w-12 h-12 opacity-40 animate-pulse" />
+                            <div className="p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-2">
+                                <Package className="w-12 h-12 opacity-40 animate-pulse text-slate-400" />
                                 <span>No products matching query found.</span>
                             </div>
                         )}
@@ -1347,20 +1534,20 @@ const Products = () => {
 
                     {/* Pagination */}
                     {totalPages > 1 && (
-                        <div className="flex justify-between items-center bg-[#111827] border border-gray-800 p-4 rounded-2xl text-xs">
-                            <span className="text-gray-400">Showing page {currentPage} of {totalPages}</span>
+                        <div className="flex justify-between items-center bg-white border border-slate-200 p-4 rounded-2xl text-xs">
+                            <span className="text-slate-500">Showing page {currentPage} of {totalPages}</span>
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                     disabled={currentPage === 1}
-                                    className="px-3.5 py-2 bg-[#0f1724] border border-gray-800 rounded-xl text-white font-semibold disabled:opacity-40"
+                                    className="px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
                                 >
                                     Previous
                                 </button>
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                     disabled={currentPage === totalPages}
-                                    className="px-3.5 py-2 bg-[#0f1724] border border-gray-800 rounded-xl text-white font-semibold disabled:opacity-40"
+                                    className="px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
                                 >
                                     Next
                                 </button>
@@ -1373,18 +1560,18 @@ const Products = () => {
             {/* TAB: INVENTORY */}
             {activeTab === "inventory" && (
                 <div className="space-y-6">
-                    <div className="bg-gradient-to-r from-yellow-950/10 to-amber-950/10 border border-yellow-500/20 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-left">
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-left">
                         <div className="flex items-center gap-4">
-                            <ShieldAlert className="w-8 h-8 text-yellow-400 flex-shrink-0" />
+                            <ShieldAlert className="w-8 h-8 text-amber-700 flex-shrink-0" />
                             <div>
-                                <h4 className="font-bold text-white text-base">Critical Stock Alerts & Restock Center</h4>
-                                <p className="text-xs text-gray-400 mt-0.5">Showing products with low stock (5 or fewer units). Edit stock directly to restock inventory.</p>
+                                <h4 className="font-bold text-slate-900 text-base">Critical Stock Alerts & Restock Center</h4>
+                                <p className="text-xs text-slate-600 mt-0.5">Showing products with low stock (5 or fewer units). Edit stock directly to restock inventory.</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => setShowOnlyLowStock(prev => !prev)}
-                                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition border ${showOnlyLowStock ? "bg-red-600/20 border-red-500/40 text-red-300" : "bg-gray-800 border-gray-700 text-gray-300"}`}
+                                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition border cursor-pointer ${showOnlyLowStock ? "bg-amber-200 border-amber-400 text-amber-900" : "bg-white border-slate-300 text-slate-700 hover:bg-slate-50"}`}
                             >
                                 {showOnlyLowStock ? "Filter: Low Stock (5 or fewer Units)" : "Filter: Showing All Stock"}
                             </button>
@@ -1392,10 +1579,10 @@ const Products = () => {
                     </div>
 
                     {/* Inventory Table */}
-                    <div className="bg-gradient-to-br from-[#111827] to-[#1a2332] border border-gray-800/50 rounded-2xl shadow-lg overflow-hidden">
+                    <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full border-collapse text-left text-xs">
-                                <thead className="bg-[#0b1220]/60 text-gray-400 font-semibold border-b border-gray-800/80">
+                                <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
                                     <tr>
                                         <th className="py-4 px-6">Product</th>
                                         <th className="py-4 px-6">SKU</th>
@@ -1405,15 +1592,15 @@ const Products = () => {
                                         <th className="py-4 px-6 text-right">Quick Restock</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-800/40 text-gray-200">
+                                <tbody className="divide-y divide-slate-100 text-slate-800">
                                     {(showOnlyLowStock ? filteredProducts.filter(p => (parseInt(p.stock || 0) || 0) <= 5) : paginatedProducts).map((p, idx) => {
                                         const assetValue = p.price * p.stock;
                                         return (
-                                            <tr key={idx} className="hover:bg-gray-800/20 transition">
-                                                <td className="py-3.5 px-6 font-semibold text-white">{p.title}</td>
-                                                <td className="py-3.5 px-6 font-mono text-gray-400">{p.sku}</td>
-                                                <td className="py-3.5 px-6 font-mono font-medium text-gray-200">{p.stock} units</td>
-                                                <td className="py-3.5 px-6 font-mono text-gray-400">₹{assetValue.toLocaleString()}</td>
+                                            <tr key={idx} className="hover:bg-slate-50/80 transition">
+                                                <td className="py-3.5 px-6 font-bold text-slate-900">{p.title}</td>
+                                                <td className="py-3.5 px-6 font-mono text-slate-500">{p.sku}</td>
+                                                <td className="py-3.5 px-6 font-mono font-medium text-slate-800">{p.stock} units</td>
+                                                <td className="py-3.5 px-6 font-mono text-slate-600">₹{assetValue.toLocaleString()}</td>
                                                 <td className="py-3.5 px-6">{getStockBadge(p.stock)}</td>
                                                 <td className="py-3.5 px-6 text-right">
                                                     <div className="flex items-center justify-end gap-2">
@@ -1421,7 +1608,7 @@ const Products = () => {
                                                             type="number"
                                                             defaultValue={p.stock}
                                                             onBlur={(e) => handleUpdateStock(p.id, e.target.value)}
-                                                            className="w-16 px-2 py-1 text-center bg-[#0b1220] border border-gray-800 rounded-lg text-white font-mono"
+                                                            className="w-16 px-2 py-1 text-center bg-white border border-slate-300 rounded-lg text-slate-900 font-mono font-bold focus:border-[#0891b2] focus:outline-none"
                                                             title="Press tab or click out to trigger stock update"
                                                         />
                                                     </div>
@@ -1436,20 +1623,20 @@ const Products = () => {
 
                     {/* Pagination */}
                     {totalPages > 1 && (
-                        <div className="flex justify-between items-center bg-[#111827] border border-gray-800 p-4 rounded-2xl text-xs">
-                            <span className="text-gray-400">Showing page {currentPage} of {totalPages}</span>
+                        <div className="flex justify-between items-center bg-white border border-slate-200 p-4 rounded-2xl text-xs">
+                            <span className="text-slate-500">Showing page {currentPage} of {totalPages}</span>
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                     disabled={currentPage === 1}
-                                    className="px-3.5 py-2 bg-[#0f1724] border border-gray-800 rounded-xl text-white font-semibold disabled:opacity-40"
+                                    className="px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
                                 >
                                     Previous
                                 </button>
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                     disabled={currentPage === totalPages}
-                                    className="px-3.5 py-2 bg-[#0f1724] border border-gray-800 rounded-xl text-white font-semibold disabled:opacity-40"
+                                    className="px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
                                 >
                                     Next
                                 </button>
@@ -1462,10 +1649,10 @@ const Products = () => {
             {/* TAB: BRANDS */}
             {activeTab === "brands" && (
                 <div className="space-y-6">
-                    <div className="bg-gradient-to-br from-[#111827] to-[#1a2332] border border-gray-800/50 rounded-2xl shadow-lg overflow-hidden">
+                    <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full border-collapse text-left text-xs">
-                                <thead className="bg-[#0b1220]/60 text-gray-400 font-semibold border-b border-gray-800/80">
+                                <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
                                     <tr>
                                         <th className="py-4 px-6">Brand Name</th>
                                         <th className="py-4 px-6">Slug</th>
@@ -1475,17 +1662,17 @@ const Products = () => {
                                         <th className="py-4 px-6 text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-800/40 text-gray-200">
+                                <tbody className="divide-y divide-slate-100 text-slate-800">
                                     {brandsLoading && brands.length === 0 ? (
                                         <tr>
-                                            <td colSpan="6" className="py-8 text-center text-gray-400">
-                                                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-cyan-400" />
+                                            <td colSpan="6" className="py-8 text-center text-slate-500">
+                                                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-[#0891b2]" />
                                                 Loading brands...
                                             </td>
                                         </tr>
                                     ) : brands.length === 0 ? (
                                         <tr>
-                                            <td colSpan="6" className="py-8 text-center text-gray-400">
+                                            <td colSpan="6" className="py-8 text-center text-slate-500">
                                                 No brands found. Click "Add Brand" above to register your brand.
                                             </td>
                                         </tr>
@@ -1493,16 +1680,16 @@ const Products = () => {
                                         brands.map((b, idx) => {
                                             const liveCount = products.filter(p => (p.brand || "").toLowerCase() === (b.name || "").toLowerCase()).length;
                                             return (
-                                                <tr key={b.id || b._id || idx} className="hover:bg-gray-800/20 transition">
-                                                    <td className="py-3.5 px-6 font-semibold text-white flex items-center gap-2">
-                                                        <Tag className="w-4 h-4 text-cyan-400" /> {b.name}
+                                                <tr key={b.id || b._id || idx} className="hover:bg-slate-50/80 transition">
+                                                    <td className="py-3.5 px-6 font-bold text-slate-900 flex items-center gap-2">
+                                                        <Tag className="w-4 h-4 text-[#0891b2]" /> {b.name}
                                                     </td>
-                                                    <td className="py-3.5 px-6 font-mono text-gray-400">{b.slug}</td>
-                                                    <td className="py-3.5 px-6 font-mono text-gray-300">{liveCount || b.count || 0} listings</td>
-                                                    <td className="py-3.5 px-6 text-gray-400">{b.country}</td>
+                                                    <td className="py-3.5 px-6 font-mono text-slate-500">{b.slug}</td>
+                                                    <td className="py-3.5 px-6 font-mono text-slate-800">{liveCount || b.count || 0} listings</td>
+                                                    <td className="py-3.5 px-6 text-slate-600">{b.country}</td>
                                                     <td className="py-3.5 px-6">
                                                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                                            b.status === "Active" ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30" : "bg-gray-500/10 text-gray-400 border border-gray-500/20"
+                                                            b.status === "Active" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-slate-100 text-slate-600 border border-slate-200"
                                                         }`}>
                                                             {b.status}
                                                         </span>
@@ -1511,14 +1698,14 @@ const Products = () => {
                                                         <div className="flex items-center justify-end gap-2">
                                                             <button
                                                                 onClick={() => handleEditBrand(b)}
-                                                                className="p-2 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl transition cursor-pointer font-bold shadow-sm"
+                                                                className="p-2 bg-[#0891b2] hover:bg-[#0e7490] text-white rounded-xl transition cursor-pointer font-bold shadow-2xs"
                                                                 title="Edit Brand"
                                                             >
                                                                 <Edit2 className="w-4 h-4" />
                                                             </button>
                                                             <button
                                                                 onClick={() => handleDeleteBrand(b)}
-                                                                className="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-500/30 rounded-xl transition cursor-pointer"
+                                                                className="p-2 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 rounded-xl transition cursor-pointer shadow-2xs"
                                                                 title="Delete Brand"
                                                             >
                                                                 <Trash2 className="w-4 h-4" />
@@ -1947,7 +2134,7 @@ const Products = () => {
                                                                         e.stopPropagation();
                                                                         handleRemoveImage(idx);
                                                                     }}
-                                                                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 hover:bg-rose-600 text-white flex items-center justify-center transition opacity-80 hover:opacity-100 cursor-pointer shadow-sm"
+                                                                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 hover:bg-slate-700 text-white flex items-center justify-center transition opacity-80 hover:opacity-100 cursor-pointer shadow-sm"
                                                                     title="Remove image"
                                                                 >
                                                                     <Trash2 className="w-3 h-3" />
@@ -2036,20 +2223,8 @@ const Products = () => {
                                         min="0"
                                         value={formData.delivery_charge}
                                         onChange={(e) => setFormData({ ...formData, delivery_charge: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs transition"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891b2] text-xs transition"
                                         placeholder="0 (or leave empty for default)"
-                                    />
-                                </div>
-
-
-                                <div>
-                                    <label className="block text-slate-700 font-bold mb-1.5">Sizes (comma separated)</label>
-                                    <input
-                                        type="text"
-                                        value={formData.sizes}
-                                        onChange={(e) => setFormData({ ...formData, sizes: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs transition"
-                                        placeholder="e.g. S,M,L,XL,XXL"
                                     />
                                 </div>
 
@@ -2058,7 +2233,7 @@ const Products = () => {
                                     <select
                                         value={formData.is_returnable ? "yes" : "no"}
                                         onChange={(e) => setFormData({ ...formData, is_returnable: e.target.value === "yes" })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 cursor-pointer"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs focus:outline-none focus:border-[#0891b2] cursor-pointer"
                                     >
                                         <option value="yes">Yes — Returnable</option>
                                         <option value="no">No — Non-Returnable (Final Sale)</option>
@@ -2071,9 +2246,53 @@ const Products = () => {
                                         type="text"
                                         value={formData.return_policy}
                                         onChange={(e) => setFormData({ ...formData, return_policy: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs transition"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891b2] text-xs transition"
                                         placeholder="e.g. Easy 15-Day Returns or Non-Returnable"
                                     />
+                                </div>
+
+                                <div className="sm:col-span-2 lg:col-span-3 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <label className="block text-slate-700 font-bold text-xs">Sizes (comma separated or select chips below)</label>
+                                        <span className="text-[11px] text-slate-500 font-medium">Click chip to toggle size</span>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={formData.sizes}
+                                        onChange={(e) => {
+                                            const newSizesStr = e.target.value;
+                                            const parsed = newSizesStr.split(",").map(s => s.trim()).filter(Boolean);
+                                            const updatedSizeStock = { ...(formData.size_stock || {}) };
+                                            parsed.forEach(sz => {
+                                                if (updatedSizeStock[sz] === undefined) updatedSizeStock[sz] = 0;
+                                            });
+                                            setFormData({ ...formData, sizes: newSizesStr, size_stock: updatedSizeStock });
+                                        }}
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891b2] text-xs transition"
+                                        placeholder="e.g. S,M,L,XL,XXL"
+                                    />
+                                    {/* Quick Size Preset Chips */}
+                                    <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                                        <span className="text-[11px] text-slate-500 font-semibold mr-1">Quick Add:</span>
+                                        {["XS", "S", "M", "L", "XL", "XXL", "3XL", "Free Size"].map((sz) => {
+                                            const activeList = formData.sizes ? formData.sizes.split(",").map(s => s.trim()) : [];
+                                            const isSelected = activeList.includes(sz);
+                                            return (
+                                                <button
+                                                    key={sz}
+                                                    type="button"
+                                                    onClick={() => handleToggleSizePreset(sz)}
+                                                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer border ${
+                                                        isSelected
+                                                            ? "bg-[#0891b2] text-white border-[#0891b2] shadow-2xs"
+                                                            : "bg-white text-slate-700 hover:bg-slate-100 border-slate-300"
+                                                    }`}
+                                                >
+                                                    {isSelected ? `✓ ${sz}` : `+ ${sz}`}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             </div>
 
@@ -2185,311 +2404,361 @@ const Products = () => {
                                 </div>
                             </div>
 
-                            {/* ── 1. Promotions, Flash Sale, BOGO & Announcements ── */}
-                            <div className="bg-[#FFFDF8] border border-[#E8DCB8] rounded-2xl p-4 sm:p-5 space-y-5 shadow-xs">
-                                <div className="border-b border-[#E8DCB8]/70 pb-3">
-                                    <div className="flex items-center justify-between flex-wrap gap-2">
-                                        <span className="text-[#8C6D15] font-extrabold text-sm uppercase tracking-wide flex items-center gap-2">
-                                            🔥 Promotions, Flash Sale, BOGO & Announcements
-                                        </span>
-                                        <span className="text-[11px] bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-0.5 rounded-full font-bold">
-                                            High Conversion Triggers
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-[#574B38] mt-1">
-                                        Configure Buy 1 Get 1 Free, Mega Flash Sale events, promo coupons, and Welcome Modal visibility.
+                            {/* ── Unified Offer & Promotion Scheme (Mega Sale, Flash Sale, BOGO, Buy X Get Y, Coupons) ── */}
+                            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
+                                <div>
+                                    <span className="text-slate-900 font-extrabold text-sm uppercase tracking-wide flex items-center gap-1.5">
+                                        🎁 Product Offer & Promotion Scheme
+                                    </span>
+                                    <p className="text-xs text-slate-500 mt-1">
+                                        Attach a Mega Sale, Flash Sale & Event deal (e.g. Buy 5 Get 1 Free, Buy 5 Get 2 Free, BOGO) or a Special Promo Coupon to this product.
                                     </p>
                                 </div>
 
-                                {/* Option A: Buy 1 Get 1 Free (BOGO) */}
-                                <div className={`p-4 rounded-xl border transition-all ${
-                                    formData.is_bogo 
-                                        ? "bg-amber-50/80 border-amber-300 ring-1 ring-amber-300" 
-                                        : "bg-white border-slate-200"
-                                }`}>
-                                    <label className="flex items-center gap-3 cursor-pointer select-none">
-                                        <input
-                                            type="checkbox"
-                                            checked={!!formData.is_bogo}
-                                            onChange={(e) => {
-                                                const checked = e.target.checked;
-                                                setFormData(prev => ({
-                                                    ...prev,
-                                                    is_bogo: checked,
-                                                    deal_type: checked ? "bogo" : (prev.in_flash_sale ? "flash_sale" : "none"),
-                                                    deal_text: checked ? (prev.deal_text || "BUY 1 GET 1 FREE") : (prev.in_flash_sale ? prev.deal_text : ""),
-                                                    sale_title: checked ? (prev.sale_title || "🎁 Special Buy 1 Get 1 Free Offer") : prev.sale_title
-                                                }));
-                                            }}
-                                            className="w-4 h-4 text-amber-600 rounded border-slate-300 focus:ring-amber-500 cursor-pointer"
-                                        />
-                                        <div>
-                                            <span className="font-extrabold text-sm text-[#1C1917] flex items-center gap-1.5">
-                                                🎁 Enable Buy 1 Get 1 Free (BOGO) Offer
-                                            </span>
-                                            <span className="text-xs text-[#574B38] block mt-0.5">
-                                                Customers get 1 item free when they add 2 to cart. Automatically applied at checkout!
-                                            </span>
-                                        </div>
-                                    </label>
+                                {/* Offer Type Selector */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ 
+                                            ...formData, 
+                                            offer_type: "none", 
+                                            on_sale: false, 
+                                            deal_type: "", 
+                                            deal_text: "", 
+                                            offer_code: "", 
+                                            offer_text: "" 
+                                        })}
+                                        className={`p-3 rounded-xl border text-left text-xs font-bold transition flex flex-col gap-1 cursor-pointer ${
+                                            (formData.offer_type === "none" || !formData.offer_type)
+                                                ? "bg-white border-[#0891b2] text-slate-900 ring-2 ring-[#0891b2]/20 shadow-xs"
+                                                : "bg-white/60 border-slate-200 text-slate-600 hover:bg-white"
+                                        }`}
+                                    >
+                                        <span className="text-sm">🏷️ Standard Price</span>
+                                        <span className="text-[11px] font-normal text-slate-500">Regular catalog listing without active promotion</span>
+                                    </button>
 
-                                    {formData.is_bogo && (
-                                        <div className="mt-3.5 pt-3 border-t border-amber-200/80 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                            <div>
-                                                <label className="block text-slate-700 font-bold mb-1 text-xs">Buy Quantity</label>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    value={formData.buy_qty || 1}
-                                                    onChange={(e) => setFormData({ ...formData, buy_qty: parseInt(e.target.value) || 1 })}
-                                                    className="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold text-[#1C1917]"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-slate-700 font-bold mb-1 text-xs">Get Free Quantity</label>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    value={formData.get_free_qty || 1}
-                                                    onChange={(e) => setFormData({ ...formData, get_free_qty: parseInt(e.target.value) || 1 })}
-                                                    className="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold text-[#1C1917]"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-slate-700 font-bold mb-1 text-xs">Badge Text</label>
-                                                <input
-                                                    type="text"
-                                                    value={formData.deal_text || "BUY 1 GET 1 FREE"}
-                                                    onChange={(e) => setFormData({ ...formData, deal_text: e.target.value })}
-                                                    className="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold text-[#1C1917]"
-                                                    placeholder="BUY 1 GET 1 FREE"
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ 
+                                            ...formData, 
+                                            offer_type: "megasale", 
+                                            on_sale: true, 
+                                            sale_title: formData.sale_title || "Mega Festive Sale",
+                                            deal_type: formData.deal_type || "buy5get1",
+                                            buy_qty: formData.buy_qty || 5,
+                                            get_free_qty: formData.get_free_qty || 1,
+                                            deal_text: formData.deal_text || "BUY 5 GET 1 FREE"
+                                        })}
+                                        className={`p-3 rounded-xl border text-left text-xs font-bold transition flex flex-col gap-1 cursor-pointer ${
+                                            formData.offer_type === "megasale"
+                                                ? "bg-white border-[#0891b2] text-slate-900 ring-2 ring-[#0891b2]/20 shadow-xs"
+                                                : "bg-white/60 border-slate-200 text-slate-600 hover:bg-white"
+                                        }`}
+                                    >
+                                        <span className="text-sm">⚡ Mega / Flash Sale</span>
+                                        <span className="text-[11px] font-normal text-slate-500">BOGO, Buy 5 Get 1 Free, Buy X Get Y Free</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, offer_type: "coupon", on_sale: false })}
+                                        className={`p-3 rounded-xl border text-left text-xs font-bold transition flex flex-col gap-1 cursor-pointer ${
+                                            formData.offer_type === "coupon"
+                                                ? "bg-white border-[#0891b2] text-slate-900 ring-2 ring-[#0891b2]/20 shadow-xs"
+                                                : "bg-white/60 border-slate-200 text-slate-600 hover:bg-white"
+                                        }`}
+                                    >
+                                        <span className="text-sm">🎟️ Promo Coupon</span>
+                                        <span className="text-[11px] font-normal text-slate-500">Specific voucher code to copy & apply at checkout</span>
+                                    </button>
                                 </div>
 
-                                {/* Option B: Flash Sale / Mega Sale Event */}
-                                <div className={`p-4 rounded-xl border transition-all ${
-                                    formData.in_flash_sale 
-                                        ? "bg-rose-50/80 border-rose-300 ring-1 ring-rose-300" 
-                                        : "bg-white border-slate-200"
-                                }`}>
-                                    <label className="flex items-center gap-3 cursor-pointer select-none">
-                                        <input
-                                            type="checkbox"
-                                            checked={!!formData.in_flash_sale}
-                                            onChange={(e) => {
-                                                const checked = e.target.checked;
-                                                setFormData(prev => ({
-                                                    ...prev,
-                                                    in_flash_sale: checked,
-                                                    sale_title: checked ? (prev.sale_title || "⚡ MEGA FLASH SALE") : prev.sale_title,
-                                                    deal_text: checked && !prev.is_bogo ? (prev.deal_text || "FLAT 30% OFF") : prev.deal_text
-                                                }));
-                                            }}
-                                            className="w-4 h-4 text-rose-600 rounded border-slate-300 focus:ring-rose-500 cursor-pointer"
-                                        />
-                                        <div>
-                                            <span className="font-extrabold text-sm text-[#1C1917] flex items-center gap-1.5">
-                                                ⚡ Participate in Live Flash Sale / Mega Sale
-                                            </span>
-                                            <span className="text-xs text-[#574B38] block mt-0.5">
-                                                Display animated flash sale urgency banner & countdown ribbon on product detail page.
-                                            </span>
-                                        </div>
-                                    </label>
-
-                                    {formData.in_flash_sale && (
-                                        <div className="mt-3.5 pt-3 border-t border-rose-200/80 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {/* Mega / Flash Sale Details */}
+                                {formData.offer_type === "megasale" && (
+                                    <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-slate-700 font-bold mb-1 text-xs">Flash Sale Event Title</label>
+                                                <label className="block text-slate-700 font-bold mb-1.5 text-xs">Event / Sale Title</label>
                                                 <input
                                                     type="text"
-                                                    value={formData.sale_title}
+                                                    value={formData.sale_title || ""}
                                                     onChange={(e) => setFormData({ ...formData, sale_title: e.target.value })}
-                                                    className="w-full bg-white border border-rose-300 rounded-xl px-3 py-2 text-xs font-bold text-[#1C1917]"
-                                                    placeholder="e.g. ⚡ MEGA FESTIVE FLASH SALE"
+                                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs focus:outline-none focus:border-[#0891b2] transition"
+                                                    placeholder="e.g. Mega Festive Sale, Flash Sale Deal"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-slate-700 font-bold mb-1 text-xs">Flash Deal Tagline</label>
+                                                <label className="block text-slate-700 font-bold mb-1.5 text-xs">Deal Format / Structure</label>
+                                                <select
+                                                    value={formData.deal_type || "buy5get1"}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        let b = formData.buy_qty || 5;
+                                                        let g = formData.get_free_qty || 1;
+                                                        let text = "";
+                                                        if (val === "buy5get1") { b = 5; g = 1; text = "BUY 5 GET 1 FREE"; }
+                                                        else if (val === "buy5get2") { b = 5; g = 2; text = "BUY 5 GET 2 FREE"; }
+                                                        else if (val === "bogo") { b = 1; g = 1; text = "BUY 1 GET 1 FREE (BOGO)"; }
+                                                        else if (val === "buy2get1") { b = 2; g = 1; text = "BUY 2 GET 1 FREE"; }
+                                                        else if (val === "buy3get1") { b = 3; g = 1; text = "BUY 3 GET 1 FREE"; }
+                                                        else if (val === "percent") { text = "FLASH SALE DISCOUNT"; }
+                                                        else { text = `BUY ${b} GET ${g} FREE`; }
+                                                        setFormData({ ...formData, deal_type: val, buy_qty: b, get_free_qty: g, deal_text: text });
+                                                    }}
+                                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs focus:outline-none focus:border-[#0891b2] cursor-pointer"
+                                                >
+                                                    <option value="buy5get1">Buy 5 Get 1 Free</option>
+                                                    <option value="buy5get2">Buy 5 Get 2 Free</option>
+                                                    <option value="bogo">Buy 1 Get 1 Free (BOGO)</option>
+                                                    <option value="buy2get1">Buy 2 Get 1 Free</option>
+                                                    <option value="buy3get1">Buy 3 Get 1 Free</option>
+                                                    <option value="custom">Custom Buy X Get Y Free</option>
+                                                    <option value="percent">Percentage Flash Discount</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {(formData.deal_type === "custom" || formData.deal_type?.startsWith("buy") || formData.deal_type === "bogo") && (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                                                <div>
+                                                    <label className="block text-slate-700 font-bold mb-1.5 text-xs">Buy Quantity (X)</label>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={formData.buy_qty ?? 5}
+                                                        onChange={(e) => {
+                                                            const val = parseInt(e.target.value) || 1;
+                                                            const g = formData.get_free_qty || 1;
+                                                            setFormData({ ...formData, buy_qty: val, deal_text: `BUY ${val} GET ${g} FREE` });
+                                                        }}
+                                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs focus:outline-none focus:border-[#0891b2] transition"
+                                                        placeholder="e.g. 5"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-slate-700 font-bold mb-1.5 text-xs">Get Free Quantity (Y)</label>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={formData.get_free_qty ?? 1}
+                                                        onChange={(e) => {
+                                                            const val = parseInt(e.target.value) || 1;
+                                                            const b = formData.buy_qty || 1;
+                                                            setFormData({ ...formData, get_free_qty: val, deal_text: `BUY ${b} GET ${val} FREE` });
+                                                        }}
+                                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs focus:outline-none focus:border-[#0891b2] transition"
+                                                        placeholder="e.g. 1"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div>
+                                            <label className="block text-slate-700 font-bold mb-1.5 text-xs">Deal Badge / Banner Text (Shown on Storefront & Cart)</label>
+                                            <input
+                                                type="text"
+                                                value={formData.deal_text || ""}
+                                                onChange={(e) => setFormData({ ...formData, deal_text: e.target.value })}
+                                                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs font-bold focus:outline-none focus:border-[#0891b2] transition"
+                                                placeholder="e.g. BUY 5 GET 1 FREE"
+                                            />
+                                        </div>
+
+                                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-3 text-xs">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-base">⚡</span>
+                                                <div>
+                                                    <span className="font-extrabold text-amber-900 block">{formData.sale_title || "Mega Festive Sale"}: {formData.deal_text || "BUY 5 GET 1 FREE"}</span>
+                                                    <span className="text-[11px] text-amber-700">Discounts will be automatically calculated when customers add qualifying items to their cart!</span>
+                                                </div>
+                                            </div>
+                                            <span className="px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-900 font-extrabold text-[10px] whitespace-nowrap">Active Deal</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Coupon Code Details */}
+                                {formData.offer_type === "coupon" && (
+                                    <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-slate-700 font-bold mb-1.5 text-xs">Offer / Coupon Code</label>
                                                 <input
                                                     type="text"
-                                                    value={formData.deal_text}
-                                                    onChange={(e) => setFormData({ ...formData, deal_text: e.target.value })}
-                                                    className="w-full bg-white border border-rose-300 rounded-xl px-3 py-2 text-xs font-bold text-[#1C1917]"
-                                                    placeholder="e.g. FLAT 30% OFF / LIMITED STOCK"
+                                                    value={formData.offer_code || ""}
+                                                    onChange={(e) => setFormData({ ...formData, offer_code: e.target.value.toUpperCase() })}
+                                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs font-mono font-bold focus:outline-none focus:border-[#0891b2] transition"
+                                                    placeholder="e.g. FESTIVE10, SALE20"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-slate-700 font-bold mb-1.5 text-xs">Offer Banner Description</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.offer_text || ""}
+                                                    onChange={(e) => setFormData({ ...formData, offer_text: e.target.value })}
+                                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs focus:outline-none focus:border-[#0891b2] transition"
+                                                    placeholder="e.g. Use Coupon FESTIVE10 for extra 10% OFF"
                                                 />
                                             </div>
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
+                            </div>
 
-                                {/* Option C: Coupon & Promo Code Integration */}
-                                <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
-                                    <div className="flex items-center justify-between flex-wrap gap-2">
-                                        <span className="font-extrabold text-sm text-[#1C1917] flex items-center gap-1.5">
-                                            🏷️ Coupon & Promo Code for Product Page
-                                        </span>
-                                        {availableCoupons.length > 0 && (
-                                            <select
-                                                onChange={(e) => {
-                                                    const selected = availableCoupons.find(c => c.code === e.target.value);
-                                                    if (selected) {
-                                                        setFormData(prev => ({
-                                                            ...prev,
-                                                            offer_code: selected.code,
-                                                            offer_text: selected.description || `Use Coupon ${selected.code} for discount`
-                                                        }));
-                                                    }
-                                                }}
-                                                className="text-xs bg-[#FAF5E8] border border-[#E8DCB8] rounded-lg px-2.5 py-1 text-[#785A18] font-bold cursor-pointer"
-                                            >
-                                                <option value="">Quick Pick Active Coupon...</option>
-                                                {availableCoupons.map(c => (
-                                                    <option key={c.id || c.code} value={c.code}>
-                                                        {c.code} — {c.type === "percent" ? `${c.value}% OFF` : `₹${c.value} OFF`}
-                                                    </option>
-                                                ))}
-                                            </select>
+                            {/* ── Product Stock & Variant Inventory Allocation Card ── */}
+                            {(() => {
+                                const parsedSizeList = formData.sizes ? formData.sizes.split(",").map(s => s.trim()).filter(Boolean) : [];
+                                return (
+                                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 pb-3.5">
+                                            <div>
+                                                <div className="flex items-center gap-2.5 flex-wrap">
+                                                    <span className="text-slate-900 font-extrabold text-sm uppercase tracking-wide flex items-center gap-1.5">
+                                                        <Layers className="w-4 h-4 text-cyan-600" /> Stock & Size-Wise Inventory
+                                                    </span>
+                                                    <span className="text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1.5">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                        Auto-Synced Total
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-slate-500 mt-1">
+                                                    Enter stock per size. Dispatch warehouse will be selected dynamically at order confirmation/fulfillment time.
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-2.5 self-stretch sm:self-auto justify-between sm:justify-end">
+                                                <div className="text-right bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-2xs">
+                                                    <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wider">Total Stock</span>
+                                                    <span className="text-base font-extrabold text-cyan-700 font-mono">
+                                                        {Number(formData.stock || 0).toLocaleString()} <span className="text-xs font-semibold text-slate-500">units</span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {parsedSizeList.length > 0 ? (
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                                    <span className="text-xs text-slate-700 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                                        <span>📦</span> Quantities by Size:
+                                                    </span>
+                                                    <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                                                        <span className="text-slate-400 text-[11px] font-medium mr-1">Quick add to all:</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleQuickAddAllSizes(5)}
+                                                            className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg font-bold text-[11px] transition shadow-2xs cursor-pointer active:scale-95"
+                                                        >
+                                                            +5 all
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleQuickAddAllSizes(10)}
+                                                            className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg font-bold text-[11px] transition shadow-2xs cursor-pointer active:scale-95"
+                                                        >
+                                                            +10 all
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleQuickAddAllSizes(25)}
+                                                            className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg font-bold text-[11px] transition shadow-2xs cursor-pointer active:scale-95"
+                                                        >
+                                                            +25 all
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const reset = {};
+                                                                parsedSizeList.forEach(s => reset[s] = 0);
+                                                                setFormData(prev => ({
+                                                                    ...prev,
+                                                                    stock: 0,
+                                                                    size_stock: reset,
+                                                                    warehouse_stock: { "All": 0 }
+                                                                }));
+                                                            }}
+                                                            className="px-2.5 py-1 bg-white hover:bg-rose-50 border border-rose-200 text-rose-600 rounded-lg font-bold text-[11px] transition shadow-2xs cursor-pointer active:scale-95"
+                                                        >
+                                                            Reset 0
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                                    {parsedSizeList.map((sz) => {
+                                                        const qty = formData.size_stock?.[sz] ?? 0;
+                                                        return (
+                                                            <div
+                                                                key={sz}
+                                                                className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs hover:border-cyan-400 transition"
+                                                            >
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <span className="text-xs font-extrabold text-slate-800 font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                                                                        {sz}
+                                                                    </span>
+                                                                    <span className={`text-[10px] font-bold ${Number(qty) > 0 ? "text-emerald-600" : "text-slate-400"}`}>
+                                                                        {Number(qty) > 0 ? `${qty} in stock` : "0 stock"}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleSizeStockChange(sz, Math.max(0, Number(qty || 0) - 1))}
+                                                                        className="w-7 h-7 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-xs cursor-pointer select-none transition"
+                                                                    >
+                                                                        -
+                                                                    </button>
+                                                                    <input
+                                                                        type="number"
+                                                                        min="0"
+                                                                        value={qty}
+                                                                        onChange={(e) => handleSizeStockChange(sz, e.target.value)}
+                                                                        className="w-full bg-slate-50 border border-slate-300 rounded-lg py-1 text-center text-sm text-slate-900 font-extrabold font-mono focus:outline-none focus:border-cyan-500 focus:bg-white"
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleSizeStockChange(sz, Number(qty || 0) + 1)}
+                                                                        className="w-7 h-7 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-xs cursor-pointer select-none transition"
+                                                                    >
+                                                                        +
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-white p-4 rounded-xl border border-slate-200">
+                                                <div className="max-w-xs">
+                                                    <label className="text-xs text-slate-700 font-bold block mb-1.5 uppercase tracking-wider">
+                                                        Total Inventory Units (Free Size / Standard)
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        placeholder="0"
+                                                        value={formData.stock || ""}
+                                                        onChange={(e) => {
+                                                            const val = Math.max(0, parseInt(e.target.value) || 0);
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                stock: val,
+                                                                warehouse_stock: { "All": val }
+                                                            }));
+                                                        }}
+                                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 font-bold font-mono focus:outline-none focus:border-cyan-500 focus:bg-white transition"
+                                                    />
+                                                    <span className="text-[11px] text-slate-400 block mt-1">
+                                                        Tip: Enter sizes in the field above (e.g. S, M, L, XL) to allocate inventory per size.
+                                                    </span>
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block text-slate-700 font-bold mb-1 text-xs">Coupon Code (One-Click Copy on Product)</label>
-                                            <input
-                                                type="text"
-                                                value={formData.offer_code}
-                                                onChange={(e) => setFormData({ ...formData, offer_code: e.target.value.toUpperCase() })}
-                                                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs font-mono font-bold focus:border-[#D4AF37]"
-                                                placeholder="e.g. FESTIVE10, NARI20"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-slate-700 font-bold mb-1 text-xs">Coupon Description Banner</label>
-                                            <input
-                                                type="text"
-                                                value={formData.offer_text}
-                                                onChange={(e) => setFormData({ ...formData, offer_text: e.target.value })}
-                                                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs focus:border-[#D4AF37]"
-                                                placeholder="e.g. Use Coupon FESTIVE10 for extra 10% OFF"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Option D: Welcome Popup Modal Feature */}
-                                <div className={`p-4 rounded-xl border transition-all ${
-                                    formData.in_welcome_modal 
-                                        ? "bg-emerald-50/80 border-emerald-300 ring-1 ring-emerald-300" 
-                                        : "bg-white border-slate-200"
-                                }`}>
-                                    <label className="flex items-center gap-3 cursor-pointer select-none">
-                                        <input
-                                            type="checkbox"
-                                            checked={!!formData.in_welcome_modal}
-                                            onChange={(e) => setFormData({ ...formData, in_welcome_modal: e.target.checked })}
-                                            className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
-                                        />
-                                        <div>
-                                            <span className="font-extrabold text-sm text-[#1C1917] flex items-center gap-1.5">
-                                                🌟 Feature on First-Time Visitor Welcome Popup Modal
-                                            </span>
-                                            <span className="text-xs text-[#574B38] block mt-0.5">
-                                                Highlight this product listing as a featured collection deal when new visitors open the site.
-                                            </span>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-
-                            {/* ── 2. Size Inventory & Simple Stock Allocation ── */}
-                            <div className="bg-[#FFFDF8] border border-[#E8DCB8] rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#E8DCB8]/70 pb-3">
-                                    <div>
-                                        <span className="text-[#8C6D15] font-extrabold text-sm uppercase tracking-wide flex items-center gap-1.5">
-                                            <Package className="w-4 h-4 text-[#B8860B]" /> Size-wise Stock Allocation
-                                        </span>
-                                        <p className="text-xs text-[#574B38] mt-1">
-                                            Enter the quantity available for each size. Dispatch warehouse location is selected per order!
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-2 self-stretch sm:self-auto justify-between sm:justify-end">
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="text-[11px] text-[#574B38] font-bold">Quick Fill:</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleApplyPresetStock(10)}
-                                                className="px-2 py-1 bg-[#F4ECDA] hover:bg-[#E8DCB8] text-[#785A18] rounded-lg text-[11px] font-bold cursor-pointer transition"
-                                            >
-                                                10 each
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleApplyPresetStock(25)}
-                                                className="px-2 py-1 bg-[#F4ECDA] hover:bg-[#E8DCB8] text-[#785A18] rounded-lg text-[11px] font-bold cursor-pointer transition"
-                                            >
-                                                25 each
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleApplyPresetStock(50)}
-                                                className="px-2 py-1 bg-[#F4ECDA] hover:bg-[#E8DCB8] text-[#785A18] rounded-lg text-[11px] font-bold cursor-pointer transition"
-                                            >
-                                                50 each
-                                            </button>
-                                        </div>
-                                        <div className="text-right bg-white px-3 py-1.5 rounded-xl border border-[#E8DCB8]">
-                                            <span className="text-[9px] text-[#8C7A58] block uppercase font-extrabold">Total Stock</span>
-                                            <span className="text-sm font-extrabold text-[#B8860B] font-mono">{formData.stock || 0} units</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {(() => {
-                                    const parsedSizes = formData.sizes ? formData.sizes.split(",").map(s => s.trim().toUpperCase()).filter(Boolean) : [];
-                                    if (parsedSizes.length === 0) {
-                                        return (
-                                            <div>
-                                                <label className="block text-slate-700 font-bold mb-1.5 text-xs">Total Available Stock Quantity</label>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    value={formData.stock}
-                                                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                                                    className="w-full sm:w-48 bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 font-extrabold text-xs focus:border-[#D4AF37]"
-                                                    placeholder="0"
-                                                />
-                                            </div>
-                                        );
-                                    }
-
-                                    return (
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                                            {parsedSizes.map((sz) => {
-                                                const qty = formData.size_stock?.[sz] ?? 0;
-                                                return (
-                                                    <div key={sz} className="text-center bg-white p-3 rounded-xl border border-[#E8DCB8] focus-within:border-[#D4AF37] focus-within:ring-1 focus-within:ring-[#D4AF37] shadow-2xs transition">
-                                                        <span className="text-xs font-extrabold text-[#1C1917] font-mono block mb-1">
-                                                            Size {sz}
-                                                        </span>
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            placeholder="0"
-                                                            value={qty}
-                                                            onChange={(e) => handleSizeStockChange(sz, e.target.value)}
-                                                            className="w-full bg-[#FAF6EC] border border-[#E8DCB8] rounded-lg py-1.5 text-center text-xs text-[#1C1917] font-extrabold font-mono focus:outline-none focus:border-[#D4AF37]"
-                                                        />
-                                                        <span className="text-[9px] text-[#8C7A58] block mt-1">units</span>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    );
-                                })()}
-                            </div>
+                                );
+                            })()}
 
                             <div>
                                 <label className="block text-slate-700 font-bold mb-1.5">Description</label>
@@ -2504,7 +2773,7 @@ const Products = () => {
                             <div className="flex gap-3 pt-3 border-t border-slate-200">
                                 <button
                                     type="submit"
-                                    className="flex-1 py-3 px-4 bg-gradient-to-r from-[#E5C058] via-[#D4AF37] to-[#B8860B] hover:brightness-105 text-black font-extrabold rounded-xl shadow-md shadow-[#D4AF37]/30 transition duration-200 text-xs flex items-center justify-center gap-2 cursor-pointer"
+                                    className="flex-1 py-3 px-4 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold rounded-xl shadow-md transition duration-200 text-xs flex items-center justify-center gap-2 cursor-pointer"
                                 >
                                     {showEditModal ? "Update Product Listing" : "Publish Product Listing"}
                                 </button>
@@ -2525,91 +2794,535 @@ const Products = () => {
                     </div>
                 </div>
             )}
-            {/* SHARE PRODUCT & QR CODE MODAL */}
-            {sharingProduct && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto">
-                    <div className="bg-white border border-slate-200 text-slate-900 rounded-3xl w-full max-w-lg p-5 sm:p-6 relative shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            {/* ── QUICK MEGA SALE & BOGO MANAGER MODAL ── */}
+            {dealModalProduct && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto">
+                    <div className="bg-white border border-slate-200 text-slate-900 rounded-3xl w-full max-w-lg p-5 sm:p-6 relative shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
                         <button
-                            onClick={() => { setSharingProduct(null); setCopiedLink(false); }}
-                            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-black rounded-full bg-slate-100 hover:bg-slate-200 transition"
+                            onClick={() => { setDealModalProduct(null); setDealSuccessMsg(""); }}
+                            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-black rounded-full bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
                         >
                             <X className="w-5 h-5" />
                         </button>
 
-                        <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
-                            <QrCode className="w-6 h-6 text-cyan-500" />
+                        <div className="flex items-center gap-3 border-b border-slate-200 pb-3.5">
+                            <div className="w-10 h-10 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700 shadow-2xs">
+                                <Zap className="w-5 h-5 fill-amber-500 text-amber-600" />
+                            </div>
                             <div>
-                                <h3 className="font-extrabold text-slate-900 text-base">Share & Print QR Code</h3>
-                                <p className="text-xs text-slate-500">Scan QR code to view live product on store</p>
+                                <h3 className="font-extrabold text-slate-900 text-base leading-tight">Mega Sale & BOGO Offer Manager</h3>
+                                <p className="text-xs text-slate-500">Attach Buy 1 Get 1 Free, custom deal & price without re-uploading photos!</p>
                             </div>
                         </div>
 
-                        <div className="flex flex-col items-center bg-slate-50 p-4 rounded-2xl border border-slate-200 gap-3">
-                            <div className="w-14 h-14 bg-white rounded-xl overflow-hidden border border-slate-300 shadow-sm">
-                                <img src={sharingProduct.image} alt={sharingProduct.title} className="w-full h-full object-cover" />
+                        {/* Product Summary */}
+                        <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                            <div className="w-14 h-14 bg-white rounded-xl overflow-hidden border border-slate-300 shadow-2xs flex-shrink-0">
+                                <img src={dealModalProduct.image} alt={dealModalProduct.title} className="w-full h-full object-cover" />
                             </div>
-                            <div className="text-center">
-                                <div className="font-bold text-slate-900 text-sm">{sharingProduct.title}</div>
-                                <div className="text-xs text-cyan-600 font-mono font-bold mt-0.5">₹{sharingProduct.price?.toLocaleString()} | SKU: {sharingProduct.sku}</div>
-                                {sharingProduct.pickup_location && (
-                                    <div className="text-[10px] text-cyan-700 bg-cyan-100 border border-cyan-300 px-2 py-0.5 rounded mt-1 inline-block font-medium">
-                                        📍 Warehouse: {sharingProduct.pickup_location}
+                            <div className="min-w-0 flex-1">
+                                <div className="font-bold text-slate-900 text-xs truncate">{dealModalProduct.title}</div>
+                                <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                                    Current Price: <span className="font-bold text-slate-900">₹{Number(dealModalProduct.price || 0).toLocaleString()}</span>
+                                    {dealModalProduct.original_price && ` (MRP: ₹${Number(dealModalProduct.original_price).toLocaleString()})`}
+                                </div>
+                                <div className="text-[10px] text-slate-500 mt-0.5">
+                                    SKU: <span className="font-mono">{dealModalProduct.sku || "N/A"}</span> • Stock: {dealModalProduct.stock || 0} units
+                                </div>
+                            </div>
+                        </div>
+
+                        {dealSuccessMsg && (
+                            <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold rounded-xl text-center">
+                                {dealSuccessMsg}
+                            </div>
+                        )}
+
+                        {/* Deal Format Selection */}
+                        <div className="space-y-3">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                                    Select Promotion / Deal Format
+                                </label>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                    {[
+                                        { id: "bogo", label: "Buy 1 Get 1 Free", sub: "BOGO Offer", b: 1, g: 1, text: "BUY 1 GET 1 FREE (BOGO)" },
+                                        { id: "buy2get1", label: "Buy 2 Get 1 Free", sub: "Buy 2 Get 1", b: 2, g: 1, text: "BUY 2 GET 1 FREE" },
+                                        { id: "buy3get1", label: "Buy 3 Get 1 Free", sub: "Buy 3 Get 1", b: 3, g: 1, text: "BUY 3 GET 1 FREE" },
+                                        { id: "buy5get1", label: "Buy 5 Get 1 Free", sub: "Buy 5 Get 1", b: 5, g: 1, text: "BUY 5 GET 1 FREE" },
+                                        { id: "buy5get2", label: "Buy 5 Get 2 Free", sub: "Buy 5 Get 2", b: 5, g: 2, text: "BUY 5 GET 2 FREE" },
+                                        { id: "none", label: "Regular Price", sub: "Remove Offer", b: 0, g: 0, text: "" }
+                                    ].map((opt) => (
+                                        <button
+                                            key={opt.id}
+                                            type="button"
+                                            onClick={() => setDealModalForm(prev => ({
+                                                ...prev,
+                                                deal_type: opt.id,
+                                                buy_qty: opt.b,
+                                                get_free_qty: opt.g,
+                                                deal_text: opt.text
+                                            }))}
+                                            className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                                                dealModalForm.deal_type === opt.id
+                                                    ? "bg-amber-50 border-amber-500 text-amber-950 ring-2 ring-amber-400/30 font-extrabold shadow-2xs"
+                                                    : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 font-medium"
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-1.5">
+                                                <span>{opt.id === "none" ? "🏷️" : "⚡"}</span>
+                                                <span className="text-xs">{opt.label}</span>
+                                            </div>
+                                            <span className="text-[10px] text-slate-400 block mt-0.5">{opt.sub}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Price Inputs */}
+                            <div className="grid grid-cols-2 gap-3 pt-1">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                                        Special Offer / Sale Price (₹)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={dealModalForm.sale_price}
+                                        onChange={(e) => setDealModalForm(prev => ({ ...prev, sale_price: e.target.value }))}
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold font-mono text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
+                                        placeholder="e.g. 1499"
+                                    />
+                                    <span className="text-[10px] text-slate-400 block mt-0.5">Price customer pays for deal</span>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                                        Original MRP (₹)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={dealModalForm.original_price}
+                                        onChange={(e) => setDealModalForm(prev => ({ ...prev, original_price: e.target.value }))}
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold font-mono text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
+                                        placeholder="e.g. 2999"
+                                    />
+                                    <span className="text-[10px] text-slate-400 block mt-0.5">Strikethrough MRP price</span>
+                                </div>
+                            </div>
+
+                            {dealModalForm.deal_type !== "none" && (
+                                <>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                                            Deal Badge Text (Displayed on Product Card & Cart)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={dealModalForm.deal_text}
+                                            onChange={(e) => setDealModalForm(prev => ({ ...prev, deal_text: e.target.value }))}
+                                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
+                                            placeholder="e.g. BUY 1 GET 1 FREE (BOGO)"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                                            Event Title
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={dealModalForm.sale_title}
+                                            onChange={(e) => setDealModalForm(prev => ({ ...prev, sale_title: e.target.value }))}
+                                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
+                                            placeholder="e.g. Mega Festive Sale"
+                                        />
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="pt-3 border-t border-slate-200 space-y-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    disabled={savingDeal}
+                                    onClick={() => handleSaveDealOffer(false)}
+                                    className="py-3 px-3 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-extrabold rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95"
+                                >
+                                    <Zap className="w-4 h-4 fill-slate-950 text-slate-950" />
+                                    <span>{savingDeal ? "Saving..." : "Apply to This Product"}</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    disabled={savingDeal}
+                                    onClick={() => handleSaveDealOffer(true)}
+                                    className="py-3 px-3 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-extrabold rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95"
+                                    title="Clones product with same photos, sizes & description into a new BOGO listing"
+                                >
+                                    <Copy className="w-4 h-4 text-cyan-300" />
+                                    <span>Duplicate as New Listing</span>
+                                </button>
+                            </div>
+                            <p className="text-[10px] text-slate-400 text-center">
+                                Tip: "Duplicate" creates a separate BOGO listing keeping all original photos & descriptions with 0 re-uploading!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── PRODUCT DETAILS & INVENTORY QUICK-VIEW MODAL ── */}
+            {viewingProduct && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto">
+                    <div className="bg-white border border-slate-200 text-slate-900 rounded-3xl w-full max-w-3xl max-h-[92vh] overflow-y-auto shadow-2xl relative flex flex-col">
+                        {/* Modal Header */}
+                        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 rounded-xl bg-cyan-50 border border-cyan-200 flex items-center justify-center text-cyan-600">
+                                    <Eye className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="font-extrabold text-slate-900 text-base leading-tight">Product Specifications & Inventory</h3>
+                                    <p className="text-xs text-slate-500 font-medium">SKU: <span className="font-mono font-bold text-slate-700">{viewingProduct.sku || "N/A"}</span> • ID: <span className="font-mono text-slate-400">{viewingProduct.id || viewingProduct._id}</span></p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setViewingProduct(null)}
+                                className="p-2 text-slate-400 hover:text-black rounded-full bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
+                                title="Close"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="p-5 sm:p-6 space-y-5 flex-1">
+                            {/* Product Hero Info */}
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-5 bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5">
+                                <div className="md:col-span-4 flex flex-col items-center justify-center">
+                                    <div className="w-full aspect-square max-w-[200px] bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm flex items-center justify-center">
+                                        <img
+                                            src={viewingProduct.image}
+                                            alt={viewingProduct.title}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => { e.target.src = "https://placehold.co/400x400?text=No+Image"; }}
+                                        />
+                                    </div>
+                                    {viewingProduct.images && viewingProduct.images.length > 0 && (
+                                        <div className="flex items-center gap-1.5 mt-2.5 overflow-x-auto max-w-[200px] pb-1">
+                                            {viewingProduct.images.slice(0, 4).map((img, i) => (
+                                                <img key={i} src={img} alt="" className="w-10 h-10 object-cover rounded-lg border border-slate-200" />
+                                            ))}
+                                            {viewingProduct.images.length > 4 && (
+                                                <span className="text-[10px] text-slate-500 font-bold px-1.5 py-1 bg-slate-200 rounded">
+                                                    +{viewingProduct.images.length - 4}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="md:col-span-8 flex flex-col justify-between space-y-3">
+                                    <div>
+                                        <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                                            <span className="px-2.5 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300 text-[10px] font-extrabold uppercase">
+                                                {viewingProduct.category || "Uncategorized"}
+                                            </span>
+                                            <span className="px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold">
+                                                {viewingProduct.department || "Clothing"}
+                                            </span>
+                                            <span className="px-2 py-0.5 rounded bg-white text-slate-600 border border-slate-200 text-[10px] font-medium">
+                                                {viewingProduct.brand || "Nari Pehnawa"}
+                                            </span>
+                                            {viewingProduct.deal_text && (
+                                                <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300 text-[10px] font-bold">
+                                                    ⚡ {viewingProduct.deal_text}
+                                                </span>
+                                            )}
+                                            {viewingProduct.offer_code && !viewingProduct.deal_text && (
+                                                <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 text-[10px] font-bold">
+                                                    🏷️ {viewingProduct.offer_code}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <h2 className="text-lg font-extrabold text-slate-900 leading-snug">{viewingProduct.title}</h2>
+                                    </div>
+
+                                    {/* Pricing & Stock Banner */}
+                                    <div className="bg-white p-3.5 rounded-xl border border-slate-200 flex items-center justify-between flex-wrap gap-3">
+                                        <div>
+                                            <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Selling Price</span>
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-xl font-extrabold text-slate-900 font-mono">
+                                                    ₹{Number(viewingProduct.price || 0).toLocaleString()}
+                                                </span>
+                                                {viewingProduct.original_price && Number(viewingProduct.original_price) > Number(viewingProduct.price) && (
+                                                    <span className="text-xs text-slate-400 line-through font-mono">
+                                                        ₹{Number(viewingProduct.original_price).toLocaleString()}
+                                                    </span>
+                                                )}
+                                                {viewingProduct.discount_percentage ? (
+                                                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                                        {viewingProduct.discount_percentage}% OFF
+                                                    </span>
+                                                ) : null}
+                                            </div>
+                                        </div>
+
+                                        <div className="text-right">
+                                            <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Inventory Status</span>
+                                            <div className="flex items-center gap-1.5 justify-end">
+                                                <span className="text-base font-extrabold font-mono text-cyan-700">
+                                                    {viewingProduct.stock ?? 0} units
+                                                </span>
+                                                {getStockBadge(viewingProduct.stock)}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Shipping & Return Details */}
+                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                        <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                                            <span className="text-slate-400 text-[10px] block font-bold uppercase">Delivery</span>
+                                            <span className="font-bold text-slate-800">
+                                                {Number(viewingProduct.delivery_charge || 0) > 0 ? `₹${viewingProduct.delivery_charge}` : "Free Delivery"}
+                                            </span>
+                                        </div>
+                                        <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                                            <span className="text-slate-400 text-[10px] block font-bold uppercase">Return Policy</span>
+                                            <span className="font-bold text-slate-800">
+                                                {viewingProduct.return_policy_badge || (viewingProduct.is_returnable ? "Returnable (15-Day)" : "Non-Returnable")}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── Size-Wise Inventory Matrix Breakdown ── */}
+                            <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3 shadow-2xs">
+                                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                                    <div className="flex items-center gap-2">
+                                        <Package className="w-4 h-4 text-cyan-600" />
+                                        <h4 className="font-extrabold text-sm text-slate-900 uppercase tracking-wide">
+                                            Size-Wise Inventory Allocation
+                                        </h4>
+                                    </div>
+                                    <span className="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                                        Total: {viewingProduct.stock || 0} Units
+                                    </span>
+                                </div>
+
+                                {viewingProduct.size_stock && Object.keys(viewingProduct.size_stock).length > 0 ? (
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
+                                        {Object.entries(viewingProduct.size_stock).map(([sz, qty]) => {
+                                            const count = Number(qty || 0);
+                                            return (
+                                                <div
+                                                    key={sz}
+                                                    className={`p-3 rounded-xl border text-center transition ${count > 0 ? "bg-slate-50 border-slate-200" : "bg-rose-50/50 border-rose-200"}`}
+                                                >
+                                                    <span className="text-xs font-mono font-extrabold text-slate-800 block mb-1">
+                                                        Size: {sz}
+                                                    </span>
+                                                    <div className="text-base font-extrabold font-mono text-slate-900">
+                                                        {count} <span className="text-[10px] text-slate-500 font-sans font-normal">units</span>
+                                                    </div>
+                                                    <span className={`text-[10px] font-bold mt-1 inline-block ${count > 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                                                        {count > 0 ? "In Stock" : "Out of Stock"}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                                        <p className="text-xs text-slate-600">Standard / Free Size Product: <span className="font-bold text-slate-900 font-mono">{viewingProduct.stock || 0} units</span> available.</p>
                                     </div>
                                 )}
                             </div>
 
-                            <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 my-1">
-                                <img
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('https://naripehnawa.com/product/' + sharingProduct.id)}`}
-                                    alt="QR Code"
-                                    className="w-40 h-40 object-contain"
-                                />
+                            {/* ── Specifications Matrix ── */}
+                            <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3 shadow-2xs">
+                                <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
+                                    <Tag className="w-4 h-4 text-cyan-600" />
+                                    <h4 className="font-extrabold text-sm text-slate-900 uppercase tracking-wide">
+                                        Specifications Matrix
+                                    </h4>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                        <span className="text-slate-400 text-[10px] block font-bold uppercase">Fabric</span>
+                                        <span className="font-bold text-slate-800">{viewingProduct.fabric || "—"}</span>
+                                    </div>
+                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                        <span className="text-slate-400 text-[10px] block font-bold uppercase">Pattern / Work</span>
+                                        <span className="font-bold text-slate-800">{viewingProduct.pattern || "—"}</span>
+                                    </div>
+                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                        <span className="text-slate-400 text-[10px] block font-bold uppercase">Sleeve Style</span>
+                                        <span className="font-bold text-slate-800">{viewingProduct.sleeve_style || "—"}</span>
+                                    </div>
+                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                        <span className="text-slate-400 text-[10px] block font-bold uppercase">Fit Type</span>
+                                        <span className="font-bold text-slate-800">{viewingProduct.fit_type || "—"}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <p className="text-[10px] text-slate-500 text-center">Scan with mobile camera to open product page directly</p>
+
+                            {/* Description */}
+                            {viewingProduct.description && (
+                                <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-2 shadow-2xs">
+                                    <h4 className="font-extrabold text-sm text-slate-900 uppercase tracking-wide">Description & Details</h4>
+                                    <p className="text-xs text-slate-600 whitespace-pre-line leading-relaxed bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                                        {viewingProduct.description}
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
+                        {/* Modal Footer Actions */}
+                        <div className="sticky bottom-0 bg-white/95 backdrop-blur-md px-6 py-3.5 border-t border-slate-200 flex items-center justify-between flex-wrap gap-2.5">
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => {
+                                        const p = viewingProduct;
+                                        setViewingProduct(null);
+                                        setSharingProduct(p);
+                                    }}
+                                    className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                                >
+                                    <Share2 className="w-3.5 h-3.5" /> Share & QR
+                                </button>
+                                <button
+                                    onClick={() => window.open(`/product/${viewingProduct.id || viewingProduct._id}`, "_blank")}
+                                    className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                                >
+                                    <ExternalLink className="w-3.5 h-3.5" /> Live Store View
+                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => {
+                                        const p = viewingProduct;
+                                        setViewingProduct(null);
+                                        handleEdit(p);
+                                    }}
+                                    className="px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer shadow-md"
+                                >
+                                    <Edit2 className="w-3.5 h-3.5 text-black" /> Edit Listing
+                                </button>
+                                <button
+                                    onClick={() => setViewingProduct(null)}
+                                    className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl text-xs transition cursor-pointer"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── REDESIGNED SHARE PRODUCT & QR CODE MODAL ── */}
+            {sharingProduct && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto">
+                    <div className="bg-white border border-slate-200 text-slate-900 rounded-3xl w-full max-w-lg p-5 sm:p-6 relative shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+                        <button
+                            onClick={() => { setSharingProduct(null); setCopiedLink(false); setEmailStatusMsg(""); }}
+                            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-black rounded-full bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+
+                        <div className="flex items-center gap-3 border-b border-slate-200 pb-3.5">
+                            <div className="w-10 h-10 rounded-2xl bg-cyan-100 border border-cyan-300 flex items-center justify-center text-cyan-700 shadow-2xs">
+                                <QrCode className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="font-extrabold text-slate-900 text-base">Share & Print QR Hub</h3>
+                                <p className="text-xs text-slate-500">Instant QR scan, WhatsApp share & sticker label printing</p>
+                            </div>
+                        </div>
+
+                        {/* Product Summary Card */}
+                        <div className="flex items-center gap-3.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                            <div className="w-14 h-14 bg-white rounded-xl overflow-hidden border border-slate-300 shadow-2xs flex-shrink-0">
+                                <img src={sharingProduct.image} alt={sharingProduct.title} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="font-bold text-slate-900 text-sm truncate">{sharingProduct.title}</div>
+                                <div className="text-xs text-cyan-700 font-mono font-bold mt-0.5">
+                                    ₹{Number(sharingProduct.price || 0).toLocaleString()} <span className="text-slate-400 font-normal">| SKU:</span> {sharingProduct.sku || "N/A"}
+                                </div>
+                                <div className="text-[10px] text-slate-500 mt-0.5">
+                                    {sharingProduct.category || "Ethnic"} • {sharingProduct.stock || 0} units total
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* QR Code Container */}
+                        <div className="flex flex-col items-center bg-slate-50 p-4 rounded-2xl border border-slate-200 gap-2.5">
+                            <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
+                                <img
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent('https://naripehnawa.com/product/' + (sharingProduct.id || sharingProduct._id))}`}
+                                    alt="QR Code"
+                                    className="w-36 h-36 object-contain"
+                                />
+                            </div>
+                            <p className="text-[11px] text-slate-500 text-center font-medium">
+                                Point mobile camera at QR code to open live product listing directly
+                            </p>
+                        </div>
+
+                        {/* Direct Link & Copy */}
                         <div className="space-y-3">
                             <div className="flex items-center gap-2">
                                 <input
                                     type="text"
                                     readOnly
-                                    value={`https://naripehnawa.com/product/${sharingProduct.id}`}
-                                    className="w-full text-xs bg-slate-50 border border-slate-300 text-slate-800 rounded-xl px-3 py-2.5 font-mono focus:outline-none"
+                                    value={`https://naripehnawa.com/product/${sharingProduct.id || sharingProduct._id}`}
+                                    className="w-full text-xs bg-slate-50 border border-slate-300 text-slate-800 rounded-xl px-3 py-2.5 font-mono focus:outline-none select-all"
                                 />
                                 <button
                                     onClick={() => {
-                                        navigator.clipboard.writeText(`https://naripehnawa.com/product/${sharingProduct.id}`);
+                                        navigator.clipboard.writeText(`https://naripehnawa.com/product/${sharingProduct.id || sharingProduct._id}`);
                                         setCopiedLink(true);
                                         setTimeout(() => setCopiedLink(false), 2000);
                                     }}
-                                    className="px-3.5 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 flex-shrink-0 shadow-md cursor-pointer"
+                                    className="px-4 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 flex-shrink-0 shadow-sm cursor-pointer active:scale-95"
                                 >
                                     {copiedLink ? <Check className="w-4 h-4 text-emerald-800" /> : <Copy className="w-4 h-4 text-black" />}
-                                    {copiedLink ? "Copied!" : "Copy"}
+                                    {copiedLink ? "Copied!" : "Copy URL"}
                                 </button>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2 pt-1">
+                            {/* Share Action Buttons */}
+                            <div className="grid grid-cols-2 gap-2.5 pt-1">
                                 <a
-                                    href={`https://wa.me/?text=${encodeURIComponent(`Check out ${sharingProduct.title}: https://naripehnawa.com/product/${sharingProduct.id}`)}`}
+                                    href={`https://wa.me/?text=${encodeURIComponent(`Check out ${sharingProduct.title} on Nari Pehnawa: https://naripehnawa.com/product/${sharingProduct.id || sharingProduct._id}`)}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-md text-center"
+                                    className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm text-center"
                                 >
-                                    <Share2 className="w-4 h-4" /> Share WhatsApp
+                                    <Share2 className="w-4 h-4" /> WhatsApp
                                 </a>
 
                                 <button
                                     onClick={() => handlePrintSingleQRLabel(sharingProduct)}
-                                    className="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-md text-center cursor-pointer"
+                                    className="py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm text-center cursor-pointer"
                                 >
-                                    <Printer className="w-4 h-4 text-cyan-300" /> Print Label
+                                    <Printer className="w-4 h-4 text-cyan-300" /> Print Sticker Label
                                 </button>
                             </div>
 
                             {/* Email Recommendation Section */}
                             <div className="border-t border-slate-200 pt-3 space-y-2">
-                                <label className="block text-[11px] font-bold text-slate-800">Email Product to Customer</label>
+                                <label className="block text-[11px] font-bold text-slate-800">Direct Email to Customer</label>
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="email"
@@ -2626,7 +3339,7 @@ const Products = () => {
                                             setEmailStatusMsg("");
                                             try {
                                                 const token = localStorage.getItem("token") || localStorage.getItem("admin_token");
-                                                const res = await fetch(`${API_BASE_URL}/products/${sharingProduct.id}/share-email`, {
+                                                const res = await fetch(`${API_BASE_URL}/products/${sharingProduct.id || sharingProduct._id}/share-email`, {
                                                     method: "POST",
                                                     headers: {
                                                         "Content-Type": "application/json",
@@ -2636,7 +3349,7 @@ const Products = () => {
                                                 });
                                                 const data = await res.json();
                                                 if (res.ok) {
-                                                    setEmailStatusMsg("✅ Email sent successfully!");
+                                                    setEmailStatusMsg("✅ Email sent successfully to customer!");
                                                     setShareEmail("");
                                                 } else {
                                                     setEmailStatusMsg(`❌ ${data.detail || "Failed to send email"}`);
@@ -2647,10 +3360,10 @@ const Products = () => {
                                                 setSendingEmail(false);
                                             }
                                         }}
-                                        className="px-3 py-2 bg-cyan-400 hover:bg-cyan-300 disabled:opacity-50 text-black rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 flex-shrink-0 shadow-md cursor-pointer"
+                                        className="px-3.5 py-2 bg-cyan-400 hover:bg-cyan-300 disabled:opacity-50 text-black rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 flex-shrink-0 shadow-sm cursor-pointer"
                                     >
                                         <Mail className="w-4 h-4 text-black" />
-                                        {sendingEmail ? "Sending..." : "Send Email"}
+                                        {sendingEmail ? "Sending..." : "Send"}
                                     </button>
                                 </div>
                                 {emailStatusMsg && (

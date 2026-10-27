@@ -744,7 +744,7 @@ const AdminCampaignShowcase = () => {
                   <button
                     type="button"
                     onClick={() => setCampaign({ ...campaign, left_image: "" })}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-xl text-xs font-bold"
+                    className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold transition cursor-pointer"
                     title="Remove image"
                   >
                     <X className="w-4 h-4" />
@@ -783,7 +783,7 @@ const AdminCampaignShowcase = () => {
                   <button
                     type="button"
                     onClick={() => setCampaign({ ...campaign, full_banner_image: "" })}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-xl text-xs font-bold"
+                    className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold transition cursor-pointer"
                     title="Remove full banner"
                   >
                     <X className="w-4 h-4" />

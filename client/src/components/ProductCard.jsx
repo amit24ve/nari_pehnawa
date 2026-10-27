@@ -24,6 +24,26 @@ const ProductCard = ({
     const [showShareModal, setShowShareModal] = useState(false);
     const navigate = useNavigate();
 
+    // Collect all product images for smooth slideshow
+    const rawImages = [
+        product.image,
+        ...(Array.isArray(product.images) ? product.images : [])
+    ].filter(Boolean);
+    const allImages = Array.from(new Set(rawImages));
+    const [currentImgIndex, setCurrentImgIndex] = useState(0);
+
+    // Auto-slide through images when card is hovered/touched
+    useEffect(() => {
+        if (!isHovered || allImages.length <= 1) {
+            setCurrentImgIndex(0);
+            return;
+        }
+        const timer = setInterval(() => {
+            setCurrentImgIndex(prev => (prev + 1) % allImages.length);
+        }, 1500);
+        return () => clearInterval(timer);
+    }, [isHovered, allImages.length]);
+
     useEffect(() => setHearted(isWishlisted), [isWishlisted]);
 
     const discount = product.discount;
@@ -68,7 +88,7 @@ const ProductCard = ({
             } group-hover:rounded-2xl group-active:rounded-2xl shadow-md border-2 group-hover:border-[#8B0000] group-active:border-[#8B0000] transition-all duration-500 ease-in-out`}>
                 {/* Sale / Deal Badge - Always 100% visible on top left */}
                 {product.deal_text ? (
-                    <span className="absolute top-3 left-3 z-30 bg-gradient-to-r from-[#8B0000] via-rose-700 to-amber-600 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md border border-white/30 flex items-center gap-1">
+                    <span className="absolute top-3 left-3 z-30 bg-gradient-to-r from-[#8B0000] via-rose-700 to-amber-600 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-lg border border-white/30 flex items-center gap-1 animate-pulse">
                         <Flame className="w-3 h-3 fill-white text-white" />
                         {product.deal_text}
                     </span>
@@ -111,18 +131,32 @@ const ProductCard = ({
                     />
                 </button>
 
-                {/* Product Photo */}
+                {/* Product Photo with Smooth Image Slider */}
                 <img
-                    src={resolveImageUrl(product.image, DEFAULT_FALLBACK_IMAGE)}
+                    src={resolveImageUrl(allImages[currentImgIndex] || product.image, DEFAULT_FALLBACK_IMAGE)}
                     alt={product.name}
                     onError={(e) => {
                         e.target.onerror = null;
                         e.target.src = DEFAULT_FALLBACK_IMAGE;
                     }}
-                    className={`w-full h-[270px] sm:h-[290px] object-cover transition-transform duration-700 group-hover:scale-105 ${
+                    className={`w-full h-[270px] sm:h-[290px] object-cover transition-all duration-700 group-hover:scale-105 ${
                         isHovered ? "scale-105" : ""
                     }`}
                 />
+
+                {/* Multiple Image Slide Indicators */}
+                {allImages.length > 1 && isHovered && (
+                    <div className="absolute bottom-2.5 left-0 right-0 z-20 flex items-center justify-center gap-1 pointer-events-none">
+                        {allImages.map((_, i) => (
+                            <span
+                                key={i}
+                                className={`h-1 rounded-full transition-all duration-300 ${
+                                    i === currentImgIndex ? "w-4 bg-white shadow-md" : "w-1.5 bg-white/50"
+                                }`}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Product Details - Always 100% Front & Visible */}

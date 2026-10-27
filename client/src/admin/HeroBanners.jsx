@@ -910,7 +910,7 @@ const HeroBanners = () => {
                       </button>
                       <button
                         onClick={() => handleDeleteSlide(slide.id)}
-                        className="p-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg text-rose-600"
+                        className="p-2 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer shadow-2xs"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -1049,7 +1049,7 @@ const HeroBanners = () => {
                       </button>
                       <button
                         onClick={() => handleDeleteReel(reelId)}
-                        className="p-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg text-rose-600"
+                        className="p-1.5 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer shadow-2xs"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -1118,7 +1118,7 @@ const HeroBanners = () => {
                       </button>
                       <button
                         onClick={() => handleDeleteCeleb(lookId)}
-                        className="p-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg text-rose-600"
+                        className="p-1.5 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer shadow-2xs"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

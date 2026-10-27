@@ -413,15 +413,15 @@ const Users = () => {
 
             {/* Error State */}
             {error && !loading && (
-                <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3 w-full">
-                    <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                <div className="bg-slate-100 border border-slate-300 rounded-2xl p-4 flex items-center gap-3 w-full text-slate-800">
+                    <AlertCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                        <p className="text-red-800 font-semibold text-sm">Error loading users</p>
-                        <p className="text-red-600 text-xs mt-0.5 break-words">{error}</p>
+                        <p className="text-slate-900 font-semibold text-sm">Error loading users</p>
+                        <p className="text-slate-600 text-xs mt-0.5 break-words">{error}</p>
                     </div>
                     <button
                         onClick={fetchUsers}
-                        className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition text-xs font-bold shadow-sm flex-shrink-0"
+                        className="px-4 py-2 bg-slate-800 text-white rounded-xl hover:bg-slate-900 transition text-xs font-bold shadow-sm flex-shrink-0 cursor-pointer"
                     >
                         Retry
                     </button>
@@ -485,7 +485,6 @@ const Users = () => {
                                 <User className="w-5 h-5" />
                             </div>
                         </div>
-
                         {/* Stat 4: Active Users */}
                         <div className="bg-white border border-slate-100 hover:shadow-md hover:border-[#0891b2]/30 transition-all duration-300 rounded-2xl p-5 shadow-sm relative overflow-hidden flex items-center justify-between group">
                             <div className="relative z-10">
@@ -623,10 +622,10 @@ const Users = () => {
                                 </thead>
                                 <tbody className="bg-white divide-y divide-slate-100">
                                     {paginatedUsers.map((user, idx) => (
-                                        <tr key={idx} className="hover:bg-cyan-50/30 transition-colors">
+                                        <tr key={idx} className="hover:bg-slate-50 transition-colors">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-cyan-100 text-[#0891b2] font-bold text-sm flex items-center justify-center flex-shrink-0">
+                                                    <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-800 font-bold text-sm flex items-center justify-center flex-shrink-0">
                                                         {user.avatar ? (
                                                             <img src={user.avatar} alt="Avatar" className="w-full h-full rounded-full object-cover" />
                                                         ) : (
@@ -677,21 +676,21 @@ const Users = () => {
                                                 <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={() => handleViewUser(user.id)}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-cyan-50 text-[#0891b2] border border-cyan-200 rounded-xl hover:bg-[#0891b2] hover:text-white transition text-xs font-bold shadow-sm"
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-300 rounded-xl transition text-xs font-bold shadow-xs cursor-pointer"
                                                     >
                                                         <Eye className="w-3.5 h-3.5" />
                                                         View
                                                     </button>
                                                     <button
                                                         onClick={() => handleOpenAdjustCoins(user)}
-                                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl hover:bg-amber-100 transition text-xs font-bold"
+                                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl hover:bg-amber-100 transition text-xs font-bold cursor-pointer"
                                                         title="Adjust Coins"
                                                     >
                                                         🪙 Coins
                                                     </button>
                                                     <button
                                                         onClick={() => handleEdit(user)}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-200 transition text-xs font-bold"
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-200 transition text-xs font-bold cursor-pointer"
                                                     >
                                                         <Edit className="w-3.5 h-3.5" />
                                                         Edit
@@ -699,7 +698,7 @@ const Users = () => {
                                                     {user.role !== "admin" && !user.is_admin && user.email !== "admin@naripehnawa.com" && (
                                                         <button
                                                             onClick={() => handleDelete(user.id)}
-                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-xl hover:bg-red-600 hover:text-white transition text-xs font-bold"
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 rounded-xl transition text-xs font-bold cursor-pointer shadow-xs"
                                                         >
                                                             <Trash2 className="w-3.5 h-3.5" />
                                                             Delete
@@ -723,7 +722,7 @@ const Users = () => {
                             >
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-cyan-100 text-[#0891b2] font-bold text-sm flex items-center justify-center">
+                                        <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-800 font-bold text-sm flex items-center justify-center">
                                             {(user.full_name || user.name || "U").charAt(0).toUpperCase()}
                                         </div>
                                         <div>
@@ -755,14 +754,14 @@ const Users = () => {
                                 <div className="flex flex-wrap gap-2 pt-1">
                                     <button
                                         onClick={() => handleViewUser(user.id)}
-                                        className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 px-3 py-2 bg-cyan-50 text-[#0891b2] border border-cyan-200 rounded-xl hover:bg-[#0891b2] hover:text-white transition text-xs font-bold shadow-sm"
+                                        className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-xl transition text-xs font-bold shadow-xs cursor-pointer"
                                     >
                                         <Eye className="w-4 h-4" />
                                         View
                                     </button>
                                     <button
                                         onClick={() => handleEdit(user)}
-                                        className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-200 transition text-xs font-bold"
+                                        className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-200 transition text-xs font-bold cursor-pointer"
                                     >
                                         <Edit className="w-4 h-4" />
                                         Edit
@@ -770,7 +769,7 @@ const Users = () => {
                                     {user.role !== "admin" && !user.is_admin && user.email !== "admin@naripehnawa.com" && (
                                         <button
                                             onClick={() => handleDelete(user.id)}
-                                            className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-xl hover:bg-red-600 hover:text-white transition text-xs font-bold"
+                                            className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 rounded-xl transition text-xs font-bold cursor-pointer shadow-xs"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                             Delete
@@ -826,14 +825,14 @@ const Users = () => {
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full mx-auto shadow-2xl overflow-hidden animate-fadeIn">
                         {/* Modal Header */}
-                        <div className="bg-gradient-to-r from-[#0891b2] to-[#06b6d4] px-6 py-4 text-white flex justify-between items-center shadow-sm">
+                        <div className="bg-white border-b border-slate-200 px-6 py-4 text-slate-900 flex justify-between items-center">
                             <div>
-                                <h3 className="text-base sm:text-lg font-bold">Edit User Profile</h3>
-                                <p className="text-xs text-cyan-100 mt-0.5">Update user name, role permissions, account status, and password</p>
+                                <h3 className="text-base sm:text-lg font-bold text-slate-900">Edit User Profile</h3>
+                                <p className="text-xs text-slate-500 mt-0.5">Update user name, role permissions, account status, and password</p>
                             </div>
                             <button
                                 onClick={() => setShowEditModal(false)}
-                                className="text-white/80 hover:text-white transition p-2 hover:bg-white/10 rounded-xl cursor-pointer"
+                                className="text-slate-400 hover:text-slate-700 transition p-2 hover:bg-slate-100 rounded-xl cursor-pointer"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -842,10 +841,10 @@ const Users = () => {
                         {/* Form */}
                         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
                             {/* Security Notice for Locked Phone & Email */}
-                            <div className="bg-cyan-50 border border-cyan-200 rounded-2xl p-3.5 flex items-start gap-3 text-xs text-cyan-950">
-                                <Shield className="w-4 h-4 text-[#0891b2] flex-shrink-0 mt-0.5" />
+                            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 flex items-start gap-3 text-xs text-slate-700">
+                                <Shield className="w-4 h-4 text-slate-600 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <span className="font-bold text-[#0891b2]">Security Policy:</span> Phone number &amp; Email address are permanent unique sign-in credentials and cannot be modified. Full Name, User Role, Status, and Password can be updated.
+                                    <span className="font-bold text-slate-900">Security Policy:</span> Phone number &amp; Email address are permanent unique sign-in credentials and cannot be modified. Full Name, User Role, Status, and Password can be updated.
                                 </div>
                             </div>
 
@@ -1006,10 +1005,10 @@ const Users = () => {
             {showViewModal && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
                     <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-2xl animate-fadeIn min-w-0">
-                        {/* Modal Header (Cyan Gradient) */}
-                        <div className="bg-gradient-to-r from-[#0891b2] to-[#06b6d4] text-white p-4 sm:p-6 flex justify-between items-center shadow-md flex-shrink-0">
+                        {/* Modal Header */}
+                        <div className="bg-white border-b border-slate-200 text-slate-900 p-4 sm:p-6 flex justify-between items-center flex-shrink-0">
                             <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-                                <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-white/20 text-white font-black text-lg sm:text-xl flex items-center justify-center border border-white/30 backdrop-blur-sm shadow-inner flex-shrink-0">
+                                <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-slate-100 text-slate-800 font-black text-lg sm:text-xl flex items-center justify-center border border-slate-200 flex-shrink-0">
                                     {viewDetails?.user?.avatar ? (
                                         <img src={viewDetails.user.avatar} alt="Avatar" className="w-full h-full rounded-2xl object-cover" />
                                     ) : (
@@ -1018,21 +1017,21 @@ const Users = () => {
                                 </div>
                                 <div className="min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        <h3 className="text-base sm:text-xl font-bold text-white tracking-tight truncate">
+                                        <h3 className="text-base sm:text-xl font-bold text-slate-900 tracking-tight truncate">
                                             {viewDetails?.user?.name || "Customer Details"}
                                         </h3>
                                         {viewDetails?.user && (
-                                            <span className="px-2 py-0.5 bg-white/20 text-white border border-white/30 rounded-full text-[10px] sm:text-xs font-bold backdrop-blur-sm">
+                                            <span className="px-2 py-0.5 bg-slate-100 text-slate-700 border border-slate-200 rounded-full text-[10px] sm:text-xs font-bold">
                                                 {viewDetails.user.role?.toUpperCase()}
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-xs text-cyan-100 mt-0.5 sm:mt-1 flex items-center gap-2 flex-wrap">
+                                    <p className="text-xs text-slate-500 mt-0.5 sm:mt-1 flex items-center gap-2 flex-wrap">
                                         <span className="truncate">{viewDetails?.user?.email}</span>
                                         {viewDetails?.user?.phone && (
                                             <>
                                                 <span>•</span>
-                                                <span className="font-semibold text-white">{viewDetails.user.phone}</span>
+                                                <span className="font-semibold text-slate-700">{viewDetails.user.phone}</span>
                                             </>
                                         )}
                                     </p>
@@ -1043,7 +1042,7 @@ const Users = () => {
                                     setShowViewModal(false);
                                     setViewDetails(null);
                                 }}
-                                className="text-white/80 hover:text-white transition p-2 hover:bg-white/10 rounded-xl flex-shrink-0"
+                                className="text-slate-400 hover:text-slate-700 transition p-2 hover:bg-slate-100 rounded-xl flex-shrink-0 cursor-pointer"
                             >
                                 <X className="w-5 h-5" />
                             </button>

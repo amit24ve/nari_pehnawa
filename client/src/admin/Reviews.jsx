@@ -427,7 +427,7 @@ const Reviews = () => {
                   )}
                   <button
                     onClick={() => handleDelete(r._id)}
-                    className="p-2 bg-slate-100 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl border border-slate-200 transition"
+                    className="p-2 bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl border border-slate-300 transition cursor-pointer shadow-2xs"
                     title="Remove Review"
                   >
                     <Trash2 className="w-4 h-4" />

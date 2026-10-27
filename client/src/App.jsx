@@ -48,7 +48,6 @@ import AdminAnnouncementsModal from "./admin/AdminAnnouncementsModal";
 import Collaborations from "./admin/Collaborations";
 import CreatorDashboard from "./components/CreatorDashboard";
 import RequireAuth from "./admin/RequireAuth";
-import SellerDashboard from "./components/SellerDashboard";
 import { AuthProvider } from "./context/AuthProvider";
 import { WishlistProvider } from "./context/WishlistProvider";
 import { CartProvider } from "./context/CartProvider";
@@ -289,16 +288,7 @@ function App() {
                                         path="collaborations"
                                         element={<Collaborations />}
                                     />
-                                    <Route
-                                        path="sellers"
-                                        element={<SellerDashboard />}
-                                    />
                                 </Route>
-
-                                {/* Seller Portal / Hub - Standalone */}
-                                <Route path="/seller" element={<SellerDashboard />} />
-                                <Route path="/seller/dashboard" element={<SellerDashboard />} />
-                                <Route path="/seller-portal" element={<SellerDashboard />} />
 
                                 {/* Google Sign-In redirect landing page - No Navbar/Footer */}
                                 <Route

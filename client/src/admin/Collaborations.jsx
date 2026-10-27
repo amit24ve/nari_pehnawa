@@ -852,7 +852,7 @@ const Collaborations = () => {
                           <button
                             onClick={() => handleDeleteCreator(c.id, c.name)}
                             title="Delete Collaboration"
-                            className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 transition"
+                            className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -1327,7 +1327,7 @@ const Collaborations = () => {
                       </button>
                       <button
                         onClick={() => handleDeleteCreator(detailData.creator?.id, detailData.creator?.name)}
-                        className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-600 hover:bg-rose-100 transition flex items-center gap-1.5 border border-rose-200 shadow-sm"
+                        className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-700 hover:bg-slate-100 transition flex items-center gap-1.5 border border-slate-300 shadow-2xs cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" /> Delete
                       </button>

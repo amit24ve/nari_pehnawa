@@ -895,6 +895,14 @@ def get_all_payments(
     """List all payment records (Admin only)."""
     db = get_database()
     try:
+        from datetime import timedelta
+        # Auto-expire created/initiated payments older than 30 minutes
+        cutoff = datetime.now() - timedelta(minutes=30)
+        db["payments"].update_many(
+            {"status": "created", "created_at": {"$lt": cutoff}},
+            {"$set": {"status": "failed", "failure_reason": "Payment Incomplete / Abandoned", "updated_at": datetime.now()}}
+        )
+
         query: dict = {}
         if status and status != "all":
             query["status"] = status
@@ -931,12 +939,19 @@ def get_payment_stats(current_user: dict = Depends(require_admin)):
     """Payment statistics for admin dashboard (Admin only)."""
     db = get_database()
     try:
+        from datetime import timedelta
+        cutoff = datetime.now() - timedelta(minutes=30)
+        db["payments"].update_many(
+            {"status": "created", "created_at": {"$lt": cutoff}},
+            {"$set": {"status": "failed", "failure_reason": "Payment Incomplete / Abandoned", "updated_at": datetime.now()}}
+        )
+
         payments = list(db["payments"].find())
 
         captured = [p for p in payments if p.get("status") == "captured"]
         cod_pending = [p for p in payments if p.get("status") == "cod_pending"]
         cod_done = [p for p in payments if p.get("status") == "cod_completed"]
-        failed = [p for p in payments if p.get("status") == "failed"]
+        failed = [p for p in payments if p.get("status") in ("failed", "created")]
 
         online_rev = sum(p.get("amount", 0) for p in captured)
         cod_rev = sum(p.get("amount", 0) for p in cod_pending + cod_done)

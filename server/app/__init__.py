@@ -40,7 +40,6 @@ from app.routes.feed import router as feed_router
 from app.routes.announcements import router as announcements_router
 from app.routes.collaboration import router as collaboration_router
 from app.routes.seo import router as seo_router
-from app.routes.seller import router as seller_router
 
 app = FastAPI(
     title="Nari Pehnawa API",
@@ -150,7 +149,6 @@ app.include_router(feed_router)
 app.include_router(announcements_router)
 app.include_router(collaboration_router)
 app.include_router(seo_router)
-app.include_router(seller_router)
 
 # Serve uploaded images as static files
 Path("uploads").mkdir(exist_ok=True)

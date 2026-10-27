@@ -329,7 +329,7 @@ const Inquiries = () => {
 
                       <button
                         onClick={() => handleDelete(item.id)}
-                        className="p-1 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition cursor-pointer"
                         title="Delete Inquiry"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

@@ -1207,10 +1207,10 @@ const Orders = () => {
 
       {/* Error state */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-          <p className="text-red-700 text-xs">{error}</p>
-          <button onClick={fetchOrders} className="ml-auto px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold">Retry</button>
+        <div className="bg-slate-100 border border-slate-300 rounded-2xl p-4 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+          <p className="text-slate-800 text-xs font-semibold">{error}</p>
+          <button onClick={fetchOrders} className="ml-auto px-3.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold cursor-pointer">Retry</button>
         </div>
       )}
 

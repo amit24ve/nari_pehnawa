@@ -28,7 +28,7 @@ const PaymentHistory = () => {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const itemsPerPage = 10;
 
   const getToken = () =>
     localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
@@ -81,25 +81,44 @@ const PaymentHistory = () => {
     fetchData();
   }, []);
 
-  const statusConfig = {
-    captured: { label: "Paid Online", color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: CheckCircle },
-    cod_pending: { label: "COD Pending", color: "bg-amber-50 text-amber-700 border-amber-200", icon: Clock },
-    cod_completed: { label: "COD Collected", color: "bg-blue-50 text-blue-700 border-blue-200", icon: CheckCircle },
-    failed: { label: "Failed", color: "bg-rose-50 text-rose-700 border-rose-200", icon: XCircle },
-    created: { label: "Initiated", color: "bg-slate-50 text-slate-600 border-slate-200", icon: Clock },
-    refunded: { label: "Refunded", color: "bg-purple-50 text-purple-700 border-purple-200", icon: RefreshCw },
-  };
-
-  const getStatusBadge = (status) => {
-    const cfg = statusConfig[status] || statusConfig.created;
-    const Icon = cfg.icon;
+  const getStatusBadge = (status, failureReason) => {
+    if (status === "captured") {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+          <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+          Paid Online
+        </span>
+      );
+    }
+    if (status === "cod_completed") {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200">
+          <CheckCircle className="w-3.5 h-3.5 text-blue-600" />
+          COD Collected
+        </span>
+      );
+    }
+    if (status === "cod_pending") {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+          <Clock className="w-3.5 h-3.5 text-amber-600" />
+          COD Pending
+        </span>
+      );
+    }
+    // Failed or incomplete / uncaptured
     return (
-      <span
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${cfg.color}`}
-      >
-        <Icon className="w-3 h-3" />
-        {cfg.label}
-      </span>
+      <div className="flex flex-col">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300 w-fit">
+          <XCircle className="w-3.5 h-3.5 text-slate-500" />
+          Payment Failed
+        </span>
+        {failureReason && (
+          <span className="text-[10px] text-slate-500 mt-0.5">
+            {failureReason}
+          </span>
+        )}
+      </div>
     );
   };
 
@@ -124,7 +143,15 @@ const PaymentHistory = () => {
       (p.customer_email || "").toLowerCase().includes(sl) ||
       (p.razorpay_payment_id || "").toLowerCase().includes(sl) ||
       (p.razorpay_order_id || "").toLowerCase().includes(sl);
-    const matchStatus = statusFilter === "all" || p.status === statusFilter;
+
+    let matchStatus = true;
+    if (statusFilter === "captured") {
+      matchStatus = p.status === "captured";
+    } else if (statusFilter === "cod") {
+      matchStatus = p.status === "cod_pending" || p.status === "cod_completed" || p.payment_method === "COD";
+    } else if (statusFilter === "failed") {
+      matchStatus = p.status === "failed" || p.status === "created";
+    }
     return matchSearch && matchStatus;
   });
 
@@ -141,28 +168,28 @@ const PaymentHistory = () => {
   const statCards = stats
     ? [
       {
-        label: "Total Revenue",
+        label: "Total Verified Revenue",
         value: formatCurrency(stats.total_revenue),
         icon: TrendingUp,
-        color: "from-yellow-950/30 to-yellow-900/30 border-yellow-800/40",
+        iconColor: "text-emerald-600 bg-emerald-50",
       },
       {
         label: "Online Paid Transactions",
         value: stats.captured || 0,
         icon: CreditCard,
-        color: "from-green-950/30 to-green-900/30 border-green-800/40",
+        iconColor: "text-[#0891b2] bg-cyan-50",
       },
       {
         label: "COD Pending Cases",
         value: stats.cod_pending || 0,
         icon: Wallet,
-        color: "from-blue-950/30 to-blue-900/30 border-blue-800/40",
+        iconColor: "text-amber-600 bg-amber-50",
       },
       {
-        label: "Failed Transactions",
+        label: "Failed / Incomplete Attempts",
         value: stats.failed || 0,
         icon: XCircle,
-        color: "from-red-950/30 to-red-900/30 border-red-800/40",
+        iconColor: "text-slate-600 bg-slate-100",
       },
     ]
     : [];
@@ -171,72 +198,68 @@ const PaymentHistory = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
     csvContent += "Order ID,Customer,Email,Method,Amount,Status,Gateway ID,Date\n";
     filtered.forEach(p => {
-      csvContent += `"${p.order_number}","${p.customer_name || 'N/A'}","${p.customer_email || 'N/A'}","${p.payment_method || 'N/A'}",${p.amount},"${p.status}","${p.razorpay_payment_id || ''}","${p.created_at}"\n`;
+      csvContent += `"${p.order_number || ''}","${p.customer_name || 'N/A'}","${p.customer_email || 'N/A'}","${p.payment_method || 'N/A'}",${p.amount},"${p.status}","${p.razorpay_payment_id || ''}","${p.created_at}"\n`;
     });
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "payments_export.csv");
+    link.setAttribute("download", "payments_ledger_export.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-slate-900">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-800/40 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">Payment Ledger</h1>
-          <p className="text-sm text-gray-400 mt-1">Audit storefront transaction histories, gateway IDs, and cash collections.</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">Payment Ledger</h1>
+          <p className="text-sm text-slate-500 mt-1">Audit storefront transaction histories, gateway verification, and cash collections.</p>
         </div>
         
         <div className="flex items-center gap-3">
           <button
             onClick={handleExportCSV}
-            className="p-2.5 bg-[#111827] border border-gray-800 rounded-xl hover:bg-gray-800 transition text-xs font-semibold text-white flex items-center gap-2"
+            className="px-4 py-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition text-xs font-bold text-slate-700 flex items-center gap-2 shadow-xs cursor-pointer"
           >
-            <Download className="w-4 h-4 text-[#d4af37]" /> Export CSV
+            <Download className="w-4 h-4 text-slate-600" /> Export CSV
           </button>
           
           <button
             onClick={fetchData}
-            className="flex items-center gap-2 px-3.5 py-2.5 bg-gray-850 hover:bg-gray-800 text-white rounded-xl text-xs font-bold"
+            className="px-4 py-2 bg-[#0891b2] hover:bg-[#0e7490] text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs transition cursor-pointer"
           >
-            <RefreshCw className="w-4 h-4 text-[#d4af37]" /> Sync Gateway
+            <RefreshCw className="w-4 h-4" /> Sync Gateway
           </button>
         </div>
       </div>
 
       {/* Error State */}
       {error && (
-        <div className="bg-red-950/20 border border-red-500/30 rounded-2xl p-4 flex items-center gap-3 text-xs">
-          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-          <span className="text-red-300 flex-1">{error}</span>
-          <button onClick={fetchData} className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold">Retry</button>
-        </div>
-      )}
-
-      {/* Loading state */}
-      {loading && (
-        <div className="bg-[#111827] border border-gray-800 p-12 rounded-2xl text-center">
-          <Loader className="w-8 h-8 text-[#d4af37] mx-auto mb-3 animate-spin" />
-          <p className="text-xs text-gray-500">Loading ledger data...</p>
+        <div className="bg-slate-50 border border-slate-300 rounded-2xl p-4 flex items-center gap-3 text-xs text-slate-800">
+          <AlertCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+          <span className="flex-1 font-medium">{error}</span>
+          <button onClick={fetchData} className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold cursor-pointer">Retry</button>
         </div>
       )}
 
       {/* Stats Cards */}
       {!loading && stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {statCards.map(({ label, value, icon: Icon, color }) => (
+          {statCards.map(({ label, value, icon: Icon, iconColor }) => (
             <div
               key={label}
-              className={`bg-[#111827] border ${color} rounded-2xl p-4 text-left`}
+              className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex items-center justify-between"
             >
-              <Icon className="w-4 h-4 text-gray-400 mb-2" />
-              <div className="text-2xl font-bold text-white font-mono">{value}</div>
-              <div className="text-[10px] text-gray-500 mt-0.5">{label}</div>
+              <div>
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">{label}</span>
+                <div className="text-2xl font-black text-slate-900 font-mono mt-1.5">{value}</div>
+              </div>
+              <div className={`p-3 rounded-2xl ${iconColor}`}>
+                <Icon className="w-5 h-5" />
+              </div>
             </div>
           ))}
         </div>
@@ -244,15 +267,15 @@ const PaymentHistory = () => {
 
       {/* Search and Filters */}
       {!loading && (
-        <div className="bg-gradient-to-br from-[#111827] to-[#1a2332] border border-gray-800/50 rounded-2xl p-4 flex flex-col md:flex-row gap-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Search by order ID, customer name, or transaction hash..."
+              placeholder="Search by order ID, customer name, email, or transaction ID..."
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-[#0b1220] border border-gray-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-gray-200 focus:outline-none"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891b2] transition"
             />
           </div>
 
@@ -260,65 +283,87 @@ const PaymentHistory = () => {
             <select
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-              className="bg-[#0b1220] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-300 focus:outline-none cursor-pointer"
+              className="bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-[#0891b2] font-semibold cursor-pointer"
             >
-              <option value="all">All Statuses</option>
-              <option value="captured">Paid Online</option>
-              <option value="cod_pending">COD Pending</option>
-              <option value="cod_completed">COD Collected</option>
-              <option value="failed">Failed</option>
-              <option value="refunded">Refunded</option>
+              <option value="all">All Payment Statuses</option>
+              <option value="captured">Paid Online (Razorpay)</option>
+              <option value="cod">Cash on Delivery (COD)</option>
+              <option value="failed">Failed / Incomplete</option>
             </select>
 
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="bg-[#0b1220] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-300 focus:outline-none cursor-pointer"
+              className="bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-[#0891b2] font-semibold cursor-pointer"
             >
-              <option value="date">Sort by Date</option>
-              <option value="amount">Sort by Amount</option>
-              <option value="customer">Sort by Customer</option>
+              <option value="date">Sort by Date (Latest First)</option>
+              <option value="amount">Sort by Amount (Highest First)</option>
+              <option value="customer">Sort by Customer Name</option>
             </select>
           </div>
+        </div>
+      )}
+
+      {/* Loading state */}
+      {loading && (
+        <div className="bg-white border border-slate-200 p-12 rounded-2xl text-center shadow-xs">
+          <Loader className="w-8 h-8 text-[#0891b2] mx-auto mb-3 animate-spin" />
+          <p className="text-xs text-slate-500 font-medium">Loading ledger transactions...</p>
         </div>
       )}
 
       {/* Table grid layout */}
       {!loading && (
         paginated.length > 0 ? (
-          <div className="bg-gradient-to-br from-[#111827] to-[#1a2332] border border-gray-800/50 rounded-2xl shadow-lg overflow-hidden text-left">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden text-left">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[850px] border-collapse text-xs">
-                <thead className="bg-[#0b1220]/60 text-gray-400 font-semibold border-b border-gray-800/80">
+                <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
                   <tr>
-                    <th className="py-4 px-6">Order Ref</th>
-                    <th className="py-4 px-6">Customer</th>
-                    <th className="py-4 px-6">Payment Method</th>
-                    <th className="py-4 px-6">Transacted Amount</th>
-                    <th className="py-4 px-6">Ledger Status</th>
-                    <th className="py-4 px-6">Gateway Reference ID</th>
-                    <th className="py-4 px-6">Timestamp</th>
+                    <th className="py-3.5 px-6">Order Reference</th>
+                    <th className="py-3.5 px-6">Customer Details</th>
+                    <th className="py-3.5 px-6">Payment Method</th>
+                    <th className="py-3.5 px-6">Transacted Amount</th>
+                    <th className="py-3.5 px-6">Payment Status</th>
+                    <th className="py-3.5 px-6">Gateway Reference ID</th>
+                    <th className="py-3.5 px-6">Date & Time</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800/40 text-gray-200">
+                <tbody className="divide-y divide-slate-100 text-slate-800">
                   {paginated.map((p, idx) => (
-                    <tr key={idx} className="hover:bg-gray-800/20 transition">
-                      <td className="py-3.5 px-6 font-mono font-semibold text-[#d4af37]">{p.order_number}</td>
-                      <td className="py-3.5 px-6">
-                        <div className="font-semibold text-white">{p.customer_name}</div>
-                        <div className="text-[10px] text-gray-500 mt-0.5">{p.customer_email}</div>
+                    <tr key={idx} className="hover:bg-slate-50/80 transition">
+                      <td className="py-4 px-6 font-mono font-bold text-slate-900">
+                        {p.order_number || <span className="text-slate-400 italic">Pre-Order Init</span>}
                       </td>
-                      <td className="py-3.5 px-6">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          p.payment_method === "COD" ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                        }`}>{p.payment_method}</span>
+                      <td className="py-4 px-6">
+                        <div className="font-bold text-slate-900">{p.customer_name || "Direct Checkout"}</div>
+                        <div className="text-[11px] text-slate-500 mt-0.5">{p.customer_email || p.customer_phone || "—"}</div>
                       </td>
-                      <td className="py-3.5 px-6 font-mono font-bold text-white">{formatCurrency(p.amount)}</td>
-                      <td className="py-3.5 px-6">{getStatusBadge(p.status)}</td>
-                      <td className="py-3.5 px-6 font-mono text-gray-400">
-                        {p.razorpay_payment_id && !p.razorpay_payment_id.startsWith("cod_") ? p.razorpay_payment_id : "—"}
+                      <td className="py-4 px-6">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                          p.payment_method === "COD"
+                            ? "bg-amber-50 text-amber-800 border border-amber-200"
+                            : "bg-cyan-50 text-cyan-800 border border-cyan-200"
+                        }`}>
+                          {p.payment_method === "COD" ? "Cash on Delivery (COD)" : "Online (Razorpay)"}
+                        </span>
                       </td>
-                      <td className="py-3.5 px-6 text-gray-500 font-mono">{formatDate(p.created_at)}</td>
+                      <td className="py-4 px-6 font-mono font-black text-slate-900 text-sm">
+                        {formatCurrency(p.amount)}
+                      </td>
+                      <td className="py-4 px-6">
+                        {getStatusBadge(p.status, p.failure_reason)}
+                      </td>
+                      <td className="py-4 px-6 font-mono text-slate-600 text-[11px]">
+                        {p.razorpay_payment_id && !p.razorpay_payment_id.startsWith("cod_") ? (
+                          <span className="font-semibold text-slate-800">{p.razorpay_payment_id}</span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="py-4 px-6 text-slate-600 font-mono text-xs">
+                        {formatDate(p.created_at)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -326,10 +371,10 @@ const PaymentHistory = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-gradient-to-br from-[#111827] to-[#1a2332] border border-gray-800/50 rounded-2xl p-12 text-center shadow-lg">
-            <CreditCard className="w-12 h-12 text-gray-600 mx-auto mb-3 stroke-[1.5]" />
-            <h3 className="text-base font-bold text-white">No Payment Records Yet</h3>
-            <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
+          <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-xs">
+            <CreditCard className="w-12 h-12 text-slate-300 mx-auto mb-3 stroke-[1.5]" />
+            <h3 className="text-base font-bold text-slate-900">No Payment Records Found</h3>
+            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
               Online Razorpay transactions and Cash on Delivery (COD) orders will appear here automatically when placed.
             </p>
           </div>
@@ -338,20 +383,20 @@ const PaymentHistory = () => {
 
       {/* Pagination Footer */}
       {!loading && totalPages > 1 && (
-        <div className="flex justify-between items-center bg-[#111827] border border-gray-800 p-4 rounded-2xl text-xs">
-          <span className="text-gray-400">Showing page {currentPage} of {totalPages}</span>
+        <div className="flex justify-between items-center bg-white border border-slate-200 p-4 rounded-2xl text-xs">
+          <span className="text-slate-600 font-medium">Showing page {currentPage} of {totalPages}</span>
           <div className="flex gap-2">
             <button
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="px-3.5 py-2 bg-[#0f1724] border border-gray-800 rounded-xl text-white font-semibold disabled:opacity-40"
+              className="px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-700 font-bold disabled:opacity-40 hover:bg-slate-100 transition cursor-pointer"
             >
               Previous
             </button>
             <button
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="px-3.5 py-2 bg-[#0f1724] border border-gray-800 rounded-xl text-white font-semibold disabled:opacity-40"
+              className="px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-700 font-bold disabled:opacity-40 hover:bg-slate-100 transition cursor-pointer"
             >
               Next
             </button>
