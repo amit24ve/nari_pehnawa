@@ -367,6 +367,8 @@ const Products = () => {
             }
 
             await fetchProducts();
+            window.dispatchEvent(new Event("np_announcements_updated"));
+            window.dispatchEvent(new Event("np_deals_updated"));
             setTimeout(() => {
                 setDealModalProduct(null);
                 setDealSuccessMsg("");

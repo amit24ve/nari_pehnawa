@@ -194,11 +194,15 @@ const ProductCard = ({
                             ₹{(product.originalPrice || product.original_price).toLocaleString("en-IN")}
                         </span>
                     )}
-                    {discount > 0 && !product.mega_sale_price && (
+                    {product.deal_text ? (
+                        <span className="text-[10px] font-black text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          ⚡ {product.deal_text}
+                        </span>
+                    ) : discount > 0 ? (
                         <span className="text-[10px] font-bold text-[#8B0000]">
                           ({discount}% OFF)
                         </span>
-                    )}
+                    ) : null}
                     {product.mega_sale_price && product.on_sale && (
                         <span className="text-[9px] font-extrabold text-amber-900 bg-amber-50 border border-amber-300 px-1.5 py-0.2 rounded-full">
                           ⚡ Mega Deal: ₹{Number(product.mega_sale_price).toLocaleString("en-IN")}

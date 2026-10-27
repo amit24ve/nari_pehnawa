@@ -6,16 +6,48 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:71
 const TopBar = () => {
   const [announcements, setAnnouncements] = useState([]);
 
-  // Fetch dynamic announcements from backend
-  const loadAnnouncements = useCallback(() => {
-    fetch(`${API_BASE_URL}/announcements/?_t=${Date.now()}`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setAnnouncements(data.filter((a) => a.is_active !== false));
-        }
-      })
-      .catch(() => {});
+  // Fetch dynamic announcements and active Mega Sale / BOGO deals from backend
+  const loadAnnouncements = useCallback(async () => {
+    try {
+      const [annRes, saleRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/announcements/?_t=${Date.now()}`).then((r) => (r.ok ? r.json() : [])).catch(() => []),
+        fetch(`${API_BASE_URL}/products/?on_sale=true&limit=20&_t=${Date.now()}`).then((r) => (r.ok ? r.json() : [])).catch(() => []),
+      ]);
+
+      const baseAnnouncements = Array.isArray(annRes) ? annRes.filter((a) => a.is_active !== false) : [];
+
+      // Extract unique active deal texts from live sale products
+      const activeDeals = [];
+      if (Array.isArray(saleRes) && saleRes.length > 0) {
+        const dealMap = new Map();
+        saleRes.forEach((p) => {
+          const deal = p.deal_text ? p.deal_text.trim() : null;
+          if (deal && !dealMap.has(deal)) {
+            dealMap.set(deal, p);
+          }
+        });
+
+        dealMap.forEach((product, dealText) => {
+          activeDeals.push({
+            id: `deal_${dealText}`,
+            text: `🔥 MEGA SALE IS LIVE: ${dealText.toUpperCase()}! Special Festive Offer`,
+            sub_text: "Shop BOGO Deals Now",
+            link: "/category/sale",
+            badge: "HOT DEAL",
+            icon: "⚡",
+            is_active: true,
+          });
+        });
+      }
+
+      // Live Deals are positioned first for maximum prominence in the top bar!
+      const combined = [...activeDeals, ...baseAnnouncements];
+      if (combined.length > 0) {
+        setAnnouncements(combined);
+      }
+    } catch (e) {
+      console.error("TopBar announcement error:", e);
+    }
   }, []);
 
   useEffect(() => {
@@ -27,12 +59,14 @@ const TopBar = () => {
     };
 
     window.addEventListener("np_announcements_updated", handleUpdate);
+    window.addEventListener("np_deals_updated", handleUpdate);
     window.addEventListener("np_mystery_jar_updated", handleUpdate);
     window.addEventListener("storage", handleUpdate);
     window.addEventListener("focus", handleUpdate);
 
     return () => {
       window.removeEventListener("np_announcements_updated", handleUpdate);
+      window.removeEventListener("np_deals_updated", handleUpdate);
       window.removeEventListener("np_mystery_jar_updated", handleUpdate);
       window.removeEventListener("storage", handleUpdate);
       window.removeEventListener("focus", handleUpdate);

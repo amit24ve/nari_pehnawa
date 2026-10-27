@@ -147,16 +147,15 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0, is
               ₹{strikePrice.toLocaleString("en-IN")}
             </span>
           )}
-          {isSpecialSale && (
-            <span className="text-[9px] font-extrabold text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.2 rounded-full">
-              Deal Price
+          {product.deal_text ? (
+            <span className="text-[10px] font-black text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+              ⚡ {product.deal_text}
             </span>
-          )}
-          {discount > 0 && !isSpecialSale && (
+          ) : discount > 0 ? (
             <span className="text-[10px] font-bold text-[#8B0000]">
               ({discount}% OFF)
             </span>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
@@ -333,12 +332,12 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
   const filterConfig = useMemo(() => {
     if (!products.length) return { priceRange: [0, 25000], sections: [] };
 
-    const prices = products.map((p) => p.price || 0).filter((p) => p > 0);
-    const minP = prices.length
-      ? Math.floor(Math.min(...prices) / 100) * 100
-      : 0;
+    const prices = products
+      .map((p) => (slug === "sale" && p.mega_sale_price ? p.mega_sale_price : (p.price || 0)))
+      .filter((p) => p > 0);
+    const minP = 0;
     const maxP = prices.length
-      ? Math.ceil(Math.max(...prices) / 100) * 100
+      ? Math.max(Math.ceil(Math.max(...prices) / 100) * 100, 2500)
       : 25000;
 
     const sizeOrder = ["XS", "S", "M", "L", "XL", "XXL", "XXXL", "Free Size"];
@@ -443,10 +442,16 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
       });
     }
 
-    list = list.filter((p) => {
-      const effPrice = (slug === "sale" && p.mega_sale_price) ? p.mega_sale_price : (p.price || 0);
-      return effPrice >= priceRange[0] && effPrice <= priceRange[1];
-    });
+    // Only filter by price if price filter was explicitly modified by user
+    const isPriceConstraintActive =
+      priceRange[0] > (filterConfig.priceRange[0] || 0) ||
+      priceRange[1] < (filterConfig.priceRange[1] || 25000);
+    if (isPriceConstraintActive) {
+      list = list.filter((p) => {
+        const effPrice = (slug === "sale" && p.mega_sale_price) ? p.mega_sale_price : (p.price || 0);
+        return effPrice >= priceRange[0] && effPrice <= priceRange[1];
+      });
+    }
 
     const sizeF = activeFilters["size"];
     if (sizeF?.size > 0)
