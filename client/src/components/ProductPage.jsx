@@ -215,6 +215,17 @@ const ProductPage = () => {
   const [selectedColor, setSelectedColor] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [addedMsg, setAddedMsg] = useState("");
+  const [purchaseMode, setPurchaseMode] = useState("deal"); // 'deal' | 'standard'
+
+  // Pricing & Deal Mode Computation
+  const hasDeal = Boolean(product?.mega_sale_price || product?.deal_text || product?.on_sale);
+  const isDealMode = hasDeal && purchaseMode === "deal";
+  const currentPrice = isDealMode
+    ? (Number(product?.mega_sale_price) || Number(product?.price) || 0)
+    : (Number(product?.price) || 0);
+  const currentMRP = isDealMode
+    ? (Number(product?.original_price) || Math.round(currentPrice * 1.5))
+    : (Number(product?.original_price) || 0);
 
   const handlePrevImg = useCallback((e) => {
     if (e) {
@@ -646,14 +657,17 @@ const ProductPage = () => {
   const handleAddToCart = useCallback(
     async (goToCart = false) => {
       if (!product) return;
+      const dealLabel = isDealMode ? (product.deal_text || "Mega Sale Deal") : null;
       const ok = await addToCart({
         product_id: product.id,
-        name: product.name,
-        price: product.price,
+        name: isDealMode ? `${product.name} [${dealLabel}]` : product.name,
+        price: currentPrice,
         image: product.image,
         size: selectedSize,
         color: selectedColor,
         quantity,
+        deal_text: dealLabel,
+        offer_type: isDealMode ? "megasale" : "standard",
       });
       if (ok) {
         setAddedMsg(goToCart ? "" : "Added to cart!");
@@ -661,20 +675,23 @@ const ProductPage = () => {
         else setTimeout(() => setAddedMsg(""), 2000);
       }
     },
-    [product, selectedSize, selectedColor, quantity, addToCart, navigate]
+    [product, isDealMode, currentPrice, selectedSize, selectedColor, quantity, addToCart, navigate]
   );
 
   const handleBuyNow = useCallback(() => {
     if (!product) return;
+    const dealLabel = isDealMode ? (product.deal_text || "Mega Sale Deal") : null;
     const buyItem = {
       product_id: product.id,
-      name: product.name,
+      name: isDealMode ? `${product.name} [${dealLabel}]` : product.name,
       image: product.image,
-      price: product.price,
+      price: currentPrice,
       quantity,
       size: selectedSize || "",
       color: selectedColor || "",
       productUrl: window.location.pathname,
+      deal_text: dealLabel,
+      offer_type: isDealMode ? "megasale" : "standard",
     };
     if (!user) {
       openLoginModal(`🔐 Please sign in to complete your purchase of "${product.name}"`, {
@@ -684,20 +701,23 @@ const ProductPage = () => {
       return;
     }
     setShowCheckout(true);
-  }, [product, user, quantity, selectedSize, selectedColor, openLoginModal]);
+  }, [product, isDealMode, currentPrice, user, quantity, selectedSize, selectedColor, openLoginModal]);
 
+  const dealLabel = isDealMode ? (product?.deal_text || "Mega Sale Deal") : null;
   const buyNowItem = pendingCheckout?.item
     ? [pendingCheckout.item]
     : product
     ? [
         {
           product_id: product.id,
-          name: product.name,
+          name: isDealMode ? `${product.name} [${dealLabel}]` : product.name,
           image: product.image,
-          price: product.price,
+          price: currentPrice,
           quantity,
           size: selectedSize || "",
           color: selectedColor || "",
+          deal_text: dealLabel,
+          offer_type: isDealMode ? "megasale" : "standard",
         },
       ]
     : [];
@@ -1105,33 +1125,122 @@ const ProductPage = () => {
             )}
 
             {/* Dynamic Price & Coupon Badges (Clean Typography, No Card) */}
-            <div className="py-3 border-y border-gray-100 space-y-2.5">
+            <div className="py-3 border-y border-gray-100 space-y-3">
               <div className="flex items-baseline gap-3 flex-wrap">
-                <span className="text-3xl font-extrabold text-gray-900">
-                  ₹{(product.price || 0).toLocaleString("en-IN")}
+                <span className="text-3xl font-extrabold text-gray-900 font-mono">
+                  ₹{(currentPrice || 0).toLocaleString("en-IN")}
                 </span>
-                {product.original_price > product.price && (
+                {currentMRP > currentPrice && (
                   <>
-                    <span className="text-lg text-gray-400 line-through">
-                      MRP ₹{product.original_price.toLocaleString("en-IN")}
+                    <span className="text-lg text-gray-400 line-through font-mono">
+                      MRP ₹{currentMRP.toLocaleString("en-IN")}
                     </span>
                     <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
-                      SAVE ₹{(product.original_price - product.price).toLocaleString("en-IN")} ({discount}% OFF)
+                      SAVE ₹{(currentMRP - currentPrice).toLocaleString("en-IN")}
                     </span>
                   </>
                 )}
+                {isDealMode && (
+                  <span className="text-xs font-black text-white bg-gradient-to-r from-amber-600 to-rose-700 px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
+                    <span>⚡</span>
+                    <span>{product.deal_text || "Mega Sale Deal"} Active</span>
+                  </span>
+                )}
+                {!isDealMode && hasDeal && (
+                  <span className="text-xs font-bold text-slate-700 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded-full">
+                    Standard Single Piece
+                  </span>
+                )}
               </div>
 
-              {/* Dynamic Mega / Flash Sale Deal Banner */}
-              {product.deal_text && (
-                <div className="pt-2 border-t border-amber-200/60 flex items-center justify-between gap-2 text-xs flex-wrap">
-                  <div className="flex items-center gap-1.5 text-amber-900 font-bold">
-                    <span className="text-base">⚡</span>
-                    <span>{product.sale_title ? `${product.sale_title}: ` : ""}{product.deal_text}</span>
+              {/* Dual Purchase Option Selector (Standard Single Piece vs ⚡ Mega Sale BOGO Deal) */}
+              {hasDeal && (
+                <div className="p-3 bg-gradient-to-br from-amber-50/60 via-orange-50/30 to-white rounded-2xl border-2 border-amber-300 shadow-xs space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-600 fill-amber-500" />
+                      Select Buying Mode:
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 uppercase tracking-wider">
+                      Dual Option
+                    </span>
                   </div>
-                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
-                    Auto Applied in Cart
-                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {/* Option 1: Standard Single Piece */}
+                    <button
+                      type="button"
+                      onClick={() => setPurchaseMode("standard")}
+                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        purchaseMode === "standard"
+                          ? "bg-white border-[#8B0000] ring-2 ring-[#8B0000]/20 shadow-md scale-[1.01]"
+                          : "bg-white/80 border-gray-200 hover:border-gray-300 opacity-80"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                            purchaseMode === "standard" ? "border-[#8B0000] bg-[#8B0000]" : "border-gray-400"
+                          }`}>
+                            {purchaseMode === "standard" && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </span>
+                          <span className="text-xs font-bold text-gray-900">Standard Single Piece</span>
+                        </div>
+                        <span className="text-[10px] font-semibold text-gray-500">1 Unit</span>
+                      </div>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-base font-extrabold font-mono text-gray-900">
+                          ₹{(product.price || 0).toLocaleString("en-IN")}
+                        </span>
+                        {product.original_price > product.price && (
+                          <span className="text-xs text-gray-400 line-through font-mono">
+                            ₹{product.original_price.toLocaleString("en-IN")}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-gray-500 mt-1 block">
+                        Standard single piece (No promotion package)
+                      </span>
+                    </button>
+
+                    {/* Option 2: ⚡ Mega Sale Deal (BOGO) */}
+                    <button
+                      type="button"
+                      onClick={() => setPurchaseMode("deal")}
+                      className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden ${
+                        purchaseMode === "deal"
+                          ? "bg-amber-50/95 border-amber-500 ring-2 ring-amber-400/40 shadow-md scale-[1.01]"
+                          : "bg-white/80 border-amber-200 hover:border-amber-300 opacity-85"
+                      }`}
+                    >
+                      <span className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-rose-600 text-white text-[9px] font-black px-2 py-0.5 rounded-bl-lg shadow-xs uppercase">
+                        ⚡ Promotional Offer
+                      </span>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                            purchaseMode === "deal" ? "border-amber-600 bg-amber-600" : "border-gray-400"
+                          }`}>
+                            {purchaseMode === "deal" && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </span>
+                          <span className="text-xs font-extrabold text-amber-950 truncate max-w-[150px]">
+                            ⚡ {product.deal_text || "Mega Sale Deal"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-base font-extrabold font-mono text-amber-950">
+                          ₹{(product.mega_sale_price || product.price || 0).toLocaleString("en-IN")}
+                        </span>
+                        <span className="text-xs text-gray-400 line-through font-mono">
+                          ₹{(product.original_price || (Math.round((product.price || 0) * 1.5))).toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-semibold text-amber-800 mt-1 block">
+                        Full deal benefits: {product.deal_text || "Special Promo Pack"}
+                      </span>
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1963,12 +2072,17 @@ const ProductPage = () => {
         <div className="min-w-0">
           <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Price</div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-lg font-black text-gray-900">
-              ₹{(product.price || 0).toLocaleString("en-IN")}
+            <span className="text-lg font-black text-gray-900 font-mono">
+              ₹{(currentPrice || 0).toLocaleString("en-IN")}
             </span>
-            {product.original_price > product.price && (
-              <span className="text-xs text-gray-400 line-through">
-                ₹{product.original_price.toLocaleString("en-IN")}
+            {currentMRP > currentPrice && (
+              <span className="text-xs text-gray-400 line-through font-mono">
+                ₹{currentMRP.toLocaleString("en-IN")}
+              </span>
+            )}
+            {isDealMode && (
+              <span className="text-[9px] font-black text-amber-700 bg-amber-100 px-1 py-0.2 rounded">
+                ⚡ Deal
               </span>
             )}
           </div>

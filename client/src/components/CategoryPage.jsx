@@ -34,7 +34,7 @@ const pebbleShapes = [
 ];
 
 // ── Inline Product Card ────────────────────────────────────────
-const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0 }) => {
+const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0, isSalePage = false }) => {
   const [hearted, setHearted] = useState(isWishlisted || false);
   const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
@@ -42,6 +42,13 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0 }) 
 
   const discount = product.discount;
   const discountBg = discount >= 50 ? "bg-red-600" : "bg-orange-500";
+
+  // When on sale page or product has special mega sale price:
+  const isSpecialSale = (isSalePage || product.on_sale) && Boolean(product.mega_sale_price);
+  const displayPrice = isSpecialSale ? product.mega_sale_price : product.price;
+  const strikePrice = isSpecialSale
+    ? (product.original_price || product.price)
+    : product.original_price;
 
   // Pick organic pebble shape based on index
   const shapeIndex = typeof index === "number" ? index % pebbleShapes.length : 0;
@@ -64,18 +71,24 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0 }) 
             ? "rounded-2xl border-[#8B0000]"
             : `${pebbleClass} border-[#8B0000]/15`
       } group-hover:rounded-2xl group-active:rounded-2xl shadow-md border-2 group-hover:border-[#8B0000] group-active:border-[#8B0000] transition-all duration-500 ease-in-out`}>
-        {discount > 0 && (
+        {/* Deal Badge (BOGO / Buy 2 Get 1 / etc) */}
+        {product.deal_text ? (
+          <span className="absolute top-2.5 left-2.5 z-20 bg-gradient-to-r from-[#8B0000] via-rose-700 to-amber-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-lg border border-white/30 flex items-center gap-1 animate-pulse">
+            <Sparkles className="w-3 h-3 fill-white text-white" />
+            {product.deal_text}
+          </span>
+        ) : discount > 0 ? (
           <span
             className={`absolute top-2.5 left-2.5 z-20 ${discountBg} text-white text-[10px] font-bold px-2 py-0.5 rounded`}
           >
             {discount}% OFF
           </span>
-        )}
-        {product.is_new && !discount && (
+        ) : product.is_new ? (
           <span className="absolute top-2.5 left-2.5 z-20 bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">
             NEW
           </span>
-        )}
+        ) : null}
+
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -127,14 +140,19 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0 }) 
         </div>
         <div className="flex items-center justify-center gap-2 flex-wrap">
           <span className="text-sm sm:text-base font-bold text-gray-900 font-sans">
-            ₹{(product.price || 0).toLocaleString("en-IN")}
+            ₹{(displayPrice || 0).toLocaleString("en-IN")}
           </span>
-          {product.original_price && product.original_price > product.price && (
-            <span className="text-xs text-gray-500 line-through font-sans">
-              ₹{product.original_price.toLocaleString("en-IN")}
+          {strikePrice && strikePrice > displayPrice && (
+            <span className="text-xs text-gray-400 line-through font-sans">
+              ₹{strikePrice.toLocaleString("en-IN")}
             </span>
           )}
-          {discount > 0 && (
+          {isSpecialSale && (
+            <span className="text-[9px] font-extrabold text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.2 rounded-full">
+              Deal Price
+            </span>
+          )}
+          {discount > 0 && !isSpecialSale && (
             <span className="text-[10px] font-bold text-[#8B0000]">
               ({discount}% OFF)
             </span>
@@ -175,8 +193,27 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
   const [activeDropdown, setActiveDropdown] = useState(null); // 'price' | 'size' | 'color' | 'fabric' | 'pattern' | 'discount' | null
   const [priceRange, setPriceRange] = useState([0, 25000]);
   const [activeFilters, setActiveFilters] = useState({});
+  const [selectedDealType, setSelectedDealType] = useState("all");
 
   const filterBarRef = useRef(null);
+
+  // ── Dynamic BOGO & Deal Offer Summary ──
+  const dealOffers = useMemo(() => {
+    if (slug !== "sale" || !products.length) return [];
+    const map = {};
+    products.forEach((p) => {
+      const text = p.deal_text ? p.deal_text.trim() : null;
+      if (text) {
+        map[text] = (map[text] || 0) + 1;
+      } else if (p.on_sale || p.mega_sale_price) {
+        map["Special Sale Deals"] = (map["Special Sale Deals"] || 0) + 1;
+      }
+    });
+    return Object.entries(map).map(([dealText, count]) => ({
+      dealText,
+      count,
+    }));
+  }, [slug, products]);
 
   // ── Fetch Flash Sale details from Backend ──
   useEffect(() => {
@@ -395,9 +432,21 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
 
   // ── Filter + sort products ───────────────────────────────────
   const displayProducts = useMemo(() => {
-    let list = products.filter(
-      (p) => p.price >= priceRange[0] && p.price <= priceRange[1],
-    );
+    let list = products;
+
+    if (slug === "sale" && selectedDealType !== "all") {
+      list = list.filter((p) => {
+        if (selectedDealType === "Special Sale Deals") {
+          return !p.deal_text && (p.on_sale || p.mega_sale_price);
+        }
+        return p.deal_text && p.deal_text.trim().toLowerCase() === selectedDealType.toLowerCase();
+      });
+    }
+
+    list = list.filter((p) => {
+      const effPrice = (slug === "sale" && p.mega_sale_price) ? p.mega_sale_price : (p.price || 0);
+      return effPrice >= priceRange[0] && effPrice <= priceRange[1];
+    });
 
     const sizeF = activeFilters["size"];
     if (sizeF?.size > 0)
@@ -545,6 +594,49 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
               <p className="text-white/70 text-xs sm:text-sm drop-shadow">
                 Curated collection handcrafted with love
               </p>
+            )}
+
+            {/* Dynamic Deal Showcase & Filter Pills in Hero Section */}
+            {slug === "sale" && dealOffers.length > 0 && (
+              <div className="mt-4 flex flex-col items-center gap-2 w-full max-w-2xl mx-auto">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-amber-300">
+                  <Sparkles className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <span>Live Mega Promotions ({dealOffers.reduce((acc, d) => acc + d.count, 0)} Active Items)</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 flex-wrap px-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDealType("all")}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all shadow-md cursor-pointer ${
+                      selectedDealType === "all"
+                        ? "bg-amber-400 text-slate-950 scale-105 ring-2 ring-white"
+                        : "bg-black/60 backdrop-blur-md text-white hover:bg-black/80 border border-white/20"
+                    }`}
+                  >
+                    All Deals ({products.length})
+                  </button>
+                  {dealOffers.map((deal) => (
+                    <button
+                      key={deal.dealText}
+                      type="button"
+                      onClick={() => setSelectedDealType(deal.dealText)}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all shadow-md flex items-center gap-1.5 cursor-pointer ${
+                        selectedDealType === deal.dealText
+                          ? "bg-amber-400 text-slate-950 scale-105 ring-2 ring-white"
+                          : "bg-black/60 backdrop-blur-md text-white hover:bg-black/80 border border-amber-300/40"
+                      }`}
+                    >
+                      <span>⚡</span>
+                      <span>{deal.dealText}</span>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                        selectedDealType === deal.dealText ? "bg-slate-950 text-amber-400" : "bg-amber-500/40 text-amber-200"
+                      }`}>
+                        {deal.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* CTA button */}
@@ -1003,6 +1095,7 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                   index={idx}
                   onWishlistToggle={toggleWishlist}
                   isWishlisted={isInWishlist(product.id)}
+                  isSalePage={slug === "sale"}
                 />
               ))}
             </div>

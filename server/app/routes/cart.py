@@ -17,6 +17,8 @@ class AddToCartRequest(BaseModel):
     size: str
     color: Optional[str] = None
     quantity: int = 1
+    deal_text: Optional[str] = None
+    offer_type: Optional[str] = None
 
 
 class UpdateQuantityRequest(BaseModel):
@@ -103,6 +105,8 @@ def add_to_cart(item: AddToCartRequest, current_user: dict = Depends(get_current
         "size": item.size,
         "color": item.color or "",
         "quantity": max(1, item.quantity),
+        "deal_text": item.deal_text,
+        "offer_type": item.offer_type,
         "added_at": datetime.now().isoformat(),
     }
 
@@ -118,13 +122,14 @@ def add_to_cart(item: AddToCartRequest, current_user: dict = Depends(get_current
         cart_data["_id"] = str(result.inserted_id)
         return cart_data
 
-    # Cart exists — check if same product+size already in cart
+    # Cart exists — check if same product+size+deal already in cart
     items = cart.get("items", [])
     found = False
     for i, existing in enumerate(items):
         if (
             existing.get("product_id") == item.product_id
             and existing.get("size") == item.size
+            and existing.get("deal_text") == item.deal_text
         ):
             items[i]["quantity"] = existing["quantity"] + new_item["quantity"]
             found = True

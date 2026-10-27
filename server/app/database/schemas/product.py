@@ -45,6 +45,7 @@ class ProductBase(BaseModel):
     deal_type: Optional[str] = None
     buy_qty: Optional[int] = None
     get_free_qty: Optional[int] = None
+    mega_sale_price: Optional[float] = None
     is_returnable: bool = True
     return_policy: Optional[str] = "Easy 15-Day Returns"
     occasion: Optional[str] = "Festive, Casual, Office Wear"
@@ -103,6 +104,7 @@ class ProductUpdate(BaseModel):
     deal_type: Optional[str] = None
     buy_qty: Optional[int] = None
     get_free_qty: Optional[int] = None
+    mega_sale_price: Optional[float] = None
     is_returnable: Optional[bool] = None
     return_policy: Optional[str] = None
     occasion: Optional[str] = None

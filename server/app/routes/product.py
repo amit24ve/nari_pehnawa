@@ -169,7 +169,18 @@ def get_products(
             query["category"] = {"$regex": combined_pattern, "$options": "i"}
 
         if on_sale is not None:
-            query["on_sale"] = on_sale
+            if on_sale:
+                sale_cond = [
+                    {"on_sale": True},
+                    {"mega_sale_price": {"$gt": 0}},
+                    {"deal_text": {"$nin": [None, ""]}}
+                ]
+                if "$or" in query:
+                    query["$and"] = [{"$or": query.pop("$or")}, {"$or": sale_cond}]
+                else:
+                    query["$or"] = sale_cond
+            else:
+                query["on_sale"] = False
         if is_new is not None:
             if is_new:
                 query["$or"] = [{"is_new": True}, {"is_new": {"$exists": False}}]
@@ -237,7 +248,18 @@ def get_product_count(
         if category:
             query["category"] = {"$regex": category, "$options": "i"}
         if on_sale is not None:
-            query["on_sale"] = on_sale
+            if on_sale:
+                sale_cond = [
+                    {"on_sale": True},
+                    {"mega_sale_price": {"$gt": 0}},
+                    {"deal_text": {"$nin": [None, ""]}}
+                ]
+                if "$or" in query:
+                    query["$and"] = [{"$or": query.pop("$or")}, {"$or": sale_cond}]
+                else:
+                    query["$or"] = sale_cond
+            else:
+                query["on_sale"] = False
         if is_new is not None:
             query["is_new"] = is_new
         if min_price is not None or max_price is not None:

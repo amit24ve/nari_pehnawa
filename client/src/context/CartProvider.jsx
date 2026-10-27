@@ -133,7 +133,7 @@ export const CartProvider = ({ children }) => {
       });
       setCartItems((prev) => {
         const idx = prev.findIndex(
-          (i) => i.product_id === product.product_id && i.size === product.size
+          (i) => i.product_id === product.product_id && i.size === product.size && i.deal_text === product.deal_text
         );
         if (idx > -1) {
           const copy = [...prev];

@@ -274,7 +274,8 @@ const Products = () => {
             buy_qty: p.buy_qty || (curDealType === "buy2get1" ? 2 : (curDealType === "buy5get1" ? 5 : 1)),
             get_free_qty: p.get_free_qty || 1,
             deal_text: p.deal_text || "BUY 1 GET 1 FREE (BOGO)",
-            sale_price: p.price ?? "",
+            regular_price: p.price ?? "",
+            sale_price: p.mega_sale_price || p.price || "",
             original_price: p.original_price || (Math.round((Number(p.price) || 0) * 1.5)),
             sale_title: p.sale_title || "Mega Festive Sale"
         });
@@ -292,8 +293,9 @@ const Products = () => {
             };
 
             const isNone = dealModalForm.deal_type === "none";
-            const newPrice = Number(dealModalForm.sale_price) || Number(dealModalProduct.price);
-            const newOrigPrice = Number(dealModalForm.original_price) || Number(dealModalProduct.original_price) || Math.round(newPrice * 1.5);
+            const regPrice = Number(dealModalForm.regular_price) || Number(dealModalProduct.price);
+            const salePrice = Number(dealModalForm.sale_price) || regPrice;
+            const newOrigPrice = Number(dealModalForm.original_price) || Number(dealModalProduct.original_price) || Math.round(regPrice * 1.5);
 
             if (isDuplicate) {
                 // Clone product with 0 re-uploading needed!
@@ -303,7 +305,7 @@ const Products = () => {
                 const clonePayload = {
                     title: newTitle,
                     description: dealModalProduct.description || "",
-                    price: newPrice,
+                    price: salePrice,
                     original_price: newOrigPrice,
                     category: dealModalProduct.category || "Uncategorized",
                     department: dealModalProduct.department || "Clothing",
@@ -328,6 +330,7 @@ const Products = () => {
                     buy_qty: isNone ? null : dealModalForm.buy_qty,
                     get_free_qty: isNone ? null : dealModalForm.get_free_qty,
                     sale_title: isNone ? null : dealModalForm.sale_title,
+                    mega_sale_price: isNone ? null : salePrice,
                 };
 
                 const res = await fetch(`${API_BASE_URL}/products/`, {
@@ -338,10 +341,11 @@ const Products = () => {
                 if (!res.ok) throw new Error("Failed to duplicate product listing");
                 setDealSuccessMsg("✅ Duplicated as new Mega Sale / BOGO listing successfully!");
             } else {
-                // Update existing product
+                // Update existing product: PRESERVE regular single-piece price, save deal offer separately
                 const updatePayload = {
                     ...dealModalProduct,
-                    price: newPrice,
+                    price: regPrice, // Regular catalog price preserved!
+                    mega_sale_price: isNone ? null : salePrice, // Mega sale offer price stored separately
                     original_price: newOrigPrice,
                     on_sale: !isNone,
                     offer_type: isNone ? "none" : "megasale",
@@ -359,7 +363,7 @@ const Products = () => {
                     body: JSON.stringify(updatePayload)
                 });
                 if (!res.ok) throw new Error("Failed to update product offer");
-                setDealSuccessMsg("✅ Mega Sale / BOGO deal & price updated successfully!");
+                setDealSuccessMsg(`✅ Regular price kept at ₹${regPrice.toLocaleString()}! Mega Sale price set to ₹${salePrice.toLocaleString()}`);
             }
 
             await fetchProducts();
@@ -1442,12 +1446,25 @@ const Products = () => {
 
                                             {/* 4. Price */}
                                             <td className="py-3.5 px-6 whitespace-nowrap font-mono">
-                                                <div className="font-bold text-slate-900 text-xs">
-                                                    ₹{Number(p.price || 0).toLocaleString()}
+                                                <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                                                    <span>₹{Number(p.price || 0).toLocaleString()}</span>
+                                                    <span className="text-[9px] font-sans font-medium text-slate-400 bg-slate-100 px-1 py-0.5 rounded border border-slate-200">Regular</span>
                                                 </div>
                                                 {p.original_price && Number(p.original_price) > Number(p.price) && (
                                                     <div className="text-[10px] text-slate-400 line-through">
                                                         ₹{Number(p.original_price).toLocaleString()}
+                                                    </div>
+                                                )}
+                                                {p.on_sale && (p.mega_sale_price || p.deal_text) && (
+                                                    <div className="mt-1 flex flex-col gap-0.5 font-sans">
+                                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold">
+                                                            ⚡ Mega: ₹{Number(p.mega_sale_price || p.price).toLocaleString()}
+                                                        </span>
+                                                        {p.deal_text && (
+                                                            <span className="text-[9px] text-amber-700 font-semibold truncate max-w-[130px]" title={p.deal_text}>
+                                                                {p.deal_text}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 )}
                                             </td>
@@ -2832,6 +2849,17 @@ const Products = () => {
                             </div>
                         </div>
 
+                        {/* Protection Tip */}
+                        <div className="bg-amber-50/90 border border-amber-300 rounded-xl p-2.5 flex items-start gap-2 text-xs text-amber-950">
+                            <Zap className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                                <p className="font-bold">Catalog Regular Price is 100% Protected!</p>
+                                <p className="text-[11px] text-amber-800 leading-relaxed">
+                                    Setting a Mega Sale deal stores a dedicated offer price without overwriting your ₹{dealModalForm.regular_price || dealModalProduct.price} base price. Normal customers can still buy 1 piece at regular price.
+                                </p>
+                            </div>
+                        </div>
+
                         {dealSuccessMsg && (
                             <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold rounded-xl text-center">
                                 {dealSuccessMsg}
@@ -2851,7 +2879,7 @@ const Products = () => {
                                         { id: "buy3get1", label: "Buy 3 Get 1 Free", sub: "Buy 3 Get 1", b: 3, g: 1, text: "BUY 3 GET 1 FREE" },
                                         { id: "buy5get1", label: "Buy 5 Get 1 Free", sub: "Buy 5 Get 1", b: 5, g: 1, text: "BUY 5 GET 1 FREE" },
                                         { id: "buy5get2", label: "Buy 5 Get 2 Free", sub: "Buy 5 Get 2", b: 5, g: 2, text: "BUY 5 GET 2 FREE" },
-                                        { id: "none", label: "Regular Price", sub: "Remove Offer", b: 0, g: 0, text: "" }
+                                        { id: "none", label: "Regular Price Only", sub: "Remove Offer", b: 0, g: 0, text: "" }
                                     ].map((opt) => (
                                         <button
                                             key={opt.id}
@@ -2880,20 +2908,35 @@ const Products = () => {
                             </div>
 
                             {/* Price Inputs */}
-                            <div className="grid grid-cols-2 gap-3 pt-1">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                                        Special Offer / Sale Price (₹)
+                                        Regular Single Price (₹)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={dealModalForm.regular_price}
+                                        onChange={(e) => setDealModalForm(prev => ({ ...prev, regular_price: e.target.value }))}
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold font-mono text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
+                                        placeholder="e.g. 549"
+                                    />
+                                    <span className="text-[10px] text-slate-400 block mt-0.5">Base single unit price</span>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                                        ⚡ Mega Sale Deal Price (₹)
                                     </label>
                                     <input
                                         type="number"
                                         min="0"
                                         value={dealModalForm.sale_price}
                                         onChange={(e) => setDealModalForm(prev => ({ ...prev, sale_price: e.target.value }))}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold font-mono text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
-                                        placeholder="e.g. 1499"
+                                        className="w-full bg-amber-50/50 border border-amber-400 rounded-xl px-3 py-2 text-xs font-bold font-mono text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
+                                        placeholder="e.g. 799"
                                     />
-                                    <span className="text-[10px] text-slate-400 block mt-0.5">Price customer pays for deal</span>
+                                    <span className="text-[10px] text-amber-700 font-medium block mt-0.5">Special Mega Sale price</span>
                                 </div>
 
                                 <div>
@@ -2906,7 +2949,7 @@ const Products = () => {
                                         value={dealModalForm.original_price}
                                         onChange={(e) => setDealModalForm(prev => ({ ...prev, original_price: e.target.value }))}
                                         className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold font-mono text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
-                                        placeholder="e.g. 2999"
+                                        placeholder="e.g. 1499"
                                     />
                                     <span className="text-[10px] text-slate-400 block mt-0.5">Strikethrough MRP price</span>
                                 </div>
