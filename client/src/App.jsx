@@ -30,6 +30,7 @@ import GoogleAuthCallback from "./components/GoogleAuthCallback";
 import OwnerPage from "./components/OwnerPage";
 import SupportPages from "./components/SupportPages";
 import PublicOrderTracking from "./components/PublicOrderTracking";
+import FestiveDealCelebrationModal from "./components/FestiveDealCelebrationModal";
 import "./App.css";
 import AIChatbot from "./components/AIChatbot";
 import AdminLayout from "./admin/AdminLayout";
@@ -89,6 +90,7 @@ function MainLayout() {
             <Navbar />
             <VisitorTracker />
             <CookieConsent />
+            <FestiveDealCelebrationModal />
             {/* pt: header(80px) + category strip(38px) = 118px */}
             <div className="pt-[118px]">
                 <Routes>

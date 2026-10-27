@@ -202,15 +202,11 @@ const ProductCard = ({
                             ₹{strikePrice.toLocaleString("en-IN")}
                         </span>
                     )}
-                    {isSalePage && product.deal_text ? (
-                        <span className="text-[10px] font-black text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1">
-                          ⚡ {product.deal_text}
-                        </span>
-                    ) : discount > 0 ? (
+                    {discount > 0 && !isSalePage && (
                         <span className="text-[10px] font-bold text-[#8B0000]">
                           ({discount}% OFF)
                         </span>
-                    ) : null}
+                    )}
                 </div>
             </div>
             {/* Product Share & Copy Link Modal */}
