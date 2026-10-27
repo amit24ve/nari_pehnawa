@@ -43,9 +43,9 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0, is
   const discount = product.discount;
   const discountBg = discount >= 50 ? "bg-red-600" : "bg-orange-500";
 
-  // When on sale page or product has special mega sale price:
-  const isSpecialSale = (isSalePage || product.on_sale) && Boolean(product.mega_sale_price);
-  const displayPrice = isSpecialSale ? product.mega_sale_price : product.price;
+  // When on sale page with mega sale price:
+  const isSpecialSale = Boolean(isSalePage && product.mega_sale_price);
+  const displayPrice = isSpecialSale ? product.mega_sale_price : (product.price || 0);
   const strikePrice = isSpecialSale
     ? (product.original_price || product.price)
     : product.original_price;
@@ -56,7 +56,7 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0, is
 
   return (
     <div
-      onClick={() => navigate(`/product/${product.id}`)}
+      onClick={() => navigate(`/product/${product.id}${isSalePage ? '?sale=1' : ''}`)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onTouchStart={() => setIsHovered(true)}
@@ -71,8 +71,8 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0, is
             ? "rounded-2xl border-[#8B0000]"
             : `${pebbleClass} border-[#8B0000]/15`
       } group-hover:rounded-2xl group-active:rounded-2xl shadow-md border-2 group-hover:border-[#8B0000] group-active:border-[#8B0000] transition-all duration-500 ease-in-out`}>
-        {/* Deal Badge (BOGO / Buy 2 Get 1 / etc) */}
-        {product.deal_text ? (
+        {/* Deal Badge (BOGO / Buy 2 Get 1 / etc) - ONLY on Sale page */}
+        {isSalePage && product.deal_text ? (
           <span className="absolute top-2.5 left-2.5 z-20 bg-gradient-to-r from-[#8B0000] via-rose-700 to-amber-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-lg border border-white/30 flex items-center gap-1 animate-pulse">
             <Sparkles className="w-3 h-3 fill-white text-white" />
             {product.deal_text}
@@ -147,7 +147,7 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0, is
               ₹{strikePrice.toLocaleString("en-IN")}
             </span>
           )}
-          {product.deal_text ? (
+          {isSalePage && product.deal_text ? (
             <span className="text-[10px] font-black text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1">
               ⚡ {product.deal_text}
             </span>

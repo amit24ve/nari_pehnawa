@@ -17,12 +17,20 @@ const ProductCard = ({
     onProductClick,
     onWishlistToggle,
     isWishlisted,
-    index = 0
+    index = 0,
+    isSalePage = false,
 }) => {
     const [hearted, setHearted] = useState(isWishlisted || false);
     const [isHovered, setIsHovered] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
     const navigate = useNavigate();
+
+    // Special sale pricing only active when on sale page
+    const isSpecialSale = Boolean(isSalePage && product.mega_sale_price);
+    const displayPrice = isSpecialSale ? product.mega_sale_price : (product.price || 0);
+    const strikePrice = isSpecialSale
+        ? (product.original_price || product.price)
+        : (product.originalPrice || product.original_price);
 
     // Collect all product images for smooth slideshow
     const rawImages = [
@@ -64,7 +72,7 @@ const ProductCard = ({
         if (onProductClick) {
             onProductClick(product);
         } else {
-            navigate(`/product/${product.id}`);
+            navigate(`/product/${product.id}${isSalePage ? '?sale=1' : ''}`);
         }
     };
 
@@ -86,8 +94,8 @@ const ProductCard = ({
                     ? "rounded-2xl border-[#8B0000]"
                     : `${pebbleClass} border-[#8B0000]/15`
             } group-hover:rounded-2xl group-active:rounded-2xl shadow-md border-2 group-hover:border-[#8B0000] group-active:border-[#8B0000] transition-all duration-500 ease-in-out`}>
-                {/* Sale / Deal Badge - Always 100% visible on top left */}
-                {product.deal_text ? (
+                {/* Sale / Deal Badge - Deal badge ONLY visible on Mega Sale page */}
+                {isSalePage && product.deal_text ? (
                     <span className="absolute top-3 left-3 z-30 bg-gradient-to-r from-[#8B0000] via-rose-700 to-amber-600 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-lg border border-white/30 flex items-center gap-1 animate-pulse">
                         <Flame className="w-3 h-3 fill-white text-white" />
                         {product.deal_text}
@@ -167,8 +175,8 @@ const ProductCard = ({
                     {product.name}
                 </h3>
 
-                {/* Event / Flash Sale Campaign Tag */}
-                {product.sale_title && (
+                {/* Event / Flash Sale Campaign Tag - only on sale page */}
+                {isSalePage && product.sale_title && (
                     <div className="text-[10px] font-bold text-[#8B0000] truncate flex items-center justify-center gap-1 mb-1 bg-rose-50/70 py-0.5 px-2 rounded-full border border-rose-100/80">
                         <Zap className="w-2.5 h-2.5 fill-[#8B0000] text-[#8B0000]" />
                         <span>{product.sale_title}</span>
@@ -187,14 +195,14 @@ const ProductCard = ({
                 </div>
                 <div className="flex items-center justify-center gap-2 flex-wrap">
                     <span className="text-sm sm:text-base font-bold text-gray-900 font-sans">
-                        ₹{(product.price || 0).toLocaleString("en-IN")}
+                        ₹{(displayPrice || 0).toLocaleString("en-IN")}
                     </span>
-                    {(product.originalPrice || product.original_price) > product.price && (
+                    {strikePrice && strikePrice > displayPrice && (
                         <span className="text-xs text-gray-400 line-through font-sans">
-                            ₹{(product.originalPrice || product.original_price).toLocaleString("en-IN")}
+                            ₹{strikePrice.toLocaleString("en-IN")}
                         </span>
                     )}
-                    {product.deal_text ? (
+                    {isSalePage && product.deal_text ? (
                         <span className="text-[10px] font-black text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1">
                           ⚡ {product.deal_text}
                         </span>
@@ -203,11 +211,6 @@ const ProductCard = ({
                           ({discount}% OFF)
                         </span>
                     ) : null}
-                    {product.mega_sale_price && product.on_sale && (
-                        <span className="text-[9px] font-extrabold text-amber-900 bg-amber-50 border border-amber-300 px-1.5 py-0.2 rounded-full">
-                          ⚡ Mega Deal: ₹{Number(product.mega_sale_price).toLocaleString("en-IN")}
-                        </span>
-                    )}
                 </div>
             </div>
             {/* Product Share & Copy Link Modal */}
