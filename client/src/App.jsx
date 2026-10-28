@@ -10,7 +10,6 @@ import Navbar from "./components/Navbar";
 import VisitorTracker from "./components/VisitorTracker";
 import CookieConsent from "./components/CookieConsent";
 import HeroSection from "./components/HeroSection";
-import BogoSpecialOfferBanner from "./components/BogoSpecialOfferBanner";
 import FestiveEventBanner from "./components/FestiveEventBanner";
 import FloatingOfferCard from "./components/FloatingOfferCard";
 import Categories from "./components/Categories";
@@ -72,7 +71,6 @@ function HomePage() {
     return (
         <>
             <HeroSection />
-            <BogoSpecialOfferBanner />
             <Categories />
             <FestiveEventBanner />
             <InteractiveCampaignBanner />
