@@ -1,232 +1,121 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, ArrowRight } from "lucide-react";
-import { SectionHeading } from "./NariHeadingDecoration";
-import { resolveImageUrl, DEFAULT_HERO_FALLBACK } from "../utils/imageUrl";
+import { Heart } from "lucide-react";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
+const CATEGORY_ITEMS = [
+  {
+    id: "printed-kurtis",
+    name: "PRINTED KURTIS",
+    image: "/category_card_printed.png",
+    link: "/category/printed-kurtis",
+  },
+  {
+    id: "sleeveless-kurtis",
+    name: "SLEEVELESS KURTIS",
+    image: "/category_card_sleeveless.png",
+    link: "/category/sleeveless-kurtis",
+  },
+  {
+    id: "halter-neck-tops",
+    name: "HALTER NECK TOPS",
+    image: "/category_card_halter.png",
+    link: "/category/halter-neck-top",
+  },
+  {
+    id: "new-arrivals",
+    name: "NEW ARRIVALS",
+    image: "/category_card_newarrivals.png",
+    link: "/new-arrivals",
+  },
+];
 
 const Categories = () => {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [liked, setLiked] = useState({});
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/categories/?is_active=true`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Network response was not ok");
-        return r.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setCategories(data);
-        } else {
-          setCategories([]);
-        }
-      })
-      .catch((err) => {
-        console.error("Categories fetch error:", err);
-        setCategories([]);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  const getCategoryLink = (cat) => {
-    if (cat.link) return cat.link;
-    const slug = (cat.name || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-");
-    return `/category/${slug}`;
-  };
-
-  const getCategoryTagline = (cat) => {
-    if (cat.tagline) return cat.tagline;
-    return `Discover ${cat.name || "Kurtis"} Collection!`;
-  };
-
-  const getCategoryImage = (cat) => {
-    if (cat.image && cat.image.trim() !== "") return resolveImageUrl(cat.image, DEFAULT_HERO_FALLBACK);
-    return DEFAULT_HERO_FALLBACK;
-  };
-
-  if (!loading && categories.length === 0) {
-    return null;
-  }
-
-  const displayList = categories.length < 4 ? [...categories, ...categories, ...categories] : [...categories, ...categories];
-
-  const scrollRef = React.useRef(null);
-  const [isPaused, setIsPaused] = useState(false);
-  const isDragging = React.useRef(false);
-  const startX = React.useRef(0);
-  const scrollLeftStart = React.useRef(0);
-  const hasMoved = React.useRef(false);
-
-  // Smooth continuous auto-scroll that can be paused or manually overridden by touch/drag
-  useEffect(() => {
-    if (loading || categories.length === 0 || isPaused) return;
-    const el = scrollRef.current;
-    if (!el) return;
-
-    let animId;
-    const step = () => {
-      if (!isPaused && !isDragging.current && el) {
-        if (el.scrollLeft >= el.scrollWidth / 2) {
-          el.scrollLeft = 0;
-        } else {
-          el.scrollLeft += 0.8;
-        }
-      }
-      animId = requestAnimationFrame(step);
-    };
-    animId = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(animId);
-  }, [loading, categories.length, isPaused]);
-
-  const onMouseDown = (e) => {
-    if (!scrollRef.current) return;
-    isDragging.current = true;
-    hasMoved.current = false;
-    startX.current = e.pageX - scrollRef.current.offsetLeft;
-    scrollLeftStart.current = scrollRef.current.scrollLeft;
-  };
-
-  const onMouseMove = (e) => {
-    if (!isDragging.current || !scrollRef.current) return;
+  const toggleWishlist = (e, item) => {
     e.preventDefault();
-    const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startX.current) * 1.5;
-    if (Math.abs(walk) > 5) {
-      hasMoved.current = true;
-    }
-    scrollRef.current.scrollLeft = scrollLeftStart.current - walk;
-  };
-
-  const onMouseUp = () => {
-    isDragging.current = false;
-  };
-
-  const scrollBy = (offset) => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: offset, behavior: "smooth" });
-    }
+    e.stopPropagation();
+    setLiked((prev) => ({
+      ...prev,
+      [item.id]: !prev[item.id],
+    }));
   };
 
   return (
-    <section className="py-10 bg-white overflow-hidden relative">
-      <div className="container mx-auto px-4 mb-8 text-center">
-        <SectionHeading>
-          Shop by Category
-        </SectionHeading>
-        <p className="text-xs md:text-sm text-gray-500 mt-2 font-sans">
-          Explore handcrafted ethnic designs tailored for Nari Pehnawa elegance
+    <section className="py-6 sm:py-8 bg-white overflow-hidden">
+      <div className="container mx-auto px-4 text-center">
+        {/* Top Centered Floral Motif */}
+        <div className="flex justify-center mb-2">
+          <img
+            src="/floral_motif.png"
+            alt=""
+            className="h-4 sm:h-5 w-auto object-contain opacity-90 select-none pointer-events-none"
+          />
+        </div>
+
+        {/* Heading with Decorative Horizontal Flanking Lines */}
+        <div className="flex items-center justify-center gap-3 sm:gap-6 max-w-xl mx-auto">
+          <div className="h-[1.5px] w-12 sm:w-24 md:w-32 bg-[#800020]/90" />
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-[#780016] tracking-wider uppercase select-none">
+            SHOP BY CATEGORY
+          </h2>
+          <div className="h-[1.5px] w-12 sm:w-24 md:w-32 bg-[#800020]/90" />
+        </div>
+
+        {/* Tagline */}
+        <p className="text-gray-600 text-xs sm:text-sm font-sans tracking-wide mt-1.5 select-none font-normal">
+          Find the style that feels like you
         </p>
-        <div className="w-24 h-1 bg-gradient-to-r from-transparent via-[#8B0000] to-transparent mx-auto mt-3"></div>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center items-center py-16">
-          <Loader2 className="w-9 h-9 text-[#8B0000] animate-spin" />
-        </div>
-      ) : (
-        /* Scrolling Container with edge gradient masks and manual drag/swipe */
-        <div
-          className="relative w-full group/slider"
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => {
-            setIsPaused(false);
-            onMouseUp();
-          }}
-        >
-          {/* Subtle left & right edge masks for luxury fade */}
-          <div className="absolute left-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-r from-white via-white/80 to-transparent z-20 pointer-events-none" />
-          <div className="absolute right-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-l from-white via-white/80 to-transparent z-20 pointer-events-none" />
+      {/* 4 Category Cards in Grid: 2 cols on mobile, 4 on desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-5 md:gap-6 max-w-6xl mx-auto px-4 sm:px-6 mt-6 sm:mt-8">
+        {CATEGORY_ITEMS.map((item) => {
+          const isLiked = !!liked[item.id];
+          return (
+            <div
+              key={item.id}
+              onClick={() => navigate(item.link)}
+              className="group relative cursor-pointer rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 bg-stone-50 select-none"
+              title={`Shop ${item.name}`}
+            >
+              {/* Card Image */}
+              <img
+                src={item.image}
+                alt={item.name}
+                className="w-full aspect-square object-cover object-center group-hover:scale-[1.03] transition-transform duration-500 ease-out"
+                loading="lazy"
+              />
 
-          {/* Left Arrow Button */}
-          <button
-            type="button"
-            onClick={() => scrollBy(-320)}
-            aria-label="Scroll categories left"
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-white/90 text-gray-800 shadow-lg border border-gray-200 flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity hover:scale-105 cursor-pointer backdrop-blur-sm"
-          >
-            ‹
-          </button>
+              {/* Interactive Wishlist Heart Button (Top-Right) */}
+              <button
+                type="button"
+                onClick={(e) => toggleWishlist(e, item)}
+                aria-label={`Save ${item.name} to wishlist`}
+                className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/75 hover:bg-white backdrop-blur-xs flex items-center justify-center transition-all duration-200 shadow-sm z-10 active:scale-90 cursor-pointer"
+              >
+                <Heart
+                  className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${
+                    isLiked
+                      ? "fill-rose-600 text-rose-600 scale-110"
+                      : "text-gray-800 stroke-[1.8] group-hover:text-rose-600"
+                  }`}
+                />
+              </button>
+            </div>
+          );
+        })}
+      </div>
 
-          {/* Right Arrow Button */}
-          <button
-            type="button"
-            onClick={() => scrollBy(320)}
-            aria-label="Scroll categories right"
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-white/90 text-gray-800 shadow-lg border border-gray-200 flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity hover:scale-105 cursor-pointer backdrop-blur-sm"
-          >
-            ›
-          </button>
-
-          <div
-            ref={scrollRef}
-            onMouseDown={onMouseDown}
-            onMouseMove={onMouseMove}
-            onMouseUp={onMouseUp}
-            onTouchStart={() => setIsPaused(true)}
-            onTouchEnd={() => setIsPaused(false)}
-            className="flex overflow-x-auto scrollbar-hide space-x-5 sm:space-x-6 px-6 pb-6 select-none cursor-grab active:cursor-grabbing"
-            style={{ scrollBehavior: "auto" }}
-          >
-            {displayList.map((category, index) => {
-              const catLink = getCategoryLink(category);
-              const catImg = getCategoryImage(category);
-              const catTagline = getCategoryTagline(category);
-              const borderColor = category.border_color || category.borderColor || "#8B0000";
-
-              return (
-                <div
-                  key={`${category.id || category._id || index}-${index}`}
-                  className="flex-shrink-0 w-[250px] sm:w-[280px] md:w-[310px] lg:w-[330px] h-[290px] sm:h-[330px] md:h-[365px] lg:h-[385px] relative group cursor-pointer rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-stone-900 border-2 border-stone-200/90 hover:border-amber-400/90"
-                  onClick={() => {
-                    if (!hasMoved.current) {
-                      navigate(catLink);
-                    }
-                  }}
-                  title={`View ${category.name} collection`}
-                >
-                  {/* Category Image - Framed to top for optimal kurti/model display */}
-                  <img
-                    src={catImg}
-                    alt={category.name}
-                    className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-108 transition-transform duration-700 ease-out pointer-events-none"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = DEFAULT_HERO_FALLBACK;
-                    }}
-                  />
-
-                  {/* Gradient Overlay for Crisp Text Legibility at Bottom */}
-                  <div className="absolute inset-x-0 bottom-0 h-36 sm:h-40 bg-gradient-to-t from-black/95 via-black/50 to-transparent z-10 pointer-events-none transition-opacity duration-300 group-hover:opacity-100" />
-
-                  {/* Content Container */}
-                  <div className="absolute bottom-0 left-0 right-0 z-20 p-4 sm:p-5 text-center transform translate-y-0.5 group-hover:translate-y-0 transition-transform duration-300 pointer-events-none">
-                    {/* Tagline */}
-                    <p className="text-amber-200/95 text-xs sm:text-[13px] text-center font-medium drop-shadow-md italic mb-2 line-clamp-1">
-                      {catTagline}
-                    </p>
-
-                    {/* Category Name Badge */}
-                    <div className="flex justify-center">
-                      <div
-                        className="text-white text-xs sm:text-sm font-bold py-2 px-5 rounded-full text-center border shadow-lg tracking-wider uppercase truncate max-w-full font-serif backdrop-blur-sm transition-all duration-300 group-hover:scale-105"
-                        style={{
-                          backgroundColor: borderColor,
-                          borderColor: "rgba(255,255,255,0.4)",
-                        }}
-                      >
-                        {category.name}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* Bottom Centered Floral Motif */}
+      <div className="flex justify-center mt-6 sm:mt-8">
+        <img
+          src="/floral_motif.png"
+          alt=""
+          className="h-4 sm:h-5 w-auto object-contain opacity-90 select-none pointer-events-none"
+        />
+      </div>
     </section>
   );
 };
