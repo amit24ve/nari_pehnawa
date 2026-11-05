@@ -86,7 +86,7 @@ const ProductPage = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
   const { toggleWishlist, isInWishlist } = useWishlist();
-  const { addToCart, addMultipleToCart } = useCart();
+  const { addToCart } = useCart();
   const { user, openLoginModal, pendingCheckout, clearPendingCheckout } = useAuth();
 
   // Core Product State
@@ -224,13 +224,6 @@ const ProductPage = () => {
     (searchParams.get("sale") === "1" || searchParams.get("sale") === "mega" || searchParams.get("from") === "sale")
   );
 
-  // Check if product has Buy 1 Get 1 Free (BOGO) deal
-  const isBogoProduct = Boolean(
-    product?.deal_type === "bogo" ||
-    product?.is_bogo ||
-    (product?.deal_text && /bogo|buy\s*1\s*get\s*1/i.test(product.deal_text))
-  );
-
   // Pricing: When in sale mode use mega_sale_price, otherwise use standard catalog price
   const currentPrice = isSaleMode
     ? (Number(product?.mega_sale_price) || Number(product?.price) || 0)
@@ -320,8 +313,8 @@ const ProductPage = () => {
     shipping_state: "Uttar Pradesh",
     shipping_pincode: "",
     shipping_landmark: "",
-    custom_type: "complete_set", // "complete_set" | "top_only" | "bottom_only"
-    height: "5'3\" (160 cm)",
+    custom_type: "complete_set",
+    height: "5 ft 3 in (160 cm)",
     custom_height_text: "",
     bust_size: "36",
     custom_bust_text: "",
@@ -331,15 +324,15 @@ const ProductPage = () => {
     custom_waist_text: "",
     hip_size: "38",
     custom_hip_text: "",
-    top_length: "44",
+    top_length: "44 in",
     custom_top_length_text: "",
-    sleeve_type: "3/4th Sleeves (16\")",
+    sleeve_type: "3/4th Sleeves (16 in)",
     custom_sleeve_text: "",
     neck_design: "As Shown in Photo",
     custom_neck_text: "",
     bottom_style: "Straight Pant with Pocket",
     custom_bottom_style_text: "",
-    bottom_length: "38",
+    bottom_length: "38 in",
     custom_bottom_length_text: "",
     fit_preference: "Regular Comfort Fit",
     custom_fit_text: "",
@@ -410,7 +403,7 @@ const ProductPage = () => {
       : customizeForm.height ? `Height: ${customizeForm.height}` : null;
 
     const actualBust = customizeForm.bust_size === "Custom"
-      ? (customizeForm.custom_bust_text ? `${customizeForm.custom_bust_text}"` : "Custom Bust")
+      ? (customizeForm.custom_bust_text ? `${customizeForm.custom_bust_text} in` : "Custom Bust")
       : customizeForm.bust_size;
 
     const actualCup = customizeForm.cup_size === "Custom"
@@ -418,7 +411,7 @@ const ProductPage = () => {
       : customizeForm.cup_size;
 
     const actualTopLength = customizeForm.top_length === "Custom"
-      ? (customizeForm.custom_top_length_text ? `${customizeForm.custom_top_length_text}"` : "Custom Length")
+      ? (customizeForm.custom_top_length_text ? `${customizeForm.custom_top_length_text} in` : "Custom Length")
       : customizeForm.top_length;
 
     const actualSleeve = (customizeForm.sleeve_type === "Custom" || customizeForm.sleeve_type === "Custom Sleeves")
@@ -434,7 +427,7 @@ const ProductPage = () => {
       : customizeForm.bottom_style;
 
     const actualBottomLength = customizeForm.bottom_length === "Custom"
-      ? (customizeForm.custom_bottom_length_text ? `${customizeForm.custom_bottom_length_text}"` : "Custom Length")
+      ? (customizeForm.custom_bottom_length_text ? `${customizeForm.custom_bottom_length_text} in` : "Custom Length")
       : customizeForm.bottom_length;
 
     const actualFit = customizeForm.fit_preference === "Custom"
@@ -449,8 +442,8 @@ const ProductPage = () => {
       customizeForm.custom_type !== "bottom_only" && actualNeck ? `Neck: ${actualNeck}` : null,
       customizeForm.custom_type !== "bottom_only" && actualTopLength ? `Top Length: ${actualTopLength}` : null,
       customizeForm.custom_type !== "top_only" && actualBottomStyle ? `Bottom Style: ${actualBottomStyle}` : null,
-      customizeForm.waist_size ? `Waist: ${customizeForm.waist_size}"` : null,
-      customizeForm.hip_size ? `Hip: ${customizeForm.hip_size}"` : null,
+      customizeForm.waist_size ? `Waist: ${customizeForm.waist_size} in` : null,
+      customizeForm.hip_size ? `Hip: ${customizeForm.hip_size} in` : null,
       customizeForm.custom_type !== "top_only" && actualBottomLength ? `Bottom Length: ${actualBottomLength}` : null,
       actualFit ? `Fit: ${actualFit}` : null,
     ].filter(Boolean).join(", ");
@@ -572,1219 +565,1213 @@ const ProductPage = () => {
     }
   };
 
-    const [deliveryRules, setDeliveryRules] = useState({
-      free_delivery_order_count: 3,
-      default_delivery_charge: 99
-    });
+  const [deliveryRules, setDeliveryRules] = useState({
+    free_delivery_order_count: 3,
+    default_delivery_charge: 99
+  });
 
-    useEffect(() => {
-      fetch(`${API_BASE_URL}/admin/settings/delivery`)
-        .then((res) => res.json())
-        .then((data) => {
-          setDeliveryRules({
-            free_delivery_order_count: data.free_delivery_order_count ?? 3,
-            default_delivery_charge: data.default_delivery_charge ?? 99
-          });
-        })
-        .catch(() => { });
-    }, []);
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/admin/settings/delivery`)
+      .then((res) => res.json())
+      .then((data) => {
+        setDeliveryRules({
+          free_delivery_order_count: data.free_delivery_order_count ?? 3,
+          default_delivery_charge: data.default_delivery_charge ?? 99
+        });
+      })
+      .catch(() => {});
+  }, []);
 
-    // Delivery Pincode Checker State
-    const [pincode, setPincode] = useState("");
-    const [pincodeStatus, setPincodeStatus] = useState(null); // null | checking | valid | invalid
-    const [pincodeMsg, setPincodeMsg] = useState("");
+  // Delivery Pincode Checker State
+  const [pincode, setPincode] = useState("");
+  const [pincodeStatus, setPincodeStatus] = useState(null); // null | checking | valid | invalid
+  const [pincodeMsg, setPincodeMsg] = useState("");
 
-    // Interactive Reviews & Q&A
-    const [reviewFilter, setReviewFilter] = useState("all");
-    const [helpfulVotes, setHelpfulVotes] = useState({});
-    const [askQModalOpen, setAskQModalOpen] = useState(false);
-    const [qText, setQText] = useState("");
-    const [qSubmitted, setQSubmitted] = useState(false);
+  // Interactive Reviews & Q&A
+  const [reviewFilter, setReviewFilter] = useState("all");
+  const [helpfulVotes, setHelpfulVotes] = useState({});
+  const [askQModalOpen, setAskQModalOpen] = useState(false);
+  const [qText, setQText] = useState("");
+  const [qSubmitted, setQSubmitted] = useState(false);
 
-    // Dynamic viewers & Urgency counters
-    const [viewersCount, setViewersCount] = useState(null);
+  // Dynamic viewers & Urgency counters
+  const [viewersCount, setViewersCount] = useState(null);
 
-    // Dynamic Wishlist count on product
-    const [productWishlistCount, setProductWishlistCount] = useState(0);
+  // Dynamic Wishlist count on product
+  const [productWishlistCount, setProductWishlistCount] = useState(0);
 
-    // Write a Customer Review Modal
-    const [showReviewModal, setShowReviewModal] = useState(false);
-    const [reviewRating, setReviewRating] = useState(5);
-    const [reviewHoverRating, setReviewHoverRating] = useState(0);
-    const [reviewTitle, setReviewTitle] = useState("");
-    const [reviewAuthor, setReviewAuthor] = useState("");
-    const [reviewComment, setReviewComment] = useState("");
-    const [reviewImages, setReviewImages] = useState([]);
-    const [uploadingImage, setUploadingImage] = useState(false);
-    const [reviewSubmitting, setReviewSubmitting] = useState(false);
-    const [reviewFeedback, setReviewFeedback] = useState(null);
+  // Write a Customer Review Modal
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewHoverRating, setReviewHoverRating] = useState(0);
+  const [reviewTitle, setReviewTitle] = useState("");
+  const [reviewAuthor, setReviewAuthor] = useState("");
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewImages, setReviewImages] = useState([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewFeedback, setReviewFeedback] = useState(null);
 
-    // Dynamic coupons
-    const [activeCoupon, setActiveCoupon] = useState(null);
-    const [copiedCoupon, setCopiedCoupon] = useState(false);
+  // Dynamic coupons
+  const [activeCoupon, setActiveCoupon] = useState(null);
+  const [copiedCoupon, setCopiedCoupon] = useState(false);
 
-    // Frequently Bought Together Dynamic Bundle
-    const [bundleProducts, setBundleProducts] = useState([]);
-    const [selectedBundleMap, setSelectedBundleMap] = useState({});
+  // Frequently Bought Together Dynamic Bundle
+  const [bundleProducts, setBundleProducts] = useState([]);
+  const [selectedBundleMap, setSelectedBundleMap] = useState({});
 
-    // Recently Viewed Products
-    const [recentlyViewed, setRecentlyViewed] = useState([]);
+  // Recently Viewed Products
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
 
-    // Auto-resume checkout popup after successful login/signup
-    useEffect(() => {
-      if (user && pendingCheckout && pendingCheckout.type === "buy_now") {
-        setShowCheckout(true);
-      }
-    }, [user, pendingCheckout]);
+  // Auto-resume checkout popup after successful login/signup
+  useEffect(() => {
+    if (user && pendingCheckout && pendingCheckout.type === "buy_now") {
+      setShowCheckout(true);
+    }
+  }, [user, pendingCheckout]);
 
-    /* ── Load Product Data, Reviews & Urgency Counters ── */
-    useEffect(() => {
-      setLoading(true);
-      setError(null);
-      setActiveImg(0);
-      setQuantity(1);
-      setAddedMsg("");
-      setPincodeStatus(null);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+  /* ── Load Product Data, Reviews & Urgency Counters ── */
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    setActiveImg(0);
+    setQuantity(1);
+    setAddedMsg("");
+    setPincodeStatus(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
 
-      // Fetch product details
-      fetch(`${API_BASE_URL}/products/${productId}`)
-        .then((r) => {
-          if (!r.ok) throw new Error("Product not found");
-          return r.json();
-        })
-        .then((data) => {
-          const normalized = { ...data, id: data._id || data.id, meta_catalog_id: data.meta_catalog_id || data.sku || data._id || data.id };
-          setProduct(normalized);
-          trackViewContent(normalized);
-          setProductWishlistCount(normalized.wishlist_count || 0);
-
-          // Auto select first in-stock size
-          if (normalized.sizes?.length > 0) {
-            const firstAvailable = normalized.sizes.find(
-              (s) => (normalized.size_stock?.[s] !== undefined ? normalized.size_stock[s] : 10) > 0
-            );
-            setSelectedSize(firstAvailable || normalized.sizes[0]);
-          }
-          if (normalized.colors?.length > 0) {
-            setSelectedColor(normalized.colors[0]);
-          }
-
-          // Save to Recently Viewed in localStorage (with clean real data)
-          try {
-            const rawRV = localStorage.getItem(RECENTLY_VIEWED_KEY);
-            let list = rawRV ? JSON.parse(rawRV) : [];
-            list = (Array.isArray(list) ? list : []).filter((item) => item && item.id !== normalized.id);
-            list.unshift({
-              id: normalized.id,
-              name: normalized.name,
-              price: normalized.price,
-              original_price: normalized.original_price,
-              discount: normalized.discount,
-              image: normalized.image || (normalized.images && normalized.images[0]) || FALLBACK_IMG,
-              category: normalized.category,
-              rating: normalized.rating || 0.0,
-              review_count: normalized.review_count || 0
-            });
-            localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(list.slice(0, 10)));
-          } catch (e) { }
-        })
-        .catch((e) => setError(e.message))
-        .finally(() => setLoading(false));
-
-      // Record view & fetch dynamic live viewers count from DB
-      fetch(`${API_BASE_URL}/products/${productId}/view`, { method: "POST" })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => {
-          if (data?.viewers_count !== undefined) {
-            setViewersCount(data.viewers_count);
-          }
-        })
-        .catch(() => { });
-
-      // Fetch active coupons dynamically for promotion banner
-      fetch(`${API_BASE_URL}/coupons/public-active`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((c) => {
-          const top = Array.isArray(c) ? c[0] : c;
-          if (top && top.code) setActiveCoupon(top);
-        })
-        .catch(() => { });
-
-      // Fetch catalog products for Frequently Bought Together bundle
-      fetch(`${API_BASE_URL}/products/?limit=12`)
-        .then((r) => (r.ok ? r.json() : []))
-        .then((data) => {
-          const list = (Array.isArray(data) ? data : [])
-            .map((p) => ({ ...p, id: p._id || p.id }))
-            .filter((p) => p.id !== productId);
-          const topBundleItems = list.slice(0, 2);
-          setBundleProducts(topBundleItems);
-          const initialMap = {};
-          topBundleItems.forEach((p) => {
-            initialMap[p.id] = true;
-          });
-          setSelectedBundleMap(initialMap);
-        })
-        .catch(() => { });
-
-      // Fetch approved customer reviews for product dynamically from backend API
-      fetch(`${API_BASE_URL}/reviews/product/${productId}`)
-        .then((r) => (r.ok ? r.json() : []))
-        .then((revs) => {
-          setDbReviews(Array.isArray(revs) ? revs : []);
-        })
-        .catch(() => setDbReviews([]));
-
-      // Fetch aggregated review stats & customer uploaded photos
-      fetch(`${API_BASE_URL}/reviews/product/${productId}/stats`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((stats) => {
-          if (stats) setReviewStats(stats);
-        })
-        .catch(() => { });
-    }, [productId]);
-
-    // Load Recently Viewed list from localStorage and validate against real active database products
-    useEffect(() => {
-      fetch(`${API_BASE_URL}/products/?limit=50`)
-        .then((r) => (r.ok ? r.json() : []))
-        .then((allProds) => {
-          const prodList = (Array.isArray(allProds) ? allProds : []).map((p) => ({
-            ...p,
-            id: p._id || p.id,
-          }));
-          const validMap = new Map();
-          prodList.forEach((p) => validMap.set(String(p.id), p));
-
-          try {
-            const rawRV = localStorage.getItem(RECENTLY_VIEWED_KEY);
-            if (rawRV) {
-              const parsed = JSON.parse(rawRV);
-              // Retain ONLY products that actually exist in the current store database
-              const valid = (Array.isArray(parsed) ? parsed : [])
-                .filter(
-                  (item) =>
-                    item &&
-                    item.id &&
-                    validMap.has(String(item.id)) &&
-                    String(item.id) !== String(productId)
-                )
-                .map((item) => {
-                  // Sync with latest catalog details (image, price, rating, review_count)
-                  const live = validMap.get(String(item.id));
-                  return {
-                    ...item,
-                    name: live.name || item.name,
-                    image: live.image || item.image,
-                    price: live.price ?? item.price,
-                    original_price: live.original_price ?? item.original_price,
-                    discount: live.discount ?? item.discount,
-                    rating: live.rating ?? 0.0,
-                    review_count: live.review_count ?? 0,
-                  };
-                });
-
-              setRecentlyViewed(valid);
-              localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(valid.slice(0, 10)));
-            }
-          } catch (e) { }
-        })
-        .catch(() => { });
-    }, [productId]);
-
-    /* ── Fetch Related Products ── */
-    useEffect(() => {
-      if (!product?.category) return;
-      fetch(
-        `${API_BASE_URL}/products/?category=${encodeURIComponent(product.category)}&limit=13`
-      )
-        .then((r) => r.json())
-        .then((data) => {
-          const list = (Array.isArray(data) ? data : [])
-            .map((p) => ({ ...p, id: p._id || p.id }))
-            .filter((p) => p.id !== product.id)
-            .slice(0, 12);
-          setRelated(list);
-        })
-        .catch(() => { });
-    }, [product?.category, product?.id]);
-
-    /* ── Wishlist Toggle with Live Counter Sync ── */
-    const handleWishlistToggle = useCallback(() => {
-      if (!product) return;
-      const isCurrentlyIn = isInWishlist(product.id);
-      toggleWishlist(product);
-      setProductWishlistCount((prev) => (isCurrentlyIn ? Math.max(0, prev - 1) : prev + 1));
-    }, [product, isInWishlist, toggleWishlist]);
-
-    /* ── Open Review Modal ── */
-    const handleOpenReviewModal = () => {
-      if (!user) {
-        setAddedMsg("Please log in to review this kurti.");
-        setTimeout(() => setAddedMsg(""), 3000);
-        if (openLoginModal) openLoginModal();
-        return;
-      }
-      setReviewRating(5);
-      setReviewHoverRating(0);
-      setReviewTitle("");
-      setReviewAuthor(user?.name || "");
-      setReviewComment("");
-      setReviewImages([]);
-      setReviewFeedback(null);
-      setShowReviewModal(true);
-    };
-
-    /* ── Review Photo Upload & Removal Handlers ── */
-    const handleImageUpload = async (e) => {
-      const files = Array.from(e.target.files || []);
-      if (!files.length) return;
-
-      if (reviewImages.length + files.length > 4) {
-        setReviewFeedback({ type: "error", message: "You can upload a maximum of 4 photos." });
-        return;
-      }
-
-      setUploadingImage(true);
-      setReviewFeedback(null);
-      const token = localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
-
-      try {
-        for (const file of files) {
-          const formData = new FormData();
-          formData.append("file", file);
-          const res = await fetch(`${API_BASE_URL}/upload/review-image`, {
-            method: "POST",
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-            body: formData,
-          });
-          if (res.ok) {
-            const data = await res.json();
-            if (data.url) {
-              const fullUrl = data.url.startsWith("http") ? data.url : `${API_BASE_URL}${data.url}`;
-              setReviewImages((prev) => [...prev, fullUrl]);
-            }
-          } else {
-            throw new Error("Failed to upload image");
-          }
+    // Fetch product details
+    fetch(`${API_BASE_URL}/products/${productId}`)
+      .then((r) => {
+        if (!r.ok) throw new Error("Product not found");
+        return r.json();
+      })
+      .then((data) => {
+        const normalized = { ...data, id: data._id || data.id, meta_catalog_id: data.meta_catalog_id || data.sku || data._id || data.id };
+        setProduct(normalized);
+        trackViewContent(normalized);
+        setProductWishlistCount(normalized.wishlist_count || 0);
+        
+        // Auto select first in-stock size
+        if (normalized.sizes?.length > 0) {
+          const firstAvailable = normalized.sizes.find(
+            (s) => (normalized.size_stock?.[s] !== undefined ? normalized.size_stock[s] : 10) > 0
+          );
+          setSelectedSize(firstAvailable || normalized.sizes[0]);
         }
-      } catch (err) {
-        console.error("Image upload error:", err);
-        setReviewFeedback({ type: "error", message: "Failed to upload photo. Please ensure it is JPG or PNG under 15MB." });
-      } finally {
-        setUploadingImage(false);
-      }
-    };
+        if (normalized.colors?.length > 0) {
+          setSelectedColor(normalized.colors[0]);
+        }
 
-    const removeReviewImage = (indexToRemove) => {
-      setReviewImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
-    };
+        // Save to Recently Viewed in localStorage (with clean real data)
+        try {
+          const rawRV = localStorage.getItem(RECENTLY_VIEWED_KEY);
+          let list = rawRV ? JSON.parse(rawRV) : [];
+          list = (Array.isArray(list) ? list : []).filter((item) => item && item.id !== normalized.id);
+          list.unshift({
+            id: normalized.id,
+            name: normalized.name,
+            price: normalized.price,
+            original_price: normalized.original_price,
+            discount: normalized.discount,
+            image: normalized.image || (normalized.images && normalized.images[0]) || FALLBACK_IMG,
+            category: normalized.category,
+            rating: normalized.rating || 0.0,
+            review_count: normalized.review_count || 0
+          });
+          localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(list.slice(0, 10)));
+        } catch (e) {}
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
 
-    /* ── Submit Customer Review (Submits as Pending for Admin Approval) ── */
-    const handleSubmitReview = async (e) => {
-      e.preventDefault();
-      if (!product) return;
-      if (!user) {
-        setReviewFeedback({ type: "error", message: "Please log in to submit your review." });
-        if (openLoginModal) openLoginModal();
-        return;
-      }
+    // Record view & fetch dynamic live viewers count from DB
+    fetch(`${API_BASE_URL}/products/${productId}/view`, { method: "POST" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.viewers_count !== undefined) {
+          setViewersCount(data.viewers_count);
+        }
+      })
+      .catch(() => {});
 
-      setReviewSubmitting(true);
-      setReviewFeedback(null);
-      try {
-        const authorName = user?.full_name || user?.name || (user?.email ? user.email.split("@")[0] : "Verified Customer");
-        const token = localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
-        const headers = { "Content-Type": "application/json" };
-        if (token) headers["Authorization"] = `Bearer ${token}`;
+    // Fetch active coupons dynamically for promotion banner
+    fetch(`${API_BASE_URL}/coupons/public-active`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((c) => {
+        const top = Array.isArray(c) ? c[0] : c;
+        if (top && top.code) setActiveCoupon(top);
+      })
+      .catch(() => {});
 
-        const res = await fetch(`${API_BASE_URL}/reviews/`, {
+    // Fetch catalog products for Frequently Bought Together bundle
+    fetch(`${API_BASE_URL}/products/?limit=12`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        const list = (Array.isArray(data) ? data : [])
+          .map((p) => ({ ...p, id: p._id || p.id }))
+          .filter((p) => p.id !== productId);
+        const topBundleItems = list.slice(0, 2);
+        setBundleProducts(topBundleItems);
+        const initialMap = {};
+        topBundleItems.forEach((p) => {
+          initialMap[p.id] = true;
+        });
+        setSelectedBundleMap(initialMap);
+      })
+      .catch(() => {});
+
+    // Fetch approved customer reviews for product dynamically from backend API
+    fetch(`${API_BASE_URL}/reviews/product/${productId}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((revs) => {
+        setDbReviews(Array.isArray(revs) ? revs : []);
+      })
+      .catch(() => setDbReviews([]));
+
+    // Fetch aggregated review stats & customer uploaded photos
+    fetch(`${API_BASE_URL}/reviews/product/${productId}/stats`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((stats) => {
+        if (stats) setReviewStats(stats);
+      })
+      .catch(() => {});
+  }, [productId]);
+
+  // Load Recently Viewed list from localStorage and validate against real active database products
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/products/?limit=50`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((allProds) => {
+        const prodList = (Array.isArray(allProds) ? allProds : []).map((p) => ({
+          ...p,
+          id: p._id || p.id,
+        }));
+        const validMap = new Map();
+        prodList.forEach((p) => validMap.set(String(p.id), p));
+
+        try {
+          const rawRV = localStorage.getItem(RECENTLY_VIEWED_KEY);
+          if (rawRV) {
+            const parsed = JSON.parse(rawRV);
+            // Retain ONLY products that actually exist in the current store database
+            const valid = (Array.isArray(parsed) ? parsed : [])
+              .filter(
+                (item) =>
+                  item &&
+                  item.id &&
+                  validMap.has(String(item.id)) &&
+                  String(item.id) !== String(productId)
+              )
+              .map((item) => {
+                // Sync with latest catalog details (image, price, rating, review_count)
+                const live = validMap.get(String(item.id));
+                return {
+                  ...item,
+                  name: live.name || item.name,
+                  image: live.image || item.image,
+                  price: live.price ?? item.price,
+                  original_price: live.original_price ?? item.original_price,
+                  discount: live.discount ?? item.discount,
+                  rating: live.rating ?? 0.0,
+                  review_count: live.review_count ?? 0,
+                };
+              });
+
+            setRecentlyViewed(valid);
+            localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(valid.slice(0, 10)));
+          }
+        } catch (e) {}
+      })
+      .catch(() => {});
+  }, [productId]);
+
+  /* ── Fetch Related Products ── */
+  useEffect(() => {
+    if (!product?.category) return;
+    fetch(
+      `${API_BASE_URL}/products/?category=${encodeURIComponent(product.category)}&limit=13`
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        const list = (Array.isArray(data) ? data : [])
+          .map((p) => ({ ...p, id: p._id || p.id }))
+          .filter((p) => p.id !== product.id)
+          .slice(0, 12);
+        setRelated(list);
+      })
+      .catch(() => {});
+  }, [product?.category, product?.id]);
+
+  /* ── Wishlist Toggle with Live Counter Sync ── */
+  const handleWishlistToggle = useCallback(() => {
+    if (!product) return;
+    const isCurrentlyIn = isInWishlist(product.id);
+    toggleWishlist(product);
+    setProductWishlistCount((prev) => (isCurrentlyIn ? Math.max(0, prev - 1) : prev + 1));
+  }, [product, isInWishlist, toggleWishlist]);
+
+  /* ── Open Review Modal ── */
+  const handleOpenReviewModal = () => {
+    if (!user) {
+      setAddedMsg("Please log in to review this kurti.");
+      setTimeout(() => setAddedMsg(""), 3000);
+      if (openLoginModal) openLoginModal();
+      return;
+    }
+    setReviewRating(5);
+    setReviewHoverRating(0);
+    setReviewTitle("");
+    setReviewAuthor(user?.name || "");
+    setReviewComment("");
+    setReviewImages([]);
+    setReviewFeedback(null);
+    setShowReviewModal(true);
+  };
+
+  /* ── Review Photo Upload & Removal Handlers ── */
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    if (reviewImages.length + files.length > 4) {
+      setReviewFeedback({ type: "error", message: "You can upload a maximum of 4 photos." });
+      return;
+    }
+
+    setUploadingImage(true);
+    setReviewFeedback(null);
+    const token = localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
+
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch(`${API_BASE_URL}/upload/review-image`, {
           method: "POST",
-          headers,
-          body: JSON.stringify({
-            product_id: product.id,
-            product_name: product.name,
-            rating: Number(reviewRating),
-            user_name: authorName,
-            comment: reviewComment.trim() || undefined,
-            images: reviewImages,
-          }),
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: formData,
         });
         if (res.ok) {
-          setReviewComment("");
-          setReviewImages([]);
-          setShowReviewModal(false);
-          setAddedMsg("Thank you! Your review has been submitted for admin verification.");
-          setTimeout(() => setAddedMsg(""), 4000);
+          const data = await res.json();
+          if (data.url) {
+            const fullUrl = data.url.startsWith("http") ? data.url : `${API_BASE_URL}${data.url}`;
+            setReviewImages((prev) => [...prev, fullUrl]);
+          }
         } else {
-          const errData = await res.json().catch(() => ({}));
-          setReviewFeedback({
-            type: "error",
-            message: errData.detail || "Could not submit review. Please try again.",
-          });
+          throw new Error("Failed to upload image");
         }
-      } catch (err) {
-        setReviewFeedback({ type: "error", message: "Error submitting review. Please check your network connection." });
-      } finally {
-        setReviewSubmitting(false);
       }
-    };
+    } catch (err) {
+      console.error("Image upload error:", err);
+      setReviewFeedback({ type: "error", message: "Failed to upload photo. Please ensure it is JPG or PNG under 15MB." });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
-    /* ── Add to Cart & Buy Now Handlers ── */
-    const handleAddToCart = useCallback(
-      async (goToCart = false) => {
-        if (!product) return;
-        const dealLabel = isSaleMode ? (product.deal_text || "Mega Sale Deal") : null;
-        const ok = await addToCart({
+  const removeReviewImage = (indexToRemove) => {
+    setReviewImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  /* ── Submit Customer Review (Submits as Pending for Admin Approval) ── */
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!product) return;
+    if (!user) {
+      setReviewFeedback({ type: "error", message: "Please log in to submit your review." });
+      if (openLoginModal) openLoginModal();
+      return;
+    }
+
+    setReviewSubmitting(true);
+    setReviewFeedback(null);
+    try {
+      const authorName = user?.full_name || user?.name || (user?.email ? user.email.split("@")[0] : "Verified Customer");
+      const token = localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const res = await fetch(`${API_BASE_URL}/reviews/`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
           product_id: product.id,
-          name: isSaleMode && dealLabel ? `${product.name} [${dealLabel}]` : product.name,
-          price: currentPrice,
-          image: product.image,
-          size: selectedSize,
-          color: selectedColor,
-          quantity,
-          deal_text: dealLabel,
-          offer_type: isSaleMode ? "megasale" : "standard",
+          product_name: product.name,
+          rating: Number(reviewRating),
+          user_name: authorName,
+          comment: reviewComment.trim() || undefined,
+          images: reviewImages,
+        }),
+      });
+      if (res.ok) {
+        setReviewComment("");
+        setReviewImages([]);
+        setShowReviewModal(false);
+        setAddedMsg("Thank you! Your review has been submitted for admin verification.");
+        setTimeout(() => setAddedMsg(""), 4000);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setReviewFeedback({
+          type: "error",
+          message: errData.detail || "Could not submit review. Please try again.",
         });
-        if (ok) {
-          setAddedMsg(goToCart ? "" : "Added to cart!");
-          if (goToCart) navigate("/cart");
-          else setTimeout(() => setAddedMsg(""), 2000);
-        }
-      },
-      [product, isSaleMode, currentPrice, selectedSize, selectedColor, quantity, addToCart, navigate]
-    );
+      }
+    } catch (err) {
+      setReviewFeedback({ type: "error", message: "Error submitting review. Please check your network connection." });
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
 
-    const handleBuyNow = useCallback(() => {
+  /* ── Add to Cart & Buy Now Handlers ── */
+  const handleAddToCart = useCallback(
+    async (goToCart = false) => {
       if (!product) return;
       const dealLabel = isSaleMode ? (product.deal_text || "Mega Sale Deal") : null;
-      const buyItem = {
+      const ok = await addToCart({
         product_id: product.id,
         name: isSaleMode && dealLabel ? `${product.name} [${dealLabel}]` : product.name,
-        image: product.image,
         price: currentPrice,
+        image: product.image,
+        size: selectedSize,
+        color: selectedColor,
         quantity,
-        size: selectedSize || "",
-        color: selectedColor || "",
-        productUrl: window.location.pathname,
         deal_text: dealLabel,
         offer_type: isSaleMode ? "megasale" : "standard",
-      };
-      if (!user) {
-        openLoginModal(`🔐 Please sign in to complete your purchase of "${product.name}"`, {
-          type: "buy_now",
-          item: buyItem,
-        });
-        return;
+      });
+      if (ok) {
+        setAddedMsg(goToCart ? "" : "Added to cart!");
+        if (goToCart) navigate("/cart");
+        else setTimeout(() => setAddedMsg(""), 2000);
       }
-      setShowCheckout(true);
-    }, [product, isSaleMode, currentPrice, user, quantity, selectedSize, selectedColor, openLoginModal]);
+    },
+    [product, isSaleMode, currentPrice, selectedSize, selectedColor, quantity, addToCart, navigate]
+  );
 
-    const dealLabel = isSaleMode ? (product?.deal_text || "Mega Sale Deal") : null;
-    const buyNowItem = pendingCheckout?.item
-      ? [pendingCheckout.item]
-      : product
-        ? [
-          {
-            product_id: product.id,
-            name: isSaleMode && dealLabel ? `${product.name} [${dealLabel}]` : product.name,
-            image: product.image,
-            price: currentPrice,
-            quantity,
-            size: selectedSize || "",
-            color: selectedColor || "",
-            deal_text: dealLabel,
-            offer_type: isSaleMode ? "megasale" : "standard",
-          },
-        ]
-        : [];
-    const buyNowSubtotal = buyNowItem[0] ? buyNowItem[0].price * buyNowItem[0].quantity : 0;
-    const userOrderCount = user?.orders_count || 0;
-    const isFreeDeliveryForUser = userOrderCount < (deliveryRules?.free_delivery_order_count ?? 3);
-    const buyNowShipping = isFreeDeliveryForUser || buyNowSubtotal >= 999 || buyNowSubtotal === 0 ? 0 : (deliveryRules?.default_delivery_charge ?? 99);
-    const buyNowTotal = buyNowSubtotal + buyNowShipping;
-
-    /* ── PIN Code Servicability Check ── */
-    const handlePincodeCheck = (e) => {
-      e.preventDefault();
-      if (!pincode || pincode.trim().length !== 6 || isNaN(pincode)) {
-        setPincodeStatus("invalid");
-        setPincodeMsg("Please enter a valid 6-digit PIN code.");
-        return;
-      }
-      setPincodeStatus("checking");
-      setTimeout(() => {
-        setPincodeStatus("valid");
-        setPincodeMsg("Delivery available! Express Shipping: 3-5 business days. Cash on Delivery Available.");
-      }, 600);
+  const handleBuyNow = useCallback(() => {
+    if (!product) return;
+    const dealLabel = isSaleMode ? (product.deal_text || "Mega Sale Deal") : null;
+    const buyItem = {
+      product_id: product.id,
+      name: isSaleMode && dealLabel ? `${product.name} [${dealLabel}]` : product.name,
+      image: product.image,
+      price: currentPrice,
+      quantity,
+      size: selectedSize || "",
+      color: selectedColor || "",
+      productUrl: window.location.pathname,
+      deal_text: dealLabel,
+      offer_type: isSaleMode ? "megasale" : "standard",
     };
+    if (!user) {
+      openLoginModal(`🔐 Please sign in to complete your purchase of "${product.name}"`, {
+        type: "buy_now",
+        item: buyItem,
+      });
+      return;
+    }
+    setShowCheckout(true);
+  }, [product, isSaleMode, currentPrice, user, quantity, selectedSize, selectedColor, openLoginModal]);
 
-    /* ── Canonical Product Link Copy ── */
-    const copyProductLink = async (e) => {
-      if (e) e.stopPropagation();
-      const canonicalId = product?._id || product?.id || productId;
-      const canonicalUrl = `https://naripehnawa.com/product/${canonicalId}`;
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(canonicalUrl);
-        } else {
-          const textArea = document.createElement("textarea");
-          textArea.value = canonicalUrl;
-          textArea.style.position = "fixed";
-          textArea.style.opacity = "0";
-          document.body.appendChild(textArea);
-          textArea.select();
-          document.execCommand("copy");
-          document.body.removeChild(textArea);
+  const dealLabel = isSaleMode ? (product?.deal_text || "Mega Sale Deal") : null;
+  const buyNowItem = pendingCheckout?.item
+    ? [pendingCheckout.item]
+    : product
+    ? [
+        {
+          product_id: product.id,
+          name: isSaleMode && dealLabel ? `${product.name} [${dealLabel}]` : product.name,
+          image: product.image,
+          price: currentPrice,
+          quantity,
+          size: selectedSize || "",
+          color: selectedColor || "",
+          deal_text: dealLabel,
+          offer_type: isSaleMode ? "megasale" : "standard",
+        },
+      ]
+    : [];
+  const buyNowSubtotal = buyNowItem[0] ? buyNowItem[0].price * buyNowItem[0].quantity : 0;
+  const userOrderCount = user?.orders_count || 0;
+  const isFreeDeliveryForUser = userOrderCount < (deliveryRules?.free_delivery_order_count ?? 3);
+  const buyNowShipping = isFreeDeliveryForUser || buyNowSubtotal >= 999 || buyNowSubtotal === 0 ? 0 : (deliveryRules?.default_delivery_charge ?? 99);
+  const buyNowTotal = buyNowSubtotal + buyNowShipping;
+
+  /* ── PIN Code Servicability Check ── */
+  const handlePincodeCheck = (e) => {
+    e.preventDefault();
+    if (!pincode || pincode.trim().length !== 6 || isNaN(pincode)) {
+      setPincodeStatus("invalid");
+      setPincodeMsg("Please enter a valid 6-digit PIN code.");
+      return;
+    }
+    setPincodeStatus("checking");
+    setTimeout(() => {
+      setPincodeStatus("valid");
+      setPincodeMsg("Delivery available! Express Shipping: 3-5 business days. Cash on Delivery Available.");
+    }, 600);
+  };
+
+  /* ── Canonical Product Link Copy ── */
+  const copyProductLink = async (e) => {
+    if (e) e.stopPropagation();
+    const canonicalId = product?._id || product?.id || productId;
+    const canonicalUrl = `https://naripehnawa.com/product/${canonicalId}`;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(canonicalUrl);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = canonicalUrl;
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    } catch (err) {
+      console.error("Failed to copy canonical product link:", err);
+    }
+  };
+
+  /* ── Helpful Review Vote ── */
+  const toggleHelpful = (reviewId) => {
+    setHelpfulVotes((prev) => ({
+      ...prev,
+      [reviewId]: !prev[reviewId],
+    }));
+  };
+
+  const rawImages = product?.images?.length > 0 ? product.images : [product?.image].filter(Boolean);
+  const images = rawImages.map(img => resolveImageUrl(img, FALLBACK_IMG));
+  const catSlug = slugify(product?.category || "");
+  const discount = product?.discount || 0;
+  const sku = `NP-${(product?.category || "KRT").slice(0, 3).toUpperCase()}-${(product?.id || "101").slice(-5).toUpperCase()}`;
+
+  /* ── JSON-LD Structured Data for Google Rich Snippets ── */
+  const jsonLdSchema = useMemo(() => {
+    if (!product) return null;
+    return {
+      "@context": "https://schema.org/",
+      "@type": "Product",
+      "name": product.name,
+      "image": images,
+      "description": product.description,
+      "sku": sku,
+      "brand": {
+        "@type": "Brand",
+        "name": product.brand || "Nari Pehnawa"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": window.location.href,
+        "priceCurrency": "INR",
+        "price": product.price,
+        "availability": product.in_stock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        "itemCondition": "https://schema.org/NewCondition"
+      },
+      ...((reviewStats?.total_reviews > 0 || product.review_count > 0) ? {
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": reviewStats?.total_reviews > 0 ? reviewStats.average_rating : (product.rating || 5.0),
+          "reviewCount": reviewStats?.total_reviews > 0 ? reviewStats.total_reviews : (product.review_count || 1)
         }
-        setCopiedLink(true);
-        setTimeout(() => setCopiedLink(false), 2500);
-      } catch (err) {
-        console.error("Failed to copy canonical product link:", err);
-      }
+      } : {})
     };
+  }, [product, images, sku, reviewStats]);
 
-    /* ── Helpful Review Vote ── */
-    const toggleHelpful = (reviewId) => {
-      setHelpfulVotes((prev) => ({
-        ...prev,
-        [reviewId]: !prev[reviewId],
-      }));
-    };
-
-    const rawImages = product?.images?.length > 0 ? product.images : [product?.image].filter(Boolean);
-    const images = rawImages.map(img => resolveImageUrl(img, FALLBACK_IMG));
-    const catSlug = slugify(product?.category || "");
-    const discount = product?.discount || 0;
-    const sku = `NP-${(product?.category || "KRT").slice(0, 3).toUpperCase()}-${(product?.id || "101").slice(-5).toUpperCase()}`;
-
-    /* ── JSON-LD Structured Data for Google Rich Snippets ── */
-    const jsonLdSchema = useMemo(() => {
-      if (!product) return null;
-      return {
-        "@context": "https://schema.org/",
-        "@type": "Product",
-        "name": product.name,
-        "image": images,
-        "description": product.description,
-        "sku": sku,
-        "brand": {
-          "@type": "Brand",
-          "name": product.brand || "Nari Pehnawa"
-        },
-        "offers": {
-          "@type": "Offer",
-          "url": window.location.href,
-          "priceCurrency": "INR",
-          "price": product.price,
-          "availability": product.in_stock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-          "itemCondition": "https://schema.org/NewCondition"
-        },
-        ...((reviewStats?.total_reviews > 0 || product.review_count > 0) ? {
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": reviewStats?.total_reviews > 0 ? reviewStats.average_rating : (product.rating || 5.0),
-            "reviewCount": reviewStats?.total_reviews > 0 ? reviewStats.total_reviews : (product.review_count || 1)
-          }
-        } : {})
-      };
-    }, [product, images, sku, reviewStats]);
-
-    if (loading) {
-      return (
-        <div className="flex flex-col items-center justify-center py-32 bg-white min-h-[60vh]">
-          <Loader2 className="w-10 h-10 text-[#8B0000] animate-spin mb-3" />
-          <p className="text-sm font-medium text-gray-500">Loading kurti details…</p>
-        </div>
-      );
-    }
-
-    if (error || !product) {
-      return (
-        <div className="flex flex-col items-center justify-center py-32 text-center px-4 bg-white min-h-[60vh]">
-          <p className="text-xl font-bold text-gray-800 mb-2">Product Not Found</p>
-          <p className="text-sm text-gray-500 mb-6">{error || "The product you are looking for does not exist."}</p>
-          <Link
-            to="/"
-            className="px-6 py-3 bg-[#8B0000] text-white rounded-full text-sm font-semibold hover:bg-[#6B0000] transition-colors shadow-md"
-          >
-            Explore Collection
-          </Link>
-        </div>
-      );
-    }
-
+  if (loading) {
     return (
-      <div className="bg-white min-h-screen">
-        {/* ── JSON-LD Structured Data ── */}
-        {jsonLdSchema && (
-          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdSchema) }} />
-        )}
+      <div className="flex flex-col items-center justify-center py-32 bg-white min-h-[60vh]">
+        <Loader2 className="w-10 h-10 text-[#8B0000] animate-spin mb-3" />
+        <p className="text-sm font-medium text-gray-500">Loading kurti details…</p>
+      </div>
+    );
+  }
 
-        {/* ── Breadcrumb Navigation ── */}
-        <div className="bg-gray-50 border-b border-gray-100">
-          <div className="max-w-[1300px] mx-auto px-4 xl:px-8 py-2.5 flex items-center justify-between gap-4 text-xs text-gray-500 overflow-x-auto whitespace-nowrap">
-            <div className="flex items-center gap-1.5">
-              <Link to="/" className="hover:text-[#8B0000] transition-colors">Home</Link>
-              <ChevronRight className="w-3 h-3 flex-shrink-0" />
-              <Link to={`/category/${catSlug}`} className="hover:text-[#8B0000] transition-colors">{product.category}</Link>
-              <ChevronRight className="w-3 h-3 flex-shrink-0" />
-              <span className="text-gray-800 font-medium truncate max-w-[200px] sm:max-w-[350px]">{product.name}</span>
-            </div>
+  if (error || !product) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-center px-4 bg-white min-h-[60vh]">
+        <p className="text-xl font-bold text-gray-800 mb-2">Product Not Found</p>
+        <p className="text-sm text-gray-500 mb-6">{error || "The product you are looking for does not exist."}</p>
+        <Link
+          to="/"
+          className="px-6 py-3 bg-[#8B0000] text-white rounded-full text-sm font-semibold hover:bg-[#6B0000] transition-colors shadow-md"
+        >
+          Explore Collection
+        </Link>
+      </div>
+    );
+  }
 
-            <button
-              onClick={() => setShowShareModal(true)}
-              className="flex items-center gap-1.5 text-gray-600 hover:text-[#8B0000] transition-colors font-medium ml-auto flex-shrink-0"
-            >
-              <Share2 className="w-3.5 h-3.5" /> Share
-            </button>
+  return (
+    <div className="bg-white min-h-screen">
+      {/* ── JSON-LD Structured Data ── */}
+      {jsonLdSchema && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdSchema) }} />
+      )}
+
+      {/* ── Breadcrumb Navigation ── */}
+      <div className="bg-gray-50 border-b border-gray-100">
+        <div className="max-w-[1300px] mx-auto px-4 xl:px-8 py-2.5 flex items-center justify-between gap-4 text-xs text-gray-500 overflow-x-auto whitespace-nowrap">
+          <div className="flex items-center gap-1.5">
+            <Link to="/" className="hover:text-[#8B0000] transition-colors">Home</Link>
+            <ChevronRight className="w-3 h-3 flex-shrink-0" />
+            <Link to={`/category/${catSlug}`} className="hover:text-[#8B0000] transition-colors">{product.category}</Link>
+            <ChevronRight className="w-3 h-3 flex-shrink-0" />
+            <span className="text-gray-800 font-medium truncate max-w-[200px] sm:max-w-[350px]">{product.name}</span>
           </div>
+
+          <button
+            onClick={() => setShowShareModal(true)}
+            className="flex items-center gap-1.5 text-gray-600 hover:text-[#8B0000] transition-colors font-medium ml-auto flex-shrink-0"
+          >
+            <Share2 className="w-3.5 h-3.5" /> Share
+          </button>
         </div>
+      </div>
 
-        {/* ── Main Product Grid Section ── */}
-        <div className="max-w-[1300px] mx-auto px-4 xl:px-8 py-6 md:py-8 pb-28 sm:pb-12 w-full">
-          <div className="flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-12 items-start w-full">
+      {/* ── Main Product Grid Section ── */}
+      <div className="max-w-[1300px] mx-auto px-4 xl:px-8 py-6 md:py-8 pb-28 sm:pb-12 w-full">
+        <div className="flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-12 items-start w-full">
+          
+          {/* ═══════ LEFT: Sticky Image Gallery & Video Preview ═══════ */}
+          <div className="w-full lg:sticky lg:top-24 space-y-3.5">
+            <div
+              className="relative w-full rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center min-h-[340px] sm:min-h-[480px] max-h-[580px] shadow-sm select-none"
+              style={{ cursor: isZoomed ? "zoom-out" : "zoom-in" }}
+              onMouseEnter={() => {
+                setIsHovered(true);
+                setSliderPaused(true);
+              }}
+              onMouseLeave={() => {
+                setIsHovered(false);
+                setIsZoomed(false);
+                setSliderPaused(false);
+                setZoomPos({ x: 50, y: 50 });
+              }}
+              onMouseMove={handleImgMouseMove}
+              onClick={() => {
+                if (didSwipe.current) {
+                  didSwipe.current = false;
+                  return;
+                }
+                setIsZoomed((prev) => !prev);
+              }}
+              onTouchStart={handleImgTouchStart}
+              onTouchMove={handleImgTouchMove}
+              onTouchEnd={handleImgTouchEnd}
+            >
+              {discount > 0 && (
+                <span className="absolute top-3.5 left-3.5 z-10 bg-red-600 text-white text-xs font-extrabold px-3 py-1 rounded-md shadow-md uppercase tracking-wider pointer-events-none">
+                  {discount}% OFF
+                </span>
+              )}
+              {product.is_new && !discount && (
+                <span className="absolute top-3.5 left-3.5 z-10 bg-emerald-600 text-white text-xs font-extrabold px-3 py-1 rounded-md shadow-md uppercase tracking-wider pointer-events-none">
+                  NEW ARRIVAL
+                </span>
+              )}
 
-            {/* ═══════ LEFT: Sticky Image Gallery & Video Preview ═══════ */}
-            <div className="w-full lg:sticky lg:top-24 space-y-3.5">
-              <div
-                className="relative w-full rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center min-h-[340px] sm:min-h-[480px] max-h-[580px] shadow-sm select-none"
-                style={{ cursor: isZoomed ? "zoom-out" : "zoom-in" }}
-                onMouseEnter={() => {
-                  setIsHovered(true);
-                  setSliderPaused(true);
-                }}
-                onMouseLeave={() => {
-                  setIsHovered(false);
-                  setIsZoomed(false);
-                  setSliderPaused(false);
-                  setZoomPos({ x: 50, y: 50 });
-                }}
-                onMouseMove={handleImgMouseMove}
-                onClick={() => {
-                  if (didSwipe.current) {
-                    didSwipe.current = false;
-                    return;
-                  }
-                  setIsZoomed((prev) => !prev);
-                }}
-                onTouchStart={handleImgTouchStart}
-                onTouchMove={handleImgTouchMove}
-                onTouchEnd={handleImgTouchEnd}
-              >
-                {/* Deal / Discount Badge on Main Image */}
-                {isBogoProduct ? (
-                  <span className="absolute top-3.5 left-3.5 z-10 bg-gradient-to-r from-[#8B0000] via-rose-700 to-amber-600 text-white text-xs font-black px-3 py-1 rounded-md shadow-md uppercase tracking-wider pointer-events-none flex items-center gap-1">
-                    <Flame className="w-3.5 h-3.5 fill-white text-white" />
-                    BUY 1 GET 1 FREE
-                  </span>
-                ) : isSaleMode && product.deal_text ? (
-                  <span className="absolute top-3.5 left-3.5 z-10 bg-gradient-to-r from-[#8B0000] via-rose-700 to-amber-600 text-white text-xs font-black px-3 py-1 rounded-md shadow-md uppercase tracking-wider pointer-events-none flex items-center gap-1">
-                    <Flame className="w-3.5 h-3.5 fill-white text-white" />
-                    {product.deal_text}
-                  </span>
-                ) : discount > 0 && !isSaleMode ? (
-                  <span className="absolute top-3.5 left-3.5 z-10 bg-red-600 text-white text-xs font-extrabold px-3 py-1 rounded-md shadow-md uppercase tracking-wider pointer-events-none">
-                    {discount}% OFF
-                  </span>
-                ) : product.is_new ? (
-                  <span className="absolute top-3.5 left-3.5 z-10 bg-emerald-600 text-white text-xs font-extrabold px-3 py-1 rounded-md shadow-md uppercase tracking-wider pointer-events-none">
-                    NEW ARRIVAL
-                  </span>
-                ) : null}
-
-                {/* Floating Overlay Action Buttons on Mobile (Share & Wishlist) */}
-                <div className="absolute top-3.5 right-3.5 z-20 flex items-center gap-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowShareModal(true);
-                    }}
-                    className="w-9 h-9 flex items-center justify-center rounded-full bg-white/90 shadow-md text-gray-700 hover:text-[#8B0000] hover:bg-white transition-all cursor-pointer"
-                    title="Share product"
-                  >
-                    <Share2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleWishlistToggle();
-                    }}
-                    className="w-9 h-9 flex items-center justify-center rounded-full bg-white/90 shadow-md text-gray-700 hover:bg-white transition-all cursor-pointer"
-                    title="Wishlist product"
-                  >
-                    <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? "fill-red-500 text-red-500" : "text-gray-700"}`} />
-                  </button>
-                </div>
-
-                {/* Left Arrow Button for Image Slider */}
-                {images.length > 1 && !isZoomed && (
-                  <button
-                    onClick={handlePrevImg}
-                    className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/85 hover:bg-white text-gray-800 shadow-md flex items-center justify-center backdrop-blur-sm transition-all hover:scale-105 cursor-pointer opacity-90 hover:opacity-100"
-                    aria-label="Previous image"
-                    title="Previous image"
-                  >
-                    <ChevronLeft className="w-5 h-5 text-gray-800" />
-                  </button>
-                )}
-
-                {/* Right Arrow Button for Image Slider */}
-                {images.length > 1 && !isZoomed && (
-                  <button
-                    onClick={handleNextImg}
-                    className="absolute right-2.5 sm:right-3.5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/85 hover:bg-white text-gray-800 shadow-md flex items-center justify-center backdrop-blur-sm transition-all hover:scale-105 cursor-pointer opacity-90 hover:opacity-100"
-                    aria-label="Next image"
-                    title="Next image"
-                  >
-                    <ChevronRight className="w-5 h-5 text-gray-800" />
-                  </button>
-                )}
-
-                {/* Main Image with In-Place Zoom Magnifier */}
-                <img
-                  src={images[activeImg] || FALLBACK_IMG}
-                  alt={product.name}
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = FALLBACK_IMG;
-                  }}
-                  className="w-full h-full max-h-[580px] object-cover sm:object-contain will-change-transform pointer-events-none select-none"
-                  style={{
-                    transform: isZoomed ? "scale(2.3)" : (isHovered ? "scale(1.05)" : "scale(1)"),
-                    transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
-                    transition: isZoomed ? "transform 0.08s ease-out" : "transform 0.3s ease-out",
-                  }}
-                />
-
-                {/* Counter Indicator Badge */}
-                {images.length > 1 && (
-                  <div className="absolute bottom-3.5 left-3.5 z-10 bg-black/60 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1.5 pointer-events-none">
-                    <span>{activeImg + 1}</span>
-                    <span className="text-white/50">/</span>
-                    <span>{images.length}</span>
-                  </div>
-                )}
-
-                {/* In-Place Zoom Toggle Button */}
+              {/* Floating Overlay Action Buttons on Mobile (Share & Wishlist) */}
+              <div className="absolute top-3.5 right-3.5 z-20 flex items-center gap-2">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setIsZoomed((prev) => !prev);
+                    setShowShareModal(true);
                   }}
-                  className={`absolute bottom-3.5 right-3.5 z-20 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full shadow-lg transition-all cursor-pointer ${isZoomed
-                    ? "bg-[#8B0000] text-white ring-2 ring-white"
-                    : "bg-white/90 text-gray-700 hover:bg-white hover:text-black"
-                    }`}
-                  title={isZoomed ? "Zoom out" : "Zoom in (in-place magnifier)"}
-                  aria-label="Toggle zoom"
+                  className="w-9 h-9 flex items-center justify-center rounded-full bg-white/90 shadow-md text-gray-700 hover:text-[#8B0000] hover:bg-white transition-all cursor-pointer"
+                  title="Share product"
                 >
-                  {isZoomed ? <ZoomOut className="w-4 h-4" /> : <ZoomIn className="w-4 h-4" />}
+                  <Share2 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleWishlistToggle();
+                  }}
+                  className="w-9 h-9 flex items-center justify-center rounded-full bg-white/90 shadow-md text-gray-700 hover:bg-white transition-all cursor-pointer"
+                  title="Wishlist product"
+                >
+                  <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? "fill-red-500 text-red-500" : "text-gray-700"}`} />
                 </button>
               </div>
 
-              {/* Thumbnail Strip (Spans 100% full width matching main image with zero right gap) */}
-              {images.length > 1 && (
-                <div
-                  className={`w-full gap-2 pb-2 ${images.length <= 5
-                    ? "grid"
-                    : "flex items-center overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300"
-                    }`}
-                  style={
-                    images.length <= 5
-                      ? { gridTemplateColumns: `repeat(${images.length}, minmax(0, 1fr))` }
-                      : {}
-                  }
+              {/* Left Arrow Button for Image Slider */}
+              {images.length > 1 && !isZoomed && (
+                <button
+                  onClick={handlePrevImg}
+                  className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/85 hover:bg-white text-gray-800 shadow-md flex items-center justify-center backdrop-blur-sm transition-all hover:scale-105 cursor-pointer opacity-90 hover:opacity-100"
+                  aria-label="Previous image"
+                  title="Previous image"
                 >
-                  {images.map((img, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setActiveImg(i)}
-                      className={`relative rounded-xl overflow-hidden border-2 transition-all shadow-xs h-20 sm:h-24 ${images.length > 5 ? "flex-shrink-0 w-16 sm:w-20" : "w-full"
-                        } ${activeImg === i
-                          ? "border-[#8B0000] ring-2 ring-[#8B0000]/20 scale-[1.02] shadow-md"
-                          : "border-gray-200 opacity-70 hover:opacity-100 hover:border-gray-300"
-                        }`}
-                    >
-                      <img
-                        src={img}
-                        alt={`${product.name} preview ${i + 1}`}
-                        className="w-full h-full object-cover"
-                        onError={(e) => (e.target.style.display = "none")}
-                      />
-                    </button>
-                  ))}
+                  <ChevronLeft className="w-5 h-5 text-gray-800" />
+                </button>
+              )}
+
+              {/* Right Arrow Button for Image Slider */}
+              {images.length > 1 && !isZoomed && (
+                <button
+                  onClick={handleNextImg}
+                  className="absolute right-2.5 sm:right-3.5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/85 hover:bg-white text-gray-800 shadow-md flex items-center justify-center backdrop-blur-sm transition-all hover:scale-105 cursor-pointer opacity-90 hover:opacity-100"
+                  aria-label="Next image"
+                  title="Next image"
+                >
+                  <ChevronRight className="w-5 h-5 text-gray-800" />
+                </button>
+              )}
+
+              {/* Main Image with In-Place Zoom Magnifier */}
+              <img
+                src={images[activeImg] || FALLBACK_IMG}
+                alt={product.name}
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = FALLBACK_IMG;
+                }}
+                className="w-full h-full max-h-[580px] object-cover sm:object-contain will-change-transform pointer-events-none select-none"
+                style={{
+                  transform: isZoomed ? "scale(2.3)" : (isHovered ? "scale(1.05)" : "scale(1)"),
+                  transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
+                  transition: isZoomed ? "transform 0.08s ease-out" : "transform 0.3s ease-out",
+                }}
+              />
+
+              {/* Counter Indicator Badge */}
+              {images.length > 1 && (
+                <div className="absolute bottom-3.5 left-3.5 z-10 bg-black/60 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1.5 pointer-events-none">
+                  <span>{activeImg + 1}</span>
+                  <span className="text-white/50">/</span>
+                  <span>{images.length}</span>
                 </div>
               )}
 
-              {/* Social Proof & Urgency Bar (Clean Text, No Card) */}
-              <div className="flex items-center justify-between gap-2 flex-wrap text-xs text-amber-900 font-medium py-1.5 w-full">
+              {/* In-Place Zoom Toggle Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsZoomed((prev) => !prev);
+                }}
+                className={`absolute bottom-3.5 right-3.5 z-20 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full shadow-lg transition-all cursor-pointer ${
+                  isZoomed
+                    ? "bg-[#8B0000] text-white ring-2 ring-white"
+                    : "bg-white/90 text-gray-700 hover:bg-white hover:text-black"
+                }`}
+                title={isZoomed ? "Zoom out" : "Zoom in (in-place magnifier)"}
+                aria-label="Toggle zoom"
+              >
+                {isZoomed ? <ZoomOut className="w-4 h-4" /> : <ZoomIn className="w-4 h-4" />}
+              </button>
+            </div>
+
+            {/* Thumbnail Strip (Spans 100% full width matching main image with zero right gap) */}
+            {images.length > 1 && (
+              <div
+                className={`w-full gap-2 pb-2 ${
+                  images.length <= 5
+                    ? "grid"
+                    : "flex items-center overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300"
+                }`}
+                style={
+                  images.length <= 5
+                    ? { gridTemplateColumns: `repeat(${images.length}, minmax(0, 1fr))` }
+                    : {}
+                }
+              >
+                {images.map((img, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveImg(i)}
+                    className={`relative rounded-xl overflow-hidden border-2 transition-all shadow-xs h-20 sm:h-24 ${
+                      images.length > 5 ? "flex-shrink-0 w-16 sm:w-20" : "w-full"
+                    } ${
+                      activeImg === i
+                        ? "border-[#8B0000] ring-2 ring-[#8B0000]/20 scale-[1.02] shadow-md"
+                        : "border-gray-200 opacity-70 hover:opacity-100 hover:border-gray-300"
+                    }`}
+                  >
+                    <img
+                      src={img}
+                      alt={`${product.name} preview ${i + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => (e.target.style.display = "none")}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Social Proof & Urgency Bar (Clean Text, No Card) */}
+            <div className="flex items-center justify-between gap-2 flex-wrap text-xs text-amber-900 font-medium py-1.5 w-full">
+              <div className="flex items-center gap-1.5">
+                <Flame className="w-4 h-4 text-amber-600 animate-pulse" />
+                <span><strong>{viewersCount ?? (product.viewers_count || 14)} people</strong> viewing right now</span>
+              </div>
+              {(product.sold_24h && product.sold_24h > 0) ? (
                 <div className="flex items-center gap-1.5">
-                  <Flame className="w-4 h-4 text-amber-600 animate-pulse" />
-                  <span><strong>{viewersCount ?? (product.viewers_count || 14)} people</strong> viewing right now</span>
+                  <Clock className="w-4 h-4 text-amber-600" />
+                  <span><strong>{product.sold_24h} sold</strong> in last 24 hrs</span>
                 </div>
-                {(product.sold_24h && product.sold_24h > 0) ? (
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-amber-600" />
-                    <span><strong>{product.sold_24h} sold</strong> in last 24 hrs</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-amber-600" />
-                    <span><strong>Trending</strong> in festive ethnic wear</span>
-                  </div>
-                )}
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-amber-600" />
+                  <span><strong>Trending</strong> in festive ethnic wear</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ═══════ RIGHT: Product Info & Buy Controls ═══════ */}
+          <div className="w-full space-y-6">
+            
+            {/* Header info */}
+            <div>
+              <div className="flex items-center justify-end gap-2 mb-1">
+                <span className="text-[11px] font-mono text-gray-400">SKU: {sku}</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-serif font-bold text-gray-900 leading-snug mb-3">
+                {product.name}
+              </h1>
+
+              {/* Ratings & Wishlist count */}
+              <div className="flex items-center gap-3 flex-wrap text-xs">
+                <div className={`flex items-center gap-1 font-bold px-2 py-0.5 rounded ${
+                  (reviewStats?.total_reviews > 0 || (product.review_count || 0) > 0)
+                    ? "bg-emerald-700 text-white"
+                    : "bg-gray-200 text-gray-700"
+                }`}>
+                  <span>
+                    {(reviewStats?.total_reviews > 0
+                      ? reviewStats.average_rating
+                      : (product.rating || 0.0)
+                    ).toFixed(1)}
+                  </span>
+                  <Star className="w-3 h-3 fill-current" />
+                </div>
+                <span className="text-gray-500 font-medium">
+                  {(reviewStats?.total_reviews > 0
+                    ? reviewStats.total_reviews
+                    : (product.review_count || product.reviews_count || 0)
+                  ).toLocaleString("en-IN")}{" "}
+                  {(reviewStats?.total_reviews > 0 || (product.review_count || 0) > 0)
+                    ? "Verified Ratings"
+                    : "Reviews • Be the first to review"}
+                </span>
+                <span className="text-gray-300">|</span>
+                <button
+                  type="button"
+                  onClick={handleWishlistToggle}
+                  className="text-gray-500 hover:text-red-600 flex items-center gap-1 transition-colors cursor-pointer"
+                  title={isInWishlist(product.id) ? "Remove from wishlist" : "Add to wishlist"}
+                >
+                  <Heart className={`w-3.5 h-3.5 ${isInWishlist(product.id) ? "text-red-500 fill-red-500" : "text-gray-400"}`} />
+                  <span>{productWishlistCount} Wishlisted</span>
+                </button>
               </div>
             </div>
 
-            {/* ═══════ RIGHT: Product Info & Buy Controls ═══════ */}
-            <div className="w-full space-y-6">
-
-              {/* Header info */}
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
-                  <span className="text-xs text-gray-500 font-medium">
-                    {product.seller_name ? (
-                      <>Sold by: <span className="font-bold text-[#0891b2]">{product.seller_name}</span></>
-                    ) : (
-                      <>Brand: <span className="font-bold text-gray-800">{product.brand || "Nari Pehnawa"}</span></>
-                    )}
-                  </span>
-                  <span className="text-[11px] font-mono text-gray-400">SKU: {sku}</span>
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-serif font-bold text-gray-900 leading-snug mb-3">
-                  {product.name}
-                </h1>
-
-                {/* Ratings & Wishlist count */}
-                <div className="flex items-center gap-3 flex-wrap text-xs">
-                  <div className={`flex items-center gap-1 font-bold px-2 py-0.5 rounded ${(reviewStats?.total_reviews > 0 || (product.review_count || 0) > 0)
-                    ? "bg-emerald-700 text-white"
-                    : "bg-gray-200 text-gray-700"
-                    }`}>
-                    <span>
-                      {(reviewStats?.total_reviews > 0
-                        ? reviewStats.average_rating
-                        : (product.rating || 0.0)
-                      ).toFixed(1)}
+            {/* Live Flash Sale Event Banner (Shown ONLY when arrived via Mega Sale offer) */}
+            {isSaleMode && (product.sale_title || product.deal_text) && (
+              <div className="py-2.5 px-3 border-l-2 border-[#8B0000] bg-rose-50/40 flex items-center justify-between gap-3 flex-wrap text-gray-900">
+                <div className="flex items-center gap-2.5">
+                  <Flame className="w-4 h-4 text-[#8B0000] animate-pulse shrink-0" />
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-[#8B0000] block">
+                      {product.sale_title || "Special Festive Offer"}
                     </span>
-                    <Star className="w-3 h-3 fill-current" />
+                    <p className="font-bold text-sm text-gray-900 leading-tight">
+                      {product.deal_text || "Special Promotional Deal"}
+                    </p>
                   </div>
-                  <span className="text-gray-500 font-medium">
-                    {(reviewStats?.total_reviews > 0
-                      ? reviewStats.total_reviews
-                      : (product.review_count || product.reviews_count || 0)
-                    ).toLocaleString("en-IN")}{" "}
-                    {(reviewStats?.total_reviews > 0 || (product.review_count || 0) > 0)
-                      ? "Verified Ratings"
-                      : "Reviews • Be the first to review"}
-                  </span>
-                  <span className="text-gray-300">|</span>
-                  <button
-                    type="button"
-                    onClick={handleWishlistToggle}
-                    className="text-gray-500 hover:text-red-600 flex items-center gap-1 transition-colors cursor-pointer"
-                    title={isInWishlist(product.id) ? "Remove from wishlist" : "Add to wishlist"}
-                  >
-                    <Heart className={`w-3.5 h-3.5 ${isInWishlist(product.id) ? "text-red-500 fill-red-500" : "text-gray-400"}`} />
-                    <span>{productWishlistCount} Wishlisted</span>
-                  </button>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-medium text-gray-500 block">⚡ Limited Period Offer</span>
+                  <span className="text-xs font-bold text-[#8B0000]">IST Live</span>
                 </div>
               </div>
+            )}
 
-              {/* Live Flash Sale / BOGO Event Banner */}
-              {(isSaleMode || isBogoProduct) && (
-                <div className="py-2.5 px-3 border-l-2 border-[#8B0000] bg-rose-50/40 flex items-center justify-between gap-3 flex-wrap text-gray-900">
-                  <div className="flex items-center gap-2.5">
-                    <Flame className="w-4 h-4 text-[#8B0000] animate-pulse shrink-0" />
-                    <div>
-                      <span className="text-[10px] uppercase font-bold tracking-widest text-[#8B0000] block">
-                        {product.sale_title || "Mega Festive Sale"}
-                      </span>
-                      <p className="font-bold text-sm text-gray-900 leading-tight">
-                        {isBogoProduct ? "BUY 1 GET 1 FREE (BOGO)" : (product.deal_text || "Special Promotional Deal")}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10px] font-medium text-gray-500 block">⚡ Limited Period Offer</span>
-                    <span className="text-xs font-bold text-[#8B0000]">IST Live</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Dynamic Price & Coupon Badges (Clean Typography, No Card) */}
-              <div className="py-3 border-y border-gray-100 space-y-3">
-                <div className="flex items-baseline gap-3 flex-wrap">
-                  <span className="text-3xl font-extrabold text-gray-900 font-mono">
-                    ₹{(currentPrice || 0).toLocaleString("en-IN")}
+            {/* Dynamic Price & Coupon Badges (Clean Typography, No Card) */}
+            <div className="py-3 border-y border-gray-100 space-y-3">
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <span className="text-3xl font-extrabold text-gray-900 font-mono">
+                  ₹{(currentPrice || 0).toLocaleString("en-IN")}
+                </span>
+                {currentMRP > currentPrice && (
+                  <>
+                    <span className="text-lg text-gray-400 line-through font-mono">
+                      MRP ₹{currentMRP.toLocaleString("en-IN")}
+                    </span>
+                    <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
+                      SAVE ₹{(currentMRP - currentPrice).toLocaleString("en-IN")}
+                    </span>
+                  </>
+                )}
+                {isSaleMode && product.deal_text && (
+                  <span className="text-xs font-black text-white bg-gradient-to-r from-amber-600 to-rose-700 px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
+                    <span>⚡</span>
+                    <span>{product.deal_text} Active</span>
                   </span>
-                  {currentMRP > currentPrice && !isSaleMode && !isBogoProduct && (
-                    <>
-                      <span className="text-lg text-gray-400 line-through font-mono">
-                        MRP ₹{currentMRP.toLocaleString("en-IN")}
-                      </span>
-                      <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
-                        SAVE ₹{(currentMRP - currentPrice).toLocaleString("en-IN")}
-                      </span>
-                    </>
-                  )}
-                </div>
+                )}
+              </div>
 
-                {/* Dynamic Active Coupon Banner */}
-                {(() => {
-                  const couponCode = product.offer_code || activeCoupon?.code;
-                  const couponDesc =
-                    product.offer_text ||
-                    (activeCoupon
-                      ? `Use Coupon ${activeCoupon.code} for extra ${activeCoupon.discount_type === "percentage"
-                        ? `${activeCoupon.discount_value}%`
-                        : `₹${activeCoupon.discount_value}`
+              {/* Dynamic Active Coupon Banner */}
+              {(() => {
+                const couponCode = product.offer_code || activeCoupon?.code;
+                const couponDesc =
+                  product.offer_text ||
+                  (activeCoupon
+                    ? `Use Coupon ${activeCoupon.code} for extra ${
+                        activeCoupon.discount_type === "percentage"
+                          ? `${activeCoupon.discount_value}%`
+                          : `₹${activeCoupon.discount_value}`
                       } OFF`
-                      : null);
-                  if (!couponCode) return null;
-                  return (
-                    <div className="pt-2 border-t border-gray-200/60 flex items-center justify-between gap-2 text-xs flex-wrap">
-                      <div className="flex items-center gap-1.5 text-amber-900 font-semibold">
-                        <Tag className="w-4 h-4 text-amber-600" />
-                        <span>{couponDesc || <>Use Coupon <strong>{couponCode}</strong> for special discount</>}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(couponCode);
-                          setCopiedCoupon(true);
-                          setTimeout(() => setCopiedCoupon(false), 2000);
-                        }}
-                        className="text-[11px] text-[#8B0000] font-bold underline hover:text-[#6B0000]"
-                      >
-                        {copiedCoupon ? "Copied!" : "Copy Code"}
-                      </button>
+                    : null);
+                if (!couponCode) return null;
+                return (
+                  <div className="pt-2 border-t border-gray-200/60 flex items-center justify-between gap-2 text-xs flex-wrap">
+                    <div className="flex items-center gap-1.5 text-amber-900 font-semibold">
+                      <Tag className="w-4 h-4 text-amber-600" />
+                      <span>{couponDesc || <>Use Coupon <strong>{couponCode}</strong> for special discount</>}</span>
                     </div>
-                  );
-                })()}
-              </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(couponCode);
+                        setCopiedCoupon(true);
+                        setTimeout(() => setCopiedCoupon(false), 2000);
+                      }}
+                      className="text-[11px] text-[#8B0000] font-bold underline hover:text-[#6B0000]"
+                    >
+                      {copiedCoupon ? "Copied!" : "Copy Code"}
+                    </button>
+                  </div>
+                );
+              })()}
+            </div>
 
-              {/* Size Selector with Stock Badges & Customize Option */}
+            {/* Size Selector with Stock Badges */}
+            {product.sizes?.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-gray-800">
                     Select Size
                   </span>
-
-                  {product.sizes?.length > 0 && (
+                  <div className="flex items-center gap-2.5">
                     <button
                       onClick={() => setShowSizeChart(true)}
                       className="flex items-center gap-1 text-xs text-[#8B0000] font-semibold hover:underline cursor-pointer"
                     >
-                      <Pencil className="w-3.5 h-3.5" /> Size Chart &amp; Measurements
+                      <Pencil className="w-3.5 h-3.5" /> Size Chart
                     </button>
-                  )}
-                </div>
-
-                {product.sizes?.length > 0 && (
-                  <div className="flex gap-2.5 flex-wrap items-center">
-                    {product.sizes.map((s) => {
-                      const st = product.size_stock?.[s] !== undefined ? product.size_stock[s] : 10;
-                      const isOutOfStock = st <= 0;
-                      const isLowStock = st > 0 && st <= 5;
-                      return (
-                        <button
-                          key={s}
-                          disabled={isOutOfStock}
-                          onClick={() => setSelectedSize(s)}
-                          className={`relative px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all ${isOutOfStock
-                            ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed line-through opacity-60"
-                            : selectedSize === s
-                              ? "bg-[#8B0000] border-[#8B0000] text-white shadow-md scale-105"
-                              : "bg-white border-gray-300 text-gray-800 hover:border-[#8B0000]"
-                            }`}
-                        >
-                          {s}
-                          {isLowStock && !isOutOfStock && (
-                            <span className="absolute -top-2 -right-1 bg-amber-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shadow-xs">
-                              {st} Left
-                            </span>
-                          )}
-                          {isOutOfStock && (
-                            <span className="absolute -top-2 -right-1 bg-gray-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-xs">
-                              Sold Out
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-
-                    {/* Dedicated "Customize" Pill next to sizes */}
                     {product.is_customizable !== false && (
                       <button
                         type="button"
                         onClick={handleOpenCustomize}
-                        className="relative px-3.5 py-2.5 text-xs font-bold rounded-xl border-2 border-dashed border-[#8B0000]/60 bg-rose-50/60 hover:bg-rose-100/80 text-[#8B0000] transition-all flex items-center gap-1.5 shadow-xs hover:scale-105 cursor-pointer"
-                        title="Need custom size, fit or color combination?"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#8B0000] hover:text-[#6B0000] bg-rose-50 hover:bg-rose-100 px-3 py-1 rounded-full border border-rose-200 transition cursor-pointer shadow-2xs"
                       >
                         <Scissors className="w-3.5 h-3.5 text-[#8B0000]" />
-                        <span>Customize</span>
+                        <span>Customize Fit &amp; Color</span>
                       </button>
                     )}
                   </div>
-                )}
-              </div>
+                </div>
 
-              {/* Quantity Selector */}
-              <div className="space-y-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-gray-800">Quantity</span>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    className="w-9 h-9 flex items-center justify-center border border-gray-300 rounded-lg text-gray-700 hover:border-[#8B0000] transition-colors"
-                  >
-                    −
-                  </button>
-                  <span className="w-8 text-center font-bold text-gray-900">{quantity}</span>
-                  <button
-                    onClick={() => setQuantity((q) => q + 1)}
-                    className="w-9 h-9 flex items-center justify-center border border-gray-300 rounded-lg text-gray-700 hover:border-[#8B0000] transition-colors"
-                  >
-                    +
-                  </button>
+                <div className="flex gap-2.5 flex-wrap">
+                  {product.sizes.map((s) => {
+                    const st = product.size_stock?.[s] !== undefined ? product.size_stock[s] : 10;
+                    const isOutOfStock = st <= 0;
+                    const isLowStock = st > 0 && st <= 5;
+                    return (
+                      <button
+                        key={s}
+                        disabled={isOutOfStock}
+                        onClick={() => setSelectedSize(s)}
+                        className={`relative px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all ${
+                          isOutOfStock
+                            ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed line-through opacity-60"
+                            : selectedSize === s
+                            ? "bg-[#8B0000] border-[#8B0000] text-white shadow-md scale-105"
+                            : "bg-white border-gray-300 text-gray-800 hover:border-[#8B0000]"
+                        }`}
+                      >
+                        {s}
+                        {isLowStock && !isOutOfStock && (
+                          <span className="absolute -top-2 -right-1 bg-amber-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shadow-xs">
+                            {st} Left
+                          </span>
+                        )}
+                        {isOutOfStock && (
+                          <span className="absolute -top-2 -right-1 bg-gray-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-xs">
+                            Sold Out
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
+            )}
 
-              {/* Wishlist Button */}
-              <button
-                type="button"
-                onClick={handleWishlistToggle}
-                className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider transition-all shadow-sm cursor-pointer ${isInWishlist(product.id)
+            {/* Quantity Selector */}
+            <div className="space-y-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-800">Quantity</span>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  className="w-9 h-9 flex items-center justify-center border border-gray-300 rounded-lg text-gray-700 hover:border-[#8B0000] transition-colors"
+                >
+                  −
+                </button>
+                <span className="w-8 text-center font-bold text-gray-900">{quantity}</span>
+                <button
+                  onClick={() => setQuantity((q) => q + 1)}
+                  className="w-9 h-9 flex items-center justify-center border border-gray-300 rounded-lg text-gray-700 hover:border-[#8B0000] transition-colors"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* Wishlist Button */}
+            <button
+              type="button"
+              onClick={handleWishlistToggle}
+              className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider transition-all shadow-sm cursor-pointer ${
+                isInWishlist(product.id)
                   ? "bg-rose-700 text-white hover:bg-rose-800"
                   : "bg-gray-900 text-white hover:bg-black"
-                  }`}
+              }`}
+            >
+              <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? "fill-white text-white" : "fill-none"}`} />
+              {isInWishlist(product.id) ? `Wishlisted (${productWishlistCount})` : `Add to Wishlist (${productWishlistCount})`}
+            </button>
+
+            {/* Action Buttons (Positioned directly below Wishlist button) */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-1 w-full">
+              <button
+                onClick={() => handleAddToCart(false)}
+                className="flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl border-2 border-[#8B0000] text-[#8B0000] font-bold text-sm uppercase tracking-wider hover:bg-[#8B0000] hover:text-white transition-all shadow-sm active:scale-98"
               >
-                <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? "fill-white text-white" : "fill-none"}`} />
-                {isInWishlist(product.id) ? `Wishlisted (${productWishlistCount})` : `Add to Wishlist (${productWishlistCount})`}
+                <ShoppingCart className="w-4 h-4" /> Add to Cart
+              </button>
+              <button
+                onClick={handleBuyNow}
+                className="flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl bg-[#8B0000] text-white font-bold text-sm uppercase tracking-wider hover:bg-[#6B0000] transition-all shadow-md active:scale-98"
+              >
+                <Zap className="w-4 h-4" /> Buy Now
+              </button>
+            </div>
+
+            {/* Dual Product Sharing Actions */}
+            <div className="grid grid-cols-2 gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowShareModal(true)}
+                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100/80 border border-amber-200/80 text-amber-950 font-bold text-xs tracking-wide transition-all shadow-2xs active:scale-98 cursor-pointer"
+                title="Share this product"
+              >
+                <Share2 className="w-4 h-4 text-amber-700" />
+                <span>Share Product</span>
               </button>
 
-              {/* Action Buttons (Positioned directly below Wishlist button) */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-1 w-full">
-                <button
-                  onClick={() => handleAddToCart(false)}
-                  className="flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl border-2 border-[#8B0000] text-[#8B0000] font-bold text-sm uppercase tracking-wider hover:bg-[#8B0000] hover:text-white transition-all shadow-sm active:scale-98"
-                >
-                  <ShoppingCart className="w-4 h-4" /> Add to Cart
-                </button>
-                <button
-                  onClick={handleBuyNow}
-                  className="flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl bg-[#8B0000] text-white font-bold text-sm uppercase tracking-wider hover:bg-[#6B0000] transition-all shadow-md active:scale-98"
-                >
-                  <Zap className="w-4 h-4" /> Buy Now
-                </button>
-              </div>
-
-              {/* Dual Product Sharing Actions */}
-              <div className="grid grid-cols-2 gap-2.5 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setShowShareModal(true)}
-                  className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100/80 border border-amber-200/80 text-amber-950 font-bold text-xs tracking-wide transition-all shadow-2xs active:scale-98 cursor-pointer"
-                  title="Share this product"
-                >
-                  <Share2 className="w-4 h-4 text-amber-700" />
-                  <span>Share Product</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={copyProductLink}
-                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold tracking-wide transition-all shadow-2xs active:scale-98 cursor-pointer ${copiedLink
+              <button
+                type="button"
+                onClick={copyProductLink}
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold tracking-wide transition-all shadow-2xs active:scale-98 cursor-pointer ${
+                  copiedLink
                     ? "bg-emerald-600 border-emerald-600 text-white"
                     : "bg-gray-50 hover:bg-gray-100/80 border-gray-200 text-gray-800"
-                    }`}
-                  title="Copy canonical product URL"
+                }`}
+                title="Copy canonical product URL"
+              >
+                {copiedLink ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 text-gray-600" />
+                    <span>Copy Product Link</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {addedMsg && <p className="text-xs text-emerald-600 font-bold">✓ {addedMsg}</p>}
+
+            {/* Pincode Servicability Checker (Clean Text, No Card) */}
+            <div className="pt-3 border-t border-gray-100 space-y-2.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-[#8B0000]" /> Check Delivery & Servicability
+              </span>
+              <form onSubmit={handlePincodeCheck} className="flex gap-2">
+                <input
+                  type="text"
+                  maxLength={6}
+                  placeholder="Enter 6-digit PIN Code"
+                  value={pincode}
+                  onChange={(e) => setPincode(e.target.value)}
+                  className="flex-1 px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-[#8B0000]"
+                />
+                <button
+                  type="submit"
+                  disabled={pincodeStatus === "checking"}
+                  className="px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-black transition-colors"
                 >
-                  {copiedLink ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-4 h-4 text-gray-600" />
-                      <span>Copy Product Link</span>
-                    </>
-                  )}
+                  {pincodeStatus === "checking" ? "Checking…" : "Check"}
                 </button>
-              </div>
+              </form>
 
-              {addedMsg && <p className="text-xs text-emerald-600 font-bold">✓ {addedMsg}</p>}
-
-              {/* Pincode Servicability Checker (Clean Text, No Card) */}
-              <div className="pt-3 border-t border-gray-100 space-y-2.5">
-                <span className="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-[#8B0000]" /> Check Delivery & Servicability
-                </span>
-                <form onSubmit={handlePincodeCheck} className="flex gap-2">
-                  <input
-                    type="text"
-                    maxLength={6}
-                    placeholder="Enter 6-digit PIN Code"
-                    value={pincode}
-                    onChange={(e) => setPincode(e.target.value)}
-                    className="flex-1 px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-[#8B0000]"
-                  />
-                  <button
-                    type="submit"
-                    disabled={pincodeStatus === "checking"}
-                    className="px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-black transition-colors"
-                  >
-                    {pincodeStatus === "checking" ? "Checking…" : "Check"}
-                  </button>
-                </form>
-
-                {pincodeStatus === "valid" && (
-                  <div className="text-xs text-emerald-700 space-y-0.5 pt-1">
-                    <p className="font-bold flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Servicable Pincode
-                    </p>
-                    <p className="text-gray-600">{pincodeMsg}</p>
-                  </div>
-                )}
-                {pincodeStatus === "invalid" && (
-                  <p className="text-xs text-red-600 font-semibold pt-1">{pincodeMsg}</p>
-                )}
-              </div>
+              {pincodeStatus === "valid" && (
+                <div className="text-xs text-emerald-700 space-y-0.5 pt-1">
+                  <p className="font-bold flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Servicable Pincode
+                  </p>
+                  <p className="text-gray-600">{pincodeMsg}</p>
+                </div>
+              )}
+              {pincodeStatus === "invalid" && (
+                <p className="text-xs text-red-600 font-semibold pt-1">{pincodeMsg}</p>
+              )}
             </div>
           </div>
+        </div>
 
-          {/* ═══════ PRODUCT DETAILS & SPECIFICATIONS (CLEAN EDITORIAL, NO CARDS) ═══════ */}
-          <div className="mt-12 pt-8 border-t border-gray-200 w-full space-y-8">
-            <div className="border-b border-gray-200 pb-4">
-              <h2 className="text-lg sm:text-xl font-serif font-bold tracking-tight text-gray-900 flex items-center gap-2">
-                <span className="text-[#8B0000]">✦</span> Product Overview &amp; Specifications
-              </h2>
-              <p className="text-xs text-gray-500 mt-1">
-                Detailed craftsmanship, fabric composition, and silhouette guide
-              </p>
-            </div>
+        {/* ═══════ PRODUCT DETAILS & SPECIFICATIONS (CLEAN EDITORIAL, NO CARDS) ═══════ */}
+        <div className="mt-12 pt-8 border-t border-gray-200 w-full space-y-8">
+          <div className="border-b border-gray-200 pb-4">
+            <h2 className="text-lg sm:text-xl font-serif font-bold tracking-tight text-gray-900 flex items-center gap-2">
+              <span className="text-[#8B0000]">✦</span> Product Overview &amp; Specifications
+            </h2>
+            <p className="text-xs text-gray-500 mt-1">
+              Detailed craftsmanship, fabric composition, and silhouette guide
+            </p>
+          </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start w-full">
-              {/* Left Column (7 cols): Story, Key Highlights & Stylist's Note */}
-              <div className="lg:col-span-7 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start w-full">
+            {/* Left Column (7 cols): Story, Key Highlights & Stylist's Note */}
+            <div className="lg:col-span-7 space-y-6">
+              
+              {/* Product Story / Description */}
+              <div className="space-y-2">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-gray-900">
+                  About The Product
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  {product.description ||
+                    `Elevate your ethnic fashion quotient with the stunning ${product.name} from Nari Pehnawa. Crafted with precision craftsmanship and rich color tones, this piece combines Indian elegance with day-long comfort.`}
+                </p>
+              </div>
 
-                {/* Product Story / Description */}
-                <div className="space-y-2">
+              {/* Key Highlights (Admin Added Highlights - 100% visible, clean bullets) */}
+              {product.highlights && product.highlights.length > 0 && (
+                <div className="space-y-2.5 pt-2">
                   <h3 className="text-xs font-bold uppercase tracking-widest text-gray-900">
-                    About The Product
+                    Key Highlights
                   </h3>
-                  <p className="text-xs sm:text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-                    {product.description ||
-                      `Elevate your ethnic fashion quotient with the stunning ${product.name} from Nari Pehnawa. Crafted with precision craftsmanship and rich color tones, this piece combines Indian elegance with day-long comfort.`}
+                  <ul className="text-xs sm:text-sm text-gray-800 space-y-2 leading-relaxed">
+                    {product.highlights.map((hl, idx) => (
+                      <li key={idx} className="flex items-start gap-2.5">
+                        <span className="text-[#8B0000] font-bold text-sm leading-none mt-0.5">•</span>
+                        <span className="text-gray-900 font-medium">{hl}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Stylist's Note / Tip (Admin Added - Clean Quote Accent, No Card) */}
+              {product.style_tip && (
+                <div className="pt-3 border-l-2 border-[#8B0000] pl-4 space-y-1">
+                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-widest flex items-center gap-1.5">
+                    💡 Stylist’s Note
+                  </h4>
+                  <p className="text-xs sm:text-sm text-gray-700 leading-relaxed italic">
+                    "{product.style_tip}"
                   </p>
                 </div>
+              )}
+            </div>
 
-                {/* Key Highlights (Admin Added Highlights - 100% visible, clean bullets) */}
-                {product.highlights && product.highlights.length > 0 && (
-                  <div className="space-y-2.5 pt-2">
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-900">
-                      Key Highlights
-                    </h3>
-                    <ul className="text-xs sm:text-sm text-gray-800 space-y-2 leading-relaxed">
-                      {product.highlights.map((hl, idx) => (
-                        <li key={idx} className="flex items-start gap-2.5">
-                          <span className="text-[#8B0000] font-bold text-sm leading-none mt-0.5">•</span>
-                          <span className="text-gray-900 font-medium">{hl}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Stylist's Note / Tip (Admin Added - Clean Quote Accent, No Card) */}
-                {product.style_tip && (
-                  <div className="pt-3 border-l-2 border-[#8B0000] pl-4 space-y-1">
-                    <h4 className="text-xs font-bold text-gray-900 uppercase tracking-widest flex items-center gap-1.5">
-                      💡 Stylist’s Note
-                    </h4>
-                    <p className="text-xs sm:text-sm text-gray-700 leading-relaxed italic">
-                      "{product.style_tip}"
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Right Column (5 cols): Complete Specifications Matrix (Clean Rows, Zero Cards) */}
-              <div className="lg:col-span-5 space-y-3">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-gray-900 border-b border-gray-200 pb-2">
-                  Specifications Matrix
-                </h3>
-
-                <div className="w-full text-xs sm:text-sm divide-y divide-gray-100">
-                  {product.fabric && (
-                    <div className="py-2.5 flex justify-between gap-4">
-                      <span className="text-gray-500 font-medium w-36 shrink-0">Fabric</span>
-                      <span className="font-semibold text-gray-900 text-right">{product.fabric}</span>
-                    </div>
-                  )}
-                  {product.pattern && (
-                    <div className="py-2.5 flex justify-between gap-4">
-                      <span className="text-gray-500 font-medium w-36 shrink-0">Pattern / Work</span>
-                      <span className="font-semibold text-gray-900 text-right">{product.pattern}</span>
-                    </div>
-                  )}
-                  {product.sleeve_type && (
-                    <div className="py-2.5 flex justify-between gap-4">
-                      <span className="text-gray-500 font-medium w-36 shrink-0">Sleeve Style</span>
-                      <span className="font-semibold text-gray-900 text-right">{product.sleeve_type}</span>
-                    </div>
-                  )}
-                  {product.fit_type && (
-                    <div className="py-2.5 flex justify-between gap-4">
-                      <span className="text-gray-500 font-medium w-36 shrink-0">Fit Type</span>
-                      <span className="font-semibold text-gray-900 text-right">{product.fit_type}</span>
-                    </div>
-                  )}
-                  {product.occasion && (
-                    <div className="py-2.5 flex justify-between gap-4">
-                      <span className="text-gray-500 font-medium w-36 shrink-0">Occasion</span>
-                      <span className="font-semibold text-gray-900 text-right">{product.occasion}</span>
-                    </div>
-                  )}
-                  {product.country_of_origin && (
-                    <div className="py-2.5 flex justify-between gap-4">
-                      <span className="text-gray-500 font-medium w-36 shrink-0">Country of Origin</span>
-                      <span className="font-semibold text-gray-900 text-right">{product.country_of_origin}</span>
-                    </div>
-                  )}
-                  {product.hsn_code && (
-                    <div className="py-2.5 flex justify-between gap-4">
-                      <span className="text-gray-500 font-medium w-36 shrink-0">HSN Code</span>
-                      <span className="font-semibold text-gray-900 text-right">{product.hsn_code}</span>
-                    </div>
-                  )}
-                  {product.wash_care && (
-                    <div className="py-2.5 flex justify-between gap-4">
-                      <span className="text-gray-500 font-medium w-36 shrink-0">Wash &amp; Care</span>
-                      <span className="font-semibold text-gray-900 text-right">{product.wash_care}</span>
-                    </div>
-                  )}
+            {/* Right Column (5 cols): Complete Specifications Matrix (Clean Rows, Zero Cards) */}
+            <div className="lg:col-span-5 space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-gray-900 border-b border-gray-200 pb-2">
+                Specifications Matrix
+              </h3>
+              
+              <div className="w-full text-xs sm:text-sm divide-y divide-gray-100">
+                {product.fabric && (
                   <div className="py-2.5 flex justify-between gap-4">
-                    <span className="text-gray-500 font-medium w-36 shrink-0">Return &amp; Exchange</span>
-                    <span className="font-semibold text-gray-900 text-right">
-                      {product.is_returnable === false
-                        ? (product.return_policy || "Non-Returnable (Final Sale)")
-                        : (product.return_policy || "Easy 15-Day Returns")}
-                    </span>
+                    <span className="text-gray-500 font-medium w-36 shrink-0">Fabric</span>
+                    <span className="font-semibold text-gray-900 text-right">{product.fabric}</span>
                   </div>
-                  {Array.isArray(product.specifications) && product.specifications.map((spec, idx) => (
-                    <div key={idx} className="py-2.5 flex justify-between gap-4">
-                      <span className="text-gray-500 font-medium w-36 shrink-0">{spec.name || spec.key || spec.title}</span>
-                      <span className="font-semibold text-gray-900 text-right">{spec.value}</span>
-                    </div>
-                  ))}
+                )}
+                {product.pattern && (
+                  <div className="py-2.5 flex justify-between gap-4">
+                    <span className="text-gray-500 font-medium w-36 shrink-0">Pattern / Work</span>
+                    <span className="font-semibold text-gray-900 text-right">{product.pattern}</span>
+                  </div>
+                )}
+                {product.sleeve_type && (
+                  <div className="py-2.5 flex justify-between gap-4">
+                    <span className="text-gray-500 font-medium w-36 shrink-0">Sleeve Style</span>
+                    <span className="font-semibold text-gray-900 text-right">{product.sleeve_type}</span>
+                  </div>
+                )}
+                {product.fit_type && (
+                  <div className="py-2.5 flex justify-between gap-4">
+                    <span className="text-gray-500 font-medium w-36 shrink-0">Fit Type</span>
+                    <span className="font-semibold text-gray-900 text-right">{product.fit_type}</span>
+                  </div>
+                )}
+                {product.occasion && (
+                  <div className="py-2.5 flex justify-between gap-4">
+                    <span className="text-gray-500 font-medium w-36 shrink-0">Occasion</span>
+                    <span className="font-semibold text-gray-900 text-right">{product.occasion}</span>
+                  </div>
+                )}
+                {product.country_of_origin && (
+                  <div className="py-2.5 flex justify-between gap-4">
+                    <span className="text-gray-500 font-medium w-36 shrink-0">Country of Origin</span>
+                    <span className="font-semibold text-gray-900 text-right">{product.country_of_origin}</span>
+                  </div>
+                )}
+                {product.hsn_code && (
+                  <div className="py-2.5 flex justify-between gap-4">
+                    <span className="text-gray-500 font-medium w-36 shrink-0">HSN Code</span>
+                    <span className="font-semibold text-gray-900 text-right">{product.hsn_code}</span>
+                  </div>
+                )}
+                {product.wash_care && (
+                  <div className="py-2.5 flex justify-between gap-4">
+                    <span className="text-gray-500 font-medium w-36 shrink-0">Wash &amp; Care</span>
+                    <span className="font-semibold text-gray-900 text-right">{product.wash_care}</span>
+                  </div>
+                )}
+                <div className="py-2.5 flex justify-between gap-4">
+                  <span className="text-gray-500 font-medium w-36 shrink-0">Return &amp; Exchange</span>
+                  <span className="font-semibold text-gray-900 text-right">
+                    {product.is_returnable === false
+                      ? (product.return_policy || "Non-Returnable (Final Sale)")
+                      : (product.return_policy || "Easy 15-Day Returns")}
+                  </span>
                 </div>
+                {Array.isArray(product.specifications) && product.specifications.map((spec, idx) => (
+                  <div key={idx} className="py-2.5 flex justify-between gap-4">
+                    <span className="text-gray-500 font-medium w-36 shrink-0">{spec.name || spec.key || spec.title}</span>
+                    <span className="font-semibold text-gray-900 text-right">{spec.value}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
+        </div>
 
           {/* Frequently Bought Together Bundle (Clean Editorial, No Cards) */}
           {bundleProducts.length > 0 && (
@@ -1796,7 +1783,7 @@ const ProductPage = () => {
                 <p className="text-xs text-gray-500 mt-0.5">Complement your look with matching handcrafted pieces</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 items-center pt-1">
-
+                
                 {/* Main Product */}
                 <div className="flex items-center gap-3 py-2 px-1 border-b md:border-b-0 md:border-r border-gray-100 md:pr-4">
                   <div className="relative shrink-0">
@@ -1821,8 +1808,9 @@ const ProductPage = () => {
                   return (
                     <div
                       key={bundleItem.id}
-                      className={`flex items-center gap-3 py-2 px-1 border-b md:border-b-0 md:border-r last:border-r-0 border-gray-100 md:pr-4 transition-opacity cursor-pointer ${isChecked ? "opacity-100" : "opacity-50"
-                        }`}
+                      className={`flex items-center gap-3 py-2 px-1 border-b md:border-b-0 md:border-r last:border-r-0 border-gray-100 md:pr-4 transition-opacity cursor-pointer ${
+                        isChecked ? "opacity-100" : "opacity-50"
+                      }`}
                       onClick={() =>
                         setSelectedBundleMap((prev) => ({
                           ...prev,
@@ -1833,7 +1821,7 @@ const ProductPage = () => {
                       <input
                         type="checkbox"
                         checked={isChecked}
-                        onChange={() => { }}
+                        onChange={() => {}}
                         className="rounded text-[#8B0000] focus:ring-[#8B0000] h-4 w-4 shrink-0 cursor-pointer"
                       />
                       <img
@@ -1860,100 +1848,45 @@ const ProductPage = () => {
                 const rawTotal = (product.price || 0) + companionTotal;
                 const bundleSavings = selectedItems.length > 0 ? Math.round(rawTotal * 0.10) : 0;
                 const bundleFinal = rawTotal - bundleSavings;
-                const targetSize = selectedSize || (product.sizes?.[0]) || "Free Size";
-
-                const prepareBundlePayload = () => {
-                  const mainItem = {
-                    product_id: product.id,
-                    name: (isSaleMode || isBogoProduct) && product.deal_text ? `${product.name} [${product.deal_text}]` : product.name,
-                    price: currentPrice,
-                    image: product.image || (images && images[0]) || FALLBACK_IMG,
-                    size: targetSize,
-                    color: selectedColor || (product.colors?.[0]) || "",
-                    quantity: 1,
-                    deal_text: (isSaleMode || isBogoProduct) ? product.deal_text : null,
-                    offer_type: isSaleMode ? "megasale" : isBogoProduct ? "bogo" : "standard",
-                  };
-                  const companionList = selectedItems.map((item) => ({
-                    product_id: item.id,
-                    name: item.name,
-                    price: item.price,
-                    image: item.image || (item.images && item.images[0]) || FALLBACK_IMG,
-                    size: targetSize,
-                    color: item.colors?.[0] || "",
-                    quantity: 1,
-                    offer_type: "bundle",
-                  }));
-                  return [mainItem, ...companionList];
-                };
 
                 return (
-                  <div className="pt-3 border-t border-gray-100 space-y-3">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500 font-medium">Selected Size for Bundle:</span>
-                        <span className="text-xs font-black text-[#8B0000] bg-rose-50 border border-rose-200 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
-                          Size: {targetSize} (Applied to all {1 + selectedItems.length} pieces)
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-gray-400">Click any size pill above to switch sizes</span>
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100 flex-wrap gap-3">
+                    <div>
+                      <p className="text-xs text-gray-500">
+                        Bundle Price ({1 + selectedItems.length} {1 + selectedItems.length === 1 ? "Item" : "Items"}):
+                      </p>
+                      <p className="text-xl font-extrabold text-gray-900">
+                        ₹{bundleFinal.toLocaleString("en-IN")}{" "}
+                        {bundleSavings > 0 && (
+                          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded ml-1">
+                            Save ₹{bundleSavings.toLocaleString("en-IN")} (10% Bundle OFF)
+                          </span>
+                        )}
+                      </p>
                     </div>
-
-                    <div className="flex items-center justify-between flex-wrap gap-3">
-                      <div>
-                        <p className="text-xs text-gray-500">
-                          Bundle Price ({1 + selectedItems.length} {1 + selectedItems.length === 1 ? "Item" : "Items"}):
-                        </p>
-                        <p className="text-xl font-extrabold text-gray-900">
-                          ₹{bundleFinal.toLocaleString("en-IN")}{" "}
-                          {bundleSavings > 0 && (
-                            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded ml-1">
-                              Save ₹{bundleSavings.toLocaleString("en-IN")} (10% Bundle OFF)
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2.5 flex-wrap">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            const bundlePayload = prepareBundlePayload();
-                            if (typeof addMultipleToCart === "function") {
-                              await addMultipleToCart(bundlePayload);
-                            } else {
-                              for (const item of bundlePayload) {
-                                await addToCart(item);
-                              }
-                            }
-                            setAddedMsg(`✅ Added ${bundlePayload.length} Bundle Items (Size: ${targetSize}) to Cart!`);
-                            setTimeout(() => setAddedMsg(""), 3000);
-                          }}
-                          className="px-5 py-3 bg-[#8B0000] hover:bg-[#6B0000] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors shadow-md flex items-center gap-2 cursor-pointer"
-                        >
-                          <ShoppingBag className="w-4 h-4" />
-                          Add Bundle to Cart
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            const bundlePayload = prepareBundlePayload();
-                            if (typeof addMultipleToCart === "function") {
-                              await addMultipleToCart(bundlePayload);
-                            } else {
-                              for (const item of bundlePayload) {
-                                await addToCart(item);
-                              }
-                            }
-                            navigate("/cart");
-                          }}
-                          className="px-5 py-3 bg-gradient-to-r from-amber-600 to-rose-700 hover:from-amber-700 hover:to-rose-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer"
-                        >
-                          <Zap className="w-4 h-4 fill-white text-white" />
-                          Buy Bundle Now
-                        </button>
-                      </div>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await handleAddToCart(false);
+                        for (const item of selectedItems) {
+                          await addToCart({
+                            product_id: item.id,
+                            name: item.name,
+                            price: item.price,
+                            image: item.image || (item.images && item.images[0]) || FALLBACK_IMG,
+                            size: item.sizes?.[0] || "Free Size",
+                            color: item.colors?.[0] || "",
+                            quantity: 1,
+                          });
+                        }
+                        setAddedMsg(`Added Bundle (${1 + selectedItems.length} items) to Cart!`);
+                        setTimeout(() => setAddedMsg(""), 2500);
+                      }}
+                      className="px-6 py-3 bg-[#8B0000] hover:bg-[#6B0000] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors shadow-md flex items-center gap-2"
+                    >
+                      <ShoppingBag className="w-4 h-4" />
+                      Add Bundle to Cart
+                    </button>
                   </div>
                 );
               })()}
@@ -1984,22 +1917,23 @@ const ProductPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
               <div className="text-center md:border-r border-gray-100 md:pr-6">
                 <span className="text-5xl font-extrabold text-gray-900">
-                  {Number(reviewStats?.total_reviews > 0 ? (reviewStats?.average_rating ?? 5.0) : (product?.rating ?? 5.0)).toFixed(1)}
+                  {(reviewStats?.total_reviews > 0 ? reviewStats.average_rating : (product.rating || 0.0)).toFixed(1)}
                 </span>
                 <div className="flex justify-center gap-1 my-2">
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
-                      className={`w-4 h-4 ${i < Math.round(Number(reviewStats?.total_reviews > 0 ? (reviewStats?.average_rating ?? 5) : (product?.rating ?? 5)))
+                      className={`w-4 h-4 ${
+                        i < Math.round(reviewStats?.total_reviews > 0 ? reviewStats.average_rating : (product.rating || 0))
                           ? "fill-yellow-400 text-yellow-400"
                           : "fill-gray-200 text-gray-200"
-                        }`}
+                      }`}
                     />
                   ))}
                 </div>
                 <p className="text-xs text-gray-500 font-medium">
                   {reviewStats?.total_reviews > 0
-                    ? `${Math.round((((reviewStats.distribution?.[5] || 0) + (reviewStats.distribution?.[4] || 0)) / Math.max(reviewStats.total_reviews, 1)) * 100)}% of customers recommend this item`
+                    ? `${Math.round(((reviewStats.distribution?.[5] || 0) + (reviewStats.distribution?.[4] || 0)) / reviewStats.total_reviews * 100)}% of customers recommend this item`
                     : "No reviews yet. Be the first verified buyer to review!"}
                 </p>
               </div>
@@ -2051,75 +1985,75 @@ const ProductPage = () => {
             <div className="divide-y divide-gray-100 pt-2 border-t border-gray-100">
               {dbReviews && dbReviews.length > 0 ? (
                 dbReviews.map((rev) => {
-                  const rId = rev._id || rev.id;
-                  const baseHelpful = rev.helpful_count || 15;
-                  const currentHelpful = helpfulVotes[rId] ? baseHelpful + 1 : baseHelpful;
-                  const formattedDate = rev.created_at ? new Date(rev.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : "Recent";
-                  return (
-                    <div key={rId} className="py-4 space-y-2 text-xs">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-gray-900">{rev.user_name || rev.reviewer_name || "Customer"}</span>
-                          {(rev.verified_buyer || rev.verified_purchase) && (
-                            <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                              <CheckCircle2 className="w-2.5 h-2.5" /> Verified Buyer
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-gray-400 text-[11px]">{formattedDate}</span>
+                const rId = rev._id || rev.id;
+                const baseHelpful = rev.helpful_count || 15;
+                const currentHelpful = helpfulVotes[rId] ? baseHelpful + 1 : baseHelpful;
+                const formattedDate = rev.created_at ? new Date(rev.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : "Recent";
+                return (
+                  <div key={rId} className="py-4 space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-gray-900">{rev.user_name || rev.reviewer_name || "Customer"}</span>
+                        {(rev.verified_buyer || rev.verified_purchase) && (
+                          <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                            <CheckCircle2 className="w-2.5 h-2.5" /> Verified Buyer
+                          </span>
+                        )}
                       </div>
-                      <div className="flex gap-0.5">
-                        {[...Array(rev.rating || 5)].map((_, i) => (
-                          <Star key={i} className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                      <span className="text-gray-400 text-[11px]">{formattedDate}</span>
+                    </div>
+                    <div className="flex gap-0.5">
+                      {[...Array(rev.rating || 5)].map((_, i) => (
+                        <Star key={i} className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                      ))}
+                    </div>
+                    {rev.comment && <p className="text-gray-700 leading-relaxed">{rev.comment}</p>}
+
+                    {/* Customer Photos in Review */}
+                    {rev.images && rev.images.length > 0 && (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {rev.images.map((imgUrl, imgIdx) => (
+                          <a
+                            key={imgIdx}
+                            href={imgUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-16 h-16 rounded-xl overflow-hidden border border-gray-200 hover:scale-105 transition inline-block shadow-xs"
+                          >
+                            <img src={imgUrl} alt={`Review photo ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                          </a>
                         ))}
                       </div>
-                      {rev.comment && <p className="text-gray-700 leading-relaxed">{rev.comment}</p>}
+                    )}
 
-                      {/* Customer Photos in Review */}
-                      {rev.images && rev.images.length > 0 && (
-                        <div className="flex flex-wrap gap-2 pt-1">
-                          {rev.images.map((imgUrl, imgIdx) => (
-                            <a
-                              key={imgIdx}
-                              href={imgUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-16 h-16 rounded-xl overflow-hidden border border-gray-200 hover:scale-105 transition inline-block shadow-xs"
-                            >
-                              <img src={imgUrl} alt={`Review photo ${imgIdx + 1}`} className="w-full h-full object-cover" />
-                            </a>
-                          ))}
-                        </div>
-                      )}
-
-                      <button
-                        onClick={() => toggleHelpful(rId)}
-                        className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-[#8B0000] transition-colors pt-1 cursor-pointer"
-                      >
-                        <ThumbsUp className={`w-3 h-3 ${helpfulVotes[rId] ? "text-[#8B0000] fill-[#8B0000]" : ""}`} />
-                        <span>Helpful ({currentHelpful})</span>
-                      </button>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="py-8 text-center space-y-2">
-                  <Star className="w-7 h-7 text-amber-400/70 mx-auto" />
-                  <p className="text-sm font-bold text-gray-800">No reviews yet for this kurti</p>
-                  <p className="text-xs text-gray-500 max-w-sm mx-auto">
-                    Verified buyers who ordered this kurti can leave a review after logging in.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleOpenReviewModal}
-                    className="mt-2 px-4 py-2 bg-[#8B0000] hover:bg-[#6B0000] text-white rounded-lg text-xs font-bold transition inline-flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Pencil className="w-3.5 h-3.5" /> {user ? "Write a Review" : "Login to Review"}
-                  </button>
-                </div>
-              )}
-            </div>
+                    <button
+                      onClick={() => toggleHelpful(rId)}
+                      className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-[#8B0000] transition-colors pt-1 cursor-pointer"
+                    >
+                      <ThumbsUp className={`w-3 h-3 ${helpfulVotes[rId] ? "text-[#8B0000] fill-[#8B0000]" : ""}`} />
+                      <span>Helpful ({currentHelpful})</span>
+                    </button>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="py-8 text-center space-y-2">
+                <Star className="w-7 h-7 text-amber-400/70 mx-auto" />
+                <p className="text-sm font-bold text-gray-800">No reviews yet for this kurti</p>
+                <p className="text-xs text-gray-500 max-w-sm mx-auto">
+                  Verified buyers who ordered this kurti can leave a review after logging in.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleOpenReviewModal}
+                  className="mt-2 px-4 py-2 bg-[#8B0000] hover:bg-[#6B0000] text-white rounded-lg text-xs font-bold transition inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Pencil className="w-3.5 h-3.5" /> {user ? "Write a Review" : "Login to Review"}
+                </button>
+              </div>
+            )}
           </div>
+        </div>
 
           {/* Q&A Accordion (Clean Text, No Card) */}
           <div className="pt-8 border-t border-gray-200 space-y-4">
@@ -2139,9 +2073,9 @@ const ProductPage = () => {
               {(product.q_and_a && product.q_and_a.length > 0
                 ? product.q_and_a
                 : [
-                  { q: "Is the fabric see-through or transparent?", a: "No, it is crafted from high-density premium cotton blend and is non-transparent." },
-                  { q: "Does the color bleed on first wash?", a: "All Nari Pehnawa fabrics are pre-washed and color-fast. We recommend gentle cold wash." },
-                ]
+                    { q: "Is the fabric see-through or transparent?", a: "No, it is crafted from high-density premium cotton blend and is non-transparent." },
+                    { q: "Does the color bleed on first wash?", a: "All Nari Pehnawa fabrics are pre-washed and color-fast. We recommend gentle cold wash." },
+                  ]
               ).map((item, idx) => (
                 <div key={idx} className="py-3.5 space-y-1">
                   <p className="font-bold text-gray-900 text-xs sm:text-sm flex items-center gap-2">
@@ -2195,985 +2129,951 @@ const ProductPage = () => {
 
         </div>
 
-        {/* ── Size Guide Modal (Exact Kurti Size Chart) ── */}
-        {showSizeChart && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setShowSizeChart(false)} />
-            <div className="relative bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 z-10 shadow-2xl max-h-[92vh] overflow-y-auto border border-gray-100">
-              <button
-                onClick={() => setShowSizeChart(false)}
-                className="absolute top-5 right-5 p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+      {/* ── Size Guide Modal (Exact Kurti Size Chart) ── */}
+      {showSizeChart && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setShowSizeChart(false)} />
+          <div className="relative bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 z-10 shadow-2xl max-h-[92vh] overflow-y-auto border border-gray-100">
+            <button
+              onClick={() => setShowSizeChart(false)}
+              className="absolute top-5 right-5 p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
 
-              {/* Header */}
-              <div className="text-center mb-6">
-                <h3 className="text-2xl sm:text-3xl font-extrabold text-[#8B0000] tracking-wider uppercase">
-                  KURTI SIZE CHART
-                </h3>
-                <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                  All measurements are in inches. Measure yourself before choosing your regular size.
-                </p>
-              </div>
+            {/* Header */}
+            <div className="text-center mb-6">
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-[#8B0000] tracking-wider uppercase">
+                KURTI SIZE CHART
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                All measurements are in inches. Measure yourself before choosing your regular size.
+              </p>
+            </div>
 
-              {/* Main Content Grid: Table + Kurti Diagram */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                {/* Size Table */}
-                <div className="md:col-span-8 overflow-x-auto">
-                  <table className="w-full text-center border-collapse border-2 border-gray-800 rounded-xl overflow-hidden text-xs sm:text-sm font-semibold">
-                    <thead>
-                      <tr className="bg-gray-50 text-[#8B0000] border-b-2 border-gray-800 uppercase tracking-tight">
-                        <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold">SIZE</th>
-                        <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">BUST<br />SIZE</th>
-                        <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">KURTA<br />WAIST</th>
-                        <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">KURTA<br />HIP</th>
-                        <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">SHOULDER<br />SIZE</th>
-                        <th className="py-3 px-2 font-extrabold leading-tight">KURTA<br />LENGTH</th>
+            {/* Main Content Grid: Table + Kurti Diagram */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+              {/* Size Table */}
+              <div className="md:col-span-8 overflow-x-auto">
+                <table className="w-full text-center border-collapse border-2 border-gray-800 rounded-xl overflow-hidden text-xs sm:text-sm font-semibold">
+                  <thead>
+                    <tr className="bg-gray-50 text-[#8B0000] border-b-2 border-gray-800 uppercase tracking-tight">
+                      <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold">SIZE</th>
+                      <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">BUST<br/>SIZE</th>
+                      <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">KURTA<br/>WAIST</th>
+                      <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">KURTA<br/>HIP</th>
+                      <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">SHOULDER<br/>SIZE</th>
+                      <th className="py-3 px-2 font-extrabold leading-tight">KURTA<br/>LENGTH</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y-2 divide-gray-800 text-gray-900 font-bold">
+                    {[
+                      { size: "S", bust: "36", waist: "34", hip: "39", shoulder: "14", length: "44" },
+                      { size: "M", bust: "38", waist: "36", hip: "41", shoulder: "14.5", length: "44" },
+                      { size: "L", bust: "40", waist: "38", hip: "43", shoulder: "15", length: "44" },
+                      { size: "XL", bust: "42", waist: "40", hip: "45", shoulder: "15.5", length: "44" },
+                      { size: "2XL", bust: "44", waist: "42", hip: "47", shoulder: "16", length: "44" },
+                    ].map((row, i) => (
+                      <tr key={row.size} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
+                        <td className="py-3 px-2 border-r-2 border-gray-800 font-extrabold text-[#8B0000] text-sm">
+                          {row.size}
+                        </td>
+                        <td className="py-3 px-2 border-r-2 border-gray-800">{row.bust}</td>
+                        <td className="py-3 px-2 border-r-2 border-gray-800">{row.waist}</td>
+                        <td className="py-3 px-2 border-r-2 border-gray-800">{row.hip}</td>
+                        <td className="py-3 px-2 border-r-2 border-gray-800">{row.shoulder}</td>
+                        <td className="py-3 px-2">{row.length}</td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y-2 divide-gray-800 text-gray-900 font-bold">
-                      {[
-                        { size: "S", bust: "36", waist: "34", hip: "39", shoulder: "14", length: "44" },
-                        { size: "M", bust: "38", waist: "36", hip: "41", shoulder: "14.5", length: "44" },
-                        { size: "L", bust: "40", waist: "38", hip: "43", shoulder: "15", length: "44" },
-                        { size: "XL", bust: "42", waist: "40", hip: "45", shoulder: "15.5", length: "44" },
-                        { size: "2XL", bust: "44", waist: "42", hip: "47", shoulder: "16", length: "44" },
-                      ].map((row, i) => (
-                        <tr key={row.size} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
-                          <td className="py-3 px-2 border-r-2 border-gray-800 font-extrabold text-[#8B0000] text-sm">
-                            {row.size}
-                          </td>
-                          <td className="py-3 px-2 border-r-2 border-gray-800">{row.bust}</td>
-                          <td className="py-3 px-2 border-r-2 border-gray-800">{row.waist}</td>
-                          <td className="py-3 px-2 border-r-2 border-gray-800">{row.hip}</td>
-                          <td className="py-3 px-2 border-r-2 border-gray-800">{row.shoulder}</td>
-                          <td className="py-3 px-2">{row.length}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-                {/* Kurti Diagram Illustration */}
-                <div className="md:col-span-4 flex flex-col items-center justify-center p-3">
-                  <svg
-                    viewBox="0 0 200 320"
-                    className="w-full max-w-[160px] h-auto"
+              {/* Kurti Diagram Illustration */}
+              <div className="md:col-span-4 flex flex-col items-center justify-center p-3">
+                <svg
+                  viewBox="0 0 200 320"
+                  className="w-full max-w-[160px] h-auto"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  {/* Kurti Body Outline */}
+                  <path
+                    d="M75 25 C85 45 115 45 125 25 L155 42 L185 135 L165 140 L150 78 L148 100 Q145 150 148 290 L52 290 Q55 150 52 100 L50 78 L35 140 L15 135 L45 42 Z"
+                    fill="#ffffff"
+                    stroke="#1e293b"
+                    strokeWidth="2.5"
+                    strokeLinejoin="round"
+                  />
+                  {/* Neckline */}
+                  <path
+                    d="M75 25 C85 50 115 50 125 25"
+                    stroke="#1e293b"
+                    strokeWidth="2.5"
                     fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    {/* Kurti Body Outline */}
-                    <path
-                      d="M75 25 C85 45 115 45 125 25 L155 42 L185 135 L165 140 L150 78 L148 100 Q145 150 148 290 L52 290 Q55 150 52 100 L50 78 L35 140 L15 135 L45 42 Z"
-                      fill="#ffffff"
-                      stroke="#1e293b"
-                      strokeWidth="2.5"
-                      strokeLinejoin="round"
-                    />
-                    {/* Neckline */}
-                    <path
-                      d="M75 25 C85 50 115 50 125 25"
-                      stroke="#1e293b"
-                      strokeWidth="2.5"
-                      fill="none"
-                    />
-                    {/* Bust arrow */}
-                    <line x1="50" y1="88" x2="150" y2="88" stroke="#1e293b" strokeWidth="2" />
-                    <path d="M57 83 L50 88 L57 93 M143 83 L150 88 L143 93" stroke="#1e293b" strokeWidth="2" fill="none" />
-                    <text x="100" y="80" textAnchor="middle" fill="#1e293b" fontSize="12" fontWeight="bold">Bust</text>
+                  />
+                  {/* Bust arrow */}
+                  <line x1="50" y1="88" x2="150" y2="88" stroke="#1e293b" strokeWidth="2" />
+                  <path d="M57 83 L50 88 L57 93 M143 83 L150 88 L143 93" stroke="#1e293b" strokeWidth="2" fill="none" />
+                  <text x="100" y="80" textAnchor="middle" fill="#1e293b" fontSize="12" fontWeight="bold">Bust</text>
 
-                    {/* Waist arrow */}
-                    <line x1="53" y1="145" x2="147" y2="145" stroke="#1e293b" strokeWidth="2" />
-                    <path d="M60 140 L53 145 L60 150 M140 140 L147 145 L140 150" stroke="#1e293b" strokeWidth="2" fill="none" />
-                    <text x="100" y="137" textAnchor="middle" fill="#1e293b" fontSize="12" fontWeight="bold">Waist</text>
+                  {/* Waist arrow */}
+                  <line x1="53" y1="145" x2="147" y2="145" stroke="#1e293b" strokeWidth="2" />
+                  <path d="M60 140 L53 145 L60 150 M140 140 L147 145 L140 150" stroke="#1e293b" strokeWidth="2" fill="none" />
+                  <text x="100" y="137" textAnchor="middle" fill="#1e293b" fontSize="12" fontWeight="bold">Waist</text>
 
-                    {/* Hip arrow */}
-                    <line x1="52" y1="195" x2="148" y2="195" stroke="#1e293b" strokeWidth="2" />
-                    <path d="M59 190 L52 195 L59 200 M141 190 L148 195 L141 200" stroke="#1e293b" strokeWidth="2" fill="none" />
-                    <text x="100" y="187" textAnchor="middle" fill="#1e293b" fontSize="12" fontWeight="bold">Hip</text>
-                  </svg>
-                  <span className="text-[11px] font-bold text-[#8B0000] mt-2 text-center">
-                    Measurement Guide
-                  </span>
-                </div>
+                  {/* Hip arrow */}
+                  <line x1="52" y1="195" x2="148" y2="195" stroke="#1e293b" strokeWidth="2" />
+                  <path d="M59 190 L52 195 L59 200 M141 190 L148 195 L141 200" stroke="#1e293b" strokeWidth="2" fill="none" />
+                  <text x="100" y="187" textAnchor="middle" fill="#1e293b" fontSize="12" fontWeight="bold">Hip</text>
+                </svg>
+                <span className="text-[11px] font-bold text-[#8B0000] mt-2 text-center">
+                  Measurement Guide
+                </span>
               </div>
+            </div>
 
-              {/* How to Measure Guidelines */}
-              <div className="mt-6 pt-4 border-t border-gray-100">
-                <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-2">
-                  How to Measure Your Body:
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-600">
-                  <div>
-                    <strong className="text-gray-900">1. Bust:</strong> Measure around the fullest part of your chest with tape horizontal.
-                  </div>
-                  <div>
-                    <strong className="text-gray-900">2. Waist:</strong> Measure around your natural waistline, just above the navel.
-                  </div>
-                  <div>
-                    <strong className="text-gray-900">3. Hip:</strong> Measure around the fullest part of your hips/seat.
-                  </div>
+            {/* How to Measure Guidelines */}
+            <div className="mt-6 pt-4 border-t border-gray-100">
+              <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-2">
+                How to Measure Your Body:
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-600">
+                <div>
+                  <strong className="text-gray-900">1. Bust:</strong> Measure around the fullest part of your chest with tape horizontal.
+                </div>
+                <div>
+                  <strong className="text-gray-900">2. Waist:</strong> Measure around your natural waistline, just above the navel.
+                </div>
+                <div>
+                  <strong className="text-gray-900">3. Hip:</strong> Measure around the fullest part of your hips/seat.
                 </div>
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ── Mobile Sticky Bottom Action Bar (Fixed at bottom on Mobile) ── */}
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 p-2.5 px-4 sm:hidden flex items-center justify-between gap-3 shadow-[0_-4px_16px_rgba(0,0,0,0.1)]">
-          <div className="min-w-0">
-            <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Price</div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-lg font-black text-gray-900 font-mono">
-                ₹{(currentPrice || 0).toLocaleString("en-IN")}
+      {/* ── Mobile Sticky Bottom Action Bar (Fixed at bottom on Mobile) ── */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 p-2.5 px-4 sm:hidden flex items-center justify-between gap-3 shadow-[0_-4px_16px_rgba(0,0,0,0.1)]">
+        <div className="min-w-0">
+          <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Price</div>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg font-black text-gray-900 font-mono">
+              ₹{(currentPrice || 0).toLocaleString("en-IN")}
+            </span>
+            {currentMRP > currentPrice && (
+              <span className="text-xs text-gray-400 line-through font-mono">
+                ₹{currentMRP.toLocaleString("en-IN")}
               </span>
-              {currentMRP > currentPrice && (
-                <span className="text-xs text-gray-400 line-through font-mono">
-                  ₹{currentMRP.toLocaleString("en-IN")}
-                </span>
-              )}
-              {isSaleMode && (
-                <span className="text-[9px] font-black text-amber-700 bg-amber-100 px-1 py-0.2 rounded">
-                  ⚡ Deal
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 flex-1 max-w-[220px]">
-            <button
-              onClick={() => handleAddToCart(false)}
-              className="flex-1 py-2.5 px-2 rounded-xl border border-[#8B0000] text-[#8B0000] font-bold text-xs uppercase tracking-wider hover:bg-[#8B0000] hover:text-white transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
-            >
-              <ShoppingCart className="w-3.5 h-3.5" /> Cart
-            </button>
-            <button
-              onClick={handleBuyNow}
-              className="flex-1 py-2.5 px-2 rounded-xl bg-[#8B0000] text-white font-bold text-xs uppercase tracking-wider hover:bg-[#6B0000] transition-all shadow-md text-center flex items-center justify-center gap-1 cursor-pointer"
-            >
-              <Zap className="w-3.5 h-3.5" /> Buy Now
-            </button>
+            )}
+            {isSaleMode && (
+              <span className="text-[9px] font-black text-amber-700 bg-amber-100 px-1 py-0.2 rounded">
+                ⚡ Deal
+              </span>
+            )}
           </div>
         </div>
 
-        {/* ── Product Share & Copy Link Modal ── */}
-        <ProductShareModal
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-          product={product}
-        />
+        <div className="flex items-center gap-2 flex-1 max-w-[220px]">
+          <button
+            onClick={() => handleAddToCart(false)}
+            className="flex-1 py-2.5 px-2 rounded-xl border border-[#8B0000] text-[#8B0000] font-bold text-xs uppercase tracking-wider hover:bg-[#8B0000] hover:text-white transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
+          >
+            <ShoppingCart className="w-3.5 h-3.5" /> Cart
+          </button>
+          <button
+            onClick={handleBuyNow}
+            className="flex-1 py-2.5 px-2 rounded-xl bg-[#8B0000] text-white font-bold text-xs uppercase tracking-wider hover:bg-[#6B0000] transition-all shadow-md text-center flex items-center justify-center gap-1 cursor-pointer"
+          >
+            <Zap className="w-3.5 h-3.5" /> Buy Now
+          </button>
+        </div>
+      </div>
+
+      {/* ── Product Share & Copy Link Modal ── */}
+      <ProductShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        product={product}
+      />
 
 
-        {/* ── Checkout Modal ── */}
-        <CheckoutModal
-          isOpen={showCheckout}
-          onClose={() => {
-            setShowCheckout(false);
-            clearPendingCheckout();
-          }}
-          items={buyNowItem}
-          subtotal={buyNowSubtotal}
-          discount={0}
-          shipping={buyNowShipping}
-          total={buyNowTotal}
-          onOrderPlaced={() => {
-            clearPendingCheckout();
-            setShowCheckout(false);
-          }}
-        />
+      {/* ── Checkout Modal ── */}
+      <CheckoutModal
+        isOpen={showCheckout}
+        onClose={() => {
+          setShowCheckout(false);
+          clearPendingCheckout();
+        }}
+        items={buyNowItem}
+        subtotal={buyNowSubtotal}
+        discount={0}
+        shipping={buyNowShipping}
+        total={buyNowTotal}
+        onOrderPlaced={() => {
+          clearPendingCheckout();
+          setShowCheckout(false);
+        }}
+      />
 
-        {/* ── Rate & Write Review Modal ── */}
-        {showReviewModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs animate-in fade-in" onClick={() => setShowReviewModal(false)} />
-            <div className="relative bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto z-10 shadow-2xl border border-gray-100 animate-in zoom-in-95">
-              {/* Modal Header (Centered Maroon Banner) */}
-              <div className="bg-[#8B0000] text-white py-5 px-6 rounded-t-3xl text-center relative sticky top-0 z-20 shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => setShowReviewModal(false)}
-                  className="absolute top-4 right-4 text-white/80 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-                <h3 className="text-xl font-serif font-bold tracking-wide flex items-center justify-center gap-2">
-                  <Star className="w-5 h-5 text-amber-300 fill-amber-300" />
-                  Rate &amp; Review Kurti
-                </h3>
-                <p className="text-xs text-rose-100/90 mt-1">
-                  Share your genuine rating and feedback with other shoppers
-                </p>
-              </div>
-
-              {/* Modal Body */}
-              <form onSubmit={handleSubmitReview} className="p-6 md:p-8 space-y-6">
-                {/* Product Info Preview (Clean Layout, No Card) */}
-                <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
-                  {product?.image ? (
-                    <img src={product.image} alt={product.name} className="w-16 h-16 rounded-xl object-cover border border-gray-200 shadow-xs" />
-                  ) : (
-                    <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
-                      <Package className="w-7 h-7" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <span className="text-[10px] font-bold text-[#8B0000] uppercase tracking-wider">Product</span>
-                    <h4 className="font-semibold text-gray-900 text-sm truncate">{product?.name}</h4>
-                    <p className="text-xs font-bold text-[#8B0000] mt-0.5">₹{product?.price?.toLocaleString() || 0}</p>
-                  </div>
-                </div>
-
-                {/* Overall Rating (Clean Layout, No Card Box) */}
-                <div className="py-2 text-center flex flex-col items-center justify-center border-b border-gray-100 pb-5">
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                    Overall Rating <span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex items-center justify-center gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        type="button"
-                        key={star}
-                        onClick={() => setReviewRating(star)}
-                        onMouseEnter={() => setReviewHoverRating(star)}
-                        onMouseLeave={() => setReviewHoverRating(0)}
-                        className="p-1.5 text-gray-300 hover:scale-125 transition-transform cursor-pointer focus:outline-none"
-                      >
-                        <Star
-                          className={`w-9 h-9 transition-colors ${(reviewHoverRating || reviewRating) >= star
-                            ? "text-amber-400 fill-amber-400 drop-shadow-xs"
-                            : "text-gray-300"
-                            }`}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                  <div className="mt-2 text-sm font-bold text-[#8B0000]">
-                    {["", "1 Star - Poor", "2 Stars - Fair", "3 Stars - Good", "4 Stars - Very Good", "5 Stars - Excellent"][reviewHoverRating || reviewRating]}
-                  </div>
-                </div>
-
-                {/* Review Description (Optional) */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
-                      Your Review / Feedback
-                    </label>
-                    <span className="text-[11px] font-normal text-gray-400">Optional</span>
-                  </div>
-                  <textarea
-                    rows={4}
-                    value={reviewComment}
-                    onChange={(e) => setReviewComment(e.target.value)}
-                    placeholder="Share details about the fitting, fabric, color, quality, and your shopping experience..."
-                    className="w-full px-4 py-3 text-sm border border-gray-300 rounded-2xl focus:ring-2 focus:ring-[#8B0000] focus:border-transparent outline-none resize-none transition"
-                  />
-                </div>
-
-                {/* Product Photos Upload (Optional) */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
-                      Product Photos (Wear / Unbox)
-                    </label>
-                    <span className="text-[11px] font-normal text-gray-500">{reviewImages.length}/4 photos</span>
-                  </div>
-
-                  <div className="space-y-3">
-                    {/* Photos Preview Grid */}
-                    {reviewImages.length > 0 && (
-                      <div className="flex flex-wrap gap-3">
-                        {reviewImages.map((imgUrl, imgIdx) => (
-                          <div key={imgIdx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 group shadow-xs">
-                            <img src={imgUrl} alt={`Upload ${imgIdx + 1}`} className="w-full h-full object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => removeReviewImage(imgIdx)}
-                              className="absolute top-1 right-1 w-6 h-6 bg-black/75 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition cursor-pointer"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Upload Area */}
-                    {reviewImages.length < 4 && (
-                      <label className={`flex flex-col sm:flex-row items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 hover:border-[#8B0000] rounded-2xl cursor-pointer bg-gray-50 hover:bg-rose-50/30 transition ${uploadingImage ? "opacity-50 pointer-events-none" : ""}`}>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={handleImageUpload}
-                          className="hidden"
-                          disabled={uploadingImage}
-                        />
-                        {uploadingImage ? (
-                          <div className="flex items-center gap-2 text-xs text-gray-600">
-                            <Loader2 className="w-5 h-5 animate-spin text-[#8B0000]" />
-                            <span>Uploading photo...</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 text-xs font-semibold text-[#8B0000]">
-                            <Camera className="w-5 h-5" />
-                            <span>Click to attach photos (Wear / Unbox)</span>
-                          </div>
-                        )}
-                      </label>
-                    )}
-                  </div>
-                </div>
-
-                {/* Feedback Alert */}
-                {reviewFeedback && (
-                  <div className={`p-3.5 rounded-2xl text-xs font-medium text-center ${reviewFeedback.type === "success" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-rose-50 text-rose-800 border border-rose-200"}`}>
-                    {reviewFeedback.message}
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex items-center justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowReviewModal(false)}
-                    className="px-5 py-2.5 text-sm text-gray-600 hover:text-gray-800 rounded-xl hover:bg-gray-100 transition cursor-pointer font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={reviewSubmitting || !reviewRating}
-                    className="px-8 py-3 text-sm font-bold text-white bg-[#8B0000] hover:bg-[#6B0000] rounded-xl shadow-md hover:shadow-lg disabled:opacity-50 transition flex items-center gap-2 cursor-pointer"
-                  >
-                    {reviewSubmitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" /> Submitting...
-                      </>
-                    ) : (
-                      "Submit Review"
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* ── CUSTOMIZE OUTFIT MODAL ── */}
-        {showCustomizeModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
-            <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-5 sm:p-7 relative border-2 border-[#8B0000]/20 max-h-[92vh] overflow-y-auto">
-              {/* Close Button */}
+      {/* ── Rate & Write Review Modal ── */}
+      {showReviewModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs animate-in fade-in" onClick={() => setShowReviewModal(false)} />
+          <div className="relative bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto z-10 shadow-2xl border border-gray-100 animate-in zoom-in-95">
+            {/* Modal Header (Centered Maroon Banner) */}
+            <div className="bg-[#8B0000] text-white py-5 px-6 rounded-t-3xl text-center relative sticky top-0 z-20 shadow-sm">
               <button
                 type="button"
-                onClick={() => setShowCustomizeModal(false)}
-                className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-800 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+                onClick={() => setShowReviewModal(false)}
+                className="absolute top-4 right-4 text-white/80 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
+              <h3 className="text-xl font-serif font-bold tracking-wide flex items-center justify-center gap-2">
+                <Star className="w-5 h-5 text-amber-300 fill-amber-300" />
+                Rate &amp; Review Kurti
+              </h3>
+              <p className="text-xs text-rose-100/90 mt-1">
+                Share your genuine rating and feedback with other shoppers
+              </p>
+            </div>
 
-              {/* Modal Header */}
-              <div className="text-center mb-5">
-                <img
-                  src="/logo.png"
-                  alt="Nari Pehnawa"
-                  className="h-10 sm:h-12 w-auto mx-auto object-contain mb-2"
+            {/* Modal Body */}
+            <form onSubmit={handleSubmitReview} className="p-6 md:p-8 space-y-6">
+              {/* Product Info Preview (Clean Layout, No Card) */}
+              <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
+                {product?.image ? (
+                  <img src={product.image} alt={product.name} className="w-16 h-16 rounded-xl object-cover border border-gray-200 shadow-xs" />
+                ) : (
+                  <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
+                    <Package className="w-7 h-7" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <span className="text-[10px] font-bold text-[#8B0000] uppercase tracking-wider">Product</span>
+                  <h4 className="font-semibold text-gray-900 text-sm truncate">{product?.name}</h4>
+                  <p className="text-xs font-bold text-[#8B0000] mt-0.5">₹{product?.price?.toLocaleString() || 0}</p>
+                </div>
+              </div>
+
+              {/* Overall Rating (Clean Layout, No Card Box) */}
+              <div className="py-2 text-center flex flex-col items-center justify-center border-b border-gray-100 pb-5">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                  Overall Rating <span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center justify-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      type="button"
+                      key={star}
+                      onClick={() => setReviewRating(star)}
+                      onMouseEnter={() => setReviewHoverRating(star)}
+                      onMouseLeave={() => setReviewHoverRating(0)}
+                      className="p-1.5 text-gray-300 hover:scale-125 transition-transform cursor-pointer focus:outline-none"
+                    >
+                      <Star
+                        className={`w-9 h-9 transition-colors ${
+                          (reviewHoverRating || reviewRating) >= star
+                            ? "text-amber-400 fill-amber-400 drop-shadow-xs"
+                            : "text-gray-300"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-2 text-sm font-bold text-[#8B0000]">
+                  {["", "1 Star - Poor", "2 Stars - Fair", "3 Stars - Good", "4 Stars - Very Good", "5 Stars - Excellent"][reviewHoverRating || reviewRating]}
+                </div>
+              </div>
+
+              {/* Review Description (Optional) */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Your Review / Feedback
+                  </label>
+                  <span className="text-[11px] font-normal text-gray-400">Optional</span>
+                </div>
+                <textarea
+                  rows={4}
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="Share details about the fitting, fabric, color, quality, and your shopping experience..."
+                  className="w-full px-4 py-3 text-sm border border-gray-300 rounded-2xl focus:ring-2 focus:ring-[#8B0000] focus:border-transparent outline-none resize-none transition"
                 />
-                <h3 className="text-xl sm:text-2xl font-serif font-bold text-[#8B0000] tracking-wide">
-                  Customize Your Outfit
-                </h3>
-                <p className="text-xs text-gray-600 mt-1 max-w-md mx-auto">
-                  Handcrafted to your exact measurements &amp; preferences by our master artisans.
-                </p>
+              </div>
 
-                {/* Product Reference Strip */}
-                {product && (
-                  <div className="mt-3.5 p-3 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-center gap-3 text-left">
-                    <img
-                      src={resolveImageUrl(product.images?.[0] || product.image || FALLBACK_IMG)}
-                      alt={product.name}
-                      className="w-14 h-14 object-cover rounded-xl border border-amber-300/60 flex-shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold text-gray-900 truncate">{product.name}</p>
-                      <p className="text-xs text-[#8B0000] font-extrabold mt-0.5">Total: ₹{currentPrice}</p>
-                      <p className="text-[10px] text-gray-500">SKU: {product.sku || "NP-CUSTOM"}</p>
+              {/* Product Photos Upload (Optional) */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Product Photos (Wear / Unbox)
+                  </label>
+                  <span className="text-[11px] font-normal text-gray-500">{reviewImages.length}/4 photos</span>
+                </div>
+
+                <div className="space-y-3">
+                  {/* Photos Preview Grid */}
+                  {reviewImages.length > 0 && (
+                    <div className="flex flex-wrap gap-3">
+                      {reviewImages.map((imgUrl, imgIdx) => (
+                        <div key={imgIdx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 group shadow-xs">
+                          <img src={imgUrl} alt={`Upload ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removeReviewImage(imgIdx)}
+                            className="absolute top-1 right-1 w-6 h-6 bg-black/75 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <span className="text-[10px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full uppercase tracking-wider block">
-                        50% Advance
+                  )}
+
+                  {/* Upload Area */}
+                  {reviewImages.length < 4 && (
+                    <label className={`flex flex-col sm:flex-row items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 hover:border-[#8B0000] rounded-2xl cursor-pointer bg-gray-50 hover:bg-rose-50/30 transition ${uploadingImage ? "opacity-50 pointer-events-none" : ""}`}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        disabled={uploadingImage}
+                      />
+                      {uploadingImage ? (
+                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                          <Loader2 className="w-5 h-5 animate-spin text-[#8B0000]" />
+                          <span>Uploading photo...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-xs font-semibold text-[#8B0000]">
+                          <Camera className="w-5 h-5" />
+                          <span>Click to attach photos (Wear / Unbox)</span>
+                        </div>
+                      )}
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Feedback Alert */}
+              {reviewFeedback && (
+                <div className={`p-3.5 rounded-2xl text-xs font-medium text-center ${reviewFeedback.type === "success" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-rose-50 text-rose-800 border border-rose-200"}`}>
+                  {reviewFeedback.message}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowReviewModal(false)}
+                  className="px-5 py-2.5 text-sm text-gray-600 hover:text-gray-800 rounded-xl hover:bg-gray-100 transition cursor-pointer font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={reviewSubmitting || !reviewRating}
+                  className="px-8 py-3 text-sm font-bold text-white bg-[#8B0000] hover:bg-[#6B0000] rounded-xl shadow-md hover:shadow-lg disabled:opacity-50 transition flex items-center gap-2 cursor-pointer"
+                >
+                  {reviewSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Submitting...
+                    </>
+                  ) : (
+                    "Submit Review"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── CUSTOMIZE OUTFIT MODAL ── */}
+      {showCustomizeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-5 sm:p-7 relative border-2 border-[#8B0000]/20 max-h-[92vh] overflow-y-auto">
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setShowCustomizeModal(false)}
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-800 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Modal Header */}
+            <div className="text-center mb-5">
+              <img
+                src="/logo.png"
+                alt="Nari Pehnawa"
+                className="h-10 sm:h-12 w-auto mx-auto object-contain mb-2"
+              />
+              <h3 className="text-xl sm:text-2xl font-serif font-bold text-[#8B0000] tracking-wide">
+                Customize Your Outfit
+              </h3>
+              <p className="text-xs text-gray-600 mt-1 max-w-md mx-auto">
+                Handcrafted to your exact measurements &amp; preferences by our master artisans.
+              </p>
+
+              {/* Product Reference Strip */}
+              {product && (
+                <div className="mt-3.5 p-3 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-center gap-3 text-left">
+                  <img
+                    src={resolveImageUrl(product.images?.[0] || product.image || FALLBACK_IMG)}
+                    alt={product.name}
+                    className="w-14 h-14 object-cover rounded-xl border border-amber-300/60 flex-shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-gray-900 truncate">{product.name}</p>
+                    <p className="text-xs text-[#8B0000] font-extrabold mt-0.5">Total: ₹{currentPrice}</p>
+                    <p className="text-[10px] text-gray-500">SKU: {product.sku || "NP-CUSTOM"}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <span className="text-[10px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full uppercase tracking-wider block">
+                      50% Advance
+                    </span>
+                    <span className="text-sm font-extrabold text-[#8B0000] mt-0.5 block">₹{advanceAmount}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {customizeSubmitted ? (
+              <div className="py-6 text-center space-y-4">
+                <CheckCircle2 className="w-16 h-16 text-emerald-600 mx-auto animate-bounce" />
+                <h4 className="text-xl font-serif font-bold text-gray-900">Customization Order Placed!</h4>
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 max-w-md mx-auto space-y-2 text-left">
+                  <p className="font-bold text-sm">
+                    {customizeSuccessData?.advance_paid
+                      ? `✅ 50% Advance (₹${advanceAmount}) Paid Successfully!`
+                      : `⏳ 50% Advance (₹${advanceAmount}) Booking Received!`}
+                  </p>
+                  <p className="text-xs text-emerald-800">
+                    Remaining 50% Balance: <strong>₹{remainingAmount}</strong> payable upon doorstep delivery (COD).
+                  </p>
+                  {customizeSuccessData?.id && (
+                    <p className="text-[11px] font-mono text-gray-600">
+                      Inquiry / Order ID: <strong className="text-emerald-900">{customizeSuccessData.id}</strong>
+                    </p>
+                  )}
+                  {(customizeSuccessData?.shipping_full_address || customizeForm.shipping_address) && (
+                    <div className="pt-2 border-t border-emerald-200/80 text-[11px] text-emerald-950">
+                      <span className="font-bold block text-emerald-900">📍 Delivery / Dispatch Address:</span>
+                      <p className="mt-0.5">{customizeSuccessData?.shipping_full_address || `${customizeForm.shipping_address}, ${customizeForm.shipping_city} ${customizeForm.shipping_state} - ${customizeForm.shipping_pincode}`}</p>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-600 max-w-md mx-auto leading-relaxed">
+                  Thank you! Our master tailoring team will verify your measurements and prepare the fabric cut. Your bespoke outfit will be dispatched directly to your address.
+                </p>
+                <div className="pt-2 flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCustomizeModal(false);
+                      setCustomizeSubmitted(false);
+                    }}
+                    className="px-8 py-3 bg-[#8B0000] text-white rounded-xl text-xs font-bold hover:bg-[#6B0000] transition cursor-pointer shadow-md"
+                  >
+                    Done &amp; Continue Shopping
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={(e) => handleCustomizeSubmit(e, true)} className="space-y-4">
+
+                {/* 1. Customization Scope */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider">
+                      1. Customization Requirement *
+                    </label>
+                    {product.customization_scope && product.customization_scope !== "both" && (
+                      <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full font-bold">
+                        {product.customization_scope === "top_only" ? "Top / Kurti Exclusive" : "Bottom / Pant Exclusive"}
                       </span>
-                      <span className="text-sm font-extrabold text-[#8B0000] mt-0.5 block">₹{advanceAmount}</span>
+                    )}
+                  </div>
+
+                  {product.customization_scope === "top_only" ? (
+                    <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-bold text-[#8B0000] flex items-center gap-2">
+                      <Scissors className="w-4 h-4 text-[#d4af37]" />
+                      <span>Customizing: Top / Kurti Only (Bust, Sleeves, Neck &amp; Length)</span>
+                    </div>
+                  ) : product.customization_scope === "bottom_only" ? (
+                    <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-[#8B0000] flex items-center gap-2">
+                      <Scissors className="w-4 h-4 text-[#d4af37]" />
+                      <span>Customizing: Bottom / Pant Only (Waist, Hip, Style &amp; Length)</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: "complete_set", label: "Complete Set", sub: "Top + Bottom" },
+                        { id: "top_only", label: "Top / Kurti", sub: "Kurti Only" },
+                        { id: "bottom_only", label: "Bottom Only", sub: "Pant / Palazzo" },
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setCustomizeForm({ ...customizeForm, custom_type: item.id })}
+                          className={`p-2 rounded-xl text-center border-2 transition cursor-pointer ${
+                            customizeForm.custom_type === item.id
+                              ? "border-[#8B0000] bg-rose-50/70 text-[#8B0000] font-bold shadow-xs"
+                              : "border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300"
+                          }`}
+                        >
+                          <div className="text-xs font-bold leading-tight">{item.label}</div>
+                          <div className="text-[10px] text-gray-500 font-normal mt-0.5">{item.sub}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Customer Height & Fit Preference */}
+                <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-200 space-y-3">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-gray-700 block">
+                    2. Height &amp; Overall Fit Preference
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-600 mb-1">Customer Height *</label>
+                      <select
+                        value={customizeForm.height}
+                        onChange={(e) => setCustomizeForm({ ...customizeForm, height: e.target.value })}
+                        className="w-full px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
+                      >
+                        {["4 ft 10 in", "4 ft 11 in", "5 ft 0 in", "5 ft 1 in", "5 ft 2 in", "5 ft 3 in", "5 ft 4 in", "5 ft 5 in", "5 ft 6 in", "5 ft 7 in", "5 ft 8 in", "5 ft 9 in", "Custom"].map((h) => (
+                          <option key={h} value={h}>{h}</option>
+                        ))}
+                      </select>
+                      {customizeForm.height === "Custom" && (
+                        <input
+                          type="text"
+                          value={customizeForm.custom_height_text}
+                          onChange={(e) => setCustomizeForm({ ...customizeForm, custom_height_text: e.target.value })}
+                          placeholder="Type custom height (e.g. 5 ft 5 in)"
+                          className="mt-1.5 w-full px-2.5 py-1.5 text-xs bg-white border border-rose-400 rounded-lg focus:outline-none focus:border-[#8B0000]"
+                        />
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-600 mb-1">Fit Preference</label>
+                      <select
+                        value={customizeForm.fit_preference}
+                        onChange={(e) => setCustomizeForm({ ...customizeForm, fit_preference: e.target.value })}
+                        className="w-full px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
+                      >
+                        <option value="Regular Comfort Fit">Regular Comfort Fit (Classic ease)</option>
+                        <option value="Slim Tailored Fit">Slim Tailored Fit (Snug contour)</option>
+                        <option value="Relaxed Loose Fit">Relaxed Loose Fit (Airy &amp; flowy)</option>
+                        <option value="Custom">Custom Fit Preference</option>
+                      </select>
+                      {customizeForm.fit_preference === "Custom" && (
+                        <input
+                          type="text"
+                          value={customizeForm.custom_fit_text}
+                          onChange={(e) => setCustomizeForm({ ...customizeForm, custom_fit_text: e.target.value })}
+                          placeholder="Describe custom fit (e.g. extra room at armhole)"
+                          className="mt-1.5 w-full px-2.5 py-1.5 text-xs bg-white border border-rose-400 rounded-lg focus:outline-none focus:border-[#8B0000]"
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Top / Kurti Measurements (Only shown when not bottom_only) */}
+                {customizeForm.custom_type !== "bottom_only" && (
+                  <div className="p-3.5 rounded-2xl bg-amber-50/50 border border-amber-200 space-y-3">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#8B0000] block">
+                      3. Top / Kurti Silhouette &amp; Measurements
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Bust (Inches) *</label>
+                        <select
+                          value={customizeForm.bust_size}
+                          onChange={(e) => setCustomizeForm({ ...customizeForm, bust_size: e.target.value })}
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
+                        >
+                          {["32", "34", "36", "38", "40", "42", "44", "46", "48", "50", "Custom"].map((b) => (
+                            <option key={b} value={b}>{b}{b !== "Custom" ? " in" : ""}</option>
+                          ))}
+                        </select>
+                        {customizeForm.bust_size === "Custom" && (
+                          <input
+                            type="text"
+                            value={customizeForm.custom_bust_text}
+                            onChange={(e) => setCustomizeForm({ ...customizeForm, custom_bust_text: e.target.value })}
+                            placeholder="Type bust in inches (e.g. 37 in)"
+                            className="mt-1.5 w-full px-2 py-1 text-xs bg-white border border-rose-400 rounded-lg focus:outline-none focus:border-[#8B0000]"
+                          />
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Cup Size</label>
+                        <select
+                          value={customizeForm.cup_size}
+                          onChange={(e) => setCustomizeForm({ ...customizeForm, cup_size: e.target.value })}
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
+                        >
+                          {["Standard", "A", "B", "C", "D", "DD/E", "Custom"].map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                        {customizeForm.cup_size === "Custom" && (
+                          <input
+                            type="text"
+                            value={customizeForm.custom_cup_text}
+                            onChange={(e) => setCustomizeForm({ ...customizeForm, custom_cup_text: e.target.value })}
+                            placeholder="Type cup size (e.g. 34D)"
+                            className="mt-1.5 w-full px-2 py-1 text-xs bg-white border border-rose-400 rounded-lg focus:outline-none focus:border-[#8B0000]"
+                          />
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Top Length</label>
+                        <select
+                          value={customizeForm.top_length}
+                          onChange={(e) => setCustomizeForm({ ...customizeForm, top_length: e.target.value })}
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
+                        >
+                          {["Short (38 in)", "Knee Length (42 in)", "Standard (44 in)", "Calf Length (46 in)", "Ankle (48-50 in)", "Custom"].map((l) => (
+                            <option key={l} value={l}>{l}</option>
+                          ))}
+                        </select>
+                        {customizeForm.top_length === "Custom" && (
+                          <input
+                            type="text"
+                            value={customizeForm.custom_top_length_text}
+                            onChange={(e) => setCustomizeForm({ ...customizeForm, custom_top_length_text: e.target.value })}
+                            placeholder="Type length in inches (e.g. 43 in)"
+                            className="mt-1.5 w-full px-2 py-1 text-xs bg-white border border-rose-400 rounded-lg focus:outline-none focus:border-[#8B0000]"
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Sleeves Style</label>
+                        <select
+                          value={customizeForm.sleeve_type}
+                          onChange={(e) => setCustomizeForm({ ...customizeForm, sleeve_type: e.target.value })}
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
+                        >
+                          <option value="Sleeveless">Sleeveless (Tailored inner margin)</option>
+                          <option value="Cap Sleeves (4 in)">Cap Sleeves (4 in)</option>
+                          <option value="Short Sleeves (7 in)">Short Sleeves (7 in)</option>
+                          <option value="3/4th Sleeves (16 in)">3/4th Sleeves (16 in)</option>
+                          <option value="Full Sleeves (21 in)">Full Sleeves (21 in)</option>
+                          <option value="Custom">Custom Sleeves</option>
+                        </select>
+                        {customizeForm.sleeve_type === "Custom" && (
+                          <input
+                            type="text"
+                            value={customizeForm.custom_sleeve_text}
+                            onChange={(e) => setCustomizeForm({ ...customizeForm, custom_sleeve_text: e.target.value })}
+                            placeholder="Describe custom sleeves (e.g. Bell sleeves 18 in)"
+                            className="mt-1.5 w-full px-2 py-1 text-xs bg-white border border-rose-400 rounded-lg focus:outline-none focus:border-[#8B0000]"
+                          />
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Neckline Design</label>
+                        <select
+                          value={customizeForm.neck_design}
+                          onChange={(e) => setCustomizeForm({ ...customizeForm, neck_design: e.target.value })}
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
+                        >
+                          <option value="As Shown in Photo">As Shown in Photo</option>
+                          <option value="Round Neck (Modest 6 in)">Round Neck (Modest 6 in)</option>
+                          <option value="V-Neck (Gentle 7 in)">V-Neck (Gentle 7 in)</option>
+                          <option value="Sweetheart Neck">Sweetheart Neck</option>
+                          <option value="Mandarin / Collar Neck">Mandarin / Collar Neck</option>
+                          <option value="Boat Neck">Boat Neck</option>
+                          <option value="Custom">Custom Neck</option>
+                        </select>
+                        {customizeForm.neck_design === "Custom" && (
+                          <input
+                            type="text"
+                            value={customizeForm.custom_neck_text}
+                            onChange={(e) => setCustomizeForm({ ...customizeForm, custom_neck_text: e.target.value })}
+                            placeholder="Describe custom neckline (e.g. Square neck 6.5 in)"
+                            className="mt-1.5 w-full px-2 py-1 text-xs bg-white border border-rose-400 rounded-lg focus:outline-none focus:border-[#8B0000]"
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
-              </div>
 
-              {customizeSubmitted ? (
-                <div className="py-6 text-center space-y-4">
-                  <CheckCircle2 className="w-16 h-16 text-emerald-600 mx-auto animate-bounce" />
-                  <h4 className="text-xl font-serif font-bold text-gray-900">Customization Order Placed!</h4>
-                  <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 max-w-md mx-auto space-y-2 text-left">
-                    <p className="font-bold text-sm">
-                      {customizeSuccessData?.advance_paid
-                        ? `✅ 50% Advance (₹${advanceAmount}) Paid Successfully!`
-                        : `⏳ 50% Advance (₹${advanceAmount}) Booking Received!`}
-                    </p>
-                    <p className="text-xs text-emerald-800">
-                      Remaining 50% Balance: <strong>₹{remainingAmount}</strong> payable upon doorstep delivery (COD).
-                    </p>
-                    {customizeSuccessData?.id && (
-                      <p className="text-[11px] font-mono text-gray-600">
-                        Inquiry / Order ID: <strong className="text-emerald-900">{customizeSuccessData.id}</strong>
-                      </p>
-                    )}
-                    {(customizeSuccessData?.shipping_full_address || customizeForm.shipping_address) && (
-                      <div className="pt-2 border-t border-emerald-200/80 text-[11px] text-emerald-950">
-                        <span className="font-bold block text-emerald-900">📍 Delivery / Dispatch Address:</span>
-                        <p className="mt-0.5">{customizeSuccessData?.shipping_full_address || `${customizeForm.shipping_address}, ${customizeForm.shipping_city} ${customizeForm.shipping_state} - ${customizeForm.shipping_pincode}`}</p>
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-600 max-w-md mx-auto leading-relaxed">
-                    Thank you! Our master tailoring team will verify your measurements and prepare the fabric cut. Your bespoke outfit will be dispatched directly to your address.
-                  </p>
-                  <div className="pt-2 flex items-center justify-center">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowCustomizeModal(false);
-                        setCustomizeSubmitted(false);
-                      }}
-                      className="px-8 py-3 bg-[#8B0000] text-white rounded-xl text-xs font-bold hover:bg-[#6B0000] transition cursor-pointer shadow-md"
-                    >
-                      Done &amp; Continue Shopping
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <form onSubmit={(e) => handleCustomizeSubmit(e, true)} className="space-y-4">
-
-                  {/* 1. Customization Scope: Complete Set / Top Only / Bottom Only */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider">
-                        1. Customization Requirement *
-                      </label>
-                      {product.customization_scope && product.customization_scope !== "both" && (
-                        <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full font-bold">
-                          {product.customization_scope === "top_only" ? "Top / Kurti Exclusive" : "Bottom / Pant Exclusive"}
-                        </span>
-                      )}
-                    </div>
-
-                    {product.customization_scope === "top_only" ? (
-                      <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-bold text-[#8B0000] flex items-center gap-2">
-                        <Scissors className="w-4 h-4 text-[#d4af37]" />
-                        <span>Customizing: Top / Kurti Only (Bust, Sleeves, Neck &amp; Length)</span>
-                      </div>
-                    ) : product.customization_scope === "bottom_only" ? (
-                      <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-[#8B0000] flex items-center gap-2">
-                        <Scissors className="w-4 h-4 text-[#d4af37]" />
-                        <span>Customizing: Bottom / Pant Only (Waist, Hip, Style &amp; Length)</span>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-3 gap-2">
-                        {[
-                          { id: "complete_set", label: "Complete Set", sub: "Top + Bottom" },
-                          { id: "top_only", label: "Top / Kurti", sub: "Kurti Only" },
-                          { id: "bottom_only", label: "Bottom Only", sub: "Pant / Palazzo" },
-                        ].map((item) => (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => setCustomizeForm({ ...customizeForm, custom_type: item.id })}
-                            className={`p-2 rounded-xl text-center border-2 transition cursor-pointer ${
-                              customizeForm.custom_type === item.id
-                                ? "border-[#8B0000] bg-rose-50/70 text-[#8B0000] font-bold shadow-xs"
-                                : "border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300"
-                            }`}
-                          >
-                            <div className="text-xs font-bold leading-tight">{item.label}</div>
-                            <div className="text-[10px] text-gray-500 font-normal mt-0.5">{item.sub}</div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 2. Customer Height & Fit Preference */}
-                  <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-200 space-y-3">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-gray-700 block">
-                      2. Height &amp; Overall Fit Preference
+                {/* 4. Bottom Measurements (Only shown when not top_only) */}
+                {customizeForm.custom_type !== "top_only" && (
+                  <div className="p-3.5 rounded-2xl bg-rose-50/50 border border-rose-200 space-y-3">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#8B0000] block">
+                      4. Bottom / Trouser Silhouette &amp; Measurements
                     </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       <div>
-                        <label className="block text-[11px] font-semibold text-gray-600 mb-1">Customer Height *</label>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Bottom Style</label>
                         <select
-                          value={customizeForm.height}
-                          onChange={(e) => setCustomizeForm({ ...customizeForm, height: e.target.value })}
-                          className="w-full px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
+                          value={customizeForm.bottom_style}
+                          onChange={(e) => setCustomizeForm({ ...customizeForm, bottom_style: e.target.value })}
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
                         >
-                          {[
-                            "4'10\" (147 cm)",
-                            "4'11\" (150 cm)",
-                            "5'0\" (152 cm)",
-                            "5'1\" (155 cm)",
-                            "5'2\" (157 cm)",
-                            "5'3\" (160 cm)",
-                            "5'4\" (163 cm)",
-                            "5'5\" (165 cm)",
-                            "5'6\" (168 cm)",
-                            "5'7\" (170 cm)",
-                            "5'8\" (173 cm)",
-                            "5'9\" (175 cm)",
-                            "5'10\"+ (178+ cm)",
-                            "Custom",
-                          ].map((h) => (
-                            <option key={h} value={h}>{h === "Custom" ? "Custom Height (Type Below)" : h}</option>
+                          <option value="Straight Pant with Pocket">Straight Pant with Pocket</option>
+                          <option value="Wide Leg Palazzo">Wide Leg Palazzo</option>
+                          <option value="Sharara / Flared">Sharara / Flared</option>
+                          <option value="Afghani / Salwar">Afghani / Salwar</option>
+                          <option value="Churidar">Churidar</option>
+                          <option value="Custom">Custom Bottom</option>
+                        </select>
+                        {customizeForm.bottom_style === "Custom" && (
+                          <input
+                            type="text"
+                            value={customizeForm.custom_bottom_style_text}
+                            onChange={(e) => setCustomizeForm({ ...customizeForm, custom_bottom_style_text: e.target.value })}
+                            placeholder="Describe custom bottom (e.g. Dhoti pant)"
+                            className="mt-1.5 w-full px-2 py-1 text-xs bg-white border border-rose-400 rounded-lg focus:outline-none focus:border-[#8B0000]"
+                          />
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Bottom Length (Inches)</label>
+                        <select
+                          value={customizeForm.bottom_length}
+                          onChange={(e) => setCustomizeForm({ ...customizeForm, bottom_length: e.target.value })}
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
+                        >
+                          {["36", "37", "38", "39", "40", "41", "42", "Custom"].map((bl) => (
+                            <option key={bl} value={bl}>{bl}{bl !== "Custom" ? " in" : ""}</option>
                           ))}
                         </select>
-                        {customizeForm.height === "Custom" && (
+                        {customizeForm.bottom_length === "Custom" && (
                           <input
                             type="text"
-                            value={customizeForm.custom_height_text}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, custom_height_text: e.target.value })}
-                            placeholder="Type exact height (e.g. 5 ft 1.5 in / 156 cm)"
-                            className="mt-1.5 w-full px-3 py-1.5 text-xs bg-amber-50/50 border border-amber-300 rounded-lg focus:outline-none focus:border-[#8B0000]"
+                            value={customizeForm.custom_bottom_length_text}
+                            onChange={(e) => setCustomizeForm({ ...customizeForm, custom_bottom_length_text: e.target.value })}
+                            placeholder="Type custom length in inches (e.g. 37.5 in)"
+                            className="mt-1.5 w-full px-2 py-1 text-xs bg-white border border-rose-400 rounded-lg focus:outline-none focus:border-[#8B0000]"
                           />
                         )}
                       </div>
+                    </div>
 
+                    <div className="grid grid-cols-2 gap-2.5 pt-1">
                       <div>
-                        <label className="block text-[11px] font-semibold text-gray-600 mb-1">Silhouette Fit Preference</label>
-                        <select
-                          value={customizeForm.fit_preference}
-                          onChange={(e) => setCustomizeForm({ ...customizeForm, fit_preference: e.target.value })}
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Waist (Inches)</label>
+                        <input
+                          type="text"
+                          value={customizeForm.waist_size}
+                          onChange={(e) => setCustomizeForm({ ...customizeForm, waist_size: e.target.value })}
+                          placeholder="e.g. 32 in"
                           className="w-full px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
-                        >
-                          <option value="Regular Comfort Fit">Regular Comfort Fit (Classic)</option>
-                          <option value="Slim / Body Fit">Slim / Tailored Body Fit</option>
-                          <option value="Relaxed / Loose Fit">Relaxed / Loose Flared Fit</option>
-                          <option value="Custom">Custom Fit Preference (Type Below)</option>
-                        </select>
-                        {customizeForm.fit_preference === "Custom" && (
-                          <input
-                            type="text"
-                            value={customizeForm.custom_fit_text}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, custom_fit_text: e.target.value })}
-                            placeholder="Type custom fit (e.g. extra room around belly, snug arms)"
-                            className="mt-1.5 w-full px-3 py-1.5 text-xs bg-amber-50/50 border border-amber-300 rounded-lg focus:outline-none focus:border-[#8B0000]"
-                          />
-                        )}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Hip (Inches)</label>
+                        <input
+                          type="text"
+                          value={customizeForm.hip_size}
+                          onChange={(e) => setCustomizeForm({ ...customizeForm, hip_size: e.target.value })}
+                          placeholder="e.g. 38 in"
+                          className="w-full px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
+                        />
                       </div>
                     </div>
                   </div>
+                )}
 
-                  {/* 3. TOP / KURTI REQUIREMENTS (When complete_set or top_only) */}
-                  {customizeForm.custom_type !== "bottom_only" && (
-                    <div className="p-3.5 rounded-2xl bg-amber-50/40 border border-amber-200/70 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-[#8B0000]">
-                          3. Top / Kurti Sizing &amp; Cuts
-                        </span>
-                        <span className="text-[10px] text-gray-500 font-medium">Bust, Cup, Sleeves &amp; Neck</span>
-                      </div>
+                {/* 5. Color Combination & Special Instructions */}
+                <div className="space-y-2.5">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-1">
+                      5. Color Combination Preference (Typing Option)
+                    </label>
+                    <input
+                      type="text"
+                      value={customizeForm.custom_color}
+                      onChange={(e) => setCustomizeForm({ ...customizeForm, custom_color: e.target.value })}
+                      placeholder="e.g. Wine Red with Mustard border, Dual tone, Black &amp; Gold..."
+                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-medium"
+                    />
+                  </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                        {/* Bust Size Dropdown */}
-                        <div>
-                          <label className="block text-[11px] font-bold text-gray-700 mb-1">Bust / Chest *</label>
-                          <select
-                            value={customizeForm.bust_size}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, bust_size: e.target.value })}
-                            className="w-full px-2.5 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
-                          >
-                            {["30", "32", "34", "35", "36", "37", "38", "40", "42", "44", "46", "48", "50", "Custom"].map((b) => (
-                              <option key={b} value={b}>{b === "Custom" ? "Custom Size (Type Below)" : `${b} Inches`}</option>
-                            ))}
-                          </select>
-                          {customizeForm.bust_size === "Custom" && (
-                            <input
-                              type="text"
-                              value={customizeForm.custom_bust_text}
-                              onChange={(e) => setCustomizeForm({ ...customizeForm, custom_bust_text: e.target.value })}
-                              placeholder="Type bust in inches (e.g. 39.5)"
-                              className="mt-1.5 w-full px-2.5 py-1.5 text-xs bg-white border border-amber-400 rounded-lg focus:outline-none focus:border-[#8B0000]"
-                            />
-                          )}
-                        </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-1">
+                      Special Instructions / Urgency Date (Optional)
+                    </label>
+                    <textarea
+                      rows="2"
+                      value={customizeForm.message}
+                      onChange={(e) => setCustomizeForm({ ...customizeForm, message: e.target.value })}
+                      placeholder="Mention wedding/festival date, specific lining, inner margin preferences..."
+                      className="w-full px-3.5 py-2 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-medium"
+                    ></textarea>
+                  </div>
+                </div>
 
-                        {/* Cup Size Dropdown */}
-                        <div>
-                          <label className="block text-[11px] font-bold text-gray-700 mb-1">Cup Size</label>
-                          <select
-                            value={customizeForm.cup_size}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, cup_size: e.target.value })}
-                            className="w-full px-2.5 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
-                          >
-                            {["Standard", "A Cup", "B Cup", "C Cup", "D Cup", "DD Cup", "Custom"].map((c) => (
-                              <option key={c} value={c}>{c === "Custom" ? "Custom Cup (Type Below)" : c}</option>
-                            ))}
-                          </select>
-                          {customizeForm.cup_size === "Custom" && (
-                            <input
-                              type="text"
-                              value={customizeForm.custom_cup_text}
-                              onChange={(e) => setCustomizeForm({ ...customizeForm, custom_cup_text: e.target.value })}
-                              placeholder="Type cup/padded details"
-                              className="mt-1.5 w-full px-2.5 py-1.5 text-xs bg-white border border-amber-400 rounded-lg focus:outline-none focus:border-[#8B0000]"
-                            />
-                          )}
-                        </div>
+                {/* 6. Contact Details */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-800 uppercase mb-1">Your Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={customizeForm.name}
+                      onChange={(e) => setCustomizeForm({ ...customizeForm, name: e.target.value })}
+                      placeholder="Full name"
+                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-800 uppercase mb-1">Mobile / WhatsApp Number *</label>
+                    <input
+                      type="tel"
+                      required
+                      value={customizeForm.phone}
+                      onChange={(e) => setCustomizeForm({ ...customizeForm, phone: e.target.value })}
+                      placeholder="10-digit mobile number"
+                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-medium"
+                    />
+                  </div>
+                </div>
 
-                        {/* Top / Kurti Length */}
-                        <div className="col-span-2 sm:col-span-1">
-                          <label className="block text-[11px] font-bold text-gray-700 mb-1">Top Length (in)</label>
-                          <select
-                            value={customizeForm.top_length}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, top_length: e.target.value })}
-                            className="w-full px-2.5 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
-                          >
-                            {["36", "38", "40", "42", "44", "46", "48", "Custom"].map((l) => (
-                              <option key={l} value={l}>{l === "Custom" ? "Custom Length (Type Below)" : `${l} Inches`}</option>
-                            ))}
-                          </select>
-                          {customizeForm.top_length === "Custom" && (
-                            <input
-                              type="text"
-                              value={customizeForm.custom_top_length_text}
-                              onChange={(e) => setCustomizeForm({ ...customizeForm, custom_top_length_text: e.target.value })}
-                              placeholder="Type length in inches (e.g. 45)"
-                              className="mt-1.5 w-full px-2.5 py-1.5 text-xs bg-white border border-amber-400 rounded-lg focus:outline-none focus:border-[#8B0000]"
-                            />
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                        {/* Sleeves Selection */}
-                        <div>
-                          <label className="block text-[11px] font-bold text-gray-700 mb-1">Sleeve Preference</label>
-                          <select
-                            value={customizeForm.sleeve_type}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, sleeve_type: e.target.value })}
-                            className="w-full px-2.5 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
-                          >
-                            <option value="As Shown in Photo">As Shown in Photo</option>
-                            <option value="Sleeveless">Sleeveless</option>
-                            <option value="Cap Sleeves (4&quot;)">Cap Sleeves (4")</option>
-                            <option value="Short Sleeves (6&quot;)">Short Sleeves (6")</option>
-                            <option value="Elbow Length (10&quot;)">Elbow Length (10")</option>
-                            <option value="3/4th Sleeves (16&quot;)">3/4th Sleeves (16")</option>
-                            <option value="Full Sleeves (21&quot;)">Full Sleeves (21")</option>
-                            <option value="Custom Sleeves">Custom Sleeves (Type Below)</option>
-                          </select>
-                          {(customizeForm.sleeve_type === "Custom Sleeves" || customizeForm.sleeve_type === "Custom") && (
-                            <input
-                              type="text"
-                              value={customizeForm.custom_sleeve_text}
-                              onChange={(e) => setCustomizeForm({ ...customizeForm, custom_sleeve_text: e.target.value })}
-                              placeholder="Type custom sleeve style &amp; length (e.g. Bell sleeves, 14 in)"
-                              className="mt-1.5 w-full px-2.5 py-1.5 text-xs bg-white border border-amber-400 rounded-lg focus:outline-none focus:border-[#8B0000]"
-                            />
-                          )}
-                        </div>
-
-                        {/* Neck Design Selection */}
-                        <div>
-                          <label className="block text-[11px] font-bold text-gray-700 mb-1">Neckline Design</label>
-                          <select
-                            value={customizeForm.neck_design}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, neck_design: e.target.value })}
-                            className="w-full px-2.5 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
-                          >
-                            <option value="As Shown in Photo">As Shown in Photo</option>
-                            <option value="Round Neck">Classic Round Neck</option>
-                            <option value="V-Neck">Graceful V-Neck</option>
-                            <option value="Sweetheart Neck">Sweetheart Neck</option>
-                            <option value="Square Neck">Square Neck</option>
-                            <option value="Boat Neck">Boat Neck</option>
-                            <option value="Mandarin / Collar Neck">Mandarin / Collar Neck</option>
-                            <option value="Angrakha Style">Angrakha Overlap</option>
-                            <option value="Custom Neck">Custom Neckline (Type Below)</option>
-                          </select>
-                          {(customizeForm.neck_design === "Custom Neck" || customizeForm.neck_design === "Custom") && (
-                            <input
-                              type="text"
-                              value={customizeForm.custom_neck_text}
-                              onChange={(e) => setCustomizeForm({ ...customizeForm, custom_neck_text: e.target.value })}
-                              placeholder="Type custom neck design (e.g. Deep sweetheart with potli buttons)"
-                              className="mt-1.5 w-full px-2.5 py-1.5 text-xs bg-white border border-amber-400 rounded-lg focus:outline-none focus:border-[#8B0000]"
-                            />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 4. BOTTOM / PANT REQUIREMENTS (When complete_set or bottom_only) */}
-                  {customizeForm.custom_type !== "top_only" && (
-                    <div className="p-3.5 rounded-2xl bg-rose-50/40 border border-rose-200/70 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-[#8B0000]">
-                          4. Bottom / Pant Requirements
-                        </span>
-                        <span className="text-[10px] text-gray-500 font-medium">Style, Waist, Hip &amp; Length</span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        {/* Bottom Style Dropdown */}
-                        <div>
-                          <label className="block text-[11px] font-bold text-gray-700 mb-1">Bottom Style</label>
-                          <select
-                            value={customizeForm.bottom_style}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, bottom_style: e.target.value })}
-                            className="w-full px-2.5 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
-                          >
-                            <option value="Straight Pant with Pocket">Straight Pant with Pocket</option>
-                            <option value="Flared Palazzo">Flared Wide-leg Palazzo</option>
-                            <option value="Cigarette Pant">Slim Cigarette Pant</option>
-                            <option value="Salwar / Pleated">Traditional Pleated Salwar</option>
-                            <option value="Dhoti Pant">Modern Dhoti Pant</option>
-                            <option value="Sharara">Tiered Sharara</option>
-                            <option value="As Shown in Photo">As Shown in Photo</option>
-                            <option value="Custom">Custom Bottom Style (Type Below)</option>
-                          </select>
-                          {(customizeForm.bottom_style === "Custom" || customizeForm.bottom_style === "Custom Bottom") && (
-                            <input
-                              type="text"
-                              value={customizeForm.custom_bottom_style_text}
-                              onChange={(e) => setCustomizeForm({ ...customizeForm, custom_bottom_style_text: e.target.value })}
-                              placeholder="Type custom style (e.g. Afghani salwar / Tulip pant)"
-                              className="mt-1.5 w-full px-2.5 py-1.5 text-xs bg-white border border-rose-400 rounded-lg focus:outline-none focus:border-[#8B0000]"
-                            />
-                          )}
-                        </div>
-
-                        {/* Bottom Length Dropdown */}
-                        <div>
-                          <label className="block text-[11px] font-bold text-gray-700 mb-1">Bottom Length (in)</label>
-                          <select
-                            value={customizeForm.bottom_length}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, bottom_length: e.target.value })}
-                            className="w-full px-2.5 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
-                          >
-                            {["36", "37", "38", "39", "40", "42", "Custom"].map((bl) => (
-                              <option key={bl} value={bl}>{bl === "Custom" ? "Custom Length (Type Below)" : `${bl} Inches`}</option>
-                            ))}
-                          </select>
-                          {customizeForm.bottom_length === "Custom" && (
-                            <input
-                              type="text"
-                              value={customizeForm.custom_bottom_length_text}
-                              onChange={(e) => setCustomizeForm({ ...customizeForm, custom_bottom_length_text: e.target.value })}
-                              placeholder="Type custom length in inches (e.g. 37.5)"
-                              className="mt-1.5 w-full px-2.5 py-1.5 text-xs bg-white border border-rose-400 rounded-lg focus:outline-none focus:border-[#8B0000]"
-                            />
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2.5 pt-1">
-                        <div>
-                          <label className="block text-[11px] font-bold text-gray-700 mb-1">Waist (Inches)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.waist_size}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, waist_size: e.target.value })}
-                            placeholder="e.g. 32"
-                            className="w-full px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-bold text-gray-700 mb-1">Hip (Inches)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.hip_size}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, hip_size: e.target.value })}
-                            placeholder="e.g. 38"
-                            className="w-full px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 5. Color Combination & Custom Design Notes (Typing Option) */}
+                {/* 7. Outfit Delivery & Dispatch Address */}
+                <div className="p-3.5 rounded-2xl bg-amber-50/50 border border-amber-200/80 space-y-3">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#8B0000] block">
+                    7. Outfit Delivery &amp; Dispatch Address *
+                  </span>
                   <div className="space-y-2.5">
                     <div>
-                      <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-1">
-                        5. Color Combination Preference (Typing Option)
+                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                        Delivery Street Address (House / Flat No., Street, Area) *
                       </label>
                       <input
                         type="text"
-                        value={customizeForm.custom_color}
-                        onChange={(e) => setCustomizeForm({ ...customizeForm, custom_color: e.target.value })}
-                        placeholder="e.g. Wine Red with Mustard border, Dual tone, Black &amp; Gold..."
-                        className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-medium"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-1">
-                        Special Instructions / Urgency Date (Optional)
-                      </label>
-                      <textarea
-                        rows="2"
-                        value={customizeForm.message}
-                        onChange={(e) => setCustomizeForm({ ...customizeForm, message: e.target.value })}
-                        placeholder="Mention wedding/festival date, specific lining, inner margin preferences..."
-                        className="w-full px-3.5 py-2 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-medium"
-                      ></textarea>
-                    </div>
-                  </div>
-
-                  {/* 6. Contact Details */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-800 uppercase mb-1">Your Full Name *</label>
-                      <input
-                        type="text"
                         required
-                        value={customizeForm.name}
-                        onChange={(e) => setCustomizeForm({ ...customizeForm, name: e.target.value })}
-                        placeholder="Full name"
-                        className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-medium"
+                        value={customizeForm.shipping_address}
+                        onChange={(e) => setCustomizeForm({ ...customizeForm, shipping_address: e.target.value })}
+                        placeholder="e.g. Flat 302, Royal Residency, Station Road"
+                        className="w-full px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-800 uppercase mb-1">Mobile / WhatsApp Number *</label>
-                      <input
-                        type="tel"
-                        required
-                        value={customizeForm.phone}
-                        onChange={(e) => setCustomizeForm({ ...customizeForm, phone: e.target.value })}
-                        placeholder="10-digit mobile number"
-                        className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-medium"
-                      />
-                    </div>
-                  </div>
 
-                  {/* 7. Outfit Delivery & Dispatch Address */}
-                  <div className="p-3.5 rounded-2xl bg-amber-50/50 border border-amber-200/80 space-y-3">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#8B0000] block">
-                      7. Outfit Delivery &amp; Dispatch Address *
-                    </span>
-                    <div className="space-y-2.5">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                       <div>
-                        <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                          Delivery Street Address (House / Flat No., Street, Area) *
-                        </label>
+                        <label className="block text-[11px] font-semibold text-gray-700 mb-1">City *</label>
                         <input
                           type="text"
                           required
-                          value={customizeForm.shipping_address}
-                          onChange={(e) => setCustomizeForm({ ...customizeForm, shipping_address: e.target.value })}
-                          placeholder="e.g. Flat 302, Royal Residency, Station Road"
+                          value={customizeForm.shipping_city}
+                          onChange={(e) => setCustomizeForm({ ...customizeForm, shipping_city: e.target.value })}
+                          placeholder="e.g. Lucknow"
                           className="w-full px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
                         />
                       </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">City *</label>
-                          <input
-                            type="text"
-                            required
-                            value={customizeForm.shipping_city}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, shipping_city: e.target.value })}
-                            placeholder="e.g. Lucknow"
-                            className="w-full px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">State *</label>
-                          <input
-                            type="text"
-                            required
-                            value={customizeForm.shipping_state}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, shipping_state: e.target.value })}
-                            placeholder="e.g. Uttar Pradesh"
-                            className="w-full px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
-                          />
-                        </div>
-                        <div className="col-span-2 sm:col-span-1">
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Pincode *</label>
-                          <input
-                            type="text"
-                            required
-                            maxLength={6}
-                            value={customizeForm.shipping_pincode}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, shipping_pincode: e.target.value })}
-                            placeholder="6 digits"
-                            className="w-full px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium font-mono"
-                          />
-                        </div>
-                      </div>
-
                       <div>
-                        <label className="block text-[11px] font-semibold text-gray-700 mb-1">Landmark (Optional)</label>
+                        <label className="block text-[11px] font-semibold text-gray-700 mb-1">State *</label>
                         <input
                           type="text"
-                          value={customizeForm.shipping_landmark}
-                          onChange={(e) => setCustomizeForm({ ...customizeForm, shipping_landmark: e.target.value })}
-                          placeholder="e.g. Near Temple / Opposite Market"
+                          required
+                          value={customizeForm.shipping_state}
+                          onChange={(e) => setCustomizeForm({ ...customizeForm, shipping_state: e.target.value })}
+                          placeholder="e.g. Uttar Pradesh"
                           className="w-full px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
                         />
                       </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="block text-[11px] font-semibold text-gray-700 mb-1">Pincode *</label>
+                        <input
+                          type="text"
+                          required
+                          maxLength={6}
+                          value={customizeForm.shipping_pincode}
+                          onChange={(e) => setCustomizeForm({ ...customizeForm, shipping_pincode: e.target.value })}
+                          placeholder="6 digits"
+                          className="w-full px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">Landmark (Optional)</label>
+                      <input
+                        type="text"
+                        value={customizeForm.shipping_landmark}
+                        onChange={(e) => setCustomizeForm({ ...customizeForm, shipping_landmark: e.target.value })}
+                        placeholder="e.g. Near Temple / Opposite Market"
+                        className="w-full px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] font-medium"
+                      />
                     </div>
                   </div>
+                </div>
 
-                  {/* 8. 50% ADVANCE PAYMENT BREAKDOWN */}
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50/90 via-rose-50/60 to-white border-2 border-dashed border-[#8B0000]/40 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-gray-600 font-medium">Total Bespoke Outfit Price:</span>
-                      <span className="font-bold text-gray-900 text-sm">₹{currentPrice}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs font-bold text-[#8B0000] pt-1.5 border-t border-amber-200/80">
-                      <span className="flex items-center gap-1">
-                        <span>⚡ 50% Advance Booking Due Now:</span>
-                      </span>
-                      <span className="text-lg font-extrabold font-mono">₹{advanceAmount}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-[11px] text-gray-600">
-                      <span>Remaining 50% Balance on Delivery (COD):</span>
-                      <span className="font-bold text-gray-800 font-mono">₹{remainingAmount}</span>
-                    </div>
-                    <p className="text-[10px] text-gray-500 italic pt-1 border-t border-gray-200/60 leading-tight">
-                      * 50% advance booking secures handloom fabric cutting and custom tailoring. Remaining 50% balance is payable upon doorstep delivery.
-                    </p>
+                {/* 8. 50% ADVANCE PAYMENT BREAKDOWN */}
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50/90 via-rose-50/60 to-white border-2 border-dashed border-[#8B0000]/40 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600 font-medium">Total Bespoke Outfit Price:</span>
+                    <span className="font-bold text-gray-900 text-sm">₹{currentPrice}</span>
                   </div>
-
-                  {/* 9. SUBMISSION BUTTON */}
-                  <div className="pt-1">
-                    <button
-                      type="submit"
-                      disabled={customizeSubmitting}
-                      className="w-full py-3.5 bg-gradient-to-r from-[#8B0000] to-[#5c0000] hover:from-[#a52a2a] hover:to-[#8B0000] text-white font-bold text-xs sm:text-sm uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-2 border border-[#d4af37]/50 cursor-pointer disabled:opacity-60"
-                    >
-                      {customizeSubmitting ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin text-white" />
-                          <span>Processing Custom Booking...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 text-[#d4af37]" />
-                          <span>Pay 50% Advance (₹{advanceAmount}) &amp; Submit Custom Order</span>
-                        </>
-                      )}
-                    </button>
+                  <div className="flex items-center justify-between text-xs font-bold text-[#8B0000] pt-1.5 border-t border-amber-200/80">
+                    <span className="flex items-center gap-1">
+                      <span>⚡ 50% Advance Booking Due Now:</span>
+                    </span>
+                    <span className="text-lg font-extrabold font-mono">₹{advanceAmount}</span>
                   </div>
+                  <div className="flex items-center justify-between text-[11px] text-gray-600">
+                    <span>Remaining 50% Balance on Delivery (COD):</span>
+                    <span className="font-bold text-gray-800 font-mono">₹{remainingAmount}</span>
+                  </div>
+                  <p className="text-[10px] text-gray-500 italic pt-1 border-t border-gray-200/60 leading-tight">
+                    * 50% advance booking secures handloom fabric cutting and bespoke tailoring. Remaining 50% balance is payable upon doorstep delivery.
+                  </p>
+                </div>
 
-                </form>
-              )}
-            </div>
+                {/* 9. SUBMISSION BUTTON */}
+                <div className="pt-1">
+                  <button
+                    type="submit"
+                    disabled={customizeSubmitting}
+                    className="w-full py-3.5 bg-gradient-to-r from-[#8B0000] to-[#5c0000] hover:from-[#a52a2a] hover:to-[#8B0000] text-white font-bold text-xs sm:text-sm uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-2 border border-[#d4af37]/50 cursor-pointer disabled:opacity-60"
+                  >
+                    {customizeSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <span>Processing Custom Booking...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 text-[#d4af37]" />
+                        <span>Pay 50% Advance (₹{advanceAmount}) &amp; Submit Custom Order</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+              </form>
+            )}
           </div>
-        )}
-      </div>
-    );
+        </div>
+      )}
+
+    </div>
+  );
 };
 
 export default ProductPage;

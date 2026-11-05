@@ -13,10 +13,6 @@ import {
   ShoppingBag,
   ArrowRight,
   ChevronRight,
-  ShieldCheck,
-  Heart,
-  Award,
-  Feather
 } from "lucide-react";
 
 const OwnerPage = () => {
@@ -134,7 +130,6 @@ const OwnerPage = () => {
 
         {/* ── HERO BANNER ── */}
         <section className="relative py-14 sm:py-24 bg-gradient-to-b from-[#1F0206] via-[#2D040A] to-[#1A0105] text-white overflow-hidden text-center">
-          {/* Subtle ambient lighting */}
           <div className="absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#C59B27] via-transparent to-transparent pointer-events-none" />
 
           <div className="relative z-10 max-w-3xl mx-auto px-4 space-y-4">
@@ -159,11 +154,11 @@ const OwnerPage = () => {
           </div>
         </section>
 
-        {/* ── SECTION 1: FOUNDER SHOWCASE (PERFECT ON MOBILE & DESKTOP) ── */}
+        {/* ── SECTION 1: FOUNDER SHOWCASE (NO BUTTONS, BALANCED LUXURY LAYOUT) ── */}
         <section className="py-10 sm:py-20 max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8 lg:gap-14">
             
-            {/* PORTRAIT: Mobile-friendly centered portrait with luxury double gold filigree frame */}
+            {/* PORTRAIT */}
             <div className="w-full max-w-[320px] sm:max-w-[360px] flex-shrink-0 mx-auto lg:mx-0">
               <div className="relative p-2 rounded-3xl bg-gradient-to-b from-[#C59B27]/40 via-[#E8DFC8]/30 to-[#C59B27]/20 shadow-2xl">
                 <div className="relative rounded-2xl overflow-hidden bg-stone-900 border border-[#C59B27]/50 aspect-[3/4] shadow-inner group">
@@ -180,13 +175,11 @@ const OwnerPage = () => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none" />
 
-                  {/* Top Insignia Badge */}
                   <div className="absolute top-3.5 left-3.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-[#C59B27]/80 text-amber-200 text-[10px] sm:text-xs font-bold tracking-wider shadow-lg">
                     <CheckCircle2 className="w-3.5 h-3.5 text-[#C59B27]" />
                     <span>Founder &amp; Owner</span>
                   </div>
 
-                  {/* Bottom Portrait Caption */}
                   <div className="absolute bottom-3.5 left-3.5 right-3.5 p-3 rounded-xl bg-black/75 backdrop-blur-md border border-white/10 text-center">
                     <h3 className="font-serif font-bold text-lg sm:text-xl text-white tracking-wide">
                       Pooja Verma
@@ -199,7 +192,7 @@ const OwnerPage = () => {
               </div>
             </div>
 
-            {/* FOUNDER EDITORIAL BIO & VISION */}
+            {/* FOUNDER EDITORIAL BIO */}
             <div className="flex-1 space-y-6 text-left w-full">
               
               <div className="space-y-1.5">
@@ -215,7 +208,7 @@ const OwnerPage = () => {
                 </p>
               </div>
 
-              {/* Natural Editorial Blockquote in English */}
+              {/* Natural Editorial Blockquote */}
               <blockquote className="relative pl-5 sm:pl-6 border-l-2 border-[#C59B27] space-y-2 py-1">
                 <Quote className="w-6 h-6 text-[#C59B27]/60" />
                 <p className="font-serif text-sm sm:text-lg text-gray-800 italic leading-relaxed">
@@ -226,7 +219,7 @@ const OwnerPage = () => {
                 </cite>
               </blockquote>
 
-              {/* Seamless Editorial Attributes — Balanced & Cleanly Covered */}
+              {/* Heritage, Roots & Craft Pedigree */}
               <div className="pt-4 border-t border-[#E8DFC8]/80">
                 <h4 className="text-xs font-bold uppercase tracking-[0.18em] text-[#780016] mb-3">
                   Heritage, Roots &amp; Craft Pedigree
@@ -284,7 +277,7 @@ const OwnerPage = () => {
           </div>
         </section>
 
-        {/* ── SECTION 2: THE ORIGIN STORY (EDITORIAL ESSAY) ── */}
+        {/* ── SECTION 2: THE ORIGIN STORY ── */}
         <section className="py-12 sm:py-20 bg-[#FAF7F2] border-y border-[#E8DFC8]">
           <div className="max-w-4xl mx-auto px-4 sm:px-6">
             <div className="text-center space-y-2 mb-8 sm:mb-12">
@@ -321,7 +314,7 @@ const OwnerPage = () => {
           </div>
         </section>
 
-        {/* ── SECTION 3: CRAFTSMANSHIP & SOURCING (3-STEP EDITORIAL) ── */}
+        {/* ── SECTION 3: CRAFTSMANSHIP & SOURCING ── */}
         <section className="py-14 sm:py-24 bg-[#1F0206] text-white">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <div className="max-w-2xl mx-auto text-center space-y-2.5 mb-10 sm:mb-16">
@@ -407,7 +400,7 @@ const OwnerPage = () => {
           </div>
         </section>
 
-        {/* ── SECTION 5: FOUNDER'S PERSONAL LETTER (IN ENGLISH, ZERO WHATSAPP BUTTONS) ── */}
+        {/* ── SECTION 5: FOUNDER'S PERSONAL LETTER (ZERO WHATSAPP BUTTONS) ── */}
         <section className="py-14 sm:py-24 bg-gradient-to-br from-[#150205] via-[#220308] to-[#0D0103] text-white text-center">
           <div className="max-w-2xl mx-auto px-4 sm:px-6 space-y-5">
             <Quote className="w-10 h-10 text-[#C59B27]/50 mx-auto" />
@@ -429,7 +422,6 @@ const OwnerPage = () => {
               </p>
             </div>
 
-            {/* Pure Store CTA: ONLY Store/Collection Links, NO WhatsApp buttons */}
             <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 to="/new-arrivals"
