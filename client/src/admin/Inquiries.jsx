@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { MessageSquare, Phone, Mail, Clock, Search, Trash2, CheckCircle2, AlertCircle, RefreshCw, Send, CornerDownRight, MessageCircle } from "lucide-react";
+import { MessageSquare, Phone, Mail, Clock, Search, Trash2, CheckCircle2, AlertCircle, RefreshCw, Send, CornerDownRight, MessageCircle, Briefcase, Scissors, Sparkles, Filter } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
@@ -8,6 +8,7 @@ const Inquiries = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [replyingId, setReplyingId] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [submittingReply, setSubmittingReply] = useState(false);
@@ -17,6 +18,7 @@ const Inquiries = () => {
     let url = `${API_BASE_URL}/inquiries/`;
     const params = new URLSearchParams();
     if (statusFilter !== "all") params.append("status", statusFilter);
+    if (typeFilter !== "all") params.append("type", typeFilter);
     if (searchTerm.trim()) params.append("search", searchTerm.trim());
     if (params.toString()) url += `?${params.toString()}`;
 
@@ -32,7 +34,7 @@ const Inquiries = () => {
 
   useEffect(() => {
     fetchInquiries();
-  }, [statusFilter]);
+  }, [statusFilter, typeFilter]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -98,16 +100,21 @@ const Inquiries = () => {
   };
 
   const getWhatsAppReplyUrl = (item) => {
-    const text = encodeURIComponent(
-      `Hello ${item.name},\nThank you for contacting Nari Pehnawa regarding: "${item.subject}".\n\nOur Response:\n${replyText || item.reply_message || "How can we assist you further?"}`
-    );
+    let greeting = "";
+    if (item.inquiry_type === "reseller") {
+      greeting = `Hello ${item.name},\nThank you for reaching out to become a Reseller with Nari Pehnawa! 💼\n\nWe are excited to share our wholesale prices, catalog, and onboarding terms with you.\n\nOur Response:\n${replyText || item.reply_message || "When would be a good time for a quick 5-min call or WhatsApp chat?"}`;
+    } else if (item.inquiry_type === "customization") {
+      greeting = `Hello ${item.name},\nThank you for choosing Nari Pehnawa! ✂️\n\nRegarding your customization request for: "${item.product_name || item.subject}"\nCustom Size: ${item.custom_size || "Custom"}\nColor/Design: ${item.custom_color || "Standard"}\n\nOur Response:\n${replyText || item.reply_message || "Our design master is reviewing your measurements and can craft this for you. Let us confirm details!"}`;
+    } else {
+      greeting = `Hello ${item.name},\nThank you for contacting Nari Pehnawa regarding: "${item.subject}".\n\nOur Response:\n${replyText || item.reply_message || "How can we assist you further?"}`;
+    }
     const cleanPhone = (item.phone || "").replace(/\D/g, "");
     const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
-    return `https://wa.me/${formattedPhone}?text=${text}`;
+    return `https://wa.me/${formattedPhone}?text=${encodeURIComponent(greeting)}`;
   };
 
   const getEmailReplyUrl = (item) => {
-    const subject = encodeURIComponent(`Nari Pehnawa Support: Re ${item.subject}`);
+    const subject = encodeURIComponent(`Nari Pehnawa: Re ${item.subject}`);
     const body = encodeURIComponent(
       `Hello ${item.name},\n\nThank you for reaching out to Nari Pehnawa.\n\nInquiry Details: "${item.message}"\n\nResponse:\n${replyText || item.reply_message || ""}\n\nWarm regards,\nNari Pehnawa Team`
     );
@@ -120,59 +127,126 @@ const Inquiries = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 font-serif flex items-center gap-2">
-            <MessageSquare className="w-6 h-6 text-[#8B0000]" /> Customer Inquiries &amp; Replies
+            <MessageSquare className="w-6 h-6 text-[#8B0000]" /> Inquiries &amp; Reseller Applications
           </h1>
           <p className="text-xs text-gray-500 mt-1">
-            View customer questions, save official responses, and reply via WhatsApp or Email
+            Manage Become a Reseller partners, Product Customization requests, and customer questions
           </p>
         </div>
         <button
           onClick={fetchInquiries}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl flex items-center gap-2 transition-colors self-start sm:self-auto"
+          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl flex items-center gap-2 transition-colors self-start sm:self-auto cursor-pointer"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
         </button>
       </div>
 
       {/* Filter & Search Controls */}
-      <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-        <form onSubmit={handleSearchSubmit} className="w-full md:w-96 relative">
+      <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+        {/* Search */}
+        <form onSubmit={handleSearchSubmit} className="w-full lg:w-80 relative">
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by Name, Phone, Email or Topic..."
+            placeholder="Search Name, Phone, Reseller, Product..."
             className="w-full pl-9 pr-4 py-2 text-xs border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000]"
           />
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
         </form>
 
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <span className="text-xs font-bold text-gray-600 whitespace-nowrap">Filter Status:</span>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 text-xs border border-gray-300 rounded-xl bg-white font-semibold focus:outline-none focus:border-[#8B0000]"
-          >
-            <option value="all">All Inquiries</option>
-            <option value="Pending">Pending</option>
-            <option value="Contacted">Contacted</option>
-            <option value="Resolved">Resolved</option>
-          </select>
+        {/* Category / Type Filter & Status Filter */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Inquiry Type Filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-bold text-gray-600 whitespace-nowrap">Type:</span>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="px-3 py-2 text-xs border border-gray-300 rounded-xl bg-white font-semibold focus:outline-none focus:border-[#8B0000] cursor-pointer"
+            >
+              <option value="all">All Inquiry Types</option>
+              <option value="reseller">💼 Become a Reseller</option>
+              <option value="customization">✂️ Product Customization</option>
+              <option value="general">💬 General Inquiries</option>
+            </select>
+          </div>
+
+          {/* Status Filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-bold text-gray-600 whitespace-nowrap">Status:</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 text-xs border border-gray-300 rounded-xl bg-white font-semibold focus:outline-none focus:border-[#8B0000] cursor-pointer"
+            >
+              <option value="all">All Statuses</option>
+              <option value="Pending">Pending</option>
+              <option value="Contacted">Contacted</option>
+              <option value="Resolved">Resolved</option>
+            </select>
+          </div>
         </div>
+      </div>
+
+      {/* Quick Filter Pill Buttons */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => setTypeFilter("all")}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+            typeFilter === "all"
+              ? "bg-[#8B0000] text-white shadow-sm"
+              : "bg-white text-gray-700 border border-gray-200 hover:border-[#8B0000]"
+          }`}
+        >
+          All Inquiries ({inquiries.length})
+        </button>
+        <button
+          onClick={() => setTypeFilter("reseller")}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            typeFilter === "reseller"
+              ? "bg-purple-700 text-white shadow-sm"
+              : "bg-purple-50 text-purple-900 border border-purple-200 hover:bg-purple-100"
+          }`}
+        >
+          <Briefcase className="w-3.5 h-3.5" />
+          <span>Become a Reseller</span>
+        </button>
+        <button
+          onClick={() => setTypeFilter("customization")}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            typeFilter === "customization"
+              ? "bg-rose-700 text-white shadow-sm"
+              : "bg-rose-50 text-rose-900 border border-rose-200 hover:bg-rose-100"
+          }`}
+        >
+          <Scissors className="w-3.5 h-3.5" />
+          <span>Customization Requests</span>
+        </button>
+        <button
+          onClick={() => setTypeFilter("general")}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            typeFilter === "general"
+              ? "bg-gray-800 text-white shadow-sm"
+              : "bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100"
+          }`}
+        >
+          <MessageSquare className="w-3.5 h-3.5" />
+          <span>General Queries</span>
+        </button>
       </div>
 
       {/* Inquiries Grid */}
       {loading ? (
         <div className="bg-white p-12 rounded-2xl text-center border border-gray-200">
           <RefreshCw className="w-8 h-8 text-[#8B0000] animate-spin mx-auto mb-2" />
-          <p className="text-xs text-gray-500">Loading customer inquiries...</p>
+          <p className="text-xs text-gray-500">Loading inquiries...</p>
         </div>
       ) : inquiries.length === 0 ? (
         <div className="bg-white p-12 rounded-2xl text-center border border-gray-200">
           <AlertCircle className="w-10 h-10 text-gray-400 mx-auto mb-2" />
           <h3 className="text-sm font-bold text-gray-700">No Inquiries Found</h3>
-          <p className="text-xs text-gray-500 mt-1">Customer inquiries submitted from website will appear here.</p>
+          <p className="text-xs text-gray-500 mt-1">Inquiries matching your selected filters will appear here.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -192,18 +266,120 @@ const Inquiries = () => {
                 className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
               >
                 <div className="space-y-3">
+                  {/* Top Bar: ID + Status + Type Tag */}
                   <div className="flex items-center justify-between gap-2 border-b pb-2">
                     <span className="text-[10px] font-mono font-bold text-gray-400">{item.id}</span>
-                    <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${statusColor}`}>
-                      {item.status}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {item.inquiry_type === "reseller" ? (
+                        <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 border border-purple-300 flex items-center gap-1">
+                          <Briefcase className="w-3 h-3 text-purple-700" /> Reseller
+                        </span>
+                      ) : item.inquiry_type === "customization" ? (
+                        <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full bg-rose-100 text-rose-900 border border-rose-300 flex items-center gap-1">
+                          <Scissors className="w-3 h-3 text-rose-700" /> Custom Fit
+                        </span>
+                      ) : null}
+                      <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${statusColor}`}>
+                        {item.status}
+                      </span>
+                    </div>
                   </div>
 
+                  {/* Customer Info & Subject */}
                   <div>
                     <h4 className="text-sm font-bold text-gray-900">{item.name}</h4>
                     <p className="text-xs font-semibold text-[#8B0000] mt-0.5">{item.subject}</p>
                   </div>
 
+                  {/* Context Info Box: Reseller or Customization Specs */}
+                  {item.inquiry_type === "reseller" && item.reseller_type && (
+                    <div className="bg-purple-50/70 p-2.5 rounded-xl border border-purple-200 text-xs">
+                      <span className="text-[10px] uppercase font-bold text-purple-900 block">Reseller Model:</span>
+                      <span className="font-semibold text-purple-950">{item.reseller_type}</span>
+                    </div>
+                  )}
+
+                  {item.inquiry_type === "customization" && (
+                    <div className="bg-rose-50/70 p-2.5 rounded-xl border border-rose-200 text-xs space-y-1.5">
+                      <div className="flex items-center justify-between gap-1 flex-wrap">
+                        {item.product_name && (
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[10px] uppercase font-bold text-rose-900 block">Product:</span>
+                            <span className="font-bold text-gray-900 truncate block">{item.product_name}</span>
+                          </div>
+                        )}
+                        {item.custom_type && (
+                          <span className="text-[9.5px] font-black uppercase tracking-wider bg-rose-200 text-rose-900 px-2 py-0.5 rounded-md">
+                            {item.custom_type === "top_only" ? "Top / Kurti" : item.custom_type === "bottom_only" ? "Bottom Only" : "Complete Set"}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-rose-200/60 text-[11px]">
+                        <div>
+                          <span className="text-[10px] uppercase font-semibold text-rose-800 block">Bust &amp; Cup:</span>
+                          <span className="font-bold text-gray-900">
+                            {item.bust_size ? `${item.bust_size}" ${item.cup_size || ""}` : (item.custom_size || "Standard")}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase font-semibold text-rose-800 block">Customer Height:</span>
+                          <span className="font-bold text-gray-900">{item.height || "Not specified"}</span>
+                        </div>
+                      </div>
+
+                      {(item.waist_size || item.hip_size || item.sleeve_type || item.neck_design || item.bottom_style) && (
+                        <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-rose-200/40 text-[10.5px] text-gray-700">
+                          {item.waist_size && <div><strong>Waist:</strong> {item.waist_size}"</div>}
+                          {item.hip_size && <div><strong>Hip:</strong> {item.hip_size}"</div>}
+                          {item.sleeve_type && <div><strong>Sleeves:</strong> {item.sleeve_type}</div>}
+                          {item.neck_design && <div><strong>Neck:</strong> {item.neck_design}</div>}
+                          {item.bottom_style && <div><strong>Bottom:</strong> {item.bottom_style} ({item.bottom_length || ""}in)</div>}
+                        </div>
+                      )}
+
+                      {item.custom_color && (
+                        <div className="text-[11px] pt-1 border-t border-rose-200/40">
+                          <span className="text-[10px] uppercase font-semibold text-rose-800 block">Color / Design Preference:</span>
+                          <span className="font-bold text-gray-900">{item.custom_color}</span>
+                        </div>
+                      )}
+
+                      {(item.advance_amount || item.advance_paid) && (
+                        <div className="pt-1.5 border-t border-rose-200/60 flex items-center justify-between text-[11px] bg-emerald-50/80 -mx-1 px-2 py-1 rounded-lg border border-emerald-200">
+                          <div>
+                            <span className="text-[9.5px] uppercase font-black text-emerald-800 block">
+                              {item.advance_paid ? "✅ 50% Advance Paid" : "⏳ 50% Advance Pending"}
+                            </span>
+                            <span className="font-extrabold text-emerald-900">₹{item.advance_amount || 0}</span>
+                          </div>
+                          {item.remaining_amount ? (
+                            <div className="text-right">
+                              <span className="text-[9.5px] uppercase font-semibold text-gray-500 block">Balance on Delivery</span>
+                              <span className="font-bold text-gray-900">₹{item.remaining_amount}</span>
+                            </div>
+                          ) : null}
+                        </div>
+                      )}
+                      {(item.shipping_full_address || item.shipping_address) && (
+                        <div className="pt-1.5 border-t border-rose-200/60 text-[11px] bg-amber-50/70 -mx-1 px-2 py-1.5 rounded-lg border border-amber-200">
+                          <span className="text-[9.5px] uppercase font-bold text-amber-900 block">
+                            📍 Delivery / Dispatch Address:
+                          </span>
+                          <span className="font-semibold text-gray-900 block leading-tight">
+                            {item.shipping_full_address || `${item.shipping_address || ""}, ${item.shipping_city || ""} ${item.shipping_state || ""} - ${item.shipping_pincode || ""}`.trim()}
+                          </span>
+                        </div>
+                      )}
+                      {item.payment_id && (
+                        <div className="text-[10px] text-gray-500 font-mono truncate">
+                          Pay ID: {item.payment_id}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Contact details */}
                   <div className="space-y-1 text-xs text-gray-600">
                     <div className="flex items-center gap-2">
                       <Phone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
@@ -225,7 +401,7 @@ const Inquiries = () => {
                     </div>
                   </div>
 
-                  {/* Customer Message */}
+                  {/* Message Box */}
                   <div className="bg-gray-50 p-3 rounded-xl border border-gray-200/80">
                     <p className="text-xs text-gray-800 leading-relaxed font-medium whitespace-pre-wrap">
                       "{item.message}"

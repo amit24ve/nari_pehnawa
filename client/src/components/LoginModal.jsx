@@ -238,7 +238,9 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
         setRegistrationSuccess(true);
       } else {
         handleClose();
-        if (res.user && (res.user.role === "admin" || res.user.is_admin)) {
+        if (res.user && (res.user.role === "seller" || res.is_seller)) {
+          navigate("/seller/dashboard");
+        } else if (res.user && (res.user.role === "admin" || res.user.is_admin)) {
           navigate("/admin/dashboard");
         }
       }
@@ -269,7 +271,9 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
 
     if (result.ok) {
       handleClose();
-      if (result.user && (result.user.role === "admin" || result.user.is_admin)) {
+      if (result.is_seller || (result.user && result.user.role === "seller")) {
+        navigate("/seller/dashboard");
+      } else if (result.user && (result.user.role === "admin" || result.user.is_admin)) {
         navigate("/admin/dashboard");
       }
     } else {

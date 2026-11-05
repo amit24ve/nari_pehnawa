@@ -173,7 +173,9 @@ const Products = () => {
         offer_code: "",
         offer_text: "",
         highlights: "",
-        style_tip: ""
+        style_tip: "",
+        is_customizable: true,
+        customization_scope: "both"
     };
 
     const [formData, setFormData] = useState(emptyForm);
@@ -568,6 +570,8 @@ const Products = () => {
                     ? formData.highlights.split("\n").map(h => h.trim()).filter(Boolean)
                     : [],
                 style_tip: formData.style_tip ? formData.style_tip.trim() : null,
+                is_customizable: formData.is_customizable !== false,
+                customization_scope: formData.customization_scope || "both",
                 delivery_charge: formData.delivery_charge !== "" ? parseFloat(formData.delivery_charge) : 0.0,
                 pickup_location: formData.pickup_location || null,
                 warehouse_stock: { "All": totalStock },
@@ -595,7 +599,11 @@ const Products = () => {
                 });
             }
 
-            if (!res.ok) throw new Error("Failed to save product");
+            if (!res.ok) {
+                const errJson = await res.json().catch(() => ({}));
+                const errMsg = errJson.detail || (typeof errJson === "string" ? errJson : "Failed to save product");
+                throw new Error(typeof errMsg === "object" ? JSON.stringify(errMsg) : errMsg);
+            }
 
             setShowAddModal(false);
             setShowEditModal(false);
@@ -768,7 +776,9 @@ const Products = () => {
             offer_code: product.offer_code || "",
             offer_text: product.offer_text || "",
             highlights: Array.isArray(product.highlights) ? product.highlights.join("\n") : (product.highlights || ""),
-            style_tip: product.style_tip || ""
+            style_tip: product.style_tip || "",
+            is_customizable: product.is_customizable !== false,
+            customization_scope: product.customization_scope || "both"
         });
         setShowEditModal(true);
     };
@@ -2313,6 +2323,62 @@ const Products = () => {
                                         })}
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* ── Bespoke Tailoring & Customization Settings ── */}
+                            <div className="bg-amber-50/70 border border-amber-300/80 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xs">
+                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[#8B0000] text-sm font-bold flex items-center gap-1.5">
+                                            ✂️ Bespoke Customization &amp; Tailoring Settings
+                                        </span>
+                                        <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                                            Product Page Option
+                                        </span>
+                                    </div>
+                                    <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.is_customizable !== false}
+                                            onChange={(e) => setFormData({ ...formData, is_customizable: e.target.checked })}
+                                            className="w-4 h-4 text-[#8B0000] rounded focus:ring-0 cursor-pointer"
+                                        />
+                                        <span>Enable "Customize" Option on Product Page</span>
+                                    </label>
+                                </div>
+
+                                {formData.is_customizable !== false && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-amber-200">
+                                        <div>
+                                            <label className="block text-slate-700 font-bold mb-1 text-xs">
+                                                Select Customization Scope (Top, Bottom, or Both) *
+                                            </label>
+                                            <select
+                                                value={formData.customization_scope || "both"}
+                                                onChange={(e) => setFormData({ ...formData, customization_scope: e.target.value })}
+                                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 text-xs focus:outline-none focus:border-[#8B0000] font-medium cursor-pointer"
+                                            >
+                                                <option value="both">Both Top &amp; Bottom (Complete Set / Co-ord Sets)</option>
+                                                <option value="top_only">Top / Kurti Only (Kurtis, Tops, Tunics, Dresses)</option>
+                                                <option value="bottom_only">Bottom / Pant Only (Pants, Palazzos, Salwars)</option>
+                                            </select>
+                                            <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                                                {formData.customization_scope === "top_only" && "👉 Customer will only be asked for Top/Kurti measurements (Bust, Cup, Sleeves, Neckline)."}
+                                                {formData.customization_scope === "bottom_only" && "👉 Customer will only be asked for Bottom measurements (Waist, Hip, Bottom Length, Style)."}
+                                                {(!formData.customization_scope || formData.customization_scope === "both") && "👉 Customer can select Complete Set, Top Only, or Bottom Only."}
+                                            </p>
+                                        </div>
+
+                                        <div className="p-3 rounded-xl bg-white/90 border border-amber-200 text-xs text-amber-950 flex flex-col justify-center space-y-1">
+                                            <span className="font-bold text-[#8B0000]">💡 Guide for Admin:</span>
+                                            <p className="text-[11px] text-slate-600 leading-relaxed">
+                                                • <strong>Kurti / Top / Dress</strong>: Select <em>"Top / Kurti Only"</em>.<br />
+                                                • <strong>Pant / Palazzo / Salwar</strong>: Select <em>"Bottom / Pant Only"</em>.<br />
+                                                • <strong>Suit Set / 2-Piece / 3-Piece</strong>: Select <em>"Both Top &amp; Bottom"</em>.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* ── Product Specifications Matrix ── */}

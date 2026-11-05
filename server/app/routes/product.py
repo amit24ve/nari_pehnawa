@@ -217,6 +217,30 @@ def get_products(
             else:
                 query["$or"] = dept_clauses
 
+        # Multi-vendor guard: Products listed by sellers must be approved by Admin
+        vendor_approval_clause = {
+            "$or": [
+                {"seller_id": {"$exists": False}},
+                {"seller_id": None},
+                {"seller_id": ""},
+                {"is_approved": True},
+                {"approval_status": "approved"},
+            ]
+        }
+        active_clause = {
+            "$or": [
+                {"is_active": True},
+                {"is_active": {"$exists": False}},
+            ]
+        }
+
+        if "$and" in query:
+            query["$and"].extend([vendor_approval_clause, active_clause])
+        elif query:
+            query = {"$and": [query, vendor_approval_clause, active_clause]}
+        else:
+            query = {"$and": [vendor_approval_clause, active_clause]}
+
         cursor = products_collection.find(query).sort(sort_by, sort_order).skip(skip).limit(limit)
         products = list(cursor)
 
@@ -295,9 +319,24 @@ def get_product_count(
 
 
 def _build_product_query(product_id: str) -> dict:
-    conditions = [{"_id": product_id}, {"id": product_id}]
+    conditions = [
+        {"_id": product_id},
+        {"id": product_id},
+        {"sku": product_id},
+        {"meta_catalog_id": product_id},
+        {"slug": product_id},
+    ]
     if ObjectId.is_valid(product_id):
         conditions.insert(0, {"_id": ObjectId(product_id)})
+
+    # Also support fuzzy slug or name matching if product_id contains words (e.g. "product_1_sky_bloom" or "sky-bloom")
+    clean_str = product_id.replace("_", "-").replace(" ", "-")
+    words = [re.escape(w) for w in clean_str.split("-") if len(w) > 2 and w.lower() not in ["product", "item", "null", "undefined"]]
+    if words:
+        pattern = ".*".join(words)
+        conditions.append({"name": {"$regex": pattern, "$options": "i"}})
+        conditions.append({"slug": {"$regex": pattern, "$options": "i"}})
+
     return {"$or": conditions}
 
 

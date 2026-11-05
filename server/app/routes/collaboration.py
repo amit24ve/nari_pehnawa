@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 import io
 import csv
 from typing import Optional, List, Dict, Any
+from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
@@ -212,12 +213,112 @@ def create_admin_collaboration(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.get("/admin/products-picker")
+def get_products_for_picker(current_user: dict = Depends(require_admin)):
+    """Admin: Lightweight product list for promoting approved products in collaborations."""
+    db = get_database()
+    prods = list(db["products"].find({}, {"_id": 1, "name": 1, "price": 1, "image": 1, "category": 1}).sort("created_at", -1).limit(200))
+    return [
+        {
+            "id": str(p["_id"]),
+            "name": p.get("name"),
+            "price": p.get("price"),
+            "image": p.get("image"),
+            "category": p.get("category"),
+        }
+        for p in prods
+    ]
+
+
+@router.get("/admin/reports/export-csv")
+def export_collaborations_csv(current_user: dict = Depends(require_admin)):
+    """Admin: Export complete collaboration financial and order report to CSV."""
+    db = get_database()
+    service = CollaborationService(db)
+    creators = service.get_admin_collaborations_list()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Creator ID",
+        "Creator Name",
+        "Referral Code",
+        "Instagram Handle",
+        "Email",
+        "Phone",
+        "Commission Rate (%)",
+        "Commission Basis",
+        "Status",
+        "Total Clicks",
+        "Unique Visitors",
+        "Attributed Orders",
+        "Eligible Sales (INR)",
+        "Commission Earned (INR)",
+        "Commission Paid (INR)",
+        "Outstanding Liability (INR)",
+        "Created At",
+    ])
+
+    for c in creators:
+        writer.writerow([
+            c["id"],
+            c.get("name", ""),
+            c.get("referral_code", ""),
+            c.get("instagram_handle", ""),
+            c.get("email", ""),
+            c.get("phone", ""),
+            c.get("commission_rate", 10.0),
+            c.get("commission_basis", ""),
+            c.get("status", ""),
+            c.get("clicks", 0),
+            c.get("unique_visitors", 0),
+            c.get("attributed_orders", 0),
+            c.get("eligible_sales", 0.0),
+            c.get("commission_earned", 0.0),
+            c.get("commission_paid", 0.0),
+            c.get("outstanding_liability", 0.0),
+            str(c.get("created_at", "")),
+        ])
+
+    csv_data = output.getvalue()
+    filename = f"nari_pehnawa_influencers_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/admin/payouts", status_code=201)
+def record_creator_payout(
+    payload: RecordPayoutRequest,
+    current_user: dict = Depends(require_admin),
+):
+    """Admin: Record a commission payment made to a creator."""
+    db = get_database()
+    service = CollaborationService(db)
+    try:
+        res = service.record_payout(
+            creator_id=payload.creator_id,
+            amount=payload.amount,
+            payment_method=payload.payment_method,
+            reference_id=payload.reference_id,
+            notes=payload.notes,
+            admin_user=current_user.get("email") or current_user.get("id") or "admin",
+        )
+        return res
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.get("/admin/{creator_id}")
 def get_admin_collaboration_detail(
     creator_id: str,
     current_user: dict = Depends(require_admin),
 ):
     """Admin: Get full details, clicks, orders, ledger, and payouts for a creator."""
+    if not ObjectId.is_valid(creator_id):
+        raise HTTPException(status_code=400, detail="Invalid creator ID.")
     db = get_database()
     service = CollaborationService(db)
     try:
@@ -299,100 +400,3 @@ def regenerate_creator_dashboard_token(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
-@router.post("/admin/payouts", status_code=201)
-def record_creator_payout(
-    payload: RecordPayoutRequest,
-    current_user: dict = Depends(require_admin),
-):
-    """Admin: Record a commission payment made to a creator."""
-    db = get_database()
-    service = CollaborationService(db)
-    try:
-        res = service.record_payout(
-            creator_id=payload.creator_id,
-            amount=payload.amount,
-            payment_method=payload.payment_method,
-            reference_id=payload.reference_id,
-            notes=payload.notes,
-            admin_user=current_user.get("email") or current_user.get("id") or "admin",
-        )
-        return res
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.get("/admin/reports/export-csv")
-def export_collaborations_csv(current_user: dict = Depends(require_admin)):
-    """Admin: Export complete collaboration financial and order report to CSV."""
-    db = get_database()
-    service = CollaborationService(db)
-    creators = service.get_admin_collaborations_list()
-
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow([
-        "Creator ID",
-        "Creator Name",
-        "Referral Code",
-        "Instagram Handle",
-        "Email",
-        "Phone",
-        "Commission Rate (%)",
-        "Commission Basis",
-        "Status",
-        "Total Clicks",
-        "Unique Visitors",
-        "Attributed Orders",
-        "Eligible Sales (INR)",
-        "Commission Earned (INR)",
-        "Commission Paid (INR)",
-        "Outstanding Liability (INR)",
-        "Created At",
-    ])
-
-    for c in creators:
-        writer.writerow([
-            c["id"],
-            c.get("name", ""),
-            c.get("referral_code", ""),
-            c.get("instagram_handle", ""),
-            c.get("email", ""),
-            c.get("phone", ""),
-            c.get("commission_rate", 10.0),
-            c.get("commission_basis", ""),
-            c.get("status", ""),
-            c.get("clicks", 0),
-            c.get("unique_visitors", 0),
-            c.get("attributed_orders", 0),
-            c.get("eligible_sales", 0.0),
-            c.get("commission_earned", 0.0),
-            c.get("commission_paid", 0.0),
-            c.get("outstanding_liability", 0.0),
-            str(c.get("created_at", "")),
-        ])
-
-    csv_data = output.getvalue()
-    filename = f"nari_pehnawa_influencers_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-    return Response(
-        content=csv_data,
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
-    )
-
-
-@router.get("/admin/products-picker")
-def get_products_for_picker(current_user: dict = Depends(require_admin)):
-    """Admin: Lightweight product list for promoting approved products in collaborations."""
-    db = get_database()
-    prods = list(db["products"].find({}, {"_id": 1, "name": 1, "price": 1, "image": 1, "category": 1}).sort("created_at", -1).limit(200))
-    return [
-        {
-            "id": str(p["_id"]),
-            "name": p.get("name"),
-            "price": p.get("price"),
-            "image": p.get("image"),
-            "category": p.get("category"),
-        }
-        for p in prods
-    ]

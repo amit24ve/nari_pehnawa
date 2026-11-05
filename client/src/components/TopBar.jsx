@@ -40,8 +40,18 @@ const TopBar = () => {
         });
       }
 
+      const resellerAnnouncement = {
+        id: "reseller_partner_announcement",
+        text: "💼 BECOME A RESELLER: Partner with Nari Pehnawa & Earn High Margins!",
+        sub_text: "Apply as Partner",
+        action: "reseller",
+        badge: "PARTNER",
+        icon: "✨",
+        is_active: true,
+      };
+
       // Live Deals are positioned first for maximum prominence in the top bar!
-      const combined = [...activeDeals, ...baseAnnouncements];
+      const combined = [...activeDeals, resellerAnnouncement, ...baseAnnouncements];
       if (combined.length > 0) {
         setAnnouncements(combined);
       }
@@ -125,7 +135,11 @@ const TopBar = () => {
                   ({item.sub_text})
                 </span>
               )}
-              {item.link && (
+              {item.action === "reseller" ? (
+                <span className="inline-flex items-center gap-1 text-[#ffe29a] font-bold text-[11px] ml-1 bg-white/10 px-2 py-0.5 rounded-full hover:bg-white/20 transition-colors whitespace-nowrap">
+                  Join Now &rarr;
+                </span>
+              ) : item.link && (
                 <span className="inline-flex items-center gap-1 text-[#ffe29a] font-bold text-[11px] ml-1 bg-white/10 px-2 py-0.5 rounded-full hover:bg-white/20 transition-colors whitespace-nowrap">
                   Shop Now &rarr;
                 </span>
@@ -133,6 +147,18 @@ const TopBar = () => {
               <span className="text-[#d4af37]/60 ml-4 select-none">✦</span>
             </div>
           );
+
+          if (item.action === "reseller") {
+            return (
+              <button
+                key={`${item.id || idx}-${idx}`}
+                onClick={() => window.dispatchEvent(new CustomEvent("np_open_reseller_modal"))}
+                className="inline-block hover:opacity-95 transition-opacity text-left bg-transparent border-0 cursor-pointer p-0"
+              >
+                {content}
+              </button>
+            );
+          }
 
           return item.link ? (
             <Link

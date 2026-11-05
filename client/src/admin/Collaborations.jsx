@@ -33,6 +33,9 @@ import {
   Package,
   Trash2,
   Sparkles,
+  Trophy,
+  Award,
+  Crown,
 } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
@@ -44,6 +47,7 @@ const Collaborations = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [showLeaderboard, setShowLeaderboard] = useState(true);
 
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -142,14 +146,45 @@ const Collaborations = () => {
         const data = await res.json();
         setProductsList(Array.isArray(data) ? data : []);
       }
-    } catch (_) {}
-    finally {
+    } catch (err) {
+      console.error("Failed to load products for picker", err);
+    } finally {
       setLoadingProducts(false);
     }
   };
 
   useEffect(() => {
-    fetchCollaborations();
+    let ignore = false;
+    const loadData = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/collab/admin/list`, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          throw new Error(errJson.detail || "Failed to load collaborations");
+        }
+        const data = await res.json();
+        if (!ignore) {
+          setCollaborations(Array.isArray(data) ? data : []);
+        }
+      } catch (err) {
+        if (!ignore) {
+          setError(err.message);
+          setCollaborations([]);
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   // ── Copy Helper ────────────────────────────────────────────────────────────
@@ -167,6 +202,12 @@ const Collaborations = () => {
   const totalEarned = collaborations.reduce((acc, c) => acc + (c.commission_earned || 0), 0);
   const totalPaid = collaborations.reduce((acc, c) => acc + (c.commission_paid || 0), 0);
   const totalLiability = collaborations.reduce((acc, c) => acc + (c.outstanding_liability || 0), 0);
+
+  // ── Top Performers / Leaderboard ───────────────────────────────────────────
+  const topPerformers = [...collaborations]
+    .filter((c) => (c.eligible_sales || 0) > 0 || (c.attributed_orders || 0) > 0)
+    .sort((a, b) => (b.eligible_sales || 0) - (a.eligible_sales || 0))
+    .slice(0, 5);
 
   // ── Filtered Collaborations ────────────────────────────────────────────────
   const filteredCollabs = collaborations.filter((c) => {
@@ -581,7 +622,7 @@ const Collaborations = () => {
         <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between text-gray-500 mb-2">
             <span className="text-xs font-medium uppercase tracking-wider">Clicks</span>
-            <MousePointer className="w-4 h-4 text-purple-600" />
+            <MousePointer className="w-4 h-4 text-[#0891b2]" />
           </div>
           <div className="text-2xl font-bold text-gray-900">{totalClicks.toLocaleString()}</div>
           <p className="text-[11px] text-gray-400 mt-1">Total referral visits</p>
@@ -611,7 +652,7 @@ const Collaborations = () => {
             <IndianRupee className="w-4 h-4 text-amber-600" />
           </div>
           <div className="text-2xl font-bold text-gray-900">₹{totalEarned.toLocaleString()}</div>
-          <p className="text-[11px] text-gray-400 mt-1">Calculated commissions</p>
+          <p className="text-[11px] text-gray-400 mt-1">Paid out: ₹{totalPaid.toLocaleString()}</p>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm bg-gradient-to-br from-white to-red-50/30">
@@ -622,6 +663,135 @@ const Collaborations = () => {
           <div className="text-2xl font-bold text-rose-600">₹{totalLiability.toLocaleString()}</div>
           <p className="text-[11px] text-gray-400 mt-1">Pending payout liability</p>
         </div>
+      </div>
+
+      {/* ── Top Ranking Influencers Leaderboard & Awards ─────────────────────── */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#0891b2] flex items-center justify-center text-white shadow-md shadow-[#0891b2]/20">
+              <Trophy className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-gray-900">
+                  Top Ranking Influencers & Awards Leaderboard
+                </h3>
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#0891b2]/10 text-[#0891b2]">
+                  <Award className="w-3 h-3 text-[#0891b2]" />
+                  Top Performers
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Rankings based on total product sales generated & completed referral orders
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowLeaderboard(!showLeaderboard)}
+            className="text-xs font-semibold text-[#0891b2] hover:text-[#0e7490] bg-[#0891b2]/10 hover:bg-[#0891b2]/15 px-3 py-1.5 rounded-lg transition"
+          >
+            {showLeaderboard ? "Hide Rankings" : "Show Rankings"}
+          </button>
+        </div>
+
+        {showLeaderboard && (
+          <div>
+            {topPerformers.length === 0 ? (
+              <div className="py-6 text-center text-gray-400 text-xs bg-slate-50 rounded-xl border border-dashed border-gray-200">
+                No referral sales recorded yet. As influencers drive orders, top performers and their award tiers will appear here.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {topPerformers.slice(0, 3).map((creator, idx) => {
+                  const rankIcons = ["🥇", "🥈", "🥉"];
+                  const rankTitles = ["1st - Top Seller Award", "2nd - Star Performer", "3rd - Rising Star"];
+                  const rankBadges = [
+                    "bg-[#0891b2] text-white shadow-sm",
+                    "bg-slate-700 text-white shadow-sm",
+                    "bg-slate-500 text-white shadow-sm",
+                  ];
+
+                  return (
+                    <div
+                      key={creator.id}
+                      className="relative p-4 rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md hover:border-[#0891b2]/40"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">{rankIcons[idx] || `#${idx + 1}`}</span>
+                          <div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#0891b2] block">
+                              {rankTitles[idx] || `Rank #${idx + 1}`}
+                            </span>
+                            <h4 className="font-bold text-gray-900 text-sm">{creator.name}</h4>
+                          </div>
+                        </div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${rankBadges[idx]}`}>
+                          Rank #{idx + 1}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
+                        <span className="font-mono font-bold text-[#0891b2] bg-slate-100 px-2 py-0.5 rounded border border-gray-200">
+                          {creator.referral_code}
+                        </span>
+                        {creator.instagram_handle && (
+                          <span className="text-gray-600 font-medium truncate">
+                            @{creator.instagram_handle.replace("@", "")}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 py-2 border-t border-b border-gray-100 text-center my-2 bg-slate-50 rounded-lg">
+                        <div>
+                          <span className="text-[10px] text-gray-400 block uppercase">Sales</span>
+                          <span className="text-xs font-bold text-gray-900">
+                            ₹{(creator.eligible_sales || 0).toLocaleString()}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 block uppercase">Orders</span>
+                          <span className="text-xs font-bold text-emerald-600">
+                            {creator.attributed_orders || 0}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 block uppercase">Earned</span>
+                          <span className="text-xs font-bold text-[#0891b2]">
+                            ₹{(creator.commission_earned || 0).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between mt-3 pt-1 text-xs">
+                        <span className="text-[11px] text-gray-500 font-medium">
+                          Comm: <strong>{creator.commission_rate}%</strong>
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => openDetailModal(creator.id)}
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0891b2] hover:text-[#0e7490] px-2 py-1 rounded hover:bg-slate-100 transition"
+                          >
+                            <Eye className="w-3 h-3" />
+                            View Sales
+                          </button>
+                          <button
+                            onClick={() => openPayoutModal(creator)}
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-[#0891b2] hover:bg-[#0e7490] px-2.5 py-1 rounded shadow-sm transition"
+                          >
+                            <Award className="w-3 h-3" />
+                            Reward
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── Search and Filter Toolbar ───────────────────────────────────────── */}
@@ -722,8 +892,8 @@ const Collaborations = () => {
                         <div className="font-semibold text-gray-900">{c.name}</div>
                         <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
                           {c.instagram_handle && (
-                            <span className="flex items-center gap-1 text-pink-600 font-medium">
-                              <Instagram className="w-3 h-3" />
+                            <span className="flex items-center gap-1 text-gray-600 font-medium">
+                              <Instagram className="w-3 h-3 text-[#0891b2]" />
                               @{c.instagram_handle.replace("@", "")}
                             </span>
                           )}
@@ -732,29 +902,78 @@ const Collaborations = () => {
                       </td>
 
                       {/* Referral Link & Quick Copy */}
-                      <td className="py-3.5 px-4">
-                        <div className="inline-flex items-center gap-1.5 bg-slate-100 border border-gray-200 px-2.5 py-1 rounded-lg">
-                          <span className="font-mono font-bold text-xs text-[#0891b2]">
-                            {c.referral_code}
-                          </span>
-                          <button
-                            onClick={() => copyToClipboard(refUrl, `ref_${c.id}`)}
-                            title="Copy customer referral link"
-                            className="p-1 hover:bg-white rounded transition text-gray-500"
-                          >
-                            {copiedKey === `ref_${c.id}` ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-600" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5" />
-                            )}
-                          </button>
+                      <td className="py-3.5 px-4 min-w-[190px]">
+                        <div className="space-y-1.5">
+                          {/* Customer Store Link */}
+                          <div className="flex items-center justify-between bg-slate-100 border border-gray-200 px-2 py-1 rounded-lg text-xs">
+                            <span className="font-mono font-bold text-[#0891b2]">
+                              {c.referral_code}
+                            </span>
+                            <button
+                              onClick={() => copyToClipboard(refUrl, `ref_${c.id}`)}
+                              title="Copy Customer Referral Link"
+                              className="px-1.5 py-0.5 rounded text-[11px] font-semibold text-gray-700 hover:bg-white transition flex items-center gap-1"
+                            >
+                              {copiedKey === `ref_${c.id}` ? (
+                                <span className="text-emerald-600 font-bold flex items-center gap-0.5">
+                                  <Check className="w-3 h-3" /> Copied
+                                </span>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3 text-gray-400" />
+                                  <span>Ref Link</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Influencer Private Dashboard Link (Permanent) */}
+                          {c.dashboard_token && (
+                            <div className="flex items-center justify-between bg-white border border-gray-200 px-2 py-1 rounded-lg text-xs">
+                              <span className="text-[11px] font-semibold text-gray-700">
+                                Dashboard
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() =>
+                                    copyToClipboard(
+                                      `${FRONTEND_ORIGIN}/collab/${c.dashboard_token}`,
+                                      `dash_${c.id}`
+                                    )
+                                  }
+                                  title="Copy Creator Private Dashboard Link"
+                                  className="px-1.5 py-0.5 rounded text-[11px] font-semibold text-[#0891b2] hover:bg-slate-100 transition flex items-center gap-1"
+                                >
+                                  {copiedKey === `dash_${c.id}` ? (
+                                    <span className="text-emerald-600 font-bold flex items-center gap-0.5">
+                                      <Check className="w-3 h-3" /> Copied
+                                    </span>
+                                  ) : (
+                                    <>
+                                      <Copy className="w-3 h-3" />
+                                      <span>Copy</span>
+                                    </>
+                                  )}
+                                </button>
+                                <a
+                                  href={`${FRONTEND_ORIGIN}/collab/${c.dashboard_token}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  title="Open Dashboard"
+                                  className="p-1 text-gray-400 hover:text-gray-700 rounded hover:bg-slate-100"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </td>
 
                       {/* Rates (Commission + Follower Discount) */}
                       <td className="py-3.5 px-4">
                         <div className="font-semibold text-gray-900">Comm: {c.commission_rate}%</div>
-                        <div className="text-[11px] text-pink-600 font-semibold">
+                        <div className="text-[11px] text-[#0891b2] font-semibold">
                           Follower Disc: {c.customer_discount_rate ?? 0}%
                         </div>
                         <div className="text-[10px] text-gray-400 capitalize">
@@ -817,7 +1036,7 @@ const Collaborations = () => {
                           <button
                             onClick={() => handleRegenerateToken(c.id, c.name, c.referral_code)}
                             title="Regenerate & View Creator Dashboard Link"
-                            className="p-1.5 rounded-lg text-purple-600 hover:bg-purple-50 transition"
+                            className="p-1.5 rounded-lg text-[#0891b2] hover:bg-[#0891b2]/10 transition"
                           >
                             <ShieldCheck className="w-4 h-4" />
                           </button>
@@ -960,7 +1179,7 @@ const Collaborations = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-pink-700 uppercase mb-1">
+                  <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
                     Follower Disc (%) *
                   </label>
                   <div className="relative">
@@ -974,13 +1193,13 @@ const Collaborations = () => {
                       onChange={(e) =>
                         setCreateForm({ ...createForm, customer_discount_rate: e.target.value })
                       }
-                      className="w-full px-3.5 py-2.5 text-sm bg-pink-50/40 border border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 outline-none font-bold text-pink-700"
+                      className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0891b2]/20 focus:border-[#0891b2] outline-none font-bold text-gray-800"
                     />
-                    <span className="absolute right-3.5 top-2.5 text-sm font-bold text-pink-400">
+                    <span className="absolute right-3.5 top-2.5 text-sm font-bold text-gray-400">
                       %
                     </span>
                   </div>
-                  <span className="text-[11px] text-pink-600 font-medium mt-0.5 block">Customer discount</span>
+                  <span className="text-[11px] text-gray-500 font-medium mt-0.5 block">Customer discount (0 for none)</span>
                 </div>
               </div>
 
@@ -1086,34 +1305,40 @@ const Collaborations = () => {
                       Clear (Allow All)
                     </button>
                   </div>
-                  {productsList.slice(0, 30).map((p) => {
-                    const isSelected = createForm.approved_products.includes(p.id);
-                    return (
-                      <label key={p.id} className="flex items-center gap-2 cursor-pointer py-0.5">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setCreateForm({
-                                ...createForm,
-                                approved_products: [...createForm.approved_products, p.id],
-                              });
-                            } else {
-                              setCreateForm({
-                                ...createForm,
-                                approved_products: createForm.approved_products.filter(
-                                  (id) => id !== p.id
-                                ),
-                              });
-                            }
-                          }}
-                          className="rounded text-[#0891b2] focus:ring-[#0891b2]"
-                        />
-                        <span className="truncate">{p.name} (₹{p.price})</span>
-                      </label>
-                    );
-                  })}
+                  {loadingProducts ? (
+                    <div className="py-4 text-center text-gray-400">Loading products...</div>
+                  ) : productsList.length === 0 ? (
+                    <div className="py-2 text-center text-gray-400">All store products will be eligible</div>
+                  ) : (
+                    productsList.slice(0, 30).map((p) => {
+                      const isSelected = createForm.approved_products.includes(p.id);
+                      return (
+                        <label key={p.id} className="flex items-center gap-2 cursor-pointer py-0.5">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setCreateForm({
+                                  ...createForm,
+                                  approved_products: [...createForm.approved_products, p.id],
+                                });
+                              } else {
+                                setCreateForm({
+                                  ...createForm,
+                                  approved_products: createForm.approved_products.filter(
+                                    (id) => id !== p.id
+                                  ),
+                                });
+                              }
+                            }}
+                            className="rounded text-[#0891b2] focus:ring-[#0891b2]"
+                          />
+                          <span className="truncate">{p.name} (₹{p.price})</span>
+                        </label>
+                      );
+                    })
+                  )}
                 </div>
               </div>
 
@@ -1154,7 +1379,7 @@ const Collaborations = () => {
       {/* ── Modal: Two Separate Links Generated (Success Display) ────────── */}
       {showTokensModal && newlyCreatedLinks && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative border-2 border-[#0891b2]/30">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative border border-gray-200">
             <button
               onClick={() => setShowTokensModal(false)}
               className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-slate-100"
@@ -1163,39 +1388,39 @@ const Collaborations = () => {
             </button>
 
             <div className="text-center mb-5">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2">
-                <CheckCircle2 className="w-7 h-7" />
+              <div className="w-12 h-12 rounded-full bg-[#0891b2]/10 text-[#0891b2] flex items-center justify-center mx-auto mb-2">
+                <CheckCircle2 className="w-7 h-7 text-[#0891b2]" />
               </div>
               <h2 className="text-xl font-bold text-gray-900">
                 Links Ready for {newlyCreatedLinks.creatorName}
               </h2>
               <p className="text-xs text-gray-500 mt-1">
-                Every collaboration has two distinct, isolated links: one for customers and one private link for the creator.
+                Both links are saved permanently. You can copy them now or anytime later directly from the table.
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3.5">
               {/* Link A: Customer Referral Link */}
-              <div className="p-3.5 bg-cyan-50/60 rounded-xl border border-cyan-200">
+              <div className="p-4 bg-slate-50 rounded-xl border border-gray-200">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs font-bold text-[#0891b2] uppercase tracking-wider flex items-center gap-1.5">
                     <ShoppingBag className="w-3.5 h-3.5" />
                     1. Customer Referral Link
                   </span>
-                  <span className="text-[11px] text-gray-500">For Followers / Bio</span>
+                  <span className="text-[11px] text-gray-500 font-medium">For Followers / Social Bio</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
                     readOnly
                     value={newlyCreatedLinks.referralUrl}
-                    className="w-full text-xs font-mono bg-white px-3 py-2 rounded-lg border border-cyan-300 text-gray-800 select-all"
+                    className="w-full text-xs font-mono bg-white px-3 py-2 rounded-lg border border-gray-300 text-gray-800 select-all focus:outline-none"
                   />
                   <button
                     onClick={() =>
                       copyToClipboard(newlyCreatedLinks.referralUrl, "modal_ref")
                     }
-                    className="px-3 py-2 bg-[#0891b2] text-white rounded-lg text-xs font-semibold hover:bg-[#0e7490] flex items-center gap-1 transition"
+                    className="px-4 py-2 bg-[#0891b2] text-white rounded-lg text-xs font-semibold hover:bg-[#0e7490] flex items-center gap-1.5 shadow-sm transition shrink-0"
                   >
                     {copiedKey === "modal_ref" ? (
                       <>
@@ -1203,37 +1428,39 @@ const Collaborations = () => {
                       </>
                     ) : (
                       <>
-                        <Copy className="w-3.5 h-3.5" /> Copy
+                        <Copy className="w-3.5 h-3.5" /> Copy Link
                       </>
                     )}
                   </button>
                 </div>
                 <p className="text-[11px] text-gray-500 mt-1">
-                  Followers who click this link receive a 30-day attribution token for purchases.
+                  Followers who click this link get attributed automatically upon purchasing.
                 </p>
               </div>
 
               {/* Link B: Private Creator Dashboard Link */}
-              <div className="p-3.5 bg-purple-50/60 rounded-xl border border-purple-200">
+              <div className="p-4 bg-slate-50 rounded-xl border border-gray-200">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-bold text-purple-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-[#0891b2] uppercase tracking-wider flex items-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5" />
-                    2. Private Creator Dashboard Link
+                    2. Creator Live Dashboard Link
                   </span>
-                  <span className="text-[11px] text-purple-600 font-semibold">No Login Required</span>
+                  <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    No Password Needed
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
                     readOnly
                     value={newlyCreatedLinks.dashboardUrl}
-                    className="w-full text-xs font-mono bg-white px-3 py-2 rounded-lg border border-purple-300 text-gray-800 select-all"
+                    className="w-full text-xs font-mono bg-white px-3 py-2 rounded-lg border border-gray-300 text-gray-800 select-all focus:outline-none"
                   />
                   <button
                     onClick={() =>
                       copyToClipboard(newlyCreatedLinks.dashboardUrl, "modal_dash")
                     }
-                    className="px-3 py-2 bg-purple-600 text-white rounded-lg text-xs font-semibold hover:bg-purple-700 flex items-center gap-1 transition"
+                    className="px-4 py-2 bg-[#0891b2] text-white rounded-lg text-xs font-semibold hover:bg-[#0e7490] flex items-center gap-1.5 shadow-sm transition shrink-0"
                   >
                     {copiedKey === "modal_dash" ? (
                       <>
@@ -1241,18 +1468,18 @@ const Collaborations = () => {
                       </>
                     ) : (
                       <>
-                        <Copy className="w-3.5 h-3.5" /> Copy
+                        <Copy className="w-3.5 h-3.5" /> Copy Link
                       </>
                     )}
                   </button>
                 </div>
                 <div className="flex items-center justify-between mt-1 text-[11px] text-gray-500">
-                  <span>Zero customer PII exposed. Unguessable token hash.</span>
+                  <span>Send this link to the creator to view live sales and earnings.</span>
                   <a
                     href={newlyCreatedLinks.dashboardUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-purple-700 font-semibold hover:underline inline-flex items-center gap-1"
+                    className="text-[#0891b2] font-semibold hover:text-[#0e7490] inline-flex items-center gap-1"
                   >
                     Preview <ExternalLink className="w-3 h-3" />
                   </a>
@@ -1263,7 +1490,7 @@ const Collaborations = () => {
             <div className="mt-6 flex justify-end">
               <button
                 onClick={() => setShowTokensModal(false)}
-                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-gray-900 hover:bg-gray-800 transition"
+                className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#0891b2] hover:bg-[#0e7490] shadow-md shadow-[#0891b2]/20 transition"
               >
                 Done
               </button>
@@ -1307,11 +1534,11 @@ const Collaborations = () => {
                         <span className="font-medium text-gray-700">
                           Comm Rate: {detailData.creator?.commission_rate}%
                         </span>
-                        <span className="font-semibold text-pink-600">
+                        <span className="font-semibold text-[#0891b2]">
                           Follower Disc: {detailData.creator?.customer_discount_rate || 0}%
                         </span>
                         {detailData.creator?.instagram_handle && (
-                          <span className="text-pink-600 font-medium">
+                          <span className="text-gray-600 font-medium">
                             @{detailData.creator.instagram_handle.replace("@", "")}
                           </span>
                         )}
@@ -1331,6 +1558,54 @@ const Collaborations = () => {
                       >
                         <Trash2 className="w-3.5 h-3.5" /> Delete
                       </button>
+                    </div>
+                  </div>
+
+                  {/* Permanent Shareable Links Bar */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-3 pt-3 border-t border-gray-100">
+                    <div className="flex items-center justify-between bg-slate-50 px-3 py-2 rounded-xl border border-gray-200">
+                      <div className="min-w-0 pr-2">
+                        <span className="text-[10px] uppercase font-bold text-gray-500 block">Customer Referral Link</span>
+                        <span className="font-mono text-xs text-[#0891b2] font-bold truncate block">
+                          {`${FRONTEND_ORIGIN}/?ref=${detailData.creator?.referral_code}`}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(`${FRONTEND_ORIGIN}/?ref=${detailData.creator?.referral_code}`, "det_ref")}
+                        className="px-2.5 py-1 text-xs font-semibold bg-[#0891b2] text-white rounded-lg hover:bg-[#0e7490] transition flex items-center gap-1 shrink-0"
+                      >
+                        {copiedKey === "det_ref" ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        {copiedKey === "det_ref" ? "Copied" : "Copy"}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between bg-slate-50 px-3 py-2 rounded-xl border border-gray-200">
+                      <div className="min-w-0 pr-2">
+                        <span className="text-[10px] uppercase font-bold text-gray-500 block">Creator Live Dashboard</span>
+                        <span className="text-xs text-gray-700 font-medium truncate block">
+                          Private Dashboard (No Login Needed)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => copyToClipboard(`${FRONTEND_ORIGIN}/collab/${detailData.creator?.dashboard_token}`, "det_dash")}
+                          className="px-2.5 py-1 text-xs font-semibold bg-[#0891b2] text-white rounded-lg hover:bg-[#0e7490] transition flex items-center gap-1"
+                        >
+                          {copiedKey === "det_dash" ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                          {copiedKey === "det_dash" ? "Copied" : "Copy"}
+                        </button>
+                        {detailData.creator?.dashboard_token && (
+                          <a
+                            href={`${FRONTEND_ORIGIN}/collab/${detailData.creator?.dashboard_token}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-1 text-gray-400 hover:text-gray-700 rounded hover:bg-white"
+                            title="Open Live Dashboard"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -1374,6 +1649,16 @@ const Collaborations = () => {
                     }`}
                   >
                     Orders ({detailData.orders?.length || 0})
+                  </button>
+                  <button
+                    onClick={() => setDetailTab("products")}
+                    className={`pb-2 border-b-2 transition ${
+                      detailTab === "products"
+                        ? "border-[#0891b2] text-[#0891b2]"
+                        : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Products Sold
                   </button>
                   <button
                     onClick={() => setDetailTab("ledger")}
@@ -1486,7 +1771,7 @@ const Collaborations = () => {
                                   <span
                                     className={`capitalize px-2 py-0.5 rounded ${
                                       o.commission_status === "paid"
-                                        ? "bg-purple-100 text-purple-700"
+                                        ? "bg-[#0891b2]/10 text-[#0891b2] font-semibold"
                                         : o.commission_status === "approved" ||
                                           o.commission_status === "payable"
                                         ? "bg-emerald-100 text-emerald-700"
@@ -1505,6 +1790,90 @@ const Collaborations = () => {
                       )}
                     </div>
                   )}
+
+                  {/* PRODUCTS SOLD TAB */}
+                  {detailTab === "products" && (() => {
+                    const productsMap = {};
+                    (detailData.orders || []).forEach((o) => {
+                      (o.items || []).forEach((it) => {
+                        const name = it.product_name || it.name || "Product";
+                        if (!productsMap[name]) {
+                          productsMap[name] = {
+                            name,
+                            totalQty: 0,
+                            totalRevenue: 0,
+                            ordersCount: 0,
+                            price: it.price || 0,
+                          };
+                        }
+                        const q = parseInt(it.quantity || it.qty || 1, 10);
+                        productsMap[name].totalQty += q;
+                        productsMap[name].totalRevenue += q * (parseFloat(it.price) || 0);
+                        productsMap[name].ordersCount += 1;
+                      });
+                    });
+                    const productsList = Object.values(productsMap).sort(
+                      (a, b) => b.totalQty - a.totalQty
+                    );
+
+                    return (
+                      <div>
+                        {productsList.length === 0 ? (
+                          <div className="py-12 text-center text-gray-400 text-sm">
+                            No product sales recorded yet for this creator.
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-3 flex items-center justify-between text-xs text-cyan-900">
+                              <span>
+                                Total <strong>{productsList.length}</strong> unique product(s) sold via this creator's referral link.
+                              </span>
+                              <span className="font-bold">
+                                Total Units Sold: {productsList.reduce((acc, p) => acc + p.totalQty, 0)} pcs
+                              </span>
+                            </div>
+                            <table className="w-full text-left text-xs">
+                              <thead className="bg-slate-50 text-gray-500 uppercase tracking-wider font-semibold">
+                                <tr>
+                                  <th className="py-2.5 px-3">Product Name</th>
+                                  <th className="py-2.5 px-3 text-center">Units Sold</th>
+                                  <th className="py-2.5 px-3">Price</th>
+                                  <th className="py-2.5 px-3">Total Sales Value</th>
+                                  <th className="py-2.5 px-3 text-center">Orders Count</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100">
+                                {productsList.map((p, idx) => (
+                                  <tr key={idx} className="hover:bg-slate-50/50">
+                                    <td className="py-2.5 px-3 font-semibold text-gray-800">
+                                      <div className="flex items-center gap-2">
+                                        <Package className="w-4 h-4 text-[#0891b2] shrink-0" />
+                                        <span>{p.name}</span>
+                                      </div>
+                                    </td>
+                                    <td className="py-2.5 px-3 text-center">
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                                        {p.totalQty} sold
+                                      </span>
+                                    </td>
+                                    <td className="py-2.5 px-3 text-gray-600">
+                                      ₹{p.price?.toLocaleString()}
+                                    </td>
+                                    <td className="py-2.5 px-3 font-bold text-gray-900">
+                                      ₹{p.totalRevenue?.toLocaleString()}
+                                    </td>
+                                    <td className="py-2.5 px-3 text-center text-gray-600">
+                                      {p.ordersCount} orders
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* LEDGER TAB */}
                   {detailTab === "ledger" && (
@@ -1812,7 +2181,7 @@ const Collaborations = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-pink-700 uppercase mb-1">
+                  <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
                     Follower Discount Rate (%) *
                   </label>
                   <div className="relative">
@@ -1826,12 +2195,13 @@ const Collaborations = () => {
                       onChange={(e) =>
                         setEditForm({ ...editForm, customer_discount_rate: e.target.value })
                       }
-                      className="w-full px-3.5 py-2.5 text-sm bg-pink-50/40 border border-pink-200 rounded-xl outline-none font-bold text-pink-700"
+                      className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0891b2]/20 focus:border-[#0891b2] outline-none font-bold text-gray-800"
                     />
-                    <span className="absolute right-3.5 top-2.5 text-sm font-bold text-pink-400">
+                    <span className="absolute right-3.5 top-2.5 text-sm font-bold text-gray-400">
                       %
                     </span>
                   </div>
+                  <span className="text-[11px] text-gray-500 font-medium mt-0.5 block">Customer discount (0 for none)</span>
                 </div>
               </div>
 

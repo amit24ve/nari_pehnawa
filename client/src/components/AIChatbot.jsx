@@ -156,12 +156,12 @@ const AIChatbot = () => {
       };
     }
 
-    // 5. Founders / Owner Info (Only triggered if user explicitly asks)
-    if (input.includes("owner") || input.includes("founder") || input.includes("malik") || input.includes("pooja") || input.includes("ritika") || input.includes("about") || input.includes("who is")) {
+    // 5. Founder / Owner Info (Only triggered if user explicitly asks)
+    if (input.includes("owner") || input.includes("founder") || input.includes("malik") || input.includes("pooja") || input.includes("about") || input.includes("who is")) {
       return {
-        text: `👑 **Nari Pehnawa Founders:**\n\nNari Pehnawa was founded with love by **Pooja Verma & Ritika Singh**, dedicated to bringing direct weaver handcrafted ethnic wear from Uttar Pradesh (Prayagraj & Deoria) to women across India!`,
+        text: `👑 **Nari Pehnawa Founder & Owner:**\n\nNari Pehnawa was founded with love and dedication by **Pooja Verma**, bringing direct weaver handcrafted ethnic wear from Uttar Pradesh (Deoria & regional weaving hubs) to women across India!`,
         suggestions: [
-          { label: "✨ Read Our Story", link: "/owner" },
+          { label: "✨ Meet Pooja Verma", link: "/owner" },
           { label: "👗 Browse Live Categories", key: "show_categories" }
         ]
       };

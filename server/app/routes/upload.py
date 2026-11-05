@@ -7,7 +7,7 @@ import uuid
 from pathlib import Path
 
 from typing import List
-from app.security import get_current_user, require_admin
+from app.security import get_current_user, require_admin, require_admin_or_seller
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 router = APIRouter(prefix="/upload", tags=["Upload"])
@@ -35,7 +35,7 @@ MAX_SIZE_MB = 100
 @router.post("/image")
 async def upload_image(
     file: UploadFile = File(...),
-    current_user: dict = Depends(require_admin),
+    current_user: dict = Depends(require_admin_or_seller),
 ):
     """
     Upload an image or video file.
@@ -117,7 +117,7 @@ async def upload_image(
 @router.post("/images")
 async def upload_multiple_images(
     files: List[UploadFile] = File(...),
-    current_user: dict = Depends(require_admin),
+    current_user: dict = Depends(require_admin_or_seller),
 ):
     """
     Upload multiple product images at once.

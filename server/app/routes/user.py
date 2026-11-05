@@ -274,9 +274,34 @@ def get_current_user_profile(current_user: dict = Depends(get_current_user)):
     orders_collection = db["orders"]
     try:
         user_id = current_user.get("id")
-        user = users_collection.find_one({"_id": ObjectId(user_id)})
-        
+        user = None
+        try:
+            user = users_collection.find_one({"_id": ObjectId(user_id)})
+        except Exception:
+            user = None
+
         if not user:
+            # Check sellers collection in case a seller is browsing the storefront
+            try:
+                seller = db["sellers"].find_one({"_id": ObjectId(user_id)})
+                if seller:
+                    return {
+                        "id": str(seller["_id"]),
+                        "email": seller.get("email"),
+                        "name": seller.get("name") or seller.get("shop_name") or "Merchant Seller",
+                        "full_name": seller.get("name") or seller.get("shop_name") or "Merchant Seller",
+                        "phone": seller.get("phone", ""),
+                        "role": "seller",
+                        "coins_balance": 0,
+                        "orders_count": 0,
+                        "cancelled_orders_count": 0,
+                        "coins_earned_total": 0,
+                        "coins_spent_total": 0,
+                        "coins_rupee_value": 0.0,
+                        "is_active": True,
+                    }
+            except Exception:
+                pass
             raise HTTPException(status_code=404, detail="User not found")
         
         user["id"] = str(user["_id"])
@@ -555,9 +580,34 @@ def change_password(password_data: PasswordChange, current_user: dict = Depends(
     users_collection = db["users"]
     try:
         user_id = current_user.get("id")
-        user = users_collection.find_one({"_id": ObjectId(user_id)})
-        
+        user = None
+        try:
+            user = users_collection.find_one({"_id": ObjectId(user_id)})
+        except Exception:
+            user = None
+
         if not user:
+            # Check sellers collection in case a seller is browsing the storefront
+            try:
+                seller = db["sellers"].find_one({"_id": ObjectId(user_id)})
+                if seller:
+                    return {
+                        "id": str(seller["_id"]),
+                        "email": seller.get("email"),
+                        "name": seller.get("name") or seller.get("shop_name") or "Merchant Seller",
+                        "full_name": seller.get("name") or seller.get("shop_name") or "Merchant Seller",
+                        "phone": seller.get("phone", ""),
+                        "role": "seller",
+                        "coins_balance": 0,
+                        "orders_count": 0,
+                        "cancelled_orders_count": 0,
+                        "coins_earned_total": 0,
+                        "coins_spent_total": 0,
+                        "coins_rupee_value": 0.0,
+                        "is_active": True,
+                    }
+            except Exception:
+                pass
             raise HTTPException(status_code=404, detail="User not found")
         
         # Hash and update new password
@@ -582,9 +632,34 @@ def get_user_settings(current_user: dict = Depends(get_current_user)):
     users_collection = db["users"]
     try:
         user_id = current_user.get("id")
-        user = users_collection.find_one({"_id": ObjectId(user_id)})
-        
+        user = None
+        try:
+            user = users_collection.find_one({"_id": ObjectId(user_id)})
+        except Exception:
+            user = None
+
         if not user:
+            # Check sellers collection in case a seller is browsing the storefront
+            try:
+                seller = db["sellers"].find_one({"_id": ObjectId(user_id)})
+                if seller:
+                    return {
+                        "id": str(seller["_id"]),
+                        "email": seller.get("email"),
+                        "name": seller.get("name") or seller.get("shop_name") or "Merchant Seller",
+                        "full_name": seller.get("name") or seller.get("shop_name") or "Merchant Seller",
+                        "phone": seller.get("phone", ""),
+                        "role": "seller",
+                        "coins_balance": 0,
+                        "orders_count": 0,
+                        "cancelled_orders_count": 0,
+                        "coins_earned_total": 0,
+                        "coins_spent_total": 0,
+                        "coins_rupee_value": 0.0,
+                        "is_active": True,
+                    }
+            except Exception:
+                pass
             raise HTTPException(status_code=404, detail="User not found")
         
         # Return settings or defaults

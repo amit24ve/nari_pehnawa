@@ -146,6 +146,9 @@ const AdminLayout = () => {
                     <NavItem to="/admin/collaborations" icon={Share2}>
                         Influencer Collabs
                     </NavItem>
+                    <NavItem to="/admin/sellers" icon={Store}>
+                        Sellers & Inquiries
+                    </NavItem>
                     <NavItem to="/admin/settings" icon={Settings}>
                         Settings
                     </NavItem>
@@ -424,6 +427,13 @@ const AdminLayout = () => {
                                     onClick={closeMobileMenu}
                                 >
                                     Influencer Collabs
+                                </NavItem>
+                                <NavItem
+                                    to="/admin/sellers"
+                                    icon={Store}
+                                    onClick={closeMobileMenu}
+                                >
+                                    Sellers & Inquiries
                                 </NavItem>
                                 <NavItem
                                     to="/admin/settings"

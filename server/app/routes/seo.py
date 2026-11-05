@@ -273,7 +273,7 @@ def generate_nari_preview_banner(image_raw: Optional[str], product: Optional[dic
 
 
 def find_product_by_id_or_slug(product_id: str, db) -> Optional[dict]:
-    """Finds product by ObjectId, string _id, id, slug, or name regex."""
+    """Finds product by ObjectId, string _id, id, slug, sku, or name regex."""
     products_col = db["products"]
     product = None
 
@@ -286,8 +286,15 @@ def find_product_by_id_or_slug(product_id: str, db) -> Optional[dict]:
         except Exception:
             pass
 
-    # 2. Try _id as string or id field
-    product = products_col.find_one({"$or": [{"_id": product_id}, {"id": product_id}]})
+    # 2. Try _id as string, id field, sku, or meta_catalog_id
+    product = products_col.find_one({
+        "$or": [
+            {"_id": product_id},
+            {"id": product_id},
+            {"sku": product_id},
+            {"meta_catalog_id": product_id}
+        ]
+    })
     if product:
         return product
 
@@ -296,14 +303,14 @@ def find_product_by_id_or_slug(product_id: str, db) -> Optional[dict]:
     if product:
         return product
 
-    # 4. If slug format like "black-floral-kurti", try fuzzy name match
-    if "-" in product_id:
-        words = [re.escape(w) for w in product_id.split("-") if len(w) > 2]
-        if words:
-            pattern = ".*".join(words)
-            product = products_col.find_one({"name": {"$regex": pattern, "$options": "i"}})
-            if product:
-                return product
+    # 4. If slug format like "black-floral-kurti" or "product_1_sky_bloom", try fuzzy name match
+    clean_str = product_id.replace("_", "-").replace(" ", "-")
+    words = [re.escape(w) for w in clean_str.split("-") if len(w) > 2 and w.lower() not in ["product", "item", "null", "undefined"]]
+    if words:
+        pattern = ".*".join(words)
+        product = products_col.find_one({"name": {"$regex": pattern, "$options": "i"}})
+        if product:
+            return product
 
     return None
 
@@ -409,8 +416,13 @@ def get_product_page_with_meta(product_id: str, request: Request):
     db = get_database()
     product = find_product_by_id_or_slug(product_id, db)
 
-    # 404 for missing products (Requirement 5)
+    # Fallback for missing products
     if not product:
+        # For real human browser visitors, serve the React SPA index.html so React Router handles the route smoothly
+        if not is_crawler_request(user_agent):
+            return HTMLResponse(content=get_base_html(), status_code=200)
+
+        # For social crawlers, return 404 metadata
         not_found_html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>

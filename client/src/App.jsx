@@ -30,7 +30,6 @@ import GoogleAuthCallback from "./components/GoogleAuthCallback";
 import OwnerPage from "./components/OwnerPage";
 import SupportPages from "./components/SupportPages";
 import PublicOrderTracking from "./components/PublicOrderTracking";
-import FestiveDealCelebrationModal from "./components/FestiveDealCelebrationModal";
 import "./App.css";
 import AIChatbot from "./components/AIChatbot";
 import AdminLayout from "./admin/AdminLayout";
@@ -47,11 +46,27 @@ import HeroBanners from "./admin/HeroBanners";
 import Inquiries from "./admin/Inquiries";
 import AdminAnnouncementsModal from "./admin/AdminAnnouncementsModal";
 import Collaborations from "./admin/Collaborations";
+import Sellers from "./admin/Sellers";
 import CreatorDashboard from "./components/CreatorDashboard";
 import RequireAuth from "./admin/RequireAuth";
 import { AuthProvider } from "./context/AuthProvider";
 import { WishlistProvider } from "./context/WishlistProvider";
 import { CartProvider } from "./context/CartProvider";
+import { SellerAuthProvider } from "./seller/SellerAuthContext";
+import SellerLayout from "./seller/SellerLayout";
+import SellerLogin from "./seller/SellerLogin";
+import SellerRegister from "./seller/SellerRegister";
+import SellerDashboard from "./seller/SellerDashboard";
+import SellerProducts from "./seller/SellerProducts";
+import SellerAddProduct from "./seller/SellerAddProduct";
+import SellerPackaging from "./seller/SellerPackaging";
+import SellerInquiries from "./seller/SellerInquiries";
+import SellerProfile from "./seller/SellerProfile";
+import SellerOrders from "./seller/SellerOrders";
+import SellerInventory from "./seller/SellerInventory";
+import SellerFinance from "./seller/SellerFinance";
+import SellerReturns from "./seller/SellerReturns";
+import SellerReports from "./seller/SellerReports";
 
 // User account (no separate dashboard — pages are reached only via the
 // navbar's profile dropdown, rendered inside the normal site layout)
@@ -90,7 +105,6 @@ function MainLayout() {
             <Navbar />
             <VisitorTracker />
             <CookieConsent />
-            <FestiveDealCelebrationModal />
             {/* pt: header(80px) + category strip(38px) = 118px */}
             <div className="pt-[118px]">
                 <Routes>
@@ -136,18 +150,6 @@ function MainLayout() {
                     <Route
                         path="/category/printed-kurtis"
                         element={<CategoryPage categoryName="Printed Kurtis" />}
-                    />
-                    <Route
-                        path="/category/sleeveless-kurtis"
-                        element={<CategoryPage categoryName="Sleeveless Kurtis" />}
-                    />
-                    <Route
-                        path="/category/halter-neck-top"
-                        element={<CategoryPage categoryName="Halter Neck Top" />}
-                    />
-                    <Route
-                        path="/category/halter-neck-tops"
-                        element={<CategoryPage categoryName="Halter Neck Top" />}
                     />
                     <Route
                         path="/category/embroidered-kurtis"
@@ -232,6 +234,17 @@ function MainLayout() {
     );
 }
 
+const SellerLoginRedirect = () => {
+    const isAuth = Boolean(
+        typeof window !== "undefined" &&
+        (localStorage.getItem("np_seller_token") || localStorage.getItem("neel_token") || localStorage.getItem("token"))
+    );
+    if (isAuth) {
+        return <Navigate to="/seller/dashboard" replace />;
+    }
+    return <Navigate to="/?login=seller" replace />;
+};
+
 function App() {
     const [appReady, setAppReady] = useState(false);
 
@@ -242,8 +255,9 @@ function App() {
             )}
             <Router>
                 <AuthProvider>
-                    <CartProvider>
-                        <WishlistProvider>
+                    <SellerAuthProvider>
+                        <CartProvider>
+                            <WishlistProvider>
                             <WelcomePopup />
                             <Routes>
                                 {/* Admin Pages (protected) - No Navbar/Footer */}
@@ -302,6 +316,70 @@ function App() {
                                         path="collaborations"
                                         element={<Collaborations />}
                                     />
+                                    <Route
+                                        path="sellers"
+                                        element={<Sellers />}
+                                    />
+                                </Route>
+
+                                {/* Dedicated Independent Seller Portal - No Separate Seller Login Page */}
+                                <Route
+                                    path="/seller/login"
+                                    element={<SellerLoginRedirect />}
+                                />
+                                <Route
+                                    path="/seller/register"
+                                    element={<SellerRegister />}
+                                />
+                                <Route path="/seller" element={<SellerLayout />}>
+                                    <Route
+                                        index
+                                        element={<Navigate to="/seller/dashboard" replace />}
+                                    />
+                                    <Route
+                                        path="dashboard"
+                                        element={<SellerDashboard />}
+                                    />
+                                    <Route
+                                        path="orders"
+                                        element={<SellerOrders />}
+                                    />
+                                    <Route
+                                        path="inventory"
+                                        element={<SellerInventory />}
+                                    />
+                                    <Route
+                                        path="finance"
+                                        element={<SellerFinance />}
+                                    />
+                                    <Route
+                                        path="returns"
+                                        element={<SellerReturns />}
+                                    />
+                                    <Route
+                                        path="reports"
+                                        element={<SellerReports />}
+                                    />
+                                    <Route
+                                        path="products"
+                                        element={<SellerProducts />}
+                                    />
+                                    <Route
+                                        path="products/new"
+                                        element={<SellerAddProduct />}
+                                    />
+                                    <Route
+                                        path="packaging"
+                                        element={<Navigate to="/seller/dashboard" replace />}
+                                    />
+                                    <Route
+                                        path="inquiries"
+                                        element={<SellerInquiries />}
+                                    />
+                                    <Route
+                                        path="profile"
+                                        element={<SellerProfile />}
+                                    />
                                 </Route>
 
                                 {/* Google Sign-In redirect landing page - No Navbar/Footer */}
@@ -335,7 +413,8 @@ function App() {
                             </Routes>
                         </WishlistProvider>
                     </CartProvider>
-                </AuthProvider>
+                </SellerAuthProvider>
+            </AuthProvider>
             </Router>
         </>
     );

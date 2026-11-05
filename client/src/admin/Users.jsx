@@ -28,7 +28,8 @@ import {
     Key,
     RefreshCw,
     Coins,
-    Sparkles
+    Sparkles,
+    Store
 } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
@@ -174,6 +175,10 @@ const Users = () => {
             admin: {
                 color: "bg-purple-50 text-purple-700 border-purple-200",
                 icon: Shield,
+            },
+            seller: {
+                color: "bg-amber-50 text-amber-800 border-amber-200",
+                icon: Store,
             },
             customer: {
                 color: "bg-cyan-50 text-[#0891b2] border-cyan-200",
@@ -393,7 +398,8 @@ const Users = () => {
     const roleCounts = {
         all: users.length,
         admin: users.filter((u) => u.role === "admin" || u.is_admin).length,
-        customer: users.filter((u) => u.role === "customer" || (!u.role && !u.is_admin)).length,
+        seller: users.filter((u) => u.role === "seller" || u.is_seller).length,
+        customer: users.filter((u) => u.role === "customer" || (!u.role && !u.is_admin && !u.is_seller)).length,
     };
 
     const statusCounts = {
@@ -536,6 +542,7 @@ const Users = () => {
                                 >
                                     <option value="all">All Roles ({roleCounts.all})</option>
                                     <option value="admin">Admin ({roleCounts.admin})</option>
+                                    <option value="seller">Seller ({roleCounts.seller})</option>
                                     <option value="customer">Customer ({roleCounts.customer})</option>
                                 </select>
                             </div>
@@ -569,6 +576,7 @@ const Users = () => {
                                     >
                                         <option value="all">All Roles ({roleCounts.all})</option>
                                         <option value="admin">Admin ({roleCounts.admin})</option>
+                                        <option value="seller">Seller ({roleCounts.seller})</option>
                                         <option value="customer">Customer ({roleCounts.customer})</option>
                                     </select>
                                 </div>
@@ -915,6 +923,7 @@ const Users = () => {
                                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-[#0891b2] cursor-pointer font-medium"
                                     >
                                         <option value="customer">Customer</option>
+                                        <option value="seller">Seller</option>
                                         <option value="admin">Admin</option>
                                     </select>
                                 </div>

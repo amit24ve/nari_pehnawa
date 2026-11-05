@@ -90,3 +90,17 @@ def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
 
+
+def require_seller(current_user: dict = Depends(get_current_user)) -> dict:
+    """Require seller or admin role"""
+    if current_user.get("role") not in ("seller", "admin"):
+        raise HTTPException(status_code=403, detail="Seller access required")
+    return current_user
+
+
+def require_admin_or_seller(current_user: dict = Depends(get_current_user)) -> dict:
+    """Require admin or seller role"""
+    if current_user.get("role") not in ("admin", "seller"):
+        raise HTTPException(status_code=403, detail="Admin or Seller access required")
+    return current_user
+

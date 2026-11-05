@@ -101,6 +101,7 @@ class CollaborationService:
             "notes": notes,
             "referral_code": code,
             "token_hash": t_hash,
+            "dashboard_token": raw_token,
             "commission_rate": float(commission_rate),
             "customer_discount_rate": float(customer_discount_rate) if customer_discount_rate is not None else 0.0,
             "commission_basis": commission_basis,  # "eligible_subtotal" | "net_order_amount"
@@ -137,7 +138,7 @@ class CollaborationService:
 
         res = self.creators.find_one_and_update(
             {"_id": ObjectId(creator_id)},
-            {"$set": {"token_hash": t_hash, "updated_at": datetime.now(timezone.utc)}},
+            {"$set": {"token_hash": t_hash, "dashboard_token": raw_token, "updated_at": datetime.now(timezone.utc)}},
             return_document=True,
         )
         if not res:
@@ -770,6 +771,15 @@ class CollaborationService:
         results = []
         for c in creators:
             cid = str(c["_id"])
+            d_token = c.get("dashboard_token")
+            if not d_token:
+                d_token = secrets.token_urlsafe(32)
+                t_hash = hash_token(d_token)
+                self.creators.update_one(
+                    {"_id": c["_id"]},
+                    {"$set": {"dashboard_token": d_token, "token_hash": t_hash}}
+                )
+
             clicks_count = self.clicks.count_documents({"creator_id": cid})
             unique_clicks = self.clicks.count_documents({"creator_id": cid, "is_unique_24h": True})
             orders_count = self.attributions.count_documents({"creator_id": cid})
@@ -789,6 +799,7 @@ class CollaborationService:
                 "phone": c.get("phone"),
                 "instagram_handle": c.get("instagram_handle"),
                 "referral_code": c.get("referral_code"),
+                "dashboard_token": d_token,
                 "commission_rate": c.get("commission_rate"),
                 "customer_discount_rate": c.get("customer_discount_rate", 0.0),
                 "commission_basis": c.get("commission_basis"),
@@ -811,6 +822,17 @@ class CollaborationService:
         creator = self.creators.find_one({"_id": ObjectId(creator_id)})
         if not creator:
             raise ValueError("Creator not found.")
+
+        cid = str(creator["_id"])
+        d_token = creator.get("dashboard_token")
+        if not d_token:
+            d_token = secrets.token_urlsafe(32)
+            t_hash = hash_token(d_token)
+            self.creators.update_one(
+                {"_id": creator["_id"]},
+                {"$set": {"dashboard_token": d_token, "token_hash": t_hash}}
+            )
+            creator["dashboard_token"] = d_token
 
         cid = str(creator["_id"])
         attributions = list(self.attributions.find({"creator_id": cid}).sort("created_at", -1))

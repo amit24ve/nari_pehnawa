@@ -54,8 +54,11 @@ class ProductBase(BaseModel):
     specifications: Optional[Dict[str, str]] = {}
     offer_code: Optional[str] = None
     offer_text: Optional[str] = None
+    offer_type: Optional[str] = "none"
     sku: Optional[str] = None
     meta_catalog_id: Optional[str] = None
+    is_customizable: Optional[bool] = True
+    customization_scope: Optional[str] = "both"  # "both", "top_only", "bottom_only"
 
 
 class ProductCreate(ProductBase):
@@ -113,6 +116,9 @@ class ProductUpdate(BaseModel):
     specifications: Optional[Dict[str, str]] = None
     offer_code: Optional[str] = None
     offer_text: Optional[str] = None
+    offer_type: Optional[str] = None
+    is_customizable: Optional[bool] = None
+    customization_scope: Optional[str] = None
 
 
 class Product(ProductBase):

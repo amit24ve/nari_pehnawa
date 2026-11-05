@@ -151,6 +151,77 @@ export const CartProvider = ({ children }) => {
     }
   };
 
+  /* ── Add multiple items to cart (e.g. Bundle / Frequently Bought Together) ── */
+  const addMultipleToCart = async (products) => {
+    if (!Array.isArray(products) || products.length === 0) return true;
+    setLoading(true);
+    try {
+      if (user) {
+        const token = getToken();
+        let lastItems = cartItems;
+        for (const product of products) {
+          const res = await fetch(`${API_URL}/cart/add`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(product),
+          });
+          if (res.ok) {
+            trackAddToCart(product, product.size, product.quantity || 1);
+            trackCustomEvent("cart_add", {
+              product_id: product.product_id,
+              name: product.name,
+              price: product.price,
+              size: product.size,
+              color: product.color,
+              quantity: product.quantity || 1
+            });
+            const data = await res.json();
+            lastItems = data.items || lastItems;
+          }
+        }
+        setCartItems(lastItems);
+        return true;
+      }
+
+      // Guest: Batch add all products in a single state mutation to prevent race conditions
+      for (const product of products) {
+        trackAddToCart(product, product.size, product.quantity || 1);
+        trackCustomEvent("cart_add", {
+          product_id: product.product_id,
+          name: product.name,
+          price: product.price,
+          size: product.size,
+          color: product.color,
+          quantity: product.quantity || 1
+        });
+      }
+
+      setCartItems((prev) => {
+        let copy = [...prev];
+        for (const product of products) {
+          const idx = copy.findIndex(
+            (i) => i.product_id === product.product_id && i.size === product.size && i.deal_text === product.deal_text
+          );
+          if (idx > -1) {
+            copy[idx] = { ...copy[idx], quantity: copy[idx].quantity + (product.quantity || 1) };
+          } else {
+            copy.push({ ...product, quantity: product.quantity || 1 });
+          }
+        }
+        return copy;
+      });
+      return true;
+    } catch (e) {
+      console.error('addMultipleToCart error:', e);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   /* ── Update quantity ── */
   const updateQuantity = async (product_id, size, quantity) => {
     if (user) {
@@ -240,6 +311,7 @@ export const CartProvider = ({ children }) => {
       value={{
         cartItems,
         addToCart,
+        addMultipleToCart,
         updateQuantity,
         removeItem,
         clearCart,

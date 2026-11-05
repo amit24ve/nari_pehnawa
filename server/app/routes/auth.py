@@ -9,6 +9,7 @@ from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from urllib.parse import urlencode
 import requests
+import re
 
 from app.config import (
     google_client_id,
@@ -482,25 +483,129 @@ def forgot_password_reset(request: ForgotPasswordResetRequest):
 
 @router.post("/login")
 def login(request: LoginRequest):
-    """Login endpoint - returns access token and user info"""
+    """Login endpoint - returns access token and user info (Unified login for Customers, Admins, and Sellers)"""
     db = get_database()
     users = db["users"]
+    email_clean = request.email.strip()
+    escaped = re.escape(email_clean)
+    email_pattern = f"^{escaped}$"
 
-    user = users.find_one({"email": request.email.strip().lower()})
+    user = users.find_one({"$or": [
+        {"email": {"$regex": email_pattern, "$options": "i"}},
+        {"phone": email_clean}
+    ]})
+    seller = db["sellers"].find_one({"$or": [
+        {"email": {"$regex": email_pattern, "$options": "i"}},
+        {"phone": email_clean}
+    ]})
+
+    # Case 1: Account registered as a Seller
+    if seller and not user:
+        hashed_s = seller.get("password_hash")
+        if not hashed_s or not verify_password(request.password, hashed_s):
+            raise HTTPException(
+                status_code=401,
+                detail="Incorrect password for seller account. Please try again."
+            )
+        if seller.get("status") == "suspended":
+            raise HTTPException(
+                status_code=403,
+                detail="Your seller merchant account has been suspended. Please contact Admin."
+            )
+
+        token = create_access_token({
+            "sub": str(seller["_id"]),
+            "email": seller["email"],
+            "role": "seller"
+        })
+        seller_out = {
+            "id": str(seller["_id"]),
+            "email": seller["email"],
+            "name": seller.get("name"),
+            "shop_name": seller.get("shop_name", "My Store"),
+            "city": seller.get("city"),
+            "state": seller.get("state"),
+            "kyc_status": seller.get("kyc_status", "pending"),
+            "role": "seller"
+        }
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+            "role": "seller",
+            "is_seller": True,
+            "redirect_url": "/seller/dashboard",
+            "user": seller_out,
+            "seller": seller_out
+        }
+
+    # Case 2: No user and no seller
     if not user:
         raise HTTPException(
-            status_code=404,
-            detail="No account found with this email address. Please create an account."
+            status_code=401,
+            detail="Invalid email or password. Please check your credentials or register."
         )
 
+    # Case 3: User found - verify password
     hashed = user.get("password_hash")
     if not hashed or not verify_password(request.password, hashed):
+        # Also check if seller password matches
+        if seller and seller.get("password_hash") and verify_password(request.password, seller["password_hash"]):
+            token = create_access_token({
+                "sub": str(seller["_id"]),
+                "email": seller["email"],
+                "role": "seller"
+            })
+            seller_out = {
+                "id": str(seller["_id"]),
+                "email": seller["email"],
+                "name": seller.get("name"),
+                "shop_name": seller.get("shop_name", "My Store"),
+                "city": seller.get("city"),
+                "state": seller.get("state"),
+                "kyc_status": seller.get("kyc_status", "pending"),
+                "role": "seller"
+            }
+            return {
+                "access_token": token,
+                "token_type": "bearer",
+                "role": "seller",
+                "is_seller": True,
+                "redirect_url": "/seller/dashboard",
+                "user": seller_out,
+                "seller": seller_out
+            }
+
         raise HTTPException(
             status_code=401,
             detail="Incorrect password. Please try again or reset your password."
         )
 
-    # Create access token
+    # If the user is also registered as a seller or role == "seller"
+    if seller or user.get("role") == "seller":
+        seller_id = str(seller["_id"]) if seller else str(user["_id"])
+        token = create_access_token({
+            "sub": seller_id,
+            "email": user.get("email"),
+            "role": "seller"
+        })
+        seller_out = {
+            "id": seller_id,
+            "email": user.get("email"),
+            "name": user.get("name"),
+            "shop_name": seller.get("shop_name") if seller else user.get("name"),
+            "role": "seller"
+        }
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+            "role": "seller",
+            "is_seller": True,
+            "redirect_url": "/seller/dashboard",
+            "user": seller_out,
+            "seller": seller_out
+        }
+
+    # Case 4: Normal Customer or Admin
     token = create_access_token({
         "sub": str(user.get("_id")),
         "email": user.get("email"),

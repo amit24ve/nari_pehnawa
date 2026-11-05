@@ -12,7 +12,37 @@ class InquiryCreate(BaseModel):
     phone: str = Field(..., min_length=10, description="Customer mobile number")
     email: Optional[EmailStr] = None
     subject: Optional[str] = "General Inquiry"
-    message: str = Field(..., min_length=5, description="Inquiry details")
+    message: str = Field(..., min_length=2, description="Inquiry details")
+    inquiry_type: Optional[str] = "general"  # "general", "reseller", "customization"
+    product_id: Optional[str] = None
+    product_name: Optional[str] = None
+    custom_size: Optional[str] = None
+    custom_color: Optional[str] = None
+    reseller_type: Optional[str] = None
+    custom_type: Optional[str] = None  # "top_only", "bottom_only", "complete_set"
+    height: Optional[str] = None
+    bust_size: Optional[str] = None
+    cup_size: Optional[str] = None
+    waist_size: Optional[str] = None
+    hip_size: Optional[str] = None
+    sleeve_type: Optional[str] = None
+    neck_design: Optional[str] = None
+    dress_length: Optional[str] = None
+    bottom_style: Optional[str] = None
+    bottom_length: Optional[str] = None
+    fit_preference: Optional[str] = None
+    advance_amount: Optional[float] = None
+    remaining_amount: Optional[float] = None
+    advance_paid: Optional[bool] = False
+    payment_id: Optional[str] = None
+    payment_method: Optional[str] = None
+    user_id: Optional[str] = None
+    shipping_address: Optional[str] = None
+    shipping_city: Optional[str] = None
+    shipping_state: Optional[str] = None
+    shipping_pincode: Optional[str] = None
+    shipping_landmark: Optional[str] = None
+    shipping_full_address: Optional[str] = None
 
 class NewsletterSubscribe(BaseModel):
     email: EmailStr
@@ -47,14 +77,53 @@ async def submit_inquiry(payload: InquiryCreate):
     """Public API for customers to submit inquiries / callback requests"""
     try:
         db = get_database()
+        inq_type = (payload.inquiry_type or "general").strip().lower()
+        subj_lower = (payload.subject or "").lower()
+        if "reseller" in subj_lower:
+            inq_type = "reseller"
+        elif "custom" in subj_lower:
+            inq_type = "customization"
+
         inquiry_doc = {
             "id": f"INQ-{uuid.uuid4().hex[:8].upper()}",
             "name": payload.name.strip(),
             "phone": payload.phone.strip(),
             "email": str(payload.email).strip() if payload.email else "",
-            "subject": payload.subject.strip() if payload.subject else "General Inquiry",
+            "subject": payload.subject.strip() if payload.subject else ("Become a Reseller" if inq_type == "reseller" else "General Inquiry"),
             "message": payload.message.strip(),
-            "status": "Pending",
+            "inquiry_type": inq_type,
+            "product_id": payload.product_id or "",
+            "product_name": payload.product_name or "",
+            "custom_size": payload.custom_size or "",
+            "custom_color": payload.custom_color or "",
+            "reseller_type": payload.reseller_type or "",
+            "custom_type": payload.custom_type or "",
+            "height": payload.height or "",
+            "bust_size": payload.bust_size or "",
+            "cup_size": payload.cup_size or "",
+            "waist_size": payload.waist_size or "",
+            "hip_size": payload.hip_size or "",
+            "sleeve_type": payload.sleeve_type or "",
+            "neck_design": payload.neck_design or "",
+            "dress_length": payload.dress_length or "",
+            "bottom_style": payload.bottom_style or "",
+            "bottom_length": payload.bottom_length or "",
+            "fit_preference": payload.fit_preference or "",
+            "advance_amount": payload.advance_amount,
+            "remaining_amount": payload.remaining_amount,
+            "advance_paid": bool(payload.advance_paid),
+            "payment_id": payload.payment_id or "",
+            "payment_method": payload.payment_method or "",
+            "user_id": payload.user_id or "",
+            "shipping_address": payload.shipping_address or "",
+            "shipping_city": payload.shipping_city or "",
+            "shipping_state": payload.shipping_state or "",
+            "shipping_pincode": payload.shipping_pincode or "",
+            "shipping_landmark": payload.shipping_landmark or "",
+            "shipping_full_address": payload.shipping_full_address or (
+                f"{payload.shipping_address or ''}, {payload.shipping_city or ''}, {payload.shipping_state or ''} - {payload.shipping_pincode or ''}".strip(", -")
+            ),
+            "status": "Advance Paid" if payload.advance_paid else "Pending",
             "reply_message": "",
             "replied_at": None,
             "created_at": datetime.now(timezone.utc).isoformat(),
@@ -70,8 +139,9 @@ async def submit_inquiry(payload: InquiryCreate):
 @router.get("/")
 async def list_inquiries(
     status_filter: Optional[str] = Query(None, alias="status"),
+    type_filter: Optional[str] = Query(None, alias="type"),
     search: Optional[str] = Query(None),
-    limit: int = Query(100, ge=1, le=500)
+    limit: int = Query(200, ge=1, le=500)
 ):
     """Admin API to list customer inquiries"""
     try:
@@ -79,6 +149,8 @@ async def list_inquiries(
         query = {}
         if status_filter and status_filter.strip() and status_filter.lower() != "all":
             query["status"] = status_filter.strip()
+        if type_filter and type_filter.strip() and type_filter.lower() != "all":
+            query["inquiry_type"] = type_filter.strip()
         if search and search.strip():
             s = search.strip()
             query["$or"] = [
@@ -86,7 +158,11 @@ async def list_inquiries(
                 {"phone": {"$regex": s, "$options": "i"}},
                 {"email": {"$regex": s, "$options": "i"}},
                 {"subject": {"$regex": s, "$options": "i"}},
-                {"message": {"$regex": s, "$options": "i"}}
+                {"message": {"$regex": s, "$options": "i"}},
+                {"product_name": {"$regex": s, "$options": "i"}},
+                {"custom_size": {"$regex": s, "$options": "i"}},
+                {"custom_color": {"$regex": s, "$options": "i"}},
+                {"reseller_type": {"$regex": s, "$options": "i"}}
             ]
         
         cursor = db.customer_inquiries.find(query).sort("created_at", -1).limit(limit)

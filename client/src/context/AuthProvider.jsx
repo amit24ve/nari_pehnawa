@@ -57,6 +57,17 @@ export const AuthProvider = ({ children }) => {
     };
 
     useEffect(() => {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get("login")) {
+                const notice = params.get("login") === "seller" ? "Please sign in to access Seller Dashboard." : "";
+                openLoginModal(notice);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        } catch (_) {}
+    }, []);
+
+    useEffect(() => {
         let token = localStorage.getItem("neel_token") || localStorage.getItem("token");
         const stored = localStorage.getItem("neel_admin_user");
 
@@ -145,6 +156,14 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem("token", token);
                 localStorage.setItem("neel_admin_user", JSON.stringify(u));
                 setUser(u);
+
+                // If seller account detected, save seller session and redirect directly to /seller/dashboard
+                if (data.role === "seller" || data.is_seller || u.role === "seller") {
+                    localStorage.setItem("np_seller_token", token);
+                    localStorage.setItem("np_seller_user", JSON.stringify(data.seller || u));
+                    navigate("/seller/dashboard");
+                    return { ok: true, user: u, is_seller: true, seller: data.seller || u };
+                }
 
                 // Redirect admin users to admin dashboard
                 if (u.role === "admin" || u.is_admin) {

@@ -26,6 +26,7 @@ const FeaturedProducts = () => {
                         originalPrice: p.original_price,
                         discount: p.discount,
                         image: p.image,
+                        images: p.images || [],
                         onSale: p.on_sale,
                         isNew: p.is_new,
                         category: p.category,

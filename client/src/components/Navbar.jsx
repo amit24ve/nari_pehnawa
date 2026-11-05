@@ -31,7 +31,8 @@ import {
   Check,
   ArrowRight,
   Copy,
-  Coins
+  Coins,
+  Store
 } from "lucide-react";
 import LoginModal from "./LoginModal";
 import { useAuth } from "../context/AuthProvider";
@@ -188,6 +189,8 @@ const Navbar = () => {
     image: p.image,
   }));
 
+  const isSeller = Boolean(user?.role === "seller" || user?.is_seller || (typeof window !== "undefined" && localStorage.getItem("np_seller_token")));
+
   /* ── Profile Dropdown Content ── */
   const adminMenuItems = [
     {
@@ -332,7 +335,7 @@ const Navbar = () => {
               {isSearchOpen && searchQuery.trim() && (
                 <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-96 overflow-y-auto">
                   {/* Founder / Owner Direct Search Match */}
-                  {["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) && (
+                  {["owner", "founder", "malik", "pooja", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) && (
                     <Link
                       to="/owner"
                       onMouseDown={() => {
@@ -346,14 +349,14 @@ const Navbar = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[10px] font-bold text-[#dfc384] uppercase tracking-wider">
-                          Official Founders &amp; Owners
+                          Official Founder &amp; Owner
                         </div>
                         <div className="text-sm font-bold text-white truncate">
-                          Pooja Verma &amp; Ritika Singh
+                          Pooja Verma
                         </div>
                       </div>
                       <span className="text-xs text-[#dfc384] font-bold underline whitespace-nowrap">
-                        Meet Founders →
+                        Meet Founder →
                       </span>
                     </Link>
                   )}
@@ -385,7 +388,7 @@ const Navbar = () => {
                         </p>
                       </button>
                     ))
-                  ) : !["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) ? (
+                  ) : !["owner", "founder", "malik", "pooja", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) ? (
                     <div className="px-5 py-6 text-center text-sm text-gray-400">
                       No results for "
                       <span className="text-gray-700 font-medium">
@@ -429,7 +432,7 @@ const Navbar = () => {
               {isSearchOpen && searchQuery.trim() && (
                 <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 w-[calc(100vw-24px)] max-w-[420px] bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-[65vh] overflow-y-auto">
                   {/* Founder / Owner Direct Match */}
-                  {["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) && (
+                  {["owner", "founder", "malik", "pooja", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) && (
                     <Link
                       to="/owner"
                       onMouseDown={() => {
@@ -443,14 +446,14 @@ const Navbar = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[10px] font-bold text-[#dfc384] uppercase tracking-wider">
-                          Official Founders &amp; Owners
+                          Official Founder &amp; Owner
                         </div>
                         <div className="text-sm font-bold text-white truncate">
-                          Pooja Verma &amp; Ritika Singh
+                          Pooja Verma
                         </div>
                       </div>
                       <span className="text-xs text-[#dfc384] font-bold underline whitespace-nowrap">
-                        Meet Founders →
+                        Meet Founder →
                       </span>
                     </Link>
                   )}
@@ -482,7 +485,7 @@ const Navbar = () => {
                         </p>
                       </button>
                     ))
-                  ) : !["owner", "founder", "malik", "pooja", "ritika", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) ? (
+                  ) : !["owner", "founder", "malik", "pooja", "who is", "about"].some(kw => searchQuery.toLowerCase().includes(kw)) ? (
                     <div className="px-4 py-8 text-center text-sm text-gray-400">
                       No results for "{searchQuery}"
                     </div>
@@ -665,6 +668,17 @@ const Navbar = () => {
                           >
                             <LayoutDashboard className="w-4 h-4 text-[#580C1F]" />
                             <span>Admin Portal Dashboard</span>
+                          </Link>
+                        )}
+
+                        {isSeller && (
+                          <Link
+                            to="/seller/dashboard"
+                            onClick={() => setIsProfileDropdownOpen(false)}
+                            className="flex items-center gap-3 px-5 py-2.5 text-xs font-bold text-[#0891b2] bg-cyan-50/70 hover:bg-cyan-100/60 transition-colors border-y border-cyan-100"
+                          >
+                            <Store className="w-4 h-4 text-[#0891b2]" />
+                            <span>Seller Dashboard</span>
                           </Link>
                         )}
 
@@ -983,6 +997,16 @@ const Navbar = () => {
                       <Headphones className="w-4 h-4 text-gray-500" />
                       Help Center
                     </Link>
+
+                    {/* SELL ON NARI PEHNAWA / SELLER HUB */}
+                    <Link
+                      to="/seller/dashboard"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-5 py-3.5 text-sm font-bold uppercase tracking-wide text-[#0891b2] bg-cyan-50/50 border-b border-gray-100 hover:bg-cyan-50 transition-colors"
+                    >
+                      <Store className="w-4 h-4 text-[#0891b2]" />
+                      Seller Dashboard
+                    </Link>
                   </nav>
 
                   {!user && (
@@ -1033,6 +1057,16 @@ const Navbar = () => {
                         </>
                       ) : (
                         <>
+                          {isSeller && (
+                            <Link
+                              to="/seller/dashboard"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className="flex items-center gap-3 py-3 text-sm font-bold text-[#0891b2] hover:text-[#0e7490] border-b border-gray-100 bg-cyan-50/40 px-2 rounded-lg"
+                            >
+                              <Store className="w-4 h-4 text-[#0891b2]" />
+                              Seller Dashboard
+                            </Link>
+                          )}
                           {userMenuItems.map(({ to, icon, label }) => (
                             <Link
                               key={to}

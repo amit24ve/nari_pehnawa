@@ -48,4 +48,6 @@ server/ssl.key
 # Local uploads and media
 uploads/
 server/uploads/
+.well-known/
+client/.well-known/
 server/db_backups/
