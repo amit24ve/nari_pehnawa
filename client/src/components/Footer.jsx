@@ -317,6 +317,8 @@ const Footer = () => {
             <h4 style={headStyle}>About Us</h4>
             <ul className="space-y-2.5">
               {[
+                ["Our Brand Story & About Us", "/about-us"],
+                ["Meet The Founder", "/owner"],
                 ["Terms & Conditions", "/support/terms-conditions"],
                 ["Refund Policy", "/support/refund-policy"],
                 ["Sell on Nari Pehnawa (Seller Hub)", "/seller/dashboard"],

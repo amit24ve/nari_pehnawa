@@ -58,6 +58,7 @@ class ProductBase(BaseModel):
     sku: Optional[str] = None
     meta_catalog_id: Optional[str] = None
     is_customizable: Optional[bool] = True
+    customization_type: Optional[str] = "Top & Bottom"  # "Top", "Bottom", "Top & Bottom"
     customization_scope: Optional[str] = "both"  # "both", "top_only", "bottom_only"
 
 
@@ -118,6 +119,7 @@ class ProductUpdate(BaseModel):
     offer_text: Optional[str] = None
     offer_type: Optional[str] = None
     is_customizable: Optional[bool] = None
+    customization_type: Optional[str] = None
     customization_scope: Optional[str] = None
 
 

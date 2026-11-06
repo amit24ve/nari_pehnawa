@@ -28,6 +28,7 @@ import LoadingScreen from "./components/LoadingScreen";
 import WelcomePopup from "./components/WelcomePopup";
 import GoogleAuthCallback from "./components/GoogleAuthCallback";
 import OwnerPage from "./components/OwnerPage";
+import AboutUs from "./components/AboutUs";
 import SupportPages from "./components/SupportPages";
 import PublicOrderTracking from "./components/PublicOrderTracking";
 import "./App.css";
@@ -394,10 +395,13 @@ function App() {
                                     element={<CreatorDashboard />}
                                 />
 
-                                {/* Standalone Owner, Founders, & About pages */}
+                                {/* Standalone Brand Story & About Us pages */}
+                                <Route path="/about" element={<AboutUs />} />
+                                <Route path="/about-us" element={<AboutUs />} />
+                                <Route path="/our-story" element={<AboutUs />} />
+
+                                {/* Standalone Founder & Owner pages */}
                                 <Route path="/owner" element={<OwnerPage />} />
-                                <Route path="/about" element={<OwnerPage />} />
-                                <Route path="/about-us" element={<OwnerPage />} />
                                 <Route path="/founders" element={<OwnerPage />} />
                                 <Route path="/founder" element={<OwnerPage />} />
                                 <Route path="/who-is-the-owner-of-nari-pehnawa" element={<OwnerPage />} />

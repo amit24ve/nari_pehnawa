@@ -75,6 +75,23 @@ def create_product(product: ProductCreate, background_tasks: BackgroundTasks, cu
 
     try:
         product_data = product.model_dump()
+        # Synchronize customization_type and customization_scope
+        c_type = product_data.get("customization_type")
+        c_scope = product_data.get("customization_scope")
+        if c_type == "Top":
+            product_data["customization_scope"] = "top_only"
+        elif c_type == "Bottom":
+            product_data["customization_scope"] = "bottom_only"
+        elif c_type == "Top & Bottom":
+            product_data["customization_scope"] = "both"
+        elif c_scope:
+            if c_scope == "top_only":
+                product_data["customization_type"] = "Top"
+            elif c_scope == "bottom_only":
+                product_data["customization_type"] = "Bottom"
+            else:
+                product_data["customization_type"] = "Top & Bottom"
+
         if not product_data.get("department") and product_data.get("category"):
             matched_cat = db["categories"].find_one({"name": {"$regex": f"^{re.escape(product_data['category'])}$", "$options": "i"}})
             if matched_cat and matched_cat.get("department"):
@@ -415,6 +432,23 @@ def update_product(product_id: str, product: ProductUpdate, current_user: dict =
         update_data = {k: v for k, v in product.model_dump().items() if v is not None}
         if not update_data:
             raise HTTPException(status_code=400, detail="No fields to update")
+
+        # Synchronize customization_type and customization_scope
+        c_type = update_data.get("customization_type")
+        c_scope = update_data.get("customization_scope")
+        if c_type == "Top":
+            update_data["customization_scope"] = "top_only"
+        elif c_type == "Bottom":
+            update_data["customization_scope"] = "bottom_only"
+        elif c_type == "Top & Bottom":
+            update_data["customization_scope"] = "both"
+        elif c_scope:
+            if c_scope == "top_only":
+                update_data["customization_type"] = "Top"
+            elif c_scope == "bottom_only":
+                update_data["customization_type"] = "Bottom"
+            else:
+                update_data["customization_type"] = "Top & Bottom"
 
         if "category" in update_data and not update_data.get("department"):
             matched_cat = db["categories"].find_one({"name": {"$regex": f"^{re.escape(update_data['category'])}$", "$options": "i"}})
