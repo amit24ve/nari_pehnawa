@@ -39,6 +39,7 @@ import {
   Camera,
   Package,
   Scissors,
+  Layers,
 } from "lucide-react";
 import { useWishlist } from "../context/WishlistProvider";
 import { useCart } from "../context/CartProvider";
