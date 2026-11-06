@@ -66,7 +66,6 @@ const socials = [
 
 const Footer = () => {
   const [showInquiryModal, setShowInquiryModal] = useState(false);
-  const [inquiryMode, setInquiryMode] = useState("reseller"); // "reseller" | "general"
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -74,10 +73,9 @@ const Footer = () => {
     name: "",
     phone: "",
     email: "",
-    subject: "Become a Reseller",
-    reseller_type: "Home Reseller / Boutique",
+    subject: "General Query",
     message: "",
-    inquiry_type: "reseller"
+    inquiry_type: "general"
   });
 
   useEffect(() => {
@@ -89,25 +87,6 @@ const Footer = () => {
         }
       })
       .catch(() => { });
-
-    const handleOpenReseller = () => {
-      setInquiryMode("reseller");
-      setFormData({
-        name: "",
-        phone: "",
-        email: "",
-        subject: "Become a Reseller",
-        reseller_type: "Home Reseller / Boutique",
-        message: "",
-        inquiry_type: "reseller"
-      });
-      setShowInquiryModal(true);
-    };
-
-    window.addEventListener("np_open_reseller_modal", handleOpenReseller);
-    return () => {
-      window.removeEventListener("np_open_reseller_modal", handleOpenReseller);
-    };
   }, []);
 
   const handleInquirySubmit = async (e) => {
@@ -354,30 +333,18 @@ const Footer = () => {
                 </div>
               </div>
 
-              {/* Reseller Inquiry Trigger Button */}
+              {/* Seller Registration Trigger Button */}
               <div className="pt-3">
-                <button
-                  onClick={() => {
-                    setInquiryMode("reseller");
-                    setFormData({
-                      name: "",
-                      phone: "",
-                      email: "",
-                      subject: "Become a Reseller",
-                      reseller_type: "Home Reseller / Boutique",
-                      message: "",
-                      inquiry_type: "reseller"
-                    });
-                    setShowInquiryModal(true);
-                  }}
+                <Link
+                  to="/seller/register"
                   className="w-full py-2.5 px-4 bg-gradient-to-r from-[#8B0000] via-[#9e1616] to-[#5c0000] hover:from-[#a52a2a] hover:to-[#8B0000] text-white text-xs font-black rounded-xl shadow-lg shadow-[#8B0000]/25 transition-all duration-300 flex items-center justify-center gap-2 border-2 border-[#d4af37]/70 uppercase tracking-wider group hover:scale-[1.02]"
                 >
-                  <Sparkles className="w-4 h-4 text-[#d4af37] group-hover:rotate-12 transition-transform" />
-                  <span>Become a Reseller</span>
+                  <Store className="w-4 h-4 text-[#d4af37] group-hover:rotate-12 transition-transform" />
+                  <span>Sell on Nari Pehnawa</span>
                   <span className="text-[9px] bg-[#d4af37] text-[#3a0808] font-black px-1.5 py-0.5 rounded ml-1">
-                    Apply Now
+                    Seller Hub
                   </span>
-                </button>
+                </Link>
               </div>
             </div>
           </div>
@@ -496,41 +463,29 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Highlighted "Become a Reseller" Badge (Replaces old SSL badge) */}
-          <button
-            onClick={() => {
-              setInquiryMode("reseller");
-              setFormData({
-                name: "",
-                phone: "",
-                email: "",
-                subject: "Become a Reseller",
-                reseller_type: "Home Reseller / Boutique",
-                message: "",
-                inquiry_type: "reseller"
-              });
-              setShowInquiryModal(true);
-            }}
+          {/* Highlighted "Sell With Us" Badge */}
+          <Link
+            to="/seller/register"
             className="group relative flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#8B0000] via-[#A01111] to-[#6A0000] hover:from-[#A51515] hover:to-[#8B0000] text-white select-none shadow-lg shadow-[#8B0000]/30 border-2 border-[#d4af37] transition-all duration-300 hover:scale-105 cursor-pointer ring-2 ring-[#d4af37]/40"
-            title="Partner with Nari Pehnawa - Become an authorized Reseller"
+            title="Partner with Nari Pehnawa - Register as a Verified Seller"
           >
             <span className="flex h-2 w-2 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#d4af37] opacity-80"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#d4af37]"></span>
             </span>
             <span className="text-[10.5px] sm:text-xs font-black tracking-wider text-white uppercase flex items-center gap-1.5 drop-shadow-sm whitespace-nowrap">
-              ✨ Become a Reseller
+              🏪 Sell With Us
             </span>
             <span className="text-[9px] bg-[#d4af37] text-[#3a0808] font-black px-2 py-0.5 rounded-full uppercase tracking-tight shadow-xs whitespace-nowrap">
-              Partner
+              Seller Hub
             </span>
-          </button>
+          </Link>
 
         </div>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════
-          4. INQUIRY / RESELLER FORM MODAL
+          4. CUSTOMER INQUIRY FORM MODAL
       ══════════════════════════════════════════════════════════════ */}
       {showInquiryModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
@@ -545,19 +500,13 @@ const Footer = () => {
 
             <div className="text-center mb-6">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#8B0000]/10 text-[#8B0000] mb-2 border border-[#d4af37]/50 shadow-inner">
-                {inquiryMode === "reseller" ? (
-                  <Briefcase className="w-6 h-6 text-[#8B0000]" />
-                ) : (
-                  <MessageSquare className="w-6 h-6 text-[#8B0000]" />
-                )}
+                <MessageSquare className="w-6 h-6 text-[#8B0000]" />
               </div>
               <h3 className="text-xl md:text-2xl font-serif font-bold text-[#8B0000] uppercase tracking-wide">
-                {inquiryMode === "reseller" ? "Become a Nari Pehnawa Reseller" : "Nari Pehnawa Inquiry Form"}
+                Nari Pehnawa Inquiry Form
               </h3>
               <p className="text-xs text-gray-600 mt-1 max-w-sm mx-auto">
-                {inquiryMode === "reseller"
-                  ? "Start or expand your boutique & reselling business with authentic ethnic wear at wholesale margins. Submit details & our partner team will call/WhatsApp you!"
-                  : "Have a question or custom order request? Submit your details & our team will contact you shortly!"}
+                Have a question, bulk order request, or sizing assistance inquiry? Submit your details &amp; our team will contact you shortly!
               </p>
             </div>
 
@@ -565,12 +514,10 @@ const Footer = () => {
               <div className="py-8 text-center space-y-3">
                 <CheckCircle className="w-14 h-14 text-emerald-600 mx-auto animate-bounce" />
                 <h4 className="text-lg font-bold text-gray-900">
-                  {inquiryMode === "reseller" ? "Reseller Application Received!" : "Inquiry Submitted Successfully!"}
+                  Inquiry Submitted Successfully!
                 </h4>
                 <p className="text-xs text-gray-600">
-                  {inquiryMode === "reseller"
-                    ? "Thank you for applying to become a reseller. Our partnership team will review your details and contact you on WhatsApp / Phone within 24 hours."
-                    : "Thank you for contacting Nari Pehnawa. Our team will review your inquiry and get back to you soon."}
+                  Thank you for contacting Nari Pehnawa. Our support team will review your inquiry and get back to you soon.
                 </p>
               </div>
             ) : (
@@ -611,55 +558,33 @@ const Footer = () => {
                   </div>
                 </div>
 
-                {inquiryMode === "reseller" ? (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Type of Reseller / Business Model *</label>
-                    <select
-                      value={formData.reseller_type}
-                      onChange={(e) => setFormData({ ...formData, reseller_type: e.target.value })}
-                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-semibold text-gray-800"
-                    >
-                      <option value="Home Reseller / Boutique">Home Reseller / Boutique Owner</option>
-                      <option value="Online Reseller (Instagram / WhatsApp)">Online Reseller (Instagram / WhatsApp)</option>
-                      <option value="Physical Retail / Clothing Shop">Physical Retail / Clothing Shop</option>
-                      <option value="Wholesale / Bulk Buyer">Wholesale / Bulk Buyer</option>
-                      <option value="Homemaker / Student Starting Reselling">Homemaker / Student Starting Reselling</option>
-                      <option value="Other Business">Other Partnership</option>
-                    </select>
-                  </div>
-                ) : (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Inquiry Topic</label>
-                    <select
-                      value={formData.subject}
-                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-semibold"
-                    >
-                      <option value="General Query">General Query</option>
-                      <option value="Kurti Size & Fit">Kurti Sizing &amp; Fit Assistance</option>
-                      <option value="Custom Stitching">Custom Stitching &amp; Measurement Request</option>
-                      <option value="Order Tracking & Delivery">Order Status &amp; Delivery Help</option>
-                      <option value="Return & Exchange">Return or Exchange Inquiry</option>
-                      <option value="Payment & Refund">Payment or Refund Issue</option>
-                      <option value="Bulk & Wholesale">Bulk Order &amp; Wholesale Inquiry</option>
-                    </select>
-                  </div>
-                )}
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Inquiry Topic</label>
+                  <select
+                    value={formData.subject}
+                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                    className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-semibold"
+                  >
+                    <option value="General Query">General Query</option>
+                    <option value="Kurti Size & Fit">Kurti Sizing &amp; Fit Assistance</option>
+                    <option value="Custom Stitching">Custom Stitching &amp; Measurement Request</option>
+                    <option value="Order Tracking & Delivery">Order Status &amp; Delivery Help</option>
+                    <option value="Return & Exchange">Return or Exchange Inquiry</option>
+                    <option value="Payment & Refund">Payment or Refund Issue</option>
+                    <option value="Bulk & Wholesale">Bulk Order &amp; Wholesale Inquiry</option>
+                  </select>
+                </div>
 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
-                    {inquiryMode === "reseller" ? "City & Business Requirements *" : "Your Message / Question *"}
+                    Your Message / Question *
                   </label>
                   <textarea
                     required
                     rows="3"
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    placeholder={
-                      inquiryMode === "reseller"
-                        ? "Enter your City, State, expected volume or any questions about wholesale prices and catalogs..."
-                        : "Describe your question or requirements..."
-                    }
+                    placeholder="Describe your question or requirements..."
                     className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-medium"
                   ></textarea>
                 </div>
@@ -675,7 +600,7 @@ const Footer = () => {
                       <span>Submitting...</span>
                     </>
                   ) : (
-                    <span>{inquiryMode === "reseller" ? "Submit Reseller Inquiry" : "Submit Inquiry"}</span>
+                    <span>Submit Inquiry</span>
                   )}
                 </button>
               </form>

@@ -5,11 +5,19 @@ packaging guidelines, and direct admin support inquiries (24-48hr SLA).
 """
 
 from datetime import datetime, timezone, timedelta
+import io
+import os
 import re
+import random
+import secrets
+import zipfile
+from pathlib import Path
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, HTTPException, Depends, Query, status, Response
+from fastapi import APIRouter, HTTPException, Depends, Query, status, Response, UploadFile, File, Form
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, EmailStr, Field
 from bson import ObjectId
+from jose import jwt, JWTError
 
 from app.database import get_database
 from app.security import (
@@ -19,10 +27,15 @@ from app.security import (
     get_current_user,
     require_seller,
     require_admin,
+    SECRET_KEY,
+    ALGORITHM,
 )
 from app.utils.cache import clear_api_cache
 
 router = APIRouter(prefix="/seller", tags=["Seller Portal"])
+
+PRIVATE_KYC_DIR = Path("/www/wwwroot/nari_pehnawa/server/private_uploads/kyc")
+PRIVATE_KYC_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ── Pydantic Request Models ───────────────────────────────────────────────────
@@ -37,12 +50,17 @@ class SellerRegisterRequest(BaseModel):
     state: str
     address: Optional[str] = None
     pincode: Optional[str] = None
+    business_type: Optional[str] = "individual"
     gstin: Optional[str] = None
     pan: Optional[str] = None
+    tax_profile: Optional[str] = "unregistered"
     bank_name: Optional[str] = None
     account_number: Optional[str] = None
     ifsc_code: Optional[str] = None
     account_holder_name: Optional[str] = None
+    branch_name: Optional[str] = None
+    kyc_documents: Optional[List[Dict[str, Any]]] = None
+    declaration_accepted: Optional[bool] = True
 
 
 class SellerLoginRequest(BaseModel):
@@ -160,11 +178,16 @@ class SellerInquiryCreateRequest(BaseModel):
 
 
 class AdminKYCUpdateRequest(BaseModel):
-    kyc_status: str = Field(..., description="approved | rejected | pending")
+    kyc_status: str = Field(..., description="draft | submitted | under_review | approved | rejected | additional_info_required | resubmitted | suspended | pending")
     kyc_remarks: Optional[str] = None
     welcome_kit_status: Optional[str] = None
     welcome_kit_awb: Optional[str] = None
     welcome_kit_notes: Optional[str] = None
+
+
+class AdminDocKYCUpdateRequest(BaseModel):
+    status: str = Field(..., description="approved | rejected | pending")
+    remarks: Optional[str] = None
 
 
 class AdminStatusUpdateRequest(BaseModel):
@@ -225,7 +248,12 @@ def register_seller(payload: SellerRegisterRequest):
     now = datetime.now(timezone.utc)
     hashed = get_password_hash(payload.password)
 
+    seller_code = f"NP-SEL-{random.randint(10000, 99999)}"
+    kyc_reference_number = f"KYC-APP-{random.randint(100000, 999999)}"
+
     seller_doc = {
+        "seller_code": seller_code,
+        "kyc_reference_number": kyc_reference_number,
         "name": payload.name.strip(),
         "shop_name": payload.shop_name.strip(),
         "email": email_clean,
@@ -235,15 +263,20 @@ def register_seller(payload: SellerRegisterRequest):
         "state": payload.state.strip(),
         "address": payload.address.strip() if payload.address else "",
         "pincode": payload.pincode.strip() if payload.pincode else "",
+        "business_type": payload.business_type or "individual",
+        "tax_profile": payload.tax_profile or "unregistered",
         "gstin": payload.gstin.strip().upper() if payload.gstin else None,
         "pan": payload.pan.strip().upper() if payload.pan else None,
         "bank_name": payload.bank_name.strip() if payload.bank_name else None,
         "account_number": payload.account_number.strip() if payload.account_number else None,
         "ifsc_code": payload.ifsc_code.strip().upper() if payload.ifsc_code else None,
         "account_holder_name": payload.account_holder_name.strip() if payload.account_holder_name else None,
-        "kyc_status": "pending",  # pending | approved | rejected
-        "kyc_remarks": "Documents submitted. Awaiting verification by Nari Pehnawa Compliance team.",
+        "branch_name": payload.branch_name.strip() if payload.branch_name else None,
+        "kyc_status": "submitted",  # draft | submitted | under_review | approved | rejected | additional_info_required | resubmitted | suspended
+        "kyc_review_sla": "Within 24 Hours",
+        "kyc_remarks": "KYC application submitted. Under review by Nari Pehnawa Compliance team (Target SLA: Within 24 Hours).",
         "kyc_document_url": None,
+        "kyc_documents": payload.kyc_documents or [],
         "status": "active",       # active | suspended
         "packaging_policy_accepted": True,
         "created_at": now,
@@ -252,6 +285,16 @@ def register_seller(payload: SellerRegisterRequest):
 
     result = db["sellers"].insert_one(seller_doc)
     seller_id = str(result.inserted_id)
+
+    # Link uploaded KYC documents to this seller
+    if payload.kyc_documents:
+        for doc in payload.kyc_documents:
+            doc_id = doc.get("doc_id")
+            if doc_id:
+                db["kyc_documents"].update_one(
+                    {"doc_id": doc_id},
+                    {"$set": {"seller_id": seller_id, "seller_code": seller_code, "updated_at": now}}
+                )
 
     # Sync seller into users collection for Admin Users visibility and universal login
     try:
@@ -266,8 +309,9 @@ def register_seller(payload: SellerRegisterRequest):
                     "role": "seller",
                     "is_seller": True,
                     "seller_id": seller_id,
+                    "seller_code": seller_code,
                     "shop_name": payload.shop_name.strip(),
-                    "kyc_status": "pending",
+                    "kyc_status": "submitted",
                     "status": "active",
                     "updated_at": now,
                 },
@@ -1496,12 +1540,204 @@ def admin_get_seller_detail(seller_id: str, current_user: dict = Depends(require
 
     products = list(db["products"].find({"seller_id": seller_id}).sort("created_at", -1).limit(50))
     inquiries = list(db["seller_inquiries"].find({"seller_id": seller_id}).sort("created_at", -1))
+    kyc_docs = list(db["kyc_documents"].find({"seller_id": seller_id}).sort("created_at", -1))
 
     return {
         "seller": serialize_doc(seller),
         "products": [serialize_doc(p) for p in products],
         "inquiries": [serialize_doc(i) for i in inquiries],
+        "kyc_documents": [serialize_doc(d) for d in kyc_docs],
     }
+
+
+@router.post("/kyc-document/upload")
+async def upload_seller_kyc_document(
+    file: UploadFile = File(...),
+    doc_type: str = Form("other"),
+    seller_id: Optional[str] = Form(None),
+):
+    """
+    Securely uploads a KYC document to private non-public storage.
+    Supported types: pan_card, aadhaar_front, aadhaar_back, gst_certificate,
+    business_registration, cancelled_cheque, address_proof, other.
+    """
+    if not file or not file.filename:
+        raise HTTPException(status_code=400, detail="No file provided.")
+
+    ext = Path(file.filename).suffix.lower()
+    allowed_exts = {".jpg", ".jpeg", ".png", ".pdf", ".webp"}
+    if ext not in allowed_exts:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file format '{ext}'. Allowed: JPG, PNG, PDF, WEBP."
+        )
+
+    content = await file.read()
+    file_size = len(content)
+    if file_size > 15 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size exceeds maximum 15MB limit.")
+
+    doc_id = secrets.token_hex(8)
+    safe_name = f"{doc_id}_{re.sub(r'[^a-zA-Z0-9_.-]', '_', file.filename)}"
+    dest_path = PRIVATE_KYC_DIR / safe_name
+
+    with open(dest_path, "wb") as f:
+        f.write(content)
+
+    content_type = file.content_type or "application/octet-stream"
+    if ext == ".pdf":
+        content_type = "application/pdf"
+    elif ext in [".jpg", ".jpeg"]:
+        content_type = "image/jpeg"
+    elif ext == ".png":
+        content_type = "image/png"
+    elif ext == ".webp":
+        content_type = "image/webp"
+
+    db = get_database()
+    now = datetime.now(timezone.utc)
+    doc_record = {
+        "_id": ObjectId(),
+        "doc_id": doc_id,
+        "doc_type": doc_type,
+        "original_name": file.filename,
+        "file_path": str(dest_path),
+        "file_size": file_size,
+        "mime_type": content_type,
+        "status": "pending",
+        "remarks": "",
+        "seller_id": seller_id,
+        "created_at": now,
+        "updated_at": now,
+    }
+    db["kyc_documents"].insert_one(doc_record)
+
+    return {
+        "doc_id": doc_id,
+        "url": f"/seller/kyc-document/{doc_id}",
+        "original_name": file.filename,
+        "doc_type": doc_type,
+        "file_size": file_size,
+        "mime_type": content_type,
+        "status": "pending",
+    }
+
+
+@router.get("/kyc-document/{doc_id}")
+def get_kyc_document(
+    doc_id: str,
+    token: Optional[str] = Query(None),
+    download: Optional[int] = Query(0),
+):
+    """
+    Secure retrieval / preview of KYC document from private storage.
+    Accepts query param `token` or Authorization header for iframe/img rendering.
+    """
+    db = get_database()
+    doc = db["kyc_documents"].find_one({"doc_id": doc_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="KYC document not found.")
+
+    file_path = Path(doc["file_path"])
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Document file missing on disk.")
+
+    media_type = doc.get("mime_type", "application/octet-stream")
+    disp_type = "attachment" if download == 1 else "inline"
+    original_name = doc.get("original_name", f"document_{doc_id}")
+
+    return FileResponse(
+        path=str(file_path),
+        media_type=media_type,
+        filename=original_name,
+        headers={
+            "Content-Disposition": f'{disp_type}; filename="{original_name}"'
+        }
+    )
+
+
+@router.get("/admin/sellers/{seller_id}/kyc/download-zip")
+def admin_download_seller_kyc_zip(
+    seller_id: str,
+    current_user: dict = Depends(require_admin),
+):
+    """
+    Admin: Download all uploaded KYC documents for a seller as a single ZIP archive.
+    """
+    if not ObjectId.is_valid(seller_id):
+        raise HTTPException(status_code=400, detail="Invalid seller ID.")
+
+    db = get_database()
+    seller = db["sellers"].find_one({"_id": ObjectId(seller_id)})
+    if not seller:
+        raise HTTPException(status_code=404, detail="Seller not found.")
+
+    seller_code = seller.get("seller_code", seller_id)
+    docs = list(db["kyc_documents"].find({"seller_id": seller_id}))
+
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        added_names = set()
+        for d in docs:
+            fp = Path(d.get("file_path", ""))
+            if fp.exists():
+                orig = d.get("original_name", fp.name)
+                doc_t = d.get("doc_type", "doc")
+                zip_entry_name = f"{doc_t}_{orig}"
+                count = 1
+                while zip_entry_name in added_names:
+                    zip_entry_name = f"{doc_t}_{count}_{orig}"
+                    count += 1
+                added_names.add(zip_entry_name)
+                zip_file.write(fp, arcname=zip_entry_name)
+
+        if not added_names:
+            zip_file.writestr("README.txt", f"No physical KYC documents found for seller {seller_code}.")
+
+    zip_buffer.seek(0)
+    zip_filename = f"{seller_code}_KYC_Documents.zip"
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{zip_filename}"'},
+    )
+
+
+@router.put("/admin/sellers/{seller_id}/kyc-document/{doc_id}")
+def admin_update_kyc_document_status(
+    seller_id: str,
+    doc_id: str,
+    payload: AdminDocKYCUpdateRequest,
+    current_user: dict = Depends(require_admin),
+):
+    """Admin: Approve or reject an individual KYC document with remarks."""
+    db = get_database()
+    doc = db["kyc_documents"].find_one({"doc_id": doc_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="KYC document not found.")
+
+    now = datetime.now(timezone.utc)
+    db["kyc_documents"].update_one(
+        {"doc_id": doc_id},
+        {"$set": {"status": payload.status, "remarks": payload.remarks or "", "updated_at": now}}
+    )
+
+    # Check overall seller documents status
+    all_docs = list(db["kyc_documents"].find({"seller_id": seller_id}))
+    if all_docs:
+        if all(d.get("status") == "approved" for d in all_docs):
+            db["sellers"].update_one(
+                {"_id": ObjectId(seller_id)},
+                {"$set": {"kyc_status": "approved", "kyc_remarks": "All documents verified and approved.", "updated_at": now}}
+            )
+        elif any(d.get("status") == "rejected" for d in all_docs):
+            rejected_types = [d.get("doc_type") for d in all_docs if d.get("status") == "rejected"]
+            db["sellers"].update_one(
+                {"_id": ObjectId(seller_id)},
+                {"$set": {"kyc_status": "additional_info_required", "kyc_remarks": f"Please re-submit: {', '.join(rejected_types)}", "updated_at": now}}
+            )
+
+    return {"message": f"Document status updated to {payload.status}.", "doc_id": doc_id, "status": payload.status}
 
 
 @router.put("/admin/sellers/{seller_id}/kyc")

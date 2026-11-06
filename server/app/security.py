@@ -86,21 +86,21 @@ def get_optional_current_user(credentials: Optional[HTTPAuthorizationCredentials
 
 def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
     """Require admin role"""
-    if current_user.get("role") != "admin":
+    if current_user.get("role") not in ("admin", "super_admin"):
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
 
 
 def require_seller(current_user: dict = Depends(get_current_user)) -> dict:
-    """Require seller or admin role"""
-    if current_user.get("role") not in ("seller", "admin"):
+    """Require seller, admin or super_admin role"""
+    if current_user.get("role") not in ("seller", "admin", "super_admin"):
         raise HTTPException(status_code=403, detail="Seller access required")
     return current_user
 
 
 def require_admin_or_seller(current_user: dict = Depends(get_current_user)) -> dict:
     """Require admin or seller role"""
-    if current_user.get("role") not in ("admin", "seller"):
+    if current_user.get("role") not in ("admin", "super_admin", "seller"):
         raise HTTPException(status_code=403, detail="Admin or Seller access required")
     return current_user
 
