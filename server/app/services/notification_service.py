@@ -364,16 +364,14 @@ class NotificationService:
         try:
             msg = MIMEMultipart()
             msg["From"] = f"{smtp_from_name} <{smtp_from_email}>"
+            msg["Reply-To"] = f"{smtp_from_name} <support@naripehnawa.com>"
             msg["To"] = to_email
             msg["Subject"] = subject
             msg.attach(MIMEText(body, "html" if is_html else "plain"))
 
-            with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
-                if smtp_use_tls:
-                    server.starttls()
-                if smtp_username and smtp_password:
-                    server.login(smtp_username, smtp_password)
-                server.sendmail(smtp_from_email, [to_email], msg.as_string())
+            with self._get_smtp_connection() as server:
+                envelope_sender = smtp_username or smtp_from_email
+                server.sendmail(envelope_sender, [to_email], msg.as_string())
 
             self.notifications.insert_one({
                 "user_id": None,
