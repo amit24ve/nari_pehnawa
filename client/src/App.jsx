@@ -26,6 +26,7 @@ import WishlistPage from "./components/WishlistPage";
 import Footer from "./components/Footer";
 import LoadingScreen from "./components/LoadingScreen";
 import WelcomePopup from "./components/WelcomePopup";
+import SellerRegisterModal from "./components/SellerRegisterModal";
 import GoogleAuthCallback from "./components/GoogleAuthCallback";
 import OwnerPage from "./components/OwnerPage";
 import AboutUs from "./components/AboutUs";
@@ -260,6 +261,7 @@ function App() {
                         <CartProvider>
                             <WishlistProvider>
                             <WelcomePopup />
+                            <SellerRegisterModal />
                             <Routes>
                                 {/* Admin Pages (protected) - No Navbar/Footer */}
                                 <Route

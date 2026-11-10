@@ -273,9 +273,17 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem("neel_admin_user", JSON.stringify(u));
             setUser(u);
 
-            if (u.role === "seller" || profile.role === "seller") {
+            const isSellerAccount = u.role === "seller" || profile.role === "seller" || profile.is_seller;
+            if (isSellerAccount) {
                 localStorage.setItem("np_seller_token", token);
                 localStorage.setItem("np_seller_user", JSON.stringify(profile));
+                navigate("/seller/dashboard");
+                return { ok: true, user: u, is_seller: true };
+            }
+
+            if (u.role === "admin" || u.is_admin) {
+                navigate("/admin/dashboard");
+                return { ok: true, user: u, is_admin: true };
             }
 
             return { ok: true, user: u };
@@ -350,47 +358,58 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem("neel_admin_user", JSON.stringify(u));
                 setUser(u);
 
-                if (u.role === "admin" || u.is_admin) {
-                    navigate("/admin/dashboard");
-                }
-
-                return { ok: true, user: u, is_new_user: data.is_new_user };
+            const isSellerAccount = data.role === "seller" || data.is_seller || u.role === "seller" || u.is_seller;
+            if (isSellerAccount) {
+                localStorage.setItem("np_seller_token", token);
+                localStorage.setItem("np_seller_user", JSON.stringify(data.seller || u));
+                navigate("/seller/dashboard");
+                return { ok: true, user: u, is_seller: true, seller: data.seller || u, is_new_user: data.is_new_user };
             }
 
-            return { ok: false, message: "Invalid server response" };
-        } catch (err) {
-            return { ok: false, message: err.message };
-        }
-    };
-
-    const logout = async () => {
-        const API_URL =
-            import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
-        const token = localStorage.getItem("neel_token");
-
-        try {
-            // Call logout API
-            if (token) {
-                await fetch(`${API_URL}/auth/logout`, {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                });
+            if (u.role === "admin" || u.is_admin) {
+                navigate("/admin/dashboard");
+                return { ok: true, user: u, is_admin: true, is_new_user: data.is_new_user };
             }
-        } catch (err) {
-            console.error("Logout API error:", err);
-        } finally {
-            // Always clear local storage and redirect, even if API fails
-            localStorage.removeItem("neel_admin_user");
-            localStorage.removeItem("neel_token");
-            localStorage.removeItem("token");
-            clearPendingCheckout();
-            setUser(null);
-            window.location.href = "/";
+
+            return { ok: true, user: u, is_new_user: data.is_new_user };
         }
-    };
+
+        return { ok: false, message: "Invalid server response" };
+    } catch (err) {
+        return { ok: false, message: err.message };
+    }
+};
+
+const logout = async () => {
+    const API_URL =
+        import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
+    const token = localStorage.getItem("neel_token") || localStorage.getItem("np_seller_token");
+
+    try {
+        // Call logout API
+        if (token) {
+            await fetch(`${API_URL}/auth/logout`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
+        }
+    } catch (err) {
+        console.error("Logout API error:", err);
+    } finally {
+        // Always clear all auth storage and redirect directly to /
+        localStorage.removeItem("neel_admin_user");
+        localStorage.removeItem("neel_token");
+        localStorage.removeItem("token");
+        localStorage.removeItem("np_seller_token");
+        localStorage.removeItem("np_seller_user");
+        clearPendingCheckout();
+        setUser(null);
+        window.location.href = "/";
+    }
+};
 
     return (
         <AuthContext.Provider

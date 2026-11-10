@@ -144,6 +144,19 @@ const TopBar = () => {
             </div>
           );
 
+          if (item.link && item.link.includes("seller")) {
+            return (
+              <button
+                key={`${item.id || idx}-${idx}`}
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent("np_open_seller_register"))}
+                className="inline-block hover:opacity-95 transition-opacity text-left cursor-pointer"
+              >
+                {content}
+              </button>
+            );
+          }
+
           return item.link ? (
             <Link
               key={`${item.id || idx}-${idx}`}

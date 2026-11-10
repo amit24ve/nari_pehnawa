@@ -335,16 +335,17 @@ const Footer = () => {
 
               {/* Seller Registration Trigger Button */}
               <div className="pt-3">
-                <Link
-                  to="/seller/register"
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-[#8B0000] via-[#9e1616] to-[#5c0000] hover:from-[#a52a2a] hover:to-[#8B0000] text-white text-xs font-black rounded-xl shadow-lg shadow-[#8B0000]/25 transition-all duration-300 flex items-center justify-center gap-2 border-2 border-[#d4af37]/70 uppercase tracking-wider group hover:scale-[1.02]"
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent("np_open_seller_register"))}
+                  className="w-full py-2.5 px-4 bg-gradient-to-r from-[#8B0000] via-[#9e1616] to-[#5c0000] hover:from-[#a52a2a] hover:to-[#8B0000] text-white text-xs font-black rounded-xl shadow-lg shadow-[#8B0000]/25 transition-all duration-300 flex items-center justify-center gap-2 border-2 border-[#d4af37]/70 uppercase tracking-wider group hover:scale-[1.02] cursor-pointer"
                 >
                   <Store className="w-4 h-4 text-[#d4af37] group-hover:rotate-12 transition-transform" />
                   <span>Sell on Nari Pehnawa</span>
                   <span className="text-[9px] bg-[#d4af37] text-[#3a0808] font-black px-1.5 py-0.5 rounded ml-1">
                     Seller Hub
                   </span>
-                </Link>
+                </button>
               </div>
             </div>
           </div>
@@ -464,8 +465,9 @@ const Footer = () => {
           </div>
 
           {/* Highlighted "Sell With Us" Badge */}
-          <Link
-            to="/seller/register"
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("np_open_seller_register"))}
             className="group relative flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#8B0000] via-[#A01111] to-[#6A0000] hover:from-[#A51515] hover:to-[#8B0000] text-white select-none shadow-lg shadow-[#8B0000]/30 border-2 border-[#d4af37] transition-all duration-300 hover:scale-105 cursor-pointer ring-2 ring-[#d4af37]/40"
             title="Partner with Nari Pehnawa - Register as a Verified Seller"
           >
@@ -479,7 +481,7 @@ const Footer = () => {
             <span className="text-[9px] bg-[#d4af37] text-[#3a0808] font-black px-2 py-0.5 rounded-full uppercase tracking-tight shadow-xs whitespace-nowrap">
               Seller Hub
             </span>
-          </Link>
+          </button>
 
         </div>
       </div>

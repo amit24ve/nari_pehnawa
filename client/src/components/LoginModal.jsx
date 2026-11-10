@@ -19,7 +19,8 @@ import {
   UserPlus,
   LogIn,
   ShieldCheck,
-  ArrowLeft
+  ArrowLeft,
+  Store
 } from "lucide-react";
 import { useAuth } from "../context/AuthProvider";
 import { useNavigate } from "react-router-dom";
@@ -131,8 +132,12 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
   useEffect(() => {
     if (user && isOpen && !registrationSuccess) {
       handleClose();
-      if (!pendingCheckout && (user.role === "admin" || user.is_admin)) {
-        navigate("/admin/dashboard");
+      if (!pendingCheckout) {
+        if (user.role === "seller" || user.is_seller) {
+          navigate("/seller/dashboard");
+        } else if (user.role === "admin" || user.is_admin) {
+          navigate("/admin/dashboard");
+        }
       }
     }
   }, [user, isOpen, pendingCheckout, navigate, handleClose, registrationSuccess]);
@@ -277,7 +282,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
 
     if (result.ok) {
       handleClose();
-      if (result.is_seller || (result.user && result.user.role === "seller")) {
+      if (result.is_seller || (result.user && (result.user.role === "seller" || result.user.is_seller))) {
         navigate("/seller/dashboard");
       } else if (result.user && (result.user.role === "admin" || result.user.is_admin)) {
         navigate("/admin/dashboard");
@@ -886,6 +891,19 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
                         <ArrowRight className="w-3 h-3" />
                       </button>
                     </p>
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleClose();
+                          window.dispatchEvent(new CustomEvent("np_open_seller_register"));
+                        }}
+                        className="text-[11px] font-semibold text-[#0891b2] hover:underline cursor-pointer inline-flex items-center gap-1"
+                      >
+                        <Store className="w-3 h-3 text-[#0891b2]" />
+                        <span>Want to sell on Nari Pehnawa? Register as a Seller</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

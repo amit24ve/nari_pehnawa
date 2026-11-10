@@ -283,7 +283,14 @@ def get_current_user_profile(current_user: dict = Depends(get_current_user)):
         if not user:
             # Check sellers collection in case a seller is browsing the storefront
             try:
-                seller = db["sellers"].find_one({"_id": ObjectId(user_id)})
+                seller = None
+                try:
+                    seller = db["sellers"].find_one({"_id": ObjectId(user_id)})
+                except Exception:
+                    pass
+                if not seller and current_user.get("email"):
+                    seller = db["sellers"].find_one({"email": current_user.get("email").strip().lower()})
+
                 if seller:
                     return {
                         "id": str(seller["_id"]),
@@ -292,6 +299,8 @@ def get_current_user_profile(current_user: dict = Depends(get_current_user)):
                         "full_name": seller.get("name") or seller.get("shop_name") or "Merchant Seller",
                         "phone": seller.get("phone", ""),
                         "role": "seller",
+                        "is_seller": True,
+                        "shop_name": seller.get("shop_name", ""),
                         "coins_balance": 0,
                         "orders_count": 0,
                         "cancelled_orders_count": 0,
@@ -307,6 +316,26 @@ def get_current_user_profile(current_user: dict = Depends(get_current_user)):
         user["id"] = str(user["_id"])
         if "name" not in user or not user["name"]:
             user["name"] = user.get("full_name") or "User"
+
+        # Check if user matches any registered merchant seller
+        seller_record = None
+        if user.get("email") or user.get("phone"):
+            query_parts = []
+            if user.get("email"):
+                query_parts.append({"email": user.get("email").strip().lower()})
+            if user.get("phone"):
+                query_parts.append({"phone": user.get("phone").strip()})
+            if query_parts:
+                seller_record = db["sellers"].find_one({"$or": query_parts})
+
+        if seller_record and user.get("role") != "admin":
+            user["role"] = "seller"
+            user["is_seller"] = True
+            user["shop_name"] = seller_record.get("shop_name", "")
+            user["seller_id"] = str(seller_record["_id"])
+        elif user.get("role") == "admin":
+            user["is_admin"] = True
+            user["role"] = "admin"
 
         user_order_filters = [{"user_id": user_id}]
         if user.get("email"):

@@ -85,16 +85,18 @@ def phone_send_otp(request: PhoneSendOTPRequest):
     from app.services.sms_service import send_otp_sms
     sms_res = send_otp_sms(phone_clean, otp_code)
 
-    # Check if this phone number belongs to existing user
+    # Check if this phone number belongs to existing user or seller
     user = users.find_one({"$or": [{"phone": phone_clean}, {"phone": f"+91{phone_clean}"}, {"phone": f"91{phone_clean}"}]})
-    is_existing_user = user is not None
+    seller = db["sellers"].find_one({"$or": [{"phone": phone_clean}, {"phone": f"+91{phone_clean}"}, {"phone": f"91{phone_clean}"}]})
+    is_existing_user = (user is not None) or (seller is not None)
+    display_name = (seller.get("name") if seller else None) or (user.get("name") if user else None)
 
     return {
         "success": True,
         "message": f"6-digit OTP sent successfully to +91 {phone_clean}",
         "phone": phone_clean,
         "is_existing_user": is_existing_user,
-        "name": user.get("name") if user else None,
+        "name": display_name,
         "sms_provider": sms_res.get("provider", "APITxT")
     }
 
@@ -238,13 +240,25 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
         users.update_one({"_id": user["_id"]}, {"$set": update_fields})
         user = users.find_one({"_id": user["_id"]})
 
+    # Check if this phone number or email belongs to a registered merchant seller
+    seller_match = db["sellers"].find_one({
+        "$or": [
+            {"phone": phone_clean},
+            {"email": (user.get("email") or "").strip().lower() if user and user.get("email") else "NONE_MATCH"}
+        ]
+    })
+    is_seller = bool(seller_match or (user and user.get("role") == "seller") or (user and user.get("is_seller")))
+    role = "seller" if is_seller else user.get("role", "customer")
+    is_admin = bool((user and user.get("is_admin")) or role == "admin")
+
     # Issue JWT token
     token = create_access_token({
-        "sub": str(user["_id"]),
+        "sub": str(seller_match["_id"]) if (seller_match and is_seller) else str(user["_id"]),
         "phone": phone_clean,
-        "email": user.get("email"),
-        "role": user.get("role", "customer"),
-        "token_version": user.get("token_version", 1)
+        "email": user.get("email") or (seller_match.get("email") if seller_match else None),
+        "role": role,
+        "is_seller": is_seller,
+        "token_version": (seller_match or user).get("token_version", 1)
     })
 
     orders_cnt = db["orders"].count_documents({
@@ -258,13 +272,29 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
     })
 
     user_out = {
-        "id": str(user["_id"]),
+        "id": str(seller_match["_id"]) if (seller_match and is_seller) else str(user["_id"]),
         "phone": phone_clean,
-        "email": user.get("email"),
-        "name": user.get("name"),
-        "role": user.get("role", "customer"),
+        "email": user.get("email") or (seller_match.get("email") if seller_match else None),
+        "name": user.get("name") or (seller_match.get("name") if seller_match else "User"),
+        "role": role,
+        "is_seller": is_seller,
+        "is_admin": is_admin,
         "orders_count": orders_cnt
     }
+
+    seller_out = None
+    if is_seller and seller_match:
+        seller_out = {
+            "id": str(seller_match["_id"]),
+            "email": seller_match.get("email"),
+            "name": seller_match.get("name"),
+            "shop_name": seller_match.get("shop_name", "My Store"),
+            "city": seller_match.get("city"),
+            "state": seller_match.get("state"),
+            "kyc_status": seller_match.get("kyc_status", "pending"),
+            "role": "seller",
+            "is_seller": True
+        }
 
     return {
         "success": True,
@@ -272,7 +302,11 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
         "refresh_token": issue_refresh(db, user["_id"]) if user.get("role", "customer") == "customer" else None,
         "token_type": "bearer",
         "is_new_user": is_new_user,
-        "user": user_out
+        "role": role,
+        "is_seller": is_seller,
+        "redirect_url": "/seller/dashboard" if is_seller else ("/admin/dashboard" if is_admin else None),
+        "user": user_out,
+        "seller": seller_out
     }
 
 
@@ -977,12 +1011,18 @@ def google_callback(code: Optional[str] = None, error: Optional[str] = None, sta
         result = users.insert_one(new_user)
         user = users.find_one({"_id": result.inserted_id})
 
+    # Check if this email is a registered merchant seller
+    seller = db["sellers"].find_one({"email": email})
+    user_role = "seller" if seller else user.get("role", "customer")
+    seller_id = str(seller["_id"]) if seller else str(user["_id"])
+
     token = create_access_token(
         {
-            "sub": str(user["_id"]),
+            "sub": seller_id,
             "email": user["email"],
-            "role": user.get("role", "customer"),
-            "token_version": user.get("token_version", 1),
+            "role": user_role,
+            "is_seller": bool(seller),
+            "token_version": (seller or user).get("token_version", 1),
         }
     )
 

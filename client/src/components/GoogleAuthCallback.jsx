@@ -92,6 +92,14 @@ const GoogleAuthCallback = () => {
             console.error(e);
           }
         }
+        if (res.is_seller || (res.user && (res.user.role === "seller" || res.user.is_seller))) {
+          navigate("/seller/dashboard", { replace: true });
+          return;
+        }
+        if (res.user && (res.user.role === "admin" || res.user.is_admin)) {
+          navigate("/admin/dashboard", { replace: true });
+          return;
+        }
         navigate("/", { replace: true });
       } else {
         setStatus(res.message || "Sign-in failed. Redirecting…");
