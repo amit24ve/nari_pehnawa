@@ -326,7 +326,7 @@ def register_seller(payload: SellerRegisterRequest):
         print(f"Error syncing seller to users collection: {e}")
 
     # Issue JWT Token with seller role
-    token = create_access_token({"sub": seller_id, "email": email_clean, "role": "seller"})
+    token = create_access_token({"sub": seller_id, "email": email_clean, "role": "seller", "token_version": 1})
 
     return {
         "message": "Seller registration successful. Welcome to Nari Pehnawa Seller Central!",
@@ -360,7 +360,12 @@ def login_seller(payload: SellerLoginRequest):
         )
 
     seller_id = str(seller["_id"])
-    token = create_access_token({"sub": seller_id, "email": email_clean, "role": "seller"})
+    token = create_access_token({
+        "sub": seller_id,
+        "email": email_clean,
+        "role": "seller",
+        "token_version": seller.get("token_version", 1)
+    })
 
     return {
         "access_token": token,

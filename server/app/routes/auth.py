@@ -241,7 +241,8 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
         "sub": str(user["_id"]),
         "phone": phone_clean,
         "email": user.get("email"),
-        "role": user.get("role", "customer")
+        "role": user.get("role", "customer"),
+        "token_version": user.get("token_version", 1)
     })
 
     orders_cnt = db["orders"].count_documents({
@@ -468,10 +469,29 @@ def forgot_password_reset(request: ForgotPasswordResetRequest):
     # OTP is valid — delete used OTP record
     otps.delete_one({"_id": otp_record["_id"]})
 
-    # Update password_hash
+    # Update password_hash, password_changed_at and increment token_version
+    now_utc = datetime.now(timezone.utc)
+    current_ver = user.get("token_version") or 1
+    new_hash = get_password_hash(request.new_password)
     users.update_one(
         {"email": request.email},
-        {"$set": {"password_hash": get_password_hash(request.new_password)}}
+        {
+            "$set": {
+                "password_hash": new_hash,
+                "password_changed_at": now_utc,
+                "token_version": current_ver + 1
+            }
+        }
+    )
+    db["sellers"].update_many(
+        {"email": request.email},
+        {
+            "$set": {
+                "password_hash": new_hash,
+                "password_changed_at": now_utc,
+                "token_version": current_ver + 1
+            }
+        }
     )
     db["mobile_refresh_sessions"].delete_many({"user_id": str(user["_id"])})
 
@@ -516,7 +536,8 @@ def login(request: LoginRequest):
         token = create_access_token({
             "sub": str(seller["_id"]),
             "email": seller["email"],
-            "role": "seller"
+            "role": "seller",
+            "token_version": seller.get("token_version", 1)
         })
         seller_out = {
             "id": str(seller["_id"]),
@@ -553,7 +574,8 @@ def login(request: LoginRequest):
             token = create_access_token({
                 "sub": str(seller["_id"]),
                 "email": seller["email"],
-                "role": "seller"
+                "role": "seller",
+                "token_version": seller.get("token_version", 1)
             })
             seller_out = {
                 "id": str(seller["_id"]),
@@ -586,7 +608,8 @@ def login(request: LoginRequest):
         token = create_access_token({
             "sub": seller_id,
             "email": user.get("email"),
-            "role": "seller"
+            "role": "seller",
+            "token_version": (seller or user).get("token_version", 1)
         })
         seller_out = {
             "id": seller_id,
@@ -609,7 +632,8 @@ def login(request: LoginRequest):
     token = create_access_token({
         "sub": str(user.get("_id")),
         "email": user.get("email"),
-        "role": user.get("role", "customer")
+        "role": user.get("role", "customer"),
+        "token_version": user.get("token_version", 1)
     })
 
     # Prepare user response
@@ -854,6 +878,7 @@ def google_callback(code: Optional[str] = None, error: Optional[str] = None, sta
             "sub": str(user["_id"]),
             "email": user["email"],
             "role": "customer",
+            "token_version": user.get("token_version", 1),
         }
     )
 

@@ -46,6 +46,12 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
   // Sub-Method inside Login: "phone" | "email"
   const [loginMethod, setLoginMethod] = useState("phone");
 
+  useEffect(() => {
+    if (loginNotice && loginNotice.toLowerCase().includes("password")) {
+      setLoginMethod("email");
+    }
+  }, [loginNotice]);
+
   // Sub-Method inside Signup: "phone" | "email"
   const [signupMethod, setSignupMethod] = useState("phone");
 

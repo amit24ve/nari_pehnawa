@@ -269,8 +269,15 @@ const Profile = () => {
             });
 
             if (res.ok) {
-                setPasswordMsg({ type: 'success', text: 'Password updated successfully!' });
+                setPasswordMsg({ type: 'success', text: 'Password updated successfully! Redirecting to login with new password...' });
                 setPasswordForm({ new_password: '', confirm_password: '' });
+                localStorage.removeItem("neel_token");
+                localStorage.removeItem("token");
+                localStorage.removeItem("neel_admin_user");
+                localStorage.removeItem("np_seller_token");
+                setTimeout(() => {
+                    window.location.href = "/?login=true&msg=password_changed";
+                }, 1200);
             } else {
                 const data = await res.json().catch(() => ({}));
                 setPasswordMsg({ type: 'error', text: data.detail || 'Failed to update password' });

@@ -316,6 +316,31 @@ const Users = () => {
                 throw new Error(errData.detail || "Failed to update user");
             }
 
+            // If password was changed for the current admin, log out immediately and redirect to login
+            if (payload.password) {
+                let currentUserId = null;
+                try {
+                    const rawUser = localStorage.getItem("neel_admin_user");
+                    if (rawUser) {
+                        const parsed = JSON.parse(rawUser);
+                        currentUserId = parsed.id || parsed._id;
+                    }
+                } catch (_) {}
+
+                const isSelf = currentUserId && String(currentUserId) === String(userId);
+                if (isSelf) {
+                    alert("Your admin password has been changed successfully. You will now be redirected to log in with your new password.");
+                    localStorage.removeItem("neel_token");
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("neel_admin_user");
+                    localStorage.removeItem("np_seller_token");
+                    window.location.href = "/?login=true&msg=password_changed";
+                    return;
+                } else {
+                    alert(`Password for "${selectedUser.name || selectedUser.email}" has been updated. All active logins for this account across all devices and browsers have been invalidated and will require re-login.`);
+                }
+            }
+
             setShowEditModal(false);
             await fetchUsers();
             if (showViewModal && (viewDetails?.user?.id === userId || viewDetails?.user?._id === userId)) {

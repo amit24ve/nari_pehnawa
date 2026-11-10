@@ -493,7 +493,18 @@ def update_user(user_id: str, user_update: UserUpdate, current_user: dict = Depe
             if pwd:
                 if len(pwd) < 6:
                     raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
-                update_data["password_hash"] = get_password_hash(pwd)
+                now_utc = datetime.now(timezone.utc)
+                current_ver = existing_user.get("token_version") or 1
+                new_hash = get_password_hash(pwd)
+                update_data["password_hash"] = new_hash
+                update_data["password_changed_at"] = now_utc
+                update_data["token_version"] = current_ver + 1
+                if existing_user.get("email"):
+                    db["sellers"].update_many(
+                        {"email": existing_user["email"]},
+                        {"$set": {"password_hash": new_hash, "password_changed_at": now_utc, "token_version": current_ver + 1}}
+                    )
+                db["mobile_refresh_sessions"].delete_many({"user_id": str(user_id)})
 
         if "role" in update_data and is_admin:
             update_data["is_admin"] = (update_data["role"] == "admin")
@@ -539,10 +550,26 @@ def admin_reset_user_password(user_id: str, payload: dict, current_user: dict = 
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
+        now_utc = datetime.now(timezone.utc)
+        current_ver = user.get("token_version") or 1
+        new_hash = get_password_hash(str(new_password).strip())
+
         users_collection.update_one(
             {"_id": ObjectId(user_id)},
-            {"$set": {"password_hash": get_password_hash(str(new_password).strip())}}
+            {
+                "$set": {
+                    "password_hash": new_hash,
+                    "password_changed_at": now_utc,
+                    "token_version": current_ver + 1
+                }
+            }
         )
+        if user.get("email"):
+            db["sellers"].update_many(
+                {"email": user["email"]},
+                {"$set": {"password_hash": new_hash, "password_changed_at": now_utc, "token_version": current_ver + 1}}
+            )
+        db["mobile_refresh_sessions"].delete_many({"user_id": str(user_id)})
 
         return {"success": True, "message": "Password updated successfully"}
     except HTTPException:
@@ -612,10 +639,24 @@ def change_password(password_data: PasswordChange, current_user: dict = Depends(
         
         # Hash and update new password
         new_password_hash = get_password_hash(password_data.new_password)
+        now_utc = datetime.now(timezone.utc)
+        current_ver = user.get("token_version") or 1
+
         users_collection.update_one(
             {"_id": ObjectId(user_id)},
-            {"$set": {"password_hash": new_password_hash}}
+            {
+                "$set": {
+                    "password_hash": new_password_hash,
+                    "password_changed_at": now_utc,
+                    "token_version": current_ver + 1
+                }
+            }
         )
+        if user.get("email"):
+            db["sellers"].update_many(
+                {"email": user["email"]},
+                {"$set": {"password_hash": new_password_hash, "password_changed_at": now_utc, "token_version": current_ver + 1}}
+            )
         db["mobile_refresh_sessions"].delete_many({"user_id": str(user_id)})
         
         return {"message": "Password changed successfully"}

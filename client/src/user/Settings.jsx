@@ -41,8 +41,15 @@ const Settings = () => {
 
             const data = await res.json();
             if (res.ok) {
-                setMessage({ type: 'success', text: 'Password updated successfully!' });
+                setMessage({ type: 'success', text: 'Password updated successfully! Redirecting to login with new password...' });
                 setPasswordForm({ newPassword: '', confirmPassword: '' });
+                localStorage.removeItem("neel_token");
+                localStorage.removeItem("token");
+                localStorage.removeItem("neel_admin_user");
+                localStorage.removeItem("np_seller_token");
+                setTimeout(() => {
+                    window.location.href = "/?login=true&msg=password_changed";
+                }, 1200);
             } else {
                 setMessage({ type: 'error', text: data.detail || 'Failed to update password' });
             }

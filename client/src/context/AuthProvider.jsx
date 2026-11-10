@@ -59,32 +59,47 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         try {
             const params = new URLSearchParams(window.location.search);
-            if (params.get("login")) {
-                const notice = params.get("login") === "seller" ? "Please sign in to access Seller Dashboard." : "";
+            const msgParam = params.get("msg");
+            const storedNotice = sessionStorage.getItem("np_auth_notice");
+            if (params.get("login") || msgParam || storedNotice) {
+                let notice = "";
+                if (params.get("login") === "seller") {
+                    notice = "Please sign in to access Seller Dashboard.";
+                } else if (msgParam === "password_changed" || storedNotice) {
+                    notice = "🔒 Your password has been changed. Please log in with your new password to continue.";
+                    sessionStorage.removeItem("np_auth_notice");
+                }
                 openLoginModal(notice);
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         } catch (_) {}
     }, []);
 
+    // Session validation, periodic heartbeat & active focus check
     useEffect(() => {
-        let token = localStorage.getItem("neel_token") || localStorage.getItem("token");
-        const stored = localStorage.getItem("neel_admin_user");
+        const validateSession = () => {
+            const token = localStorage.getItem("neel_token") || localStorage.getItem("token");
+            if (!token) return;
 
-        if (token) {
-            localStorage.setItem("neel_token", token);
-            localStorage.setItem("token", token);
-            
             const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
             fetch(`${API_URL}/users/me`, {
                 headers: { Authorization: `Bearer ${token}` }
             }).then(res => {
                 if (res.status === 401) {
-                    // Only log out if token is genuinely rejected as invalid by backend
+                    // Password was changed or token invalidated on backend
+                    console.warn("Session revoked by backend (password changed). Clearing auth.");
                     localStorage.removeItem("neel_admin_user");
                     localStorage.removeItem("neel_token");
                     localStorage.removeItem("token");
+                    localStorage.removeItem("np_seller_token");
                     setUser(null);
+
+                    const pathname = window.location.pathname;
+                    if (pathname.startsWith("/admin") || pathname.startsWith("/seller") || pathname.startsWith("/user")) {
+                        window.location.href = "/?login=true&msg=password_changed";
+                    } else {
+                        openLoginModal("🔒 Your password has been changed. Please log in with your new password to continue.");
+                    }
                 } else if (res.ok) {
                     res.json().then(profile => {
                         const u = {
@@ -104,10 +119,30 @@ export const AuthProvider = ({ children }) => {
                     });
                 }
             }).catch(err => {
-                // If offline or network issue, maintain logged in state from localStorage
-                console.warn("Session check offline or error, keeping stored session:", err);
+                console.warn("Session check offline or error:", err);
             });
-        }
+        };
+
+        // Initial check on mount
+        validateSession();
+
+        // Check on window focus (when switching back to tab)
+        window.addEventListener("focus", validateSession);
+
+        // Periodic heartbeat every 15 seconds to ensure immediate logout across all devices/tabs
+        const intervalId = setInterval(validateSession, 15000);
+
+        // Listen for global session expired event
+        const handleSessionExpired = () => {
+            setUser(null);
+        };
+        window.addEventListener("np_auth_session_expired", handleSessionExpired);
+
+        return () => {
+            window.removeEventListener("focus", validateSession);
+            clearInterval(intervalId);
+            window.removeEventListener("np_auth_session_expired", handleSessionExpired);
+        };
     }, []);
 
     const updateUserProfile = (updatedData) => {
