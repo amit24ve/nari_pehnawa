@@ -212,6 +212,17 @@ class SellerStockAdjustRequest(BaseModel):
     reason: Optional[str] = "Manual inventory adjustment"
 
 
+class SellerChangeRequestCreate(BaseModel):
+    category: str = Field("profile", description="profile | business | bank | tax_kyc | documents | general")
+    reason: str = Field(..., min_length=3, max_length=1000)
+    requested_data: Dict[str, Any]
+
+
+class AdminChangeRequestReviewPayload(BaseModel):
+    action: str = Field(..., pattern="^(approve|reject)$")
+    admin_remarks: Optional[str] = ""
+
+
 # ── Helper ────────────────────────────────────────────────────────────────────
 
 def serialize_doc(doc: Dict[str, Any]) -> Dict[str, Any]:
@@ -444,24 +455,149 @@ def update_seller_profile(
     payload: SellerProfileUpdateRequest,
     current_user: dict = Depends(require_seller),
 ):
-    """Update seller business, bank, and KYC details."""
+    """
+    Submits seller profile/bank/business update as an Admin Change Request.
+    Direct updates are locked to protect data integrity and ensure compliance.
+    """
     db = get_database()
     seller = db["sellers"].find_one({"_id": ObjectId(current_user["id"])})
     if not seller:
         raise HTTPException(status_code=404, detail="Seller not found.")
 
     update_fields = {k: v for k, v in payload.model_dump().items() if v is not None}
-    update_fields["updated_at"] = datetime.now(timezone.utc)
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="No fields provided for update.")
 
-    # If new KYC doc or details added, move status to pending for re-review
-    if payload.gstin or payload.pan or payload.kyc_document_url:
-        if seller.get("kyc_status") == "rejected":
-            update_fields["kyc_status"] = "pending"
-            update_fields["kyc_remarks"] = "Updated documents submitted for re-verification."
+    # Calculate actual differences against active seller record
+    changed_fields = []
+    current_snapshot = {}
+    for k, v in update_fields.items():
+        curr_val = seller.get(k)
+        if str(v).strip() != str(curr_val if curr_val is not None else "").strip():
+            changed_fields.append(k)
+            current_snapshot[k] = curr_val
 
-    db["sellers"].update_one({"_id": ObjectId(current_user["id"])}, {"$set": update_fields})
-    updated = db["sellers"].find_one({"_id": ObjectId(current_user["id"])})
-    return {"message": "Profile updated successfully.", "seller": serialize_doc(updated)}
+    if not changed_fields:
+        return {
+            "message": "No changes detected. Your active profile is already up to date.",
+            "seller": serialize_doc(seller),
+            "status": "unchanged"
+        }
+
+    now = datetime.now(timezone.utc)
+    request_code = f"CR-{now.strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
+
+    # Determine category based on modified fields
+    category = "profile"
+    if any(k in changed_fields for k in ["bank_name", "account_number", "ifsc_code", "account_holder_name", "branch_name"]):
+        category = "bank"
+    elif any(k in changed_fields for k in ["gstin", "pan", "pan_number", "tax_profile", "aadhaar_number"]):
+        category = "tax_kyc"
+    elif any(k in changed_fields for k in ["aadhaar_front_url", "aadhaar_back_url", "pan_card_url", "shop_image_url", "brand_logo_url", "kyc_document_url"]):
+        category = "documents"
+    elif any(k in changed_fields for k in ["shop_name", "brand_name", "business_type"]):
+        category = "business"
+
+    change_doc = {
+        "request_code": request_code,
+        "seller_id": str(seller["_id"]),
+        "seller_code": seller.get("seller_code", ""),
+        "seller_name": seller.get("name", ""),
+        "shop_name": seller.get("shop_name", ""),
+        "seller_email": seller.get("email", ""),
+        "seller_phone": seller.get("phone", ""),
+        "category": category,
+        "reason": "Profile update request submitted from Seller Portal.",
+        "current_data": current_snapshot,
+        "requested_data": {k: update_fields[k] for k in changed_fields},
+        "changed_fields": changed_fields,
+        "status": "pending",  # pending | approved | rejected
+        "admin_remarks": "",
+        "reviewed_by": None,
+        "created_at": now,
+        "reviewed_at": None,
+    }
+
+    db["seller_change_requests"].insert_one(change_doc)
+
+    return {
+        "message": f"Change request {request_code} submitted to Admin! To protect platform security, details will update automatically after Admin review.",
+        "request_code": request_code,
+        "status": "pending_admin_approval",
+        "changed_fields": changed_fields,
+        "seller": serialize_doc(seller),
+    }
+
+
+@router.get("/change-requests")
+def get_seller_change_requests(
+    current_user: dict = Depends(require_seller),
+    status_filter: Optional[str] = Query(None, alias="status"),
+):
+    """Fetch change requests raised by the authenticated seller."""
+    db = get_database()
+    query = {"seller_id": current_user["id"]}
+    if status_filter and status_filter != "all":
+        query["status"] = status_filter
+
+    docs = list(db["seller_change_requests"].find(query).sort("created_at", -1))
+    return [serialize_doc(d) for d in docs]
+
+
+@router.post("/change-requests", status_code=status.HTTP_201_CREATED)
+def create_seller_change_request(
+    payload: SellerChangeRequestCreate,
+    current_user: dict = Depends(require_seller),
+):
+    """Raise a structured change request for profile, bank, or KYC details."""
+    db = get_database()
+    seller = db["sellers"].find_one({"_id": ObjectId(current_user["id"])})
+    if not seller:
+        raise HTTPException(status_code=404, detail="Seller not found.")
+
+    if not payload.requested_data:
+        raise HTTPException(status_code=400, detail="Requested data cannot be empty.")
+
+    changed_fields = []
+    current_snapshot = {}
+    for k, v in payload.requested_data.items():
+        curr_val = seller.get(k)
+        if str(v).strip() != str(curr_val if curr_val is not None else "").strip():
+            changed_fields.append(k)
+            current_snapshot[k] = curr_val
+
+    if not changed_fields:
+        raise HTTPException(status_code=400, detail="No modifications detected between current and requested data.")
+
+    now = datetime.now(timezone.utc)
+    request_code = f"CR-{now.strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
+
+    change_doc = {
+        "request_code": request_code,
+        "seller_id": str(seller["_id"]),
+        "seller_code": seller.get("seller_code", ""),
+        "seller_name": seller.get("name", ""),
+        "shop_name": seller.get("shop_name", ""),
+        "seller_email": seller.get("email", ""),
+        "seller_phone": seller.get("phone", ""),
+        "category": payload.category or "profile",
+        "reason": payload.reason.strip(),
+        "current_data": current_snapshot,
+        "requested_data": {k: payload.requested_data[k] for k in changed_fields},
+        "changed_fields": changed_fields,
+        "status": "pending",
+        "admin_remarks": "",
+        "reviewed_by": None,
+        "created_at": now,
+        "reviewed_at": None,
+    }
+
+    db["seller_change_requests"].insert_one(change_doc)
+
+    return {
+        "message": f"Change request {request_code} submitted successfully. It will be verified by Admin.",
+        "request": serialize_doc(change_doc),
+    }
 
 
 @router.get("/dashboard/stats")
@@ -1395,6 +1531,12 @@ def update_seller_product(
             "total_markup": round(cur_shipping + cur_rto + cur_handling, 2),
         }
 
+    # Any update to product by seller requires Admin verification before going live
+    update_fields["is_approved"] = False
+    update_fields["is_active"] = False
+    update_fields["approval_status"] = "pending"
+    update_fields["approval_remarks"] = "Product details edited by seller. Awaiting Admin verification."
+
     db["products"].update_one({"_id": ObjectId(product_id)}, {"$set": update_fields})
 
     try:
@@ -1971,4 +2113,152 @@ def update_marketplace_settings(
         upsert=True,
     )
     return {"message": "Marketplace settings updated successfully.", "settings": update_doc}
+
+
+# ── 4. Admin Management for Seller Account Change Requests ───────────────────
+
+@router.get("/admin/change-requests")
+def admin_get_change_requests(
+    current_user: dict = Depends(require_admin),
+    status_filter: Optional[str] = Query("all", alias="status"),
+    category_filter: Optional[str] = Query("all", alias="category"),
+    search: Optional[str] = Query(None),
+):
+    """Admin lists all seller change requests with filters & search."""
+    db = get_database()
+    query = {}
+    if status_filter and status_filter != "all":
+        query["status"] = status_filter
+    if category_filter and category_filter != "all":
+        query["category"] = category_filter
+    if search and search.strip():
+        s = search.strip()
+        query["$or"] = [
+            {"request_code": {"$regex": s, "$options": "i"}},
+            {"seller_name": {"$regex": s, "$options": "i"}},
+            {"shop_name": {"$regex": s, "$options": "i"}},
+            {"seller_email": {"$regex": s, "$options": "i"}},
+            {"seller_phone": {"$regex": s, "$options": "i"}},
+        ]
+
+    docs = list(db["seller_change_requests"].find(query).sort("created_at", -1))
+    return [serialize_doc(d) for d in docs]
+
+
+@router.get("/admin/change-requests/{request_id}")
+def admin_get_change_request_detail(
+    request_id: str,
+    current_user: dict = Depends(require_admin),
+):
+    """Admin inspects comparison detail for a specific change request."""
+    if not ObjectId.is_valid(request_id):
+        raise HTTPException(status_code=400, detail="Invalid request ID.")
+
+    db = get_database()
+    req = db["seller_change_requests"].find_one({"_id": ObjectId(request_id)})
+    if not req:
+        raise HTTPException(status_code=404, detail="Change request not found.")
+
+    # Also fetch the current live seller document for fresh comparison
+    seller = None
+    if req.get("seller_id") and ObjectId.is_valid(req["seller_id"]):
+        seller = db["sellers"].find_one({"_id": ObjectId(req["seller_id"])})
+
+    return {
+        "request": serialize_doc(req),
+        "live_seller": serialize_doc(seller) if seller else None,
+    }
+
+
+@router.put("/admin/change-requests/{request_id}/review")
+def admin_review_change_request(
+    request_id: str,
+    payload: AdminChangeRequestReviewPayload,
+    current_user: dict = Depends(require_admin),
+):
+    """
+    Admin approves or rejects seller change request.
+    On approve: requested_data is automatically applied to the active seller in MongoDB!
+    On reject: active seller details remain unchanged.
+    """
+    if not ObjectId.is_valid(request_id):
+        raise HTTPException(status_code=400, detail="Invalid request ID.")
+
+    db = get_database()
+    req = db["seller_change_requests"].find_one({"_id": ObjectId(request_id)})
+    if not req:
+        raise HTTPException(status_code=404, detail="Change request not found.")
+
+    now = datetime.now(timezone.utc)
+    admin_email = current_user.get("email") or "Admin"
+    action = payload.action.lower()
+
+    if action == "approve":
+        seller_id = req.get("seller_id")
+        if not seller_id or not ObjectId.is_valid(seller_id):
+            raise HTTPException(status_code=400, detail="Linked seller not found.")
+
+        # Apply changes to sellers collection
+        updates_to_apply = dict(req.get("requested_data", {}))
+        updates_to_apply["updated_at"] = now
+        db["sellers"].update_one(
+            {"_id": ObjectId(seller_id)},
+            {"$set": updates_to_apply}
+        )
+
+        # Synchronize linked users collection if name or phone changed
+        user_sync = {}
+        if "name" in updates_to_apply:
+            user_sync["name"] = updates_to_apply["name"]
+        if "phone" in updates_to_apply:
+            user_sync["phone"] = updates_to_apply["phone"]
+        if user_sync and req.get("seller_email"):
+            db["users"].update_many(
+                {"email": req["seller_email"]},
+                {"$set": user_sync}
+            )
+
+        db["seller_change_requests"].update_one(
+            {"_id": ObjectId(request_id)},
+            {
+                "$set": {
+                    "status": "approved",
+                    "admin_remarks": payload.admin_remarks or "Change request approved and applied to seller profile.",
+                    "reviewed_by": admin_email,
+                    "reviewed_at": now,
+                }
+            }
+        )
+
+        # Invalidate public caches if needed
+        try:
+            clear_api_cache()
+        except Exception:
+            pass
+
+        return {
+            "message": "Change request approved! Seller details have been updated automatically in database.",
+            "status": "approved",
+        }
+
+    elif action == "reject":
+        db["seller_change_requests"].update_one(
+            {"_id": ObjectId(request_id)},
+            {
+                "$set": {
+                    "status": "rejected",
+                    "admin_remarks": payload.admin_remarks or "Change request rejected by Admin.",
+                    "reviewed_by": admin_email,
+                    "reviewed_at": now,
+                }
+            }
+        )
+
+        return {
+            "message": "Change request rejected. Seller details remain unchanged.",
+            "status": "rejected",
+        }
+
+    else:
+        raise HTTPException(status_code=400, detail="Invalid action. Must be 'approve' or 'reject'.")
 

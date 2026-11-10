@@ -321,10 +321,10 @@ const SellerAddProduct = () => {
 
       if (isEditMode) {
         await sellerApi.updateProduct(editId, payload);
-        setSuccess("Product updated successfully!");
+        setSuccess("Product updated and submitted for Admin verification! It will go live once verified.");
       } else {
         await sellerApi.createProduct(payload);
-        setSuccess("Product published successfully to Nari Pehnawa storefront!");
+        setSuccess("Product submitted successfully! It is under review and will go live once verified by Admin.");
       }
 
       setTimeout(() => {
@@ -362,7 +362,7 @@ const SellerAddProduct = () => {
               {isEditMode ? "Edit Product" : "Upload New Ethnic Product"}
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              Product details will appear directly across Nari Pehnawa customer searches and catalogs
+              Products are reviewed and verified by Admin before going live on the storefront (24-48 hours SLA)
             </p>
           </div>
         </div>

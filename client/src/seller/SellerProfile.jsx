@@ -66,6 +66,25 @@ const SellerProfile = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Change Requests History
+  const [changeRequests, setChangeRequests] = useState([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+
+  const loadChangeRequests = async () => {
+    try {
+      setLoadingRequests(true);
+      const data = await sellerApi.getChangeRequests();
+      setChangeRequests(Array.isArray(data) ? data : []);
+    } catch (_) {
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+
+  useEffect(() => {
+    loadChangeRequests();
+  }, []);
+
   useEffect(() => {
     if (seller) {
       setFormData({
@@ -112,9 +131,7 @@ const SellerProfile = () => {
       const res = await sellerApi.uploadImage(file);
       if (res.url) {
         setFormData((prev) => ({ ...prev, [fieldName]: res.url }));
-        // Instantly save to profile in background
-        await sellerApi.updateProfile({ [fieldName]: res.url });
-        await refreshSeller();
+        setSuccess("Document/Image uploaded! Click 'Submit Changes for Admin Approval' to send to compliance team.");
       }
     } catch (err) {
       setError(`Failed to upload image: ${err.message}`);
@@ -123,12 +140,8 @@ const SellerProfile = () => {
     }
   };
 
-  const handleRemoveImageField = async (fieldName) => {
+  const handleRemoveImageField = (fieldName) => {
     setFormData((prev) => ({ ...prev, [fieldName]: "" }));
-    try {
-      await sellerApi.updateProfile({ [fieldName]: "" });
-      await refreshSeller();
-    } catch (_) {}
   };
 
   const handleSubmit = async (e) => {
@@ -161,9 +174,16 @@ const SellerProfile = () => {
         account_holder_name: formData.account_holder_name.trim() || undefined,
       };
 
-      await sellerApi.updateProfile(payload);
+      const res = await sellerApi.updateProfile(payload);
+      if (res?.status === "pending_admin_approval") {
+        setSuccess(
+          `Request ${res.request_code} submitted to Admin! To protect account integrity, details will update automatically after Admin verification.`
+        );
+      } else {
+        setSuccess(res?.message || "Profile change request submitted successfully!");
+      }
       await refreshSeller();
-      setSuccess("Shop profile & KYC details saved successfully!");
+      loadChangeRequests();
     } catch (err) {
       setError(err.message || "Failed to update profile");
     } finally {
@@ -208,6 +228,17 @@ const SellerProfile = () => {
           <span>{success}</span>
         </div>
       )}
+
+      {/* Security & Admin Verification Notice Banner */}
+      <div className="bg-amber-50/70 border border-amber-200/80 p-4 rounded-xl flex items-start gap-3">
+        <ShieldCheck className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
+        <div className="text-xs text-amber-900 leading-relaxed">
+          <span className="font-bold block mb-0.5 text-amber-950">
+            🔒 Account Data Protection & Verification Policy:
+          </span>
+          Once registered on Nari Pehnawa, your registered name, phone number, address, bank accounts, GST, PAN, and KYC documents are protected. To update any details, edit the fields below and submit your request. Changes are submitted as a <strong>Change Request</strong> and will be applied automatically once reviewed and approved by the Admin Panel.
+        </div>
+      </div>
 
       {/* KYC Status Strip */}
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -993,13 +1024,102 @@ const SellerProfile = () => {
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
               <>
-                <Save className="w-4 h-4" />
-                <span>Save Profile & KYC</span>
+                <ShieldCheck className="w-4 h-4" />
+                <span>Submit Changes for Admin Approval</span>
               </>
             )}
           </button>
         </div>
       </form>
+
+      {/* Change Requests History Table */}
+      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-indigo-600" />
+              <span>My Account Change Requests & Verification History</span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Track the approval status of modifications requested to your profile, contact info, bank accounts, or KYC.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={loadChangeRequests}
+            className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+            title="Refresh History"
+          >
+            <Clock className={`w-4 h-4 ${loadingRequests ? "animate-spin" : ""}`} />
+          </button>
+        </div>
+
+        {changeRequests.length === 0 ? (
+          <div className="p-8 text-center text-slate-400 text-xs">
+            No change requests raised yet. When you edit and submit your profile, your requests will appear here.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 uppercase tracking-wider text-[11px]">
+                  <th className="py-2.5 px-3">Request Code</th>
+                  <th className="py-2.5 px-3">Date</th>
+                  <th className="py-2.5 px-3">Category</th>
+                  <th className="py-2.5 px-3">Modified Fields</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3">Admin Remarks</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {changeRequests.map((cr) => (
+                  <tr key={cr.id || cr._id} className="hover:bg-slate-50/50">
+                    <td className="py-2.5 px-3 font-mono font-bold text-slate-900">
+                      {cr.request_code}
+                    </td>
+                    <td className="py-2.5 px-3 text-slate-500">
+                      {cr.created_at ? new Date(cr.created_at).toLocaleDateString() : "—"}
+                    </td>
+                    <td className="py-2.5 px-3 capitalize font-medium text-slate-700">
+                      {cr.category}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <div className="flex flex-wrap gap-1">
+                        {(cr.changed_fields || Object.keys(cr.requested_data || {})).map((f) => (
+                          <span key={f} className="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 text-[10px] font-mono">
+                            {f.replace(/_/g, " ")}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="py-2.5 px-3">
+                      {cr.status === "approved" ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Approved</span>
+                        </span>
+                      ) : cr.status === "rejected" ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
+                          <AlertTriangle className="w-3 h-3" />
+                          <span>Rejected</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                          <Clock className="w-3 h-3 text-amber-600" />
+                          <span>Under Review</span>
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-slate-600 italic">
+                      {cr.admin_remarks || (cr.status === "pending" ? "Awaiting review (within 24-48 business hours)" : "—")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

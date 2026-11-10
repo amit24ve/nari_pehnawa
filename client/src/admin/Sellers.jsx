@@ -87,6 +87,16 @@ const Sellers = () => {
   });
   const [savingConfig, setSavingConfig] = useState(false);
 
+  // Change Requests state (Admin Comparison & Approval Workflow)
+  const [changeRequests, setChangeRequests] = useState([]);
+  const [loadingChangeRequests, setLoadingChangeRequests] = useState(false);
+  const [changeRequestStatusFilter, setChangeRequestStatusFilter] = useState("all");
+  const [changeRequestCategoryFilter, setChangeRequestCategoryFilter] = useState("all");
+  const [changeRequestSearch, setChangeRequestSearch] = useState("");
+  const [selectedChangeRequest, setSelectedChangeRequest] = useState(null);
+  const [changeRequestActionLoading, setChangeRequestActionLoading] = useState(false);
+  const [changeRequestRemarks, setChangeRequestRemarks] = useState("");
+
   // Selected seller modal
   const [selectedSeller, setSelectedSeller] = useState(null);
   const [kycRemarks, setKycRemarks] = useState("");
@@ -201,6 +211,46 @@ const Sellers = () => {
     }
   };
 
+  const loadChangeRequests = useCallback(async () => {
+    try {
+      setLoadingChangeRequests(true);
+      const params = new URLSearchParams();
+      if (changeRequestStatusFilter !== "all") params.set("status", changeRequestStatusFilter);
+      if (changeRequestCategoryFilter !== "all") params.set("category", changeRequestCategoryFilter);
+      if (changeRequestSearch.trim()) params.set("search", changeRequestSearch.trim());
+      const qs = params.toString();
+      const data = await adminFetch(`/seller/admin/change-requests${qs ? `?${qs}` : ""}`);
+      setChangeRequests(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to load change requests:", err);
+    } finally {
+      setLoadingChangeRequests(false);
+    }
+  }, [changeRequestStatusFilter, changeRequestCategoryFilter, changeRequestSearch]);
+
+  const handleReviewChangeRequest = async (requestId, action, remarks = "") => {
+    try {
+      setChangeRequestActionLoading(true);
+      const res = await adminFetch(`/seller/admin/change-requests/${requestId}/review`, {
+        method: "PUT",
+        body: { action, admin_remarks: remarks },
+      });
+      showNotification(res?.message || `Request ${action}ed successfully.`);
+      setSelectedChangeRequest(null);
+      setChangeRequestRemarks("");
+      loadChangeRequests();
+      loadSellers();
+    } catch (err) {
+      alert("Failed to review change request: " + err.message);
+    } finally {
+      setChangeRequestActionLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadChangeRequests();
+  }, []);
+
   useEffect(() => {
     if (activeTab === "sellers") {
       loadSellers();
@@ -210,8 +260,10 @@ const Sellers = () => {
       loadSellerProducts();
     } else if (activeTab === "commission") {
       loadMarketplaceConfig();
+    } else if (activeTab === "change_requests") {
+      loadChangeRequests();
     }
-  }, [activeTab, loadSellers, loadInquiries, loadSellerProducts, loadMarketplaceConfig]);
+  }, [activeTab, loadSellers, loadInquiries, loadSellerProducts, loadMarketplaceConfig, loadChangeRequests]);
 
   // Handle KYC status update
   const handleUpdateKyc = async (newKycStatus) => {
@@ -333,6 +385,17 @@ const Sellers = () => {
           >
             <PackageCheck className="w-3.5 h-3.5 text-[#0891b2]" />
             <span>Product Approvals ({sellerProducts.filter((p) => p.approval_status === "pending" || !p.is_approved).length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("change_requests")}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              activeTab === "change_requests"
+                ? "bg-white text-slate-900 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Account Updates ({changeRequests.filter((r) => r.status === "pending").length})</span>
           </button>
           <button
             onClick={() => setActiveTab("commission")}
@@ -2342,6 +2405,340 @@ const Sellers = () => {
             </div>
           </div>
         </form>
+      )}
+
+      {/* TAB 5: SELLER ACCOUNT CHANGE REQUESTS (APPROVAL & COMPARISON QUEUE) */}
+      {activeTab === "change_requests" && (
+        <div className="space-y-4">
+          {/* Header & Description */}
+          <div className="bg-indigo-50/60 p-4 rounded-2xl border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold text-indigo-950 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                <span>Seller Profile & Account Update Approvals</span>
+              </h3>
+              <p className="text-xs text-indigo-700/80 mt-0.5">
+                All vendor modifications (Name, Phone, Address, Bank Accounts, GST, PAN & Documents) are held here. Compare existing active details with requested changes before approving.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-2xs">
+                {changeRequests.filter((r) => r.status === "pending").length} Pending Review
+              </span>
+            </div>
+          </div>
+
+          {/* Filters & Search */}
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search code, seller, phone..."
+                  value={changeRequestSearch}
+                  onChange={(e) => setChangeRequestSearch(e.target.value)}
+                  className="pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0891b2] w-52"
+                />
+              </div>
+
+              <div className="flex items-center gap-1">
+                {[
+                  { id: "all", label: "All Requests" },
+                  { id: "pending", label: "Pending" },
+                  { id: "approved", label: "Approved" },
+                  { id: "rejected", label: "Rejected" },
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setChangeRequestStatusFilter(f.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      changeRequestStatusFilter === f.id
+                        ? "bg-indigo-600 text-white"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={loadChangeRequests}
+              className="p-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+              title="Refresh Queue"
+            >
+              <RefreshCw className={`w-4 h-4 ${loadingChangeRequests ? "animate-spin" : ""}`} />
+            </button>
+          </div>
+
+          {/* Change Requests Table */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            {loadingChangeRequests ? (
+              <div className="p-12 text-center text-slate-500">
+                <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                <p className="text-sm">Loading change requests queue...</p>
+              </div>
+            ) : changeRequests.length === 0 ? (
+              <div className="p-12 text-center text-slate-500">
+                <ShieldCheck className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <h3 className="text-base font-bold text-slate-800">No change requests found</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  When sellers request changes to their name, phone, bank account, or KYC, they will appear here for comparison and approval.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                      <th className="py-3 px-4">Request Code & Date</th>
+                      <th className="py-3 px-4">Seller & Shop</th>
+                      <th className="py-3 px-4">Category</th>
+                      <th className="py-3 px-4">Fields to Update</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs">
+                    {changeRequests.map((r) => {
+                      const isPending = r.status === "pending";
+                      const isApproved = r.status === "approved";
+                      const isRejected = r.status === "rejected";
+                      const fieldsList = r.changed_fields || Object.keys(r.requested_data || {});
+
+                      return (
+                        <tr key={r.id || r._id} className="hover:bg-slate-50/60 transition">
+                          <td className="py-3 px-4">
+                            <span className="font-mono font-bold text-slate-900 block">{r.request_code}</span>
+                            <span className="text-[10px] text-slate-400 block">
+                              {r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}
+                            </span>
+                          </td>
+
+                          <td className="py-3 px-4">
+                            <span className="font-bold text-slate-900 block">{r.shop_name}</span>
+                            <span className="text-[11px] text-slate-500 block">{r.seller_name} • {r.seller_phone}</span>
+                          </td>
+
+                          <td className="py-3 px-4">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700">
+                              {r.category || "profile"}
+                            </span>
+                          </td>
+
+                          <td className="py-3 px-4">
+                            <div className="flex flex-wrap gap-1 max-w-xs">
+                              {fieldsList.map((f) => (
+                                <span key={f} className="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 text-[10px] font-mono font-semibold">
+                                  {f.replace(/_/g, " ")}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+
+                          <td className="py-3 px-4">
+                            {isApproved ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <CheckCircle2 className="w-3 h-3" />
+                                <span>Approved</span>
+                              </span>
+                            ) : isRejected ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-50 text-red-700 border border-red-200">
+                                <XCircle className="w-3 h-3" />
+                                <span>Rejected</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                <Clock className="w-3 h-3 text-amber-600" />
+                                <span>Awaiting Review</span>
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="py-3 px-4 text-right">
+                            <button
+                              onClick={() => {
+                                setSelectedChangeRequest(r);
+                                setChangeRequestRemarks(r.admin_remarks || "");
+                              }}
+                              className="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold border border-indigo-200 transition cursor-pointer inline-flex items-center gap-1.5"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>{isPending ? "Compare & Review" : "View Details"}</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* SIDE-BY-SIDE CHANGE REQUEST REVIEW MODAL */}
+      {selectedChangeRequest && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-8">
+            {/* Header */}
+            <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
+                    {selectedChangeRequest.category?.toUpperCase() || "PROFILE"} UPDATE
+                  </span>
+                  <span className="text-xs text-slate-400 font-mono">
+                    {selectedChangeRequest.request_code}
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold mt-1 text-white">
+                  {selectedChangeRequest.shop_name} ({selectedChangeRequest.seller_name})
+                </h3>
+                <p className="text-xs text-slate-300">
+                  Phone: {selectedChangeRequest.seller_phone} • Email: {selectedChangeRequest.seller_email}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedChangeRequest(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+              {/* Seller's Reason */}
+              <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                <span className="font-bold block mb-1">Reason for modification (Provided by Seller):</span>
+                <p className="italic">{selectedChangeRequest.reason || "No explicit reason stated."}</p>
+              </div>
+
+              {/* Side-by-side comparison table */}
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  Field-by-Field Comparison (Active vs Requested)
+                </h4>
+                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-slate-100 border-b border-slate-200 font-bold text-slate-700">
+                        <th className="py-2.5 px-3 w-1/4">Field</th>
+                        <th className="py-2.5 px-3 w-3/8 bg-slate-50 border-r border-slate-200">Current Active Data (Live in DB)</th>
+                        <th className="py-2.5 px-3 w-3/8 bg-emerald-50 text-emerald-900">Requested New Data (Proposed)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {Object.keys(selectedChangeRequest.requested_data || {}).map((fieldKey) => {
+                        const currentVal = selectedChangeRequest.current_data?.[fieldKey];
+                        const requestedVal = selectedChangeRequest.requested_data?.[fieldKey];
+                        const isDoc = fieldKey.includes("url") || fieldKey.includes("image");
+
+                        return (
+                          <tr key={fieldKey} className="hover:bg-slate-50/50">
+                            <td className="py-3 px-3 font-semibold text-slate-800 capitalize">
+                              {fieldKey.replace(/_/g, " ")}
+                            </td>
+                            <td className="py-3 px-3 bg-slate-50/70 border-r border-slate-200 text-slate-600">
+                              {isDoc && currentVal ? (
+                                <a href={currentVal} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline inline-flex items-center gap-1">
+                                  <span>View Existing File</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              ) : (
+                                <span>{currentVal !== undefined && currentVal !== null && currentVal !== "" ? String(currentVal) : "—"}</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-3 bg-emerald-50/40 text-emerald-950 font-medium">
+                              {isDoc && requestedVal ? (
+                                <a href={requestedVal} target="_blank" rel="noreferrer" className="text-emerald-700 font-bold hover:underline inline-flex items-center gap-1">
+                                  <span>View New Uploaded File</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              ) : (
+                                <span className="bg-emerald-100/70 text-emerald-900 px-1.5 py-0.5 rounded font-mono font-bold">
+                                  {requestedVal !== undefined && requestedVal !== null && requestedVal !== "" ? String(requestedVal) : "—"}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Admin Remarks */}
+              {selectedChangeRequest.status === "pending" && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Admin Verification Remarks / Notes (Sent to Seller):
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={changeRequestRemarks}
+                    onChange={(e) => setChangeRequestRemarks(e.target.value)}
+                    placeholder="Enter approval remarks or reason for rejection..."
+                    className="w-full text-xs p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2]"
+                  />
+                </div>
+              )}
+
+              {selectedChangeRequest.status !== "pending" && (
+                <div className="p-3 bg-slate-100 rounded-xl text-xs text-slate-700">
+                  <span className="font-bold">Admin Remarks: </span>
+                  <span>{selectedChangeRequest.admin_remarks || "No remarks recorded."}</span>
+                  <div className="text-[10px] text-slate-400 mt-1">
+                    Reviewed by {selectedChangeRequest.reviewed_by || "Admin"} on{" "}
+                    {selectedChangeRequest.reviewed_at ? new Date(selectedChangeRequest.reviewed_at).toLocaleString() : "—"}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+              <button
+                onClick={() => setSelectedChangeRequest(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition cursor-pointer"
+              >
+                Close
+              </button>
+
+              {selectedChangeRequest.status === "pending" ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={changeRequestActionLoading}
+                    onClick={() => handleReviewChangeRequest(selectedChangeRequest.id || selectedChangeRequest._id, "reject", changeRequestRemarks)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 text-white hover:bg-rose-700 transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    <span>Reject Changes</span>
+                  </button>
+                  <button
+                    disabled={changeRequestActionLoading}
+                    onClick={() => handleReviewChangeRequest(selectedChangeRequest.id || selectedChangeRequest._id, "approve", changeRequestRemarks)}
+                    className="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition flex items-center gap-1.5 disabled:opacity-50 shadow-md shadow-emerald-600/20 cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Approve & Apply to Database</span>
+                  </button>
+                </div>
+              ) : (
+                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                  selectedChangeRequest.status === "approved" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
+                }`}>
+                  {selectedChangeRequest.status}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

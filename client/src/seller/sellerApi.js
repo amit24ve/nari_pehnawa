@@ -89,6 +89,15 @@ export const sellerApi = {
   updateProfile: (payload) =>
     sellerRequest("/seller/profile", { method: "PUT", body: payload }),
 
+  // Account & Profile Change Requests (Admin Approval Workflow)
+  getChangeRequests: (status = "all") => {
+    const qs = status && status !== "all" ? `?status=${status}` : "";
+    return sellerRequest(`/seller/change-requests${qs}`);
+  },
+
+  createChangeRequest: (payload) =>
+    sellerRequest("/seller/change-requests", { method: "POST", body: payload }),
+
   // Stats & Policy
   getStats: (range = "7d") => sellerRequest(`/seller/dashboard/stats?range=${range}`),
 

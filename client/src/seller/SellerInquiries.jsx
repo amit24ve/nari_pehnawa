@@ -23,6 +23,11 @@ import { useSellerAuth } from "./SellerAuthContext";
 
 const INQUIRY_CATEGORIES = [
   {
+    name: "Account & Profile Details Modification",
+    desc: "Request update to registered Name, Mobile, Email, Shop Address, or Bank Account",
+    icon: User,
+  },
+  {
     name: "Category Expansion Request",
     desc: "Request addition of a new ethnic wear category not currently available",
     icon: FolderPlus,
