@@ -411,17 +411,27 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
 
   const handleGoogleLogin = () => {
     const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
+    const currentOrigin = encodeURIComponent(window.location.origin);
+    const googleLoginUrl = `${API_URL}/auth/google/login?origin=${currentOrigin}`;
+
+    // On mobile devices, redirect directly for 100% reliable OAuth without popup blockers
+    const isMobile = window.innerWidth < 640 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = googleLoginUrl;
+      return;
+    }
+
     const width = 500;
     const height = 650;
     const left = window.screenX + (window.outerWidth - width) / 2;
     const top = window.screenY + (window.outerHeight - height) / 2;
     const popup = window.open(
-      `${API_URL}/auth/google/login`,
+      googleLoginUrl,
       "google_oauth_popup",
       `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes`
     );
     if (!popup || popup.closed || typeof popup.closed === "undefined") {
-      window.location.href = `${API_URL}/auth/google/login`;
+      window.location.href = googleLoginUrl;
     }
   };
 

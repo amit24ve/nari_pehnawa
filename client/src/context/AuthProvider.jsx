@@ -154,17 +154,40 @@ export const AuthProvider = ({ children }) => {
     };
 
 
-    // Listen for Google Auth popup response
+    // Listen for Google Auth popup response & cross-tab storage synchronization
     useEffect(() => {
+        const allowedOrigins = [
+            window.location.origin,
+            "https://naripehnawa.com",
+            "https://www.naripehnawa.com",
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "http://localhost:2300"
+        ];
+
         const handleMessage = async (event) => {
-            if (event.origin !== window.location.origin) return;
+            if (!allowedOrigins.includes(event.origin)) return;
             if (event.data?.type === "GOOGLE_AUTH_SUCCESS" && event.data?.token) {
                 await loginWithToken(event.data.token);
                 closeLoginModal();
             }
         };
+
+        const handleStorage = async (event) => {
+            if (event.key === "np_google_auth_token" && event.newValue) {
+                const token = event.newValue;
+                localStorage.removeItem("np_google_auth_token");
+                await loginWithToken(token);
+                closeLoginModal();
+            }
+        };
+
         window.addEventListener("message", handleMessage);
-        return () => window.removeEventListener("message", handleMessage);
+        window.addEventListener("storage", handleStorage);
+        return () => {
+            window.removeEventListener("message", handleMessage);
+            window.removeEventListener("storage", handleStorage);
+        };
     }, []);
 
     const login = async ({ email, password }) => {
@@ -235,9 +258,13 @@ export const AuthProvider = ({ children }) => {
             const profile = await res.json();
             const u = {
                 id: profile.id,
-                email: profile.email,
-                name: profile.name,
+                email: profile.email || "",
+                name: profile.name || "User",
+                phone: profile.phone || "",
                 role: profile.role || "customer",
+                is_admin: profile.is_admin || false,
+                avatar: profile.avatar || "",
+                coins_balance: profile.coins_balance || 0,
                 orders_count: profile.orders_count || 0
             };
 
@@ -245,6 +272,11 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem("token", token);
             localStorage.setItem("neel_admin_user", JSON.stringify(u));
             setUser(u);
+
+            if (u.role === "seller" || profile.role === "seller") {
+                localStorage.setItem("np_seller_token", token);
+                localStorage.setItem("np_seller_user", JSON.stringify(profile));
+            }
 
             return { ok: true, user: u };
         } catch (err) {

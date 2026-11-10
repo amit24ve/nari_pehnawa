@@ -33,17 +33,20 @@ const GoogleAuthCallback = () => {
     if (window.opener && !window.opener.closed) {
       if (token) {
         try {
-          window.opener.postMessage({ type: "GOOGLE_AUTH_SUCCESS", token }, window.location.origin);
-          window.close();
-          return;
+          localStorage.setItem("np_google_auth_token", token);
+          window.opener.postMessage({ type: "GOOGLE_AUTH_SUCCESS", token }, "*");
+          setTimeout(() => {
+            try { window.close(); } catch (_) {}
+          }, 400);
         } catch (e) {
           console.error("Failed to post message to opener", e);
         }
       } else if (error) {
         try {
-          window.opener.postMessage({ type: "GOOGLE_AUTH_ERROR", error }, window.location.origin);
-          window.close();
-          return;
+          window.opener.postMessage({ type: "GOOGLE_AUTH_ERROR", error }, "*");
+          setTimeout(() => {
+            try { window.close(); } catch (_) {}
+          }, 400);
         } catch (e) {
           console.error("Failed to post error to opener", e);
         }

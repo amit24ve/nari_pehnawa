@@ -10,6 +10,8 @@ from zoneinfo import ZoneInfo
 from urllib.parse import urlencode
 import requests
 import re
+import base64
+import json
 
 from app.config import (
     google_client_id,
@@ -829,14 +831,32 @@ GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
 
+ALLOWED_FRONTEND_ORIGINS = {
+    "https://naripehnawa.com",
+    "https://www.naripehnawa.com",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://localhost:2300",
+}
+
+
 @router.get("/google/login")
-def google_login():
+def google_login(origin: Optional[str] = None):
     """Redirects the browser to Google's OAuth consent screen."""
     if not google_client_id:
         raise HTTPException(
             status_code=500,
             detail="Google login is not configured (missing GOOGLE_CLIENT_ID)",
         )
+
+    # Determine safe origin to preserve through OAuth state
+    default_origin = (frontend_url or "https://naripehnawa.com").rstrip("/")
+    target_origin = default_origin
+    if origin and origin.rstrip("/") in ALLOWED_FRONTEND_ORIGINS:
+        target_origin = origin.rstrip("/")
+
+    state_data = json.dumps({"origin": target_origin})
+    state_param = f"web_{base64.urlsafe_b64encode(state_data.encode()).decode()}"
 
     params = {
         "client_id": google_client_id,
@@ -845,6 +865,7 @@ def google_login():
         "scope": "openid email profile",
         "access_type": "online",
         "prompt": "select_account",
+        "state": state_param,
     }
     return RedirectResponse(f"{GOOGLE_AUTH_URL}?{urlencode(params)}")
 
@@ -859,8 +880,20 @@ def google_callback(code: Optional[str] = None, error: Optional[str] = None, sta
     if state and state.startswith("mobile_"):
         return google_mobile.callback(state, code, error)
 
+    # Resolve target frontend URL from OAuth state parameter
+    target_frontend = (frontend_url or "https://naripehnawa.com").rstrip("/")
+    if state and state.startswith("web_"):
+        try:
+            raw_json = base64.urlsafe_b64decode(state[4:].encode()).decode()
+            data = json.loads(raw_json)
+            req_origin = data.get("origin", "").rstrip("/")
+            if req_origin in ALLOWED_FRONTEND_ORIGINS:
+                target_frontend = req_origin
+        except Exception:
+            pass
+
     def fail(reason: str):
-        return RedirectResponse(f"{frontend_url}/auth/google/success?error={reason}")
+        return RedirectResponse(f"{target_frontend}/auth/google/success?error={reason}")
 
     if error or not code:
         return fail("google_auth_cancelled")
@@ -948,12 +981,12 @@ def google_callback(code: Optional[str] = None, error: Optional[str] = None, sta
         {
             "sub": str(user["_id"]),
             "email": user["email"],
-            "role": "customer",
+            "role": user.get("role", "customer"),
             "token_version": user.get("token_version", 1),
         }
     )
 
-    return RedirectResponse(f"{frontend_url}/auth/google/success?token={token}")
+    return RedirectResponse(f"{target_frontend}/auth/google/success?token={token}")
 
 
 @router.post("/logout")
