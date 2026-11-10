@@ -275,7 +275,7 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str  # Can be email or 10-digit mobile number
     password: str
 
 
@@ -287,6 +287,7 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
     name: str
+    phone: Optional[str] = None
     otp: Optional[str] = None
 
 
@@ -377,29 +378,41 @@ def send_otp(request: SendOTPRequest):
 
 @router.post("/forgot-password/send-otp")
 def forgot_password_send_otp(request: ForgotPasswordSendOTPRequest):
-    """Send reset password OTP to email"""
+    """Send reset password OTP directly to user's registered email via Gmail SMTP"""
     import random
+    import re
     from datetime import datetime, timedelta, timezone
     from app.services.notification_service import NotificationService
 
     db = get_database()
     users = db["users"]
+    clean_email = request.email.strip().lower()
+    escaped = re.escape(clean_email)
+    pattern = f"^{escaped}$"
 
-    # Check if user exists
-    user = users.find_one({"email": request.email})
+    # Check if user exists in users or sellers collection
+    user = users.find_one({"email": {"$regex": pattern, "$options": "i"}})
     if not user:
-        raise HTTPException(status_code=404, detail="No account found with this email address")
+        seller = db["sellers"].find_one({"email": {"$regex": pattern, "$options": "i"}})
+        if seller:
+            user = seller
 
-    # Generate 6-digit OTP
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="No account found with this email address. Please check your spelling or register."
+        )
+
+    # Generate secure 6-digit OTP
     otp_code = f"{random.randint(100000, 999999)}"
     now_utc = datetime.now(timezone.utc)
     expires_at = now_utc + timedelta(minutes=10)
 
-    # Store OTP in DB
+    # Store OTP in DB (case-insensitive email matching)
     otps = db["otps"]
-    otps.delete_many({"email": request.email})
+    otps.delete_many({"email": {"$regex": pattern, "$options": "i"}})
     otps.insert_one({
-        "email": request.email,
+        "email": clean_email,
         "otp": otp_code,
         "expires_at": expires_at,
         "created_at": now_utc
@@ -407,56 +420,100 @@ def forgot_password_send_otp(request: ForgotPasswordSendOTPRequest):
 
     # Send Email via NotificationService
     notif = NotificationService(db)
-    subject = "Reset Your Nari Pehnawa Password"
+    subject = "Your Nari Pehnawa Password Reset Code"
+    recipient_name = user.get("name") or user.get("full_name") or "Valued Customer"
+
     html_body = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <h2 style="color: #8B0000; margin: 0;">Nari Pehnawa</h2>
-            <p style="color: #666; font-size: 14px;">Password Reset Verification Code</p>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 20px; background-color: #faf7f2; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <div style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e8dfc8;">
+            <div style="background: linear-gradient(135deg, #4A0A19 0%, #780016 100%); padding: 28px 24px; text-align: center;">
+                <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 800; letter-spacing: 0.15em; font-family: Georgia, serif;">NARI PEHNAWA</h1>
+                <p style="margin: 6px 0 0 0; color: #f5d082; font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; font-weight: 600;">Authentic Handcrafted Ethnic Fashion</p>
+            </div>
+            <div style="padding: 32px 28px;">
+                <h2 style="margin: 0 0 12px 0; color: #1a1a1a; font-size: 18px; font-weight: 700;">Password Reset Request</h2>
+                <p style="margin: 0 0 20px 0; color: #555555; font-size: 14px; line-height: 1.6;">Hello <strong>{recipient_name}</strong>,</p>
+                <p style="margin: 0 0 24px 0; color: #555555; font-size: 14px; line-height: 1.6;">We received a request to reset the password for your Nari Pehnawa account. Use the 6-digit verification code below to verify your email and complete your password reset:</p>
+                
+                <div style="background-color: #faf7f2; border: 2px dashed #c59b27; border-radius: 12px; padding: 20px; text-align: center; margin: 0 0 24px 0;">
+                    <span style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: #780016; font-weight: 700; margin-bottom: 8px;">Your Verification Code</span>
+                    <span style="display: inline-block; font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #780016; font-family: 'Courier New', Courier, monospace;">{otp_code}</span>
+                    <span style="display: block; font-size: 12px; color: #888888; margin-top: 8px;">⏱ Valid for 10 minutes</span>
+                </div>
+
+                <p style="margin: 0 0 16px 0; color: #666666; font-size: 13px; line-height: 1.5;">Please enter this code on the password reset screen to set your new password. For security reasons, never share this code with anyone.</p>
+                
+                <div style="border-top: 1px solid #eeeeee; padding-top: 20px; margin-top: 28px;">
+                    <p style="margin: 0; color: #999999; font-size: 11px; line-height: 1.5;">If you did not request this password reset, you can safely ignore this email — your account remains secure and no changes have been made.</p>
+                </div>
+            </div>
+            <div style="background-color: #f5f5f5; padding: 14px 24px; text-align: center; border-top: 1px solid #eeeeee;">
+                <p style="margin: 0; color: #888888; font-size: 11px;">© 2026 Nari Pehnawa. All rights reserved.</p>
+            </div>
         </div>
-        <div style="background-color: #f9f9f9; padding: 15px; border-radius: 6px; text-align: center; margin-bottom: 20px;">
-            <p style="margin: 0 0 10px 0; color: #333; font-size: 14px;">Your password reset verification code is:</p>
-            <h1 style="color: #8B0000; letter-spacing: 5px; margin: 0; font-size: 32px;">{otp_code}</h1>
-            <p style="margin: 10px 0 0 0; color: #888; font-size: 12px;">Valid for 10 minutes</p>
-        </div>
-        <p style="color: #555; font-size: 13px; line-height: 1.5;">Please enter this code on the password reset screen to verify your email and set a new password.</p>
-        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-        <p style="color: #aaa; font-size: 11px; text-align: center;">If you did not request to reset your password, please ignore this email.</p>
-    </div>
+    </body>
+    </html>
     """
+
     sent = notif.send_custom_email(
-        to_email=request.email,
+        to_email=clean_email,
         subject=subject,
         body=html_body,
         is_html=True,
         event_name="password_reset_otp_sent"
     )
 
+    if not sent:
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to dispatch reset email. Please ensure your email is correct or try again in a few minutes."
+        )
+
     return {
         "success": True,
-        "message": f"Verification code sent to {request.email}"
+        "message": f"A 6-digit verification code has been sent to {clean_email}. Please check your inbox and spam folder."
     }
 
 
 @router.post("/forgot-password/reset")
 def forgot_password_reset(request: ForgotPasswordResetRequest):
     """Verify OTP and reset password"""
+    import re
     from app.security import get_password_hash
     from datetime import datetime, timezone
 
     db = get_database()
     users = db["users"]
     otps = db["otps"]
+    clean_email = request.email.strip().lower()
+    escaped = re.escape(clean_email)
+    pattern = f"^{escaped}$"
 
-    # Verify user exists
-    user = users.find_one({"email": request.email})
+    # Verify user exists in users or sellers
+    user = users.find_one({"email": {"$regex": pattern, "$options": "i"}})
+    is_seller_only = False
+    if not user:
+        seller = db["sellers"].find_one({"email": {"$regex": pattern, "$options": "i"}})
+        if seller:
+            user = seller
+            is_seller_only = True
+
     if not user:
         raise HTTPException(status_code=404, detail="No account found with this email address")
 
     # Verify OTP
-    otp_record = otps.find_one({"email": request.email, "otp": request.otp})
+    otp_record = otps.find_one({
+        "email": {"$regex": pattern, "$options": "i"},
+        "otp": request.otp.strip()
+    })
     if not otp_record:
-        raise HTTPException(status_code=400, detail="Invalid OTP code")
+        raise HTTPException(status_code=400, detail="Invalid OTP code. Please check the code sent to your email.")
 
     now_utc = datetime.now(timezone.utc)
     exp = otp_record.get("expires_at")
@@ -474,7 +531,7 @@ def forgot_password_reset(request: ForgotPasswordResetRequest):
     current_ver = user.get("token_version") or 1
     new_hash = get_password_hash(request.new_password)
     users.update_one(
-        {"email": request.email},
+        {"email": {"$regex": pattern, "$options": "i"}},
         {
             "$set": {
                 "password_hash": new_hash,
@@ -484,7 +541,7 @@ def forgot_password_reset(request: ForgotPasswordResetRequest):
         }
     )
     db["sellers"].update_many(
-        {"email": request.email},
+        {"email": {"$regex": pattern, "$options": "i"}},
         {
             "$set": {
                 "password_hash": new_hash,
@@ -509,15 +566,17 @@ def login(request: LoginRequest):
     email_clean = request.email.strip()
     escaped = re.escape(email_clean)
     email_pattern = f"^{escaped}$"
+    phone_clean = normalize_indian_phone(email_clean)
 
-    user = users.find_one({"$or": [
+    query_or = [
         {"email": {"$regex": email_pattern, "$options": "i"}},
         {"phone": email_clean}
-    ]})
-    seller = db["sellers"].find_one({"$or": [
-        {"email": {"$regex": email_pattern, "$options": "i"}},
-        {"phone": email_clean}
-    ]})
+    ]
+    if phone_clean and len(phone_clean) == 10:
+        query_or.append({"phone": phone_clean})
+
+    user = users.find_one({"$or": query_or})
+    seller = db["sellers"].find_one({"$or": query_or})
 
     # Case 1: Account registered as a Seller
     if seller and not user:
@@ -694,15 +753,26 @@ def register(request: RegisterRequest):
     now_utc = datetime.now(timezone.utc)
     today_ist = datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d")
 
+    phone_clean = normalize_indian_phone(request.phone) if request.phone else None
+    if phone_clean:
+        existing_phone = users.find_one({"phone": phone_clean})
+        if existing_phone:
+            raise HTTPException(
+                status_code=400,
+                detail="An account with this mobile number already exists. Please log in with your email or mobile number."
+            )
+
     # Create new user
     user_data = {
         "email": request.email.strip().lower(),
         "name": request.name.strip(),
+        "phone": phone_clean or "",
         "password_hash": get_password_hash(request.password),
         "role": "customer",
         "is_admin": False,
         "is_email_verified": True,
         "auth_provider": "email_password",
+        "token_version": 1,
         "created_at": now_utc,
         "joined_date": today_ist,
         "last_login": today_ist,
@@ -713,21 +783,22 @@ def register(request: RegisterRequest):
         "addresses": []
     }
 
-
     result = users.insert_one(user_data)
 
     # Create access token
     token = create_access_token({
         "sub": str(result.inserted_id),
-        "email": request.email,
-        "role": "customer"
+        "email": request.email.strip().lower(),
+        "role": "customer",
+        "token_version": 1
     })
 
     # Prepare user response
     user_out = {
         "id": str(result.inserted_id),
-        "email": request.email,
-        "name": request.name,
+        "email": request.email.strip().lower(),
+        "name": request.name.strip(),
+        "phone": phone_clean or "",
         "role": "customer"
     }
 
