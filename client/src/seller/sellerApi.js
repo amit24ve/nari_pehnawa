@@ -76,7 +76,13 @@ const sellerRequest = async (endpoint, options = {}) => {
 };
 
 export const sellerApi = {
-  // Auth
+  // Auth & OTP Verification
+  sendOtp: (type, value) =>
+    sellerRequest("/seller/send-otp", { method: "POST", body: { type, value } }),
+
+  verifyOtp: (type, value, otp) =>
+    sellerRequest("/seller/verify-otp", { method: "POST", body: { type, value, otp } }),
+
   register: (payload) =>
     sellerRequest("/seller/register", { method: "POST", body: payload }),
 

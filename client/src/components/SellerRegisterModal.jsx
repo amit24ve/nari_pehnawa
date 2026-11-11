@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
 import {
   X,
   Store,
@@ -8,9 +7,7 @@ import {
   Phone,
   User,
   MapPin,
-  Building2,
   CreditCard,
-  FileText,
   ShieldCheck,
   CheckCircle2,
   AlertCircle,
@@ -18,9 +15,12 @@ import {
   ArrowLeft,
   Loader2,
   Sparkles,
+  Check,
+  KeyRound,
 } from "lucide-react";
 import { useSellerAuth } from "../seller/SellerAuthContext";
 import { useAuth } from "../context/AuthProvider";
+import { sellerApi } from "../seller/sellerApi";
 
 const INDIAN_STATES = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
@@ -43,14 +43,14 @@ const ETHNIC_CATEGORIES = [
 const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnClose }) => {
   const { register } = useSellerAuth();
   const { openLoginModal } = useAuth();
-  const navigate = useNavigate();
 
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
 
-  const [step, setStep] = useState(1); // 1: Contact, 2: Business & Pickup, 3: Bank & KYC, 4: Success
+  const [step, setStep] = useState(1); // 1: Contact & OTP, 2: Store & Pickup, 3: Bank & KYC, 4: Success
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successNotice, setSuccessNotice] = useState("");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -75,13 +75,44 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
     agreed_packaging_policy: true,
   });
 
-  const [registeredSeller, setRegisteredSeller] = useState(null);
+  // OTP Verification States
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [phoneOtp, setPhoneOtp] = useState("");
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [sendingPhoneOtp, setSendingPhoneOtp] = useState(false);
+  const [verifyingPhoneOtp, setVerifyingPhoneOtp] = useState(false);
+  const [phoneResendTimer, setPhoneResendTimer] = useState(0);
+
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [emailOtp, setEmailOtp] = useState("");
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
+  const [verifyingEmailOtp, setVerifyingEmailOtp] = useState(false);
+  const [emailResendTimer, setEmailResendTimer] = useState(0);
+
+  // Timers countdown
+  useEffect(() => {
+    let interval = null;
+    if (phoneResendTimer > 0) {
+      interval = setInterval(() => setPhoneResendTimer((prev) => prev - 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [phoneResendTimer]);
+
+  useEffect(() => {
+    let interval = null;
+    if (emailResendTimer > 0) {
+      interval = setInterval(() => setEmailResendTimer((prev) => prev - 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [emailResendTimer]);
 
   // Global event listener to open seller registration modal from anywhere
   useEffect(() => {
     const handleOpenEvent = () => {
       setInternalIsOpen(true);
       setError("");
+      setSuccessNotice("");
       setStep(1);
     };
     const handleCloseEvent = () => {
@@ -103,6 +134,7 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
       setInternalIsOpen(false);
     }
     setError("");
+    setSuccessNotice("");
   };
 
   const handleChange = (e) => {
@@ -111,6 +143,90 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  // ── Phone OTP Handlers ──
+  const handleSendPhoneOtp = async () => {
+    const cleanPhone = formData.phone.replace(/\D/g, "");
+    if (cleanPhone.length !== 10) {
+      setError("Please enter a valid 10-digit Indian mobile number before requesting OTP.");
+      return;
+    }
+    setError("");
+    setSuccessNotice("");
+    setSendingPhoneOtp(true);
+    try {
+      const res = await sellerApi.sendOtp("phone", cleanPhone);
+      setPhoneOtpSent(true);
+      setPhoneResendTimer(30);
+      setSuccessNotice(`OTP sent successfully to +91 ${cleanPhone}`);
+    } catch (err) {
+      setError(err.message || "Failed to send mobile OTP.");
+    } finally {
+      setSendingPhoneOtp(false);
+    }
+  };
+
+  const handleVerifyPhoneOtp = async () => {
+    const cleanPhone = formData.phone.replace(/\D/g, "");
+    if (!phoneOtp || phoneOtp.trim().length < 4) {
+      setError("Please enter the complete OTP code sent to your mobile.");
+      return;
+    }
+    setError("");
+    setSuccessNotice("");
+    setVerifyingPhoneOtp(true);
+    try {
+      await sellerApi.verifyOtp("phone", cleanPhone, phoneOtp.trim());
+      setPhoneVerified(true);
+      setSuccessNotice("Mobile number verified successfully!");
+    } catch (err) {
+      setError(err.message || "Invalid mobile OTP code. Please check and try again.");
+    } finally {
+      setVerifyingPhoneOtp(false);
+    }
+  };
+
+  // ── Email OTP Handlers ──
+  const handleSendEmailOtp = async () => {
+    const cleanEmail = formData.email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      setError("Please enter a valid business email address before requesting OTP.");
+      return;
+    }
+    setError("");
+    setSuccessNotice("");
+    setSendingEmailOtp(true);
+    try {
+      await sellerApi.sendOtp("email", cleanEmail);
+      setEmailOtpSent(true);
+      setEmailResendTimer(30);
+      setSuccessNotice(`Verification OTP sent to ${cleanEmail} from otp@naripehnawa.com`);
+    } catch (err) {
+      setError(err.message || "Failed to send email OTP.");
+    } finally {
+      setSendingEmailOtp(false);
+    }
+  };
+
+  const handleVerifyEmailOtp = async () => {
+    const cleanEmail = formData.email.trim().toLowerCase();
+    if (!emailOtp || emailOtp.trim().length < 4) {
+      setError("Please enter the complete OTP code sent to your email.");
+      return;
+    }
+    setError("");
+    setSuccessNotice("");
+    setVerifyingEmailOtp(true);
+    try {
+      await sellerApi.verifyOtp("email", cleanEmail, emailOtp.trim());
+      setEmailVerified(true);
+      setSuccessNotice("Business email verified successfully!");
+    } catch (err) {
+      setError(err.message || "Invalid email OTP code. Please check your inbox or spam.");
+    } finally {
+      setVerifyingEmailOtp(false);
+    }
   };
 
   // Step 1 Validation
@@ -129,6 +245,13 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
       setError("Please enter a valid email address.");
       return false;
     }
+
+    // OTP Verification check: Must verify at least Mobile or Email (or both)
+    if (!phoneVerified && !emailVerified) {
+      setError("Verification Mandatory: Please verify your Mobile Number or Business Email via OTP before proceeding.");
+      return false;
+    }
+
     if (!formData.password || formData.password.length < 6) {
       setError("Password must be at least 6 characters.");
       return false;
@@ -152,7 +275,7 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
       return false;
     }
     if (!formData.address.trim()) {
-      setError("Please enter your pickup / store street address.");
+      setError("Please enter your pickup street address.");
       return false;
     }
     const cleanPin = formData.pincode.replace(/\D/g, "");
@@ -163,7 +286,7 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
     return true;
   };
 
-  // Submit Step 3 (Final Registration)
+  // Submit Final Registration
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     setError("");
@@ -172,17 +295,14 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
       setError("PAN card number must be exactly 10 alphanumeric characters (e.g. ABCDE1234F).");
       return;
     }
-
     if (formData.gstin && formData.gstin.trim().length !== 15) {
       setError("GSTIN must be 15 characters long.");
       return;
     }
-
     if (formData.account_number && formData.account_number !== formData.confirm_account_number) {
       setError("Bank Account Numbers do not match.");
       return;
     }
-
     if (!formData.agreed_packaging_policy) {
       setError("You must agree to the Nari Pehnawa Merchant Agreement & Standard Packaging Guidelines.");
       return;
@@ -209,13 +329,14 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
         ifsc_code: formData.ifsc_code.trim() ? formData.ifsc_code.trim().toUpperCase() : undefined,
         account_holder_name: formData.account_holder_name.trim() || undefined,
         declaration_accepted: true,
+        is_phone_verified: phoneVerified,
+        is_email_verified: emailVerified,
       };
 
-      const res = await register(payload);
-      setRegisteredSeller(res);
-      setStep(4); // Move to Success state
+      await register(payload);
+      setStep(4);
     } catch (err) {
-      setError(err.message || "Registration failed. Please verify your details or try again.");
+      setError(err.message || "Registration failed. Please check your details.");
     } finally {
       setLoading(false);
     }
@@ -223,7 +344,7 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
 
   const handleGoToDashboard = () => {
     handleClose();
-    navigate("/seller/dashboard");
+    window.location.href = "/seller/dashboard";
   };
 
   const handleOpenLogin = () => {
@@ -243,7 +364,7 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
         <div className="relative bg-gradient-to-r from-[#4A0A19] via-[#630E22] to-[#4A0A19] text-white px-6 py-5">
           <button
             onClick={handleClose}
-            className="absolute right-4 top-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white"
+            className="absolute right-4 top-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white cursor-pointer"
             aria-label="Close"
           >
             <X className="w-4 h-4" />
@@ -258,7 +379,7 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
             Register as a Verified Merchant Seller
           </h2>
           <p className="text-xs sm:text-sm text-stone-200 mt-1">
-            Sell sarees, suits, lehengas & ethnic wear directly to thousands of verified shoppers
+            OTP Verified Merchant Registration • Direct Daily Payouts & Nationwide Reach
           </p>
 
           {/* Stepper Progress */}
@@ -272,7 +393,7 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
                 <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
                   step >= 1 ? "bg-[#ffe29a] text-[#4A0A19]" : "bg-white/20 text-white"
                 }`}>1</span>
-                <span>Account</span>
+                <span>Account & OTP</span>
               </div>
               <div
                 className={`flex items-center gap-2 text-xs font-semibold pb-1 border-b-2 transition-all ${
@@ -301,76 +422,198 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
         {/* Body Content */}
         <div className="p-5 sm:p-6 max-h-[75vh] overflow-y-auto">
           {error && (
-            <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-xs font-medium text-red-800 animate-fadeIn">
+            <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-xs font-medium text-red-800 animate-fadeIn">
               <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* ── STEP 1: Account & Contact ── */}
+          {successNotice && (
+            <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-2 text-xs font-semibold text-emerald-800 animate-fadeIn">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span>{successNotice}</span>
+            </div>
+          )}
+
+          {/* ── STEP 1: Account, Contact & OTP Verification ── */}
           {step === 1 && (
             <div className="space-y-4">
               <div className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">
-                Step 1 of 3: Primary Contact & Password
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Your Full Name *
-                  </label>
-                  <div className="relative">
-                    <User className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-                    <input
-                      type="text"
-                      name="name"
-                      required
-                      value={formData.name}
-                      onChange={handleChange}
-                      placeholder="e.g. Rajesh Kumar"
-                      className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">
-                    10-Digit Mobile Number *
-                  </label>
-                  <div className="relative">
-                    <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-                    <input
-                      type="tel"
-                      name="phone"
-                      required
-                      maxLength={10}
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="9876543210"
-                      className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2]"
-                    />
-                  </div>
-                </div>
+                Step 1 of 3: Primary Contact & OTP Verification (Mandatory)
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-stone-700 mb-1">
-                  Business Email Address *
+                  Your Full Name *
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                  <User className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
                   <input
-                    type="email"
-                    name="email"
+                    type="text"
+                    name="name"
                     required
-                    value={formData.email}
+                    value={formData.name}
                     onChange={handleChange}
-                    placeholder="merchant@example.com"
+                    placeholder="e.g. Rajesh Kumar"
                     className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2]"
                   />
                 </div>
               </div>
 
+              {/* Mobile Number with OTP Verification */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-[#0891b2]" />
+                    <span>10-Digit Mobile Number *</span>
+                  </label>
+                  {phoneVerified && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full">
+                      <Check className="w-3 h-3 text-emerald-600" /> Verified via OTP
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                      +91
+                    </span>
+                    <input
+                      type="tel"
+                      name="phone"
+                      required
+                      maxLength={10}
+                      disabled={phoneVerified}
+                      value={formData.phone}
+                      onChange={handleChange}
+                      placeholder="9876543210"
+                      className="w-full pl-11 pr-3 py-2 text-sm rounded-lg border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2] disabled:bg-slate-100 disabled:text-slate-600"
+                    />
+                  </div>
+
+                  {!phoneVerified && (
+                    <button
+                      type="button"
+                      onClick={handleSendPhoneOtp}
+                      disabled={sendingPhoneOtp || phoneResendTimer > 0}
+                      className="px-4 py-2 bg-[#0891b2] hover:bg-[#0e7490] text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                    >
+                      {sendingPhoneOtp ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : phoneResendTimer > 0 ? (
+                        `Resend (${phoneResendTimer}s)`
+                      ) : phoneOtpSent ? (
+                        "Resend OTP"
+                      ) : (
+                        "Send OTP"
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {/* Mobile OTP Input */}
+                {phoneOtpSent && !phoneVerified && (
+                  <div className="pt-2 flex gap-2 animate-fadeIn">
+                    <div className="relative flex-1">
+                      <KeyRound className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                      <input
+                        type="text"
+                        maxLength={6}
+                        value={phoneOtp}
+                        onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, ""))}
+                        placeholder="Enter 6-digit SMS OTP"
+                        className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2]"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleVerifyPhoneOtp}
+                      disabled={verifyingPhoneOtp || phoneOtp.length < 4}
+                      className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                    >
+                      {verifyingPhoneOtp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Verify Mobile"}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Email Address with OTP Verification */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-[#0891b2]" />
+                    <span>Business Email Address *</span>
+                  </label>
+                  {emailVerified && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full">
+                      <Check className="w-3 h-3 text-emerald-600" /> Verified via OTP
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                    <input
+                      type="email"
+                      name="email"
+                      required
+                      disabled={emailVerified}
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="merchant@example.com"
+                      className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2] disabled:bg-slate-100 disabled:text-slate-600"
+                    />
+                  </div>
+
+                  {!emailVerified && (
+                    <button
+                      type="button"
+                      onClick={handleSendEmailOtp}
+                      disabled={sendingEmailOtp || emailResendTimer > 0}
+                      className="px-4 py-2 bg-[#0891b2] hover:bg-[#0e7490] text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                    >
+                      {sendingEmailOtp ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : emailResendTimer > 0 ? (
+                        `Resend (${emailResendTimer}s)`
+                      ) : emailOtpSent ? (
+                        "Resend OTP"
+                      ) : (
+                        "Send OTP"
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {/* Email OTP Input */}
+                {emailOtpSent && !emailVerified && (
+                  <div className="pt-2 flex gap-2 animate-fadeIn">
+                    <div className="relative flex-1">
+                      <KeyRound className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                      <input
+                        type="text"
+                        maxLength={6}
+                        value={emailOtp}
+                        onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, ""))}
+                        placeholder="Enter 6-digit Email OTP"
+                        className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2]"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleVerifyEmailOtp}
+                      disabled={verifyingEmailOtp || emailOtp.length < 4}
+                      className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                    >
+                      {verifyingEmailOtp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Verify Email"}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Password */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">
@@ -413,7 +656,7 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
                 <button
                   type="button"
                   onClick={handleOpenLogin}
-                  className="text-xs font-bold text-[#580C1F] hover:underline"
+                  className="text-xs font-bold text-[#580C1F] hover:underline cursor-pointer"
                 >
                   Already registered as seller? Log In
                 </button>
@@ -423,7 +666,7 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
                   onClick={() => {
                     if (validateStep1()) setStep(2);
                   }}
-                  className="px-6 py-2.5 bg-[#580C1F] hover:bg-[#430918] text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+                  className="px-6 py-2.5 bg-[#580C1F] hover:bg-[#430918] text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
                 >
                   <span>Continue to Store Details</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -567,7 +810,7 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="px-4 py-2 border border-stone-300 text-stone-700 text-xs font-bold rounded-lg hover:bg-stone-50 transition-colors flex items-center gap-1.5"
+                  className="px-4 py-2 border border-stone-300 text-stone-700 text-xs font-bold rounded-lg hover:bg-stone-50 transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Back</span>
@@ -578,7 +821,7 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
                   onClick={() => {
                     if (validateStep2()) setStep(3);
                   }}
-                  className="px-6 py-2.5 bg-[#580C1F] hover:bg-[#430918] text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+                  className="px-6 py-2.5 bg-[#580C1F] hover:bg-[#430918] text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
                 >
                   <span>Continue to Bank & KYC</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -716,7 +959,7 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="px-4 py-2 border border-stone-300 text-stone-700 text-xs font-bold rounded-lg hover:bg-stone-50 transition-colors flex items-center gap-1.5"
+                  className="px-4 py-2 border border-stone-300 text-stone-700 text-xs font-bold rounded-lg hover:bg-stone-50 transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Back</span>
@@ -757,7 +1000,7 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
                 </h3>
                 <p className="text-xs text-stone-600 mt-1 max-w-md mx-auto">
                   Welcome to Nari Pehnawa Seller Community. Your store{" "}
-                  <strong className="text-[#580C1F]">{formData.shop_name}</strong> is registered.
+                  <strong className="text-[#580C1F]">{formData.shop_name}</strong> is verified & registered.
                 </p>
               </div>
 

@@ -216,16 +216,18 @@ export const AuthProvider = ({ children }) => {
                 setUser(u);
 
                 // If seller account detected, save seller session and redirect directly to /seller/dashboard
-                if (data.role === "seller" || data.is_seller || u.role === "seller") {
+                if (data.role === "seller" || data.is_seller || u.role === "seller" || u.is_seller) {
                     localStorage.setItem("np_seller_token", token);
                     localStorage.setItem("np_seller_user", JSON.stringify(data.seller || u));
-                    navigate("/seller/dashboard");
+                    window.dispatchEvent(new CustomEvent("np_seller_token_set"));
+                    window.location.href = "/seller/dashboard";
                     return { ok: true, user: u, is_seller: true, seller: data.seller || u };
                 }
 
-                // Redirect admin users to admin dashboard
+                // Redirect admin users directly to admin dashboard
                 if (u.role === "admin" || u.is_admin) {
-                    navigate("/admin/dashboard");
+                    window.location.href = "/admin/dashboard";
+                    return { ok: true, user: u, is_admin: true };
                 }
 
                 return { ok: true, user: u };
@@ -277,12 +279,13 @@ export const AuthProvider = ({ children }) => {
             if (isSellerAccount) {
                 localStorage.setItem("np_seller_token", token);
                 localStorage.setItem("np_seller_user", JSON.stringify(profile));
-                navigate("/seller/dashboard");
+                window.dispatchEvent(new CustomEvent("np_seller_token_set"));
+                window.location.href = "/seller/dashboard";
                 return { ok: true, user: u, is_seller: true };
             }
 
             if (u.role === "admin" || u.is_admin) {
-                navigate("/admin/dashboard");
+                window.location.href = "/admin/dashboard";
                 return { ok: true, user: u, is_admin: true };
             }
 
@@ -362,12 +365,13 @@ export const AuthProvider = ({ children }) => {
             if (isSellerAccount) {
                 localStorage.setItem("np_seller_token", token);
                 localStorage.setItem("np_seller_user", JSON.stringify(data.seller || u));
-                navigate("/seller/dashboard");
+                window.dispatchEvent(new CustomEvent("np_seller_token_set"));
+                window.location.href = "/seller/dashboard";
                 return { ok: true, user: u, is_seller: true, seller: data.seller || u, is_new_user: data.is_new_user };
             }
 
             if (u.role === "admin" || u.is_admin) {
-                navigate("/admin/dashboard");
+                window.location.href = "/admin/dashboard";
                 return { ok: true, user: u, is_admin: true, is_new_user: data.is_new_user };
             }
 

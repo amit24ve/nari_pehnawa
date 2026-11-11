@@ -40,6 +40,28 @@ PRIVATE_KYC_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── Pydantic Request Models ───────────────────────────────────────────────────
 
+def normalize_indian_phone(p: Optional[str]) -> str:
+    if not p:
+        return ""
+    digits = re.sub(r"\D", "", str(p))
+    if len(digits) == 12 and digits.startswith("91"):
+        digits = digits[2:]
+    elif len(digits) == 11 and digits.startswith("0"):
+        digits = digits[1:]
+    return digits
+
+
+class SellerSendOTPRequest(BaseModel):
+    type: str  # "phone" or "email"
+    value: str
+
+
+class SellerVerifyOTPRequest(BaseModel):
+    type: str  # "phone" or "email"
+    value: str
+    otp: str
+
+
 class SellerRegisterRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     shop_name: str = Field(..., min_length=2, max_length=150)
@@ -61,6 +83,10 @@ class SellerRegisterRequest(BaseModel):
     branch_name: Optional[str] = None
     kyc_documents: Optional[List[Dict[str, Any]]] = None
     declaration_accepted: Optional[bool] = True
+    phone_otp: Optional[str] = None
+    email_otp: Optional[str] = None
+    is_phone_verified: Optional[bool] = False
+    is_email_verified: Optional[bool] = False
 
 
 class SellerLoginRequest(BaseModel):
@@ -239,6 +265,161 @@ def serialize_doc(doc: Dict[str, Any]) -> Dict[str, Any]:
 
 # ── 1. Public Authentication & Registration ───────────────────────────────────
 
+@router.post("/send-otp")
+def send_seller_otp(request: SellerSendOTPRequest):
+    """Send verification OTP for seller registration via SMS (for phone) or Email (from otp@naripehnawa.com)"""
+    db = get_database()
+    otps = db["otps"]
+    now_utc = datetime.now(timezone.utc)
+    expires_at = now_utc + timedelta(minutes=10)
+    otp_code = f"{random.randint(100000, 999999)}"
+
+    otp_type = request.type.strip().lower()
+
+    if otp_type == "phone":
+        clean_phone = normalize_indian_phone(request.value)
+        if len(clean_phone) != 10:
+            raise HTTPException(status_code=400, detail="Please enter a valid 10-digit Indian mobile number.")
+        
+        # Check uniqueness in sellers
+        existing = db["sellers"].find_one({"phone": clean_phone})
+        if existing:
+            raise HTTPException(status_code=400, detail=f"The mobile number (+91 {clean_phone}) is already registered with an existing seller account. Please log in.")
+
+        otps.delete_many({"phone": clean_phone, "scope": "seller_register"})
+        otps.insert_one({
+            "phone": clean_phone,
+            "otp": otp_code,
+            "scope": "seller_register",
+            "expires_at": expires_at,
+            "created_at": now_utc
+        })
+
+        try:
+            from app.services.sms_service import send_otp_sms
+            send_otp_sms(clean_phone, otp_code)
+        except Exception as e:
+            print(f"SMS send error: {e}")
+
+        return {
+            "success": True,
+            "message": f"Verification OTP code sent to +91 {clean_phone}",
+            "type": "phone"
+        }
+
+    elif otp_type == "email":
+        clean_email = request.value.strip().lower()
+        if not clean_email or "@" not in clean_email:
+            raise HTTPException(status_code=400, detail="Please enter a valid business email address.")
+        
+        # Check uniqueness in sellers
+        existing = db["sellers"].find_one({"email": clean_email})
+        if existing:
+            raise HTTPException(status_code=400, detail=f"The email address ({clean_email}) is already registered with an existing seller account. Please log in.")
+
+        otps.delete_many({"email": clean_email, "scope": "seller_register"})
+        otps.insert_one({
+            "email": clean_email,
+            "otp": otp_code,
+            "scope": "seller_register",
+            "expires_at": expires_at,
+            "created_at": now_utc
+        })
+
+        try:
+            from app.services.notification_service import NotificationService
+            notif = NotificationService(db)
+            subject = "Nari Pehnawa Seller Verification Code"
+            html_body = f"""
+            <!DOCTYPE html>
+            <html>
+            <body style="margin: 0; padding: 20px; background-color: #faf7f2; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                <div style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e8dfc8;">
+                    <div style="background: linear-gradient(135deg, #4A0A19 0%, #780016 100%); padding: 28px 24px; text-align: center;">
+                        <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 800; letter-spacing: 0.15em;">NARI PEHNAWA</h1>
+                        <p style="margin: 6px 0 0 0; color: #f5d082; font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em;">Seller Central Hub</p>
+                    </div>
+                    <div style="padding: 32px 28px;">
+                        <h2 style="margin: 0 0 12px 0; color: #1a1a1a; font-size: 18px; font-weight: 700;">Seller Account Verification</h2>
+                        <p style="margin: 0 0 20px 0; color: #555555; font-size: 14px; line-height: 1.6;">You are registering as a verified merchant on Nari Pehnawa. Use the 6-digit verification code below to verify your email address:</p>
+                        <div style="background-color: #faf7f2; border: 2px dashed #0891b2; border-radius: 12px; padding: 20px; text-align: center; margin: 0 0 24px 0;">
+                            <span style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #0891b2; font-family: 'Courier New', monospace;">{otp_code}</span>
+                            <p style="margin: 8px 0 0 0; color: #777777; font-size: 12px;">This code is valid for 10 minutes</p>
+                        </div>
+                        <p style="margin: 0; color: #888888; font-size: 12px; line-height: 1.5;">If you did not initiate this merchant registration, please ignore this email.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            notif.send_email(to_email=clean_email, subject=subject, body=html_body, is_html=True)
+        except Exception as e:
+            print(f"Email send error: {e}")
+
+        return {
+            "success": True,
+            "message": f"Verification code sent to {clean_email}",
+            "type": "email"
+        }
+    else:
+        raise HTTPException(status_code=400, detail="Invalid OTP type. Must be 'phone' or 'email'.")
+
+
+@router.post("/verify-otp")
+def verify_seller_otp(request: SellerVerifyOTPRequest):
+    """Verify phone or email OTP for seller registration"""
+    db = get_database()
+    otps = db["otps"]
+    now_utc = datetime.now(timezone.utc)
+    otp_clean = request.otp.strip()
+    otp_type = request.type.strip().lower()
+
+    if otp_type == "phone":
+        clean_phone = normalize_indian_phone(request.value)
+        record = otps.find_one({
+            "phone": clean_phone,
+            "otp": otp_clean,
+            "scope": "seller_register"
+        })
+        if not record:
+            record = otps.find_one({"phone": clean_phone, "otp": otp_clean})
+        if not record:
+            raise HTTPException(status_code=400, detail="Invalid OTP code. Please check and try again.")
+        exp = record.get("expires_at")
+        if isinstance(exp, datetime):
+            if exp.tzinfo is None:
+                exp = exp.replace(tzinfo=timezone.utc)
+            if exp < now_utc:
+                raise HTTPException(status_code=400, detail="OTP code has expired. Please request a new one.")
+        
+        otps.delete_one({"_id": record["_id"]})
+        return {"success": True, "verified": True, "message": "Mobile number verified successfully.", "type": "phone"}
+
+    elif otp_type == "email":
+        clean_email = request.value.strip().lower()
+        record = otps.find_one({
+            "email": clean_email,
+            "otp": otp_clean,
+            "scope": "seller_register"
+        })
+        if not record:
+            record = otps.find_one({"email": clean_email, "otp": otp_clean})
+        if not record:
+            raise HTTPException(status_code=400, detail="Invalid OTP code. Please check the code sent to your email.")
+        exp = record.get("expires_at")
+        if isinstance(exp, datetime):
+            if exp.tzinfo is None:
+                exp = exp.replace(tzinfo=timezone.utc)
+            if exp < now_utc:
+                raise HTTPException(status_code=400, detail="OTP code has expired. Please request a new code.")
+
+        otps.delete_one({"_id": record["_id"]})
+        return {"success": True, "verified": True, "message": "Email address verified successfully.", "type": "email"}
+
+    else:
+        raise HTTPException(status_code=400, detail="Invalid verification type.")
+
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register_seller(payload: SellerRegisterRequest):
     """
@@ -247,13 +428,22 @@ def register_seller(payload: SellerRegisterRequest):
     """
     db = get_database()
     email_clean = payload.email.strip().lower()
+    phone_clean = normalize_indian_phone(payload.phone)
 
-    # Check if already registered
-    existing = db["sellers"].find_one({"email": email_clean})
-    if existing:
+    # Check email uniqueness
+    existing_email = db["sellers"].find_one({"email": email_clean})
+    if existing_email:
         raise HTTPException(
             status_code=400,
             detail="A seller account with this email address already exists. Please log in.",
+        )
+
+    # Check phone uniqueness
+    existing_phone = db["sellers"].find_one({"phone": phone_clean})
+    if existing_phone:
+        raise HTTPException(
+            status_code=400,
+            detail="A seller account with this mobile number already exists. Please log in.",
         )
 
     now = datetime.now(timezone.utc)

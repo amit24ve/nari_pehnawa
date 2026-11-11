@@ -93,11 +93,11 @@ const GoogleAuthCallback = () => {
           }
         }
         if (res.is_seller || (res.user && (res.user.role === "seller" || res.user.is_seller))) {
-          navigate("/seller/dashboard", { replace: true });
+          window.location.href = "/seller/dashboard";
           return;
         }
         if (res.user && (res.user.role === "admin" || res.user.is_admin)) {
-          navigate("/admin/dashboard", { replace: true });
+          window.location.href = "/admin/dashboard";
           return;
         }
         navigate("/", { replace: true });

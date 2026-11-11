@@ -43,6 +43,18 @@ export const SellerAuthProvider = ({ children }) => {
 
   useEffect(() => {
     refreshSeller();
+
+    const handleSync = () => {
+      setToken(getSellerToken());
+      refreshSeller();
+    };
+
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("np_seller_token_set", handleSync);
+    return () => {
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("np_seller_token_set", handleSync);
+    };
   }, [refreshSeller]);
 
   const login = async (email, password) => {
@@ -80,7 +92,7 @@ export const SellerAuthProvider = ({ children }) => {
     seller,
     token,
     loading,
-    isAuthenticated: !!token && !!seller,
+    isAuthenticated: Boolean((token || getSellerToken()) && (seller || getSellerStoredUser())),
     login,
     register,
     logout,

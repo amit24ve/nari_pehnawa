@@ -567,132 +567,151 @@ const Navbar = () => {
 
               {/* Account / Login (Desktop) */}
               {user ? (
-                <div
-                  className="relative hidden md:block"
-                  ref={profileDropdownRef}
-                >
-                  <button
-                    onClick={() =>
-                      setIsProfileDropdownOpen(!isProfileDropdownOpen)
-                    }
-                    className="flex flex-col items-center gap-1 px-3 py-1.5 text-gray-700 hover:text-[#580C1F] transition-colors group cursor-pointer"
+                isSeller ? (
+                  /* Dedicated Seller Central Button */
+                  <div className="hidden md:flex items-center gap-2">
+                    <Link
+                      to="/seller/dashboard"
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-[#0891b2] border border-cyan-200 text-xs font-bold transition-all shadow-xs"
+                      title="Open Seller Dashboard"
+                    >
+                      <Store className="w-4 h-4 text-[#0891b2]" />
+                      <span>Seller Dashboard</span>
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="p-1.5 text-stone-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50 cursor-pointer"
+                      title="Logout"
+                    >
+                      <LogOut className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (user.role === "admin" || user.is_admin) ? (
+                  /* Dedicated Admin Portal Button */
+                  <div className="hidden md:flex items-center gap-2">
+                    <Link
+                      to="/admin/dashboard"
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#FAF0E6] hover:bg-[#faebd7] text-[#580C1F] border border-[#580C1F]/20 text-xs font-bold transition-all shadow-xs"
+                      title="Open Admin Dashboard"
+                    >
+                      <LayoutDashboard className="w-4 h-4 text-[#580C1F]" />
+                      <span>Admin Dashboard</span>
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="p-1.5 text-stone-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50 cursor-pointer"
+                      title="Logout"
+                    >
+                      <LogOut className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  /* Customer Profile Dropdown */
+                  <div
+                    className="relative hidden md:block"
+                    ref={profileDropdownRef}
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#580C1F] to-[#8B0000] p-0.5 shadow-sm">
-                      <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-[#580C1F] font-bold text-xs">
-                        {user.name?.charAt(0).toUpperCase() || "U"}
-                      </div>
-                    </div>
-                    <span className="text-[11px] font-bold tracking-wide leading-none flex items-center gap-0.5">
-                      {user.name?.split(" ")[0] || "Account"}
-                      <ChevronDown className="w-2.5 h-2.5 text-gray-400 group-hover:text-[#580C1F] transition-transform" />
-                    </span>
-                  </button>
-
-                  {isProfileDropdownOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-stone-200 rounded-2xl shadow-2xl overflow-hidden z-50 animate-fadeIn">
-                      {/* Profile Card Header */}
-                      <div className="flex items-center gap-3 px-5 py-4 bg-gradient-to-br from-[#FAF5ED] to-white border-b border-stone-100">
-                        <div className="w-12 h-12 rounded-2xl bg-[#580C1F] flex items-center justify-center text-[#D4AF37] font-serif font-bold text-xl flex-shrink-0 shadow-md">
+                    <button
+                      onClick={() =>
+                        setIsProfileDropdownOpen(!isProfileDropdownOpen)
+                      }
+                      className="flex flex-col items-center gap-1 px-3 py-1.5 text-gray-700 hover:text-[#580C1F] transition-colors group cursor-pointer"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#580C1F] to-[#8B0000] p-0.5 shadow-sm">
+                        <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-[#580C1F] font-bold text-xs">
                           {user.name?.charAt(0).toUpperCase() || "U"}
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-bold text-stone-900 truncate">
-                            {user.name || "Customer"}
-                          </p>
-                          <p className="text-xs text-stone-400 truncate">
-                            {user.email || user.phone || "Verified Shopper"}
-                          </p>
-                          <span className="inline-block mt-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#580C1F]/10 text-[#580C1F] uppercase tracking-wider">
-                            {user.role === "admin" || user.is_admin ? "Administrator" : "Verified Member"}
-                          </span>
+                      </div>
+                      <span className="text-[11px] font-bold tracking-wide leading-none flex items-center gap-0.5">
+                        {user.name?.split(" ")[0] || "Account"}
+                        <ChevronDown className="w-2.5 h-2.5 text-gray-400 group-hover:text-[#580C1F] transition-transform" />
+                      </span>
+                    </button>
+
+                    {isProfileDropdownOpen && (
+                      <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-stone-200 rounded-2xl shadow-2xl overflow-hidden z-50 animate-fadeIn">
+                        {/* Profile Card Header */}
+                        <div className="flex items-center gap-3 px-5 py-4 bg-gradient-to-br from-[#FAF5ED] to-white border-b border-stone-100">
+                          <div className="w-12 h-12 rounded-2xl bg-[#580C1F] flex items-center justify-center text-[#D4AF37] font-serif font-bold text-xl flex-shrink-0 shadow-md">
+                            {user.name?.charAt(0).toUpperCase() || "U"}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-bold text-stone-900 truncate">
+                              {user.name || "Customer"}
+                            </p>
+                            <p className="text-xs text-stone-400 truncate">
+                              {user.email || user.phone || "Verified Shopper"}
+                            </p>
+                            <span className="inline-block mt-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#580C1F]/10 text-[#580C1F] uppercase tracking-wider">
+                              Verified Member
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Menu List */}
+                        <div className="py-2">
+                          <Link
+                            to="/user/profile"
+                            onClick={() => setIsProfileDropdownOpen(false)}
+                            className="flex items-center gap-3 px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors"
+                          >
+                            <UserCircle className="w-4 h-4 text-stone-400" />
+                            <span>My Profile &amp; Address</span>
+                          </Link>
+
+                          <Link
+                            to="/user/orders"
+                            onClick={() => setIsProfileDropdownOpen(false)}
+                            className="flex items-center justify-between px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Package className="w-4 h-4 text-stone-400" />
+                              <span>My Orders &amp; History</span>
+                            </div>
+                            <span className="text-[10px] text-[#580C1F] font-bold bg-[#FAF0E6] px-2 py-0.5 rounded-full">
+                              Track
+                            </span>
+                          </Link>
+
+                          <Link
+                            to="/wishlist"
+                            onClick={() => setIsProfileDropdownOpen(false)}
+                            className="flex items-center justify-between px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Heart className="w-4 h-4 text-stone-400" />
+                              <span>My Wishlist</span>
+                            </div>
+                            {wishlistCount > 0 && (
+                              <span className="text-[10px] bg-[#580C1F] text-white px-1.5 py-0.2 rounded-full font-bold">
+                                {wishlistCount}
+                              </span>
+                            )}
+                          </Link>
+
+                          <button
+                            onClick={() => {
+                              setIsProfileDropdownOpen(false);
+                              setIsTrackingModalOpen(true);
+                            }}
+                            className="w-full flex items-center gap-3 px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors text-left cursor-pointer"
+                          >
+                            <Truck className="w-4 h-4 text-stone-400" />
+                            <span>Track A Shipment (AWB / Order ID)</span>
+                          </button>
+
+                          <button
+                            onClick={handleLogout}
+                            className="w-full flex items-center gap-3 px-5 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 border-t border-stone-100 transition-colors mt-1 cursor-pointer"
+                          >
+                            <LogOut className="w-4 h-4 text-red-500" />
+                            <span>Logout</span>
+                          </button>
                         </div>
                       </div>
-
-                      {/* Menu List */}
-                      <div className="py-2">
-                        <Link
-                          to="/user/profile"
-                          onClick={() => setIsProfileDropdownOpen(false)}
-                          className="flex items-center gap-3 px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors"
-                        >
-                          <UserCircle className="w-4 h-4 text-stone-400" />
-                          <span>My Profile &amp; Address</span>
-                        </Link>
-
-                        <Link
-                          to="/user/orders"
-                          onClick={() => setIsProfileDropdownOpen(false)}
-                          className="flex items-center justify-between px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Package className="w-4 h-4 text-stone-400" />
-                            <span>My Orders &amp; History</span>
-                          </div>
-                          <span className="text-[10px] text-[#580C1F] font-bold bg-[#FAF0E6] px-2 py-0.5 rounded-full">
-                            Track
-                          </span>
-                        </Link>
-
-                        <Link
-                          to="/wishlist"
-                          onClick={() => setIsProfileDropdownOpen(false)}
-                          className="flex items-center justify-between px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Heart className="w-4 h-4 text-stone-400" />
-                            <span>My Wishlist</span>
-                          </div>
-                          {wishlistCount > 0 && (
-                            <span className="text-[10px] bg-[#580C1F] text-white px-1.5 py-0.2 rounded-full font-bold">
-                              {wishlistCount}
-                            </span>
-                          )}
-                        </Link>
-
-                        <button
-                          onClick={() => {
-                            setIsProfileDropdownOpen(false);
-                            setIsTrackingModalOpen(true);
-                          }}
-                          className="w-full flex items-center gap-3 px-5 py-2.5 text-xs font-semibold text-stone-700 hover:bg-[#FAF5ED] hover:text-[#580C1F] transition-colors text-left cursor-pointer"
-                        >
-                          <Truck className="w-4 h-4 text-stone-400" />
-                          <span>Track A Shipment (AWB / Order ID)</span>
-                        </button>
-
-                        {(user.role === "admin" || user.is_admin) && (
-                          <Link
-                            to="/admin/dashboard"
-                            onClick={() => setIsProfileDropdownOpen(false)}
-                            className="flex items-center gap-3 px-5 py-2.5 text-xs font-bold text-[#580C1F] bg-[#FAF0E6]/50 hover:bg-[#FAF0E6] transition-colors border-y border-stone-100"
-                          >
-                            <LayoutDashboard className="w-4 h-4 text-[#580C1F]" />
-                            <span>Admin Portal Dashboard</span>
-                          </Link>
-                        )}
-
-                        {isSeller && (
-                          <Link
-                            to="/seller/dashboard"
-                            onClick={() => setIsProfileDropdownOpen(false)}
-                            className="flex items-center gap-3 px-5 py-2.5 text-xs font-bold text-[#0891b2] bg-cyan-50/70 hover:bg-cyan-100/60 transition-colors border-y border-cyan-100"
-                          >
-                            <Store className="w-4 h-4 text-[#0891b2]" />
-                            <span>Seller Dashboard</span>
-                          </Link>
-                        )}
-
-                        <button
-                          onClick={handleLogout}
-                          className="w-full flex items-center gap-3 px-5 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 border-t border-stone-100 transition-colors mt-1 cursor-pointer"
-                        >
-                          <LogOut className="w-4 h-4 text-red-500" />
-                          <span>Logout</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )
               ) : (
                 <button
                   onClick={() => openLoginModal()}
@@ -1055,18 +1074,19 @@ const Navbar = () => {
                             Products
                           </Link>
                         </>
+                      ) : isSeller ? (
+                        <>
+                          <Link
+                            to="/seller/dashboard"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="flex items-center gap-3 py-3 text-sm font-bold text-[#0891b2] hover:text-[#0e7490] border-b border-gray-100 bg-cyan-50/40 px-2 rounded-lg"
+                          >
+                            <Store className="w-4 h-4 text-[#0891b2]" />
+                            Seller Central Dashboard
+                          </Link>
+                        </>
                       ) : (
                         <>
-                          {isSeller && (
-                            <Link
-                              to="/seller/dashboard"
-                              onClick={() => setIsMobileMenuOpen(false)}
-                              className="flex items-center gap-3 py-3 text-sm font-bold text-[#0891b2] hover:text-[#0e7490] border-b border-gray-100 bg-cyan-50/40 px-2 rounded-lg"
-                            >
-                              <Store className="w-4 h-4 text-[#0891b2]" />
-                              Seller Dashboard
-                            </Link>
-                          )}
                           {userMenuItems.map(({ to, icon, label }) => (
                             <Link
                               key={to}
