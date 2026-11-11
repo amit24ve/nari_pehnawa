@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }) => {
     // Session validation, periodic heartbeat & active focus check
     useEffect(() => {
         const validateSession = () => {
-            const token = localStorage.getItem("neel_token") || localStorage.getItem("token");
+            const token = localStorage.getItem("neel_token") || localStorage.getItem("token") || localStorage.getItem("np_seller_token");
             if (!token) return;
 
             const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";

@@ -551,7 +551,30 @@ def login_seller(payload: SellerLoginRequest):
         {"email": {"$regex": email_pattern, "$options": "i"}},
         {"phone": email_clean}
     ]})
-    if not seller or not verify_password(payload.password, seller.get("password_hash", "")):
+    if not seller:
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+
+    seller_valid = False
+    s_hash = seller.get("password_hash", "")
+    s_plain = seller.get("password", "")
+    if s_hash and verify_password(payload.password, s_hash):
+        seller_valid = True
+    elif s_plain and str(s_plain).strip() == str(payload.password).strip():
+        seller_valid = True
+        try:
+            new_h = get_password_hash(payload.password)
+            db["sellers"].update_one({"_id": seller["_id"]}, {"$set": {"password_hash": new_h}, "$unset": {"password": ""}})
+        except Exception:
+            pass
+    elif s_hash and str(s_hash).strip() == str(payload.password).strip():
+        seller_valid = True
+        try:
+            new_h = get_password_hash(payload.password)
+            db["sellers"].update_one({"_id": seller["_id"]}, {"$set": {"password_hash": new_h}})
+        except Exception:
+            pass
+
+    if not seller_valid:
         raise HTTPException(status_code=401, detail="Invalid email or password.")
 
     if seller.get("status") == "suspended":

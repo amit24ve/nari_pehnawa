@@ -400,17 +400,39 @@ def update_current_user_profile_v2(user_update: UserUpdate, current_user: dict =
                 update_data["name"] = clean_name
                 update_data["full_name"] = clean_name
                 rev_filter = [{"user_id": str(user_id)}]
-                if user.get("email"):
-                    rev_filter.append({"user_email": user.get("email")})
+                cur_email = current_user.get("email")
+                if cur_email:
+                    rev_filter.append({"user_email": cur_email})
                 db["reviews"].update_many(
                     {"$or": rev_filter},
                     {"$set": {"user_name": clean_name, "reviewer_name": clean_name}}
                 )
 
+        # Handle password update if passed
+        if "password" in update_data or "new_password" in update_data:
+            pwd = str(update_data.pop("password", None) or update_data.pop("new_password", "")).strip()
+            if pwd:
+                if len(pwd) < 6:
+                    raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
+                now_utc = datetime.now(timezone.utc)
+                cur_user_doc = users_collection.find_one({"_id": ObjectId(user_id)}) or {}
+                current_ver = cur_user_doc.get("token_version") or 1
+                new_hash = get_password_hash(pwd)
+                update_data["password_hash"] = new_hash
+                update_data["password_changed_at"] = now_utc
+                update_data["token_version"] = current_ver + 1
+                cur_user_email = current_user.get("email") or cur_user_doc.get("email")
+                if cur_user_email:
+                    db["sellers"].update_many(
+                        {"email": cur_user_email},
+                        {"$set": {"password_hash": new_hash, "password_changed_at": now_utc, "token_version": current_ver + 1}}
+                    )
+                db["mobile_refresh_sessions"].delete_many({"user_id": str(user_id)})
+
         # Update user
         users_collection.update_one(
             {"_id": ObjectId(user_id)},
-            {"$set": update_data}
+            {"$set": update_data, "$unset": {"password": "", "new_password": ""}}
         )
         
         # Get updated user
@@ -517,8 +539,8 @@ def update_user(user_id: str, user_update: UserUpdate, current_user: dict = Depe
                 )
 
         # Handle password update if passed
-        if "password" in update_data:
-            pwd = str(update_data.pop("password", "")).strip()
+        if "password" in update_data or "new_password" in update_data:
+            pwd = str(update_data.pop("password", None) or update_data.pop("new_password", "")).strip()
             if pwd:
                 if len(pwd) < 6:
                     raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
@@ -547,7 +569,7 @@ def update_user(user_id: str, user_update: UserUpdate, current_user: dict = Depe
         # Update user
         users_collection.update_one(
             {"_id": ObjectId(user_id)},
-            {"$set": update_data}
+            {"$set": update_data, "$unset": {"password": "", "new_password": ""}}
         )
         
         # Get updated user

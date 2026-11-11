@@ -606,10 +606,16 @@ def login(request: LoginRequest):
 
     query_or = [
         {"email": {"$regex": email_pattern, "$options": "i"}},
-        {"phone": email_clean}
+        {"phone": email_clean},
+        {"name": {"$regex": email_pattern, "$options": "i"}},
+        {"full_name": {"$regex": email_pattern, "$options": "i"}},
     ]
     if phone_clean and len(phone_clean) == 10:
         query_or.append({"phone": phone_clean})
+    if email_clean.lower() in ("admin", "administrator"):
+        query_or.append({"role": "admin"})
+        query_or.append({"is_admin": True})
+        query_or.append({"email": "admin@naripehnawa.com"})
 
     user = users.find_one({"$or": query_or})
     seller = db["sellers"].find_one({"$or": query_or})
@@ -617,7 +623,26 @@ def login(request: LoginRequest):
     # Case 1: Account registered as a Seller
     if seller and not user:
         hashed_s = seller.get("password_hash")
-        if not hashed_s or not verify_password(request.password, hashed_s):
+        plain_s = seller.get("password")
+        valid_s = False
+        if hashed_s and verify_password(request.password, hashed_s):
+            valid_s = True
+        elif plain_s and str(plain_s).strip() == str(request.password).strip():
+            valid_s = True
+            try:
+                new_h = get_password_hash(request.password)
+                db["sellers"].update_one({"_id": seller["_id"]}, {"$set": {"password_hash": new_h}, "$unset": {"password": ""}})
+            except Exception:
+                pass
+        elif hashed_s and str(hashed_s).strip() == str(request.password).strip():
+            valid_s = True
+            try:
+                new_h = get_password_hash(request.password)
+                db["sellers"].update_one({"_id": seller["_id"]}, {"$set": {"password_hash": new_h}})
+            except Exception:
+                pass
+
+        if not valid_s:
             raise HTTPException(
                 status_code=401,
                 detail="Incorrect password for seller account. Please try again."
@@ -663,34 +688,57 @@ def login(request: LoginRequest):
 
     # Case 3: User found - verify password
     hashed = user.get("password_hash")
-    if not hashed or not verify_password(request.password, hashed):
+    plain = user.get("password")
+    user_password_valid = False
+
+    if hashed and verify_password(request.password, hashed):
+        user_password_valid = True
+    elif plain and str(plain).strip() == str(request.password).strip():
+        user_password_valid = True
+        try:
+            new_h = get_password_hash(request.password)
+            users.update_one({"_id": user["_id"]}, {"$set": {"password_hash": new_h}, "$unset": {"password": ""}})
+        except Exception:
+            pass
+    elif hashed and str(hashed).strip() == str(request.password).strip():
+        user_password_valid = True
+        try:
+            new_h = get_password_hash(request.password)
+            users.update_one({"_id": user["_id"]}, {"$set": {"password_hash": new_h}})
+        except Exception:
+            pass
+
+    if not user_password_valid:
         # Also check if seller password matches
-        if seller and seller.get("password_hash") and verify_password(request.password, seller["password_hash"]):
-            token = create_access_token({
-                "sub": str(seller["_id"]),
-                "email": seller["email"],
-                "role": "seller",
-                "token_version": seller.get("token_version", 1)
-            })
-            seller_out = {
-                "id": str(seller["_id"]),
-                "email": seller["email"],
-                "name": seller.get("name"),
-                "shop_name": seller.get("shop_name", "My Store"),
-                "city": seller.get("city"),
-                "state": seller.get("state"),
-                "kyc_status": seller.get("kyc_status", "pending"),
-                "role": "seller"
-            }
-            return {
-                "access_token": token,
-                "token_type": "bearer",
-                "role": "seller",
-                "is_seller": True,
-                "redirect_url": "/seller/dashboard",
-                "user": seller_out,
-                "seller": seller_out
-            }
+        if seller:
+            s_hashed = seller.get("password_hash")
+            s_plain = seller.get("password")
+            if (s_hashed and verify_password(request.password, s_hashed)) or (s_plain and str(s_plain).strip() == str(request.password).strip()) or (s_hashed and str(s_hashed).strip() == str(request.password).strip()):
+                token = create_access_token({
+                    "sub": str(seller["_id"]),
+                    "email": seller["email"],
+                    "role": "seller",
+                    "token_version": seller.get("token_version", 1)
+                })
+                seller_out = {
+                    "id": str(seller["_id"]),
+                    "email": seller["email"],
+                    "name": seller.get("name"),
+                    "shop_name": seller.get("shop_name", "My Store"),
+                    "city": seller.get("city"),
+                    "state": seller.get("state"),
+                    "kyc_status": seller.get("kyc_status", "pending"),
+                    "role": "seller"
+                }
+                return {
+                    "access_token": token,
+                    "token_type": "bearer",
+                    "role": "seller",
+                    "is_seller": True,
+                    "redirect_url": "/seller/dashboard",
+                    "user": seller_out,
+                    "seller": seller_out
+                }
 
         raise HTTPException(
             status_code=401,
@@ -724,10 +772,13 @@ def login(request: LoginRequest):
         }
 
     # Case 4: Normal Customer or Admin
+    is_admin = bool(user.get("is_admin") or user.get("role") in ("admin", "super_admin"))
+    role = "admin" if is_admin else user.get("role", "customer")
     token = create_access_token({
         "sub": str(user.get("_id")),
         "email": user.get("email"),
-        "role": user.get("role", "customer"),
+        "role": role,
+        "is_admin": is_admin,
         "token_version": user.get("token_version", 1)
     })
 
@@ -739,14 +790,18 @@ def login(request: LoginRequest):
         "id": str(user.get('_id')),
         "email": user.get('email'),
         "name": user.get('name'),
-        "role": user.get('role', 'customer'),
+        "role": role,
+        "is_admin": is_admin,
         "orders_count": orders_cnt
     }
 
     return {
         "access_token": token,
-        "refresh_token": issue_refresh(db, user["_id"]) if user.get("role", "customer") == "customer" else None,
+        "refresh_token": issue_refresh(db, user["_id"]) if not is_admin and role == "customer" else None,
         "token_type": "bearer",
+        "role": role,
+        "is_admin": is_admin,
+        "redirect_url": "/admin/dashboard" if is_admin else None,
         "user": user_out
     }
 

@@ -16,8 +16,17 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 365 * 10  # 10 years (persistent session
 
 
 def verify_password(plain_password, hashed_password):
-    """Verify a plain password against a hashed password"""
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verify a plain password against a hashed password (with fallback for plain text and legacy formats)"""
+    if not plain_password or not hashed_password:
+        return False
+    str_plain = str(plain_password).strip()
+    str_hashed = str(hashed_password).strip()
+    if str_plain == str_hashed:
+        return True
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception:
+        return str_plain == str_hashed
 
 
 def get_password_hash(password):
@@ -162,7 +171,7 @@ def get_optional_current_user(credentials: Optional[HTTPAuthorizationCredentials
 
 def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
     """Require admin role"""
-    if current_user.get("role") not in ("admin", "super_admin"):
+    if current_user.get("role") not in ("admin", "super_admin") and not current_user.get("is_admin"):
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
 

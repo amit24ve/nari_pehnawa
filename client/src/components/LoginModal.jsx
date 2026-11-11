@@ -246,18 +246,25 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
     setLoading(false);
 
     if (res.ok) {
+      const isSeller = Boolean(res.is_seller || (res.user && (res.user.role === "seller" || res.user.is_seller)));
+      const isAdmin = Boolean(res.is_admin || (res.user && (res.user.role === "admin" || res.user.is_admin)));
+
+      if (isSeller) {
+        handleClose();
+        window.location.replace("/seller/dashboard");
+        return;
+      }
+      if (isAdmin) {
+        handleClose();
+        window.location.replace("/admin/dashboard");
+        return;
+      }
+
       if (res.is_new_user || authView === "signup" || !phoneIsExistingUser) {
         setRegisteredUserData(res.user);
         setRegistrationSuccess(true);
       } else {
         handleClose();
-        if (res.is_seller || (res.user && (res.user.role === "seller" || res.user.is_seller))) {
-          window.location.replace("/seller/dashboard");
-          return;
-        } else if (res.user && (res.user.role === "admin" || res.user.is_admin)) {
-          window.location.replace("/admin/dashboard");
-          return;
-        }
       }
     } else {
       setError(res.message || "Invalid OTP code. Please check and try again.");

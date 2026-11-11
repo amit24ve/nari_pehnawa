@@ -189,8 +189,30 @@ const Navbar = () => {
     image: p.image,
   }));
 
-  const isSeller = Boolean(user?.role === "seller" || user?.is_seller || (typeof window !== "undefined" && localStorage.getItem("np_seller_token")));
-  const isAdmin = Boolean(user?.role === "admin" || user?.is_admin);
+  const isSeller = Boolean(
+    user?.role === "seller" ||
+    user?.is_seller ||
+    (typeof window !== "undefined" && (
+      localStorage.getItem("np_seller_token") ||
+      localStorage.getItem("np_seller_user") ||
+      (() => {
+        try {
+          const u = JSON.parse(localStorage.getItem("neel_admin_user") || "{}");
+          return u.role === "seller" || u.is_seller;
+        } catch (_) { return false; }
+      })()
+    ))
+  );
+  const isAdmin = Boolean(
+    user?.role === "admin" ||
+    user?.is_admin ||
+    (typeof window !== "undefined" && (() => {
+      try {
+        const u = JSON.parse(localStorage.getItem("neel_admin_user") || "{}");
+        return u.role === "admin" || u.is_admin;
+      } catch (_) { return false; }
+    })())
+  );
   const isCustomer = Boolean(user && !isSeller && !isAdmin);
 
   /* ── Profile Dropdown Content ── */

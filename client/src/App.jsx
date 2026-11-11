@@ -109,26 +109,30 @@ function MainLayout() {
         // If a seller session exists, redirect immediately to /seller/dashboard
         const sellerToken = localStorage.getItem("np_seller_token");
         const sellerUser = localStorage.getItem("np_seller_user");
-        if (sellerToken || sellerUser) {
-            try {
-                const u = JSON.parse(sellerUser || "{}");
-                if (u.role === "seller" || u.is_seller || sellerToken) {
-                    window.location.replace("/seller/dashboard");
-                    return;
-                }
-            } catch (_) {}
+        const adminUser = localStorage.getItem("neel_admin_user");
+        let parsedAdmin = null;
+        try { parsedAdmin = JSON.parse(adminUser || "{}"); } catch(_) {}
+        let parsedSeller = null;
+        try { parsedSeller = JSON.parse(sellerUser || "{}"); } catch(_) {}
+
+        const isSellerSession = Boolean(
+            sellerToken ||
+            parsedSeller?.role === "seller" ||
+            parsedSeller?.is_seller ||
+            parsedAdmin?.role === "seller" ||
+            parsedAdmin?.is_seller
+        );
+
+        if (isSellerSession) {
+            window.location.replace("/seller/dashboard");
+            return;
         }
 
-        // If an admin is logged in and visits root "/", redirect directly to /admin/dashboard
-        const adminUser = localStorage.getItem("neel_admin_user");
-        if (adminUser) {
-            try {
-                const u = JSON.parse(adminUser);
-                if ((u.role === "admin" || u.is_admin) && location.pathname === "/") {
-                    window.location.replace("/admin/dashboard");
-                    return;
-                }
-            } catch (_) {}
+        // If an admin is logged in and visits storefront or customer user pages, redirect directly to /admin/dashboard
+        const isAdminSession = Boolean(parsedAdmin?.role === "admin" || parsedAdmin?.is_admin);
+        if (isAdminSession && (location.pathname === "/" || location.pathname.startsWith("/user"))) {
+            window.location.replace("/admin/dashboard");
+            return;
         }
     }, [location.pathname]);
 
