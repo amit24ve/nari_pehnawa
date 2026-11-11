@@ -252,10 +252,10 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
       } else {
         handleClose();
         if (res.is_seller || (res.user && (res.user.role === "seller" || res.user.is_seller))) {
-          window.location.href = "/seller/dashboard";
+          window.location.replace("/seller/dashboard");
           return;
         } else if (res.user && (res.user.role === "admin" || res.user.is_admin)) {
-          window.location.href = "/admin/dashboard";
+          window.location.replace("/admin/dashboard");
           return;
         }
       }
@@ -287,10 +287,10 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
     if (result.ok) {
       handleClose();
       if (result.is_seller || (result.user && (result.user.role === "seller" || result.user.is_seller))) {
-        window.location.href = "/seller/dashboard";
+        window.location.replace("/seller/dashboard");
         return;
       } else if (result.user && (result.user.role === "admin" || result.user.is_admin)) {
-        window.location.href = "/admin/dashboard";
+        window.location.replace("/admin/dashboard");
         return;
       }
     } else {

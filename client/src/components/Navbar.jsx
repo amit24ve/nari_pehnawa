@@ -190,6 +190,8 @@ const Navbar = () => {
   }));
 
   const isSeller = Boolean(user?.role === "seller" || user?.is_seller || (typeof window !== "undefined" && localStorage.getItem("np_seller_token")));
+  const isAdmin = Boolean(user?.role === "admin" || user?.is_admin);
+  const isCustomer = Boolean(user && !isSeller && !isAdmin);
 
   /* ── Profile Dropdown Content ── */
   const adminMenuItems = [
@@ -565,52 +567,13 @@ const Navbar = () => {
                 )}
               </Link>
 
-              {/* Account / Login (Desktop) */}
-              {user ? (
-                isSeller ? (
-                  /* Dedicated Seller Central Button */
-                  <div className="hidden md:flex items-center gap-2">
-                    <Link
-                      to="/seller/dashboard"
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-[#0891b2] border border-cyan-200 text-xs font-bold transition-all shadow-xs"
-                      title="Open Seller Dashboard"
-                    >
-                      <Store className="w-4 h-4 text-[#0891b2]" />
-                      <span>Seller Dashboard</span>
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="p-1.5 text-stone-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50 cursor-pointer"
-                      title="Logout"
-                    >
-                      <LogOut className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (user.role === "admin" || user.is_admin) ? (
-                  /* Dedicated Admin Portal Button */
-                  <div className="hidden md:flex items-center gap-2">
-                    <Link
-                      to="/admin/dashboard"
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#FAF0E6] hover:bg-[#faebd7] text-[#580C1F] border border-[#580C1F]/20 text-xs font-bold transition-all shadow-xs"
-                      title="Open Admin Dashboard"
-                    >
-                      <LayoutDashboard className="w-4 h-4 text-[#580C1F]" />
-                      <span>Admin Dashboard</span>
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="p-1.5 text-stone-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50 cursor-pointer"
-                      title="Logout"
-                    >
-                      <LogOut className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  /* Customer Profile Dropdown */
-                  <div
-                    className="relative hidden md:block"
-                    ref={profileDropdownRef}
-                  >
+              {/* Account / Login (Desktop) - Only regular Customers get the dropdown; Sellers & Admins are direct-redirected to their dashboards */}
+              {isCustomer ? (
+                /* Customer Profile Dropdown */
+                <div
+                  className="relative hidden md:block"
+                  ref={profileDropdownRef}
+                >
                     <button
                       onClick={() =>
                         setIsProfileDropdownOpen(!isProfileDropdownOpen)
@@ -711,9 +674,8 @@ const Navbar = () => {
                       </div>
                     )}
                   </div>
-                )
-              ) : (
-                <button
+                ) : (
+                  <button
                   onClick={() => openLoginModal()}
                   className="hidden lg:flex flex-col items-center gap-1 px-2.5 py-2 text-gray-600 hover:text-[#8B0000] transition-colors"
                   aria-label="Login"
@@ -1016,19 +978,9 @@ const Navbar = () => {
                       <Headphones className="w-4 h-4 text-gray-500" />
                       Help Center
                     </Link>
-
-                    {/* SELL ON NARI PEHNAWA / SELLER HUB */}
-                    <Link
-                      to="/seller/dashboard"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center gap-2.5 px-5 py-3.5 text-sm font-bold uppercase tracking-wide text-[#0891b2] bg-cyan-50/50 border-b border-gray-100 hover:bg-cyan-50 transition-colors"
-                    >
-                      <Store className="w-4 h-4 text-[#0891b2]" />
-                      Seller Dashboard
-                    </Link>
                   </nav>
 
-                  {!user && (
+                  {!isCustomer ? (
                     <div className="px-5 py-4 border-t border-gray-100 mt-2">
                       <button
                         onClick={() => {
@@ -1040,66 +992,22 @@ const Navbar = () => {
                         <UserCircle className="w-5 h-5 text-gray-400" /> Sign In to Account
                       </button>
                     </div>
-                  )}
-
-                  {user && (
+                  ) : (
                     <div className="px-5 py-4 border-t border-gray-100 mt-2">
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
                         My Account
                       </p>
-                      {user.role === "admin" || user.is_admin ? (
-                        <>
-                          <Link
-                            to="/admin/dashboard"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className="flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100"
-                          >
-                            <LayoutDashboard className="w-4 h-4 text-gray-400" />{" "}
-                            Admin Dashboard
-                          </Link>
-                          <Link
-                            to="/admin/orders"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className="flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100"
-                          >
-                            <Package className="w-4 h-4 text-gray-400" />{" "}
-                            Orders
-                          </Link>
-                          <Link
-                            to="/admin/products"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className="flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100"
-                          >
-                            <ShoppingBag className="w-4 h-4 text-gray-400" />{" "}
-                            Products
-                          </Link>
-                        </>
-                      ) : isSeller ? (
-                        <>
-                          <Link
-                            to="/seller/dashboard"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className="flex items-center gap-3 py-3 text-sm font-bold text-[#0891b2] hover:text-[#0e7490] border-b border-gray-100 bg-cyan-50/40 px-2 rounded-lg"
-                          >
-                            <Store className="w-4 h-4 text-[#0891b2]" />
-                            Seller Central Dashboard
-                          </Link>
-                        </>
-                      ) : (
-                        <>
-                          {userMenuItems.map(({ to, icon, label }) => (
-                            <Link
-                              key={to}
-                              to={to}
-                              onClick={() => setIsMobileMenuOpen(false)}
-                              className="flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100"
-                            >
-                              <span className="text-gray-400">{icon}</span>
-                              {label}
-                            </Link>
-                          ))}
-                        </>
-                      )}
+                      {userMenuItems.map(({ to, icon, label }) => (
+                        <Link
+                          key={to}
+                          to={to}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center gap-3 py-3 text-sm text-gray-700 hover:text-[#8B0000] border-b border-gray-100"
+                        >
+                          <span className="text-gray-400">{icon}</span>
+                          {label}
+                        </Link>
+                      ))}
                       <button
                         onClick={() => {
                           handleLogout();

@@ -9,7 +9,12 @@ export const AuthProvider = ({ children }) => {
             const stored = localStorage.getItem("neel_admin_user");
             const token = localStorage.getItem("neel_token") || localStorage.getItem("token");
             if (stored && token) {
-                return JSON.parse(stored);
+                const parsed = JSON.parse(stored);
+                // If seller or admin, storefront user state is kept null to avoid button/profile flash
+                if (parsed.role === "seller" || parsed.is_seller || parsed.role === "admin" || parsed.is_admin) {
+                    return null;
+                }
+                return parsed;
             }
         } catch (e) {
             console.error("Failed to parse stored user", e);
@@ -102,13 +107,35 @@ export const AuthProvider = ({ children }) => {
                     }
                 } else if (res.ok) {
                     res.json().then(profile => {
+                        const isSellerAcc = profile.role === "seller" || profile.is_seller;
+                        const isAdminAcc = profile.role === "admin" || profile.is_admin;
+
+                        if (isSellerAcc) {
+                            localStorage.setItem("np_seller_token", token);
+                            localStorage.setItem("np_seller_user", JSON.stringify(profile));
+                            localStorage.removeItem("neel_admin_user");
+                            setUser(null);
+                            if (window.location.pathname === "/" || !window.location.pathname.startsWith("/seller")) {
+                                window.location.replace("/seller/dashboard");
+                            }
+                            return;
+                        }
+
+                        if (isAdminAcc) {
+                            setUser(null);
+                            if (window.location.pathname === "/" || !window.location.pathname.startsWith("/admin")) {
+                                window.location.replace("/admin/dashboard");
+                            }
+                            return;
+                        }
+
                         const u = {
                             id: profile.id,
                             email: profile.email || "",
                             name: profile.name || "User",
                             phone: profile.phone || "",
                             role: profile.role || "customer",
-                            is_admin: profile.is_admin || false,
+                            is_admin: false,
                             age: profile.age,
                             bio: profile.bio || "",
                             coins_balance: profile.coins_balance || 0,
@@ -210,26 +237,32 @@ export const AuthProvider = ({ children }) => {
             const token = data.access_token;
             const u = data.user;
             if (token && u) {
+                const isSellerAcc = Boolean(data.role === "seller" || data.is_seller || u.role === "seller" || u.is_seller);
+                const isAdminAcc = Boolean(u.role === "admin" || u.is_admin);
+
+                if (isSellerAcc) {
+                    localStorage.setItem("np_seller_token", token);
+                    localStorage.setItem("np_seller_user", JSON.stringify(data.seller || u));
+                    localStorage.removeItem("neel_admin_user");
+                    setUser(null);
+                    window.dispatchEvent(new CustomEvent("np_seller_token_set"));
+                    window.location.replace("/seller/dashboard");
+                    return { ok: true, user: u, is_seller: true, seller: data.seller || u };
+                }
+
+                if (isAdminAcc) {
+                    localStorage.setItem("neel_token", token);
+                    localStorage.setItem("token", token);
+                    localStorage.setItem("neel_admin_user", JSON.stringify(u));
+                    setUser(null);
+                    window.location.replace("/admin/dashboard");
+                    return { ok: true, user: u, is_admin: true };
+                }
+
                 localStorage.setItem("neel_token", token);
                 localStorage.setItem("token", token);
                 localStorage.setItem("neel_admin_user", JSON.stringify(u));
                 setUser(u);
-
-                // If seller account detected, save seller session and redirect directly to /seller/dashboard
-                if (data.role === "seller" || data.is_seller || u.role === "seller" || u.is_seller) {
-                    localStorage.setItem("np_seller_token", token);
-                    localStorage.setItem("np_seller_user", JSON.stringify(data.seller || u));
-                    window.dispatchEvent(new CustomEvent("np_seller_token_set"));
-                    window.location.href = "/seller/dashboard";
-                    return { ok: true, user: u, is_seller: true, seller: data.seller || u };
-                }
-
-                // Redirect admin users directly to admin dashboard
-                if (u.role === "admin" || u.is_admin) {
-                    window.location.href = "/admin/dashboard";
-                    return { ok: true, user: u, is_admin: true };
-                }
-
                 return { ok: true, user: u };
             }
 
@@ -270,25 +303,32 @@ export const AuthProvider = ({ children }) => {
                 orders_count: profile.orders_count || 0
             };
 
+            const isSellerAccount = u.role === "seller" || profile.role === "seller" || profile.is_seller;
+            const isAdminAccount = u.role === "admin" || profile.is_admin;
+
+            if (isSellerAccount) {
+                localStorage.setItem("np_seller_token", token);
+                localStorage.setItem("np_seller_user", JSON.stringify(profile));
+                localStorage.removeItem("neel_admin_user");
+                setUser(null);
+                window.dispatchEvent(new CustomEvent("np_seller_token_set"));
+                window.location.replace("/seller/dashboard");
+                return { ok: true, user: u, is_seller: true };
+            }
+
+            if (isAdminAccount) {
+                localStorage.setItem("neel_token", token);
+                localStorage.setItem("token", token);
+                localStorage.setItem("neel_admin_user", JSON.stringify(profile));
+                setUser(null);
+                window.location.replace("/admin/dashboard");
+                return { ok: true, user: u, is_admin: true };
+            }
+
             localStorage.setItem("neel_token", token);
             localStorage.setItem("token", token);
             localStorage.setItem("neel_admin_user", JSON.stringify(u));
             setUser(u);
-
-            const isSellerAccount = u.role === "seller" || profile.role === "seller" || profile.is_seller;
-            if (isSellerAccount) {
-                localStorage.setItem("np_seller_token", token);
-                localStorage.setItem("np_seller_user", JSON.stringify(profile));
-                window.dispatchEvent(new CustomEvent("np_seller_token_set"));
-                window.location.href = "/seller/dashboard";
-                return { ok: true, user: u, is_seller: true };
-            }
-
-            if (u.role === "admin" || u.is_admin) {
-                window.location.href = "/admin/dashboard";
-                return { ok: true, user: u, is_admin: true };
-            }
-
             return { ok: true, user: u };
         } catch (err) {
             return { ok: false, message: err.message };
@@ -356,27 +396,34 @@ export const AuthProvider = ({ children }) => {
             const token = data.access_token;
             const u = data.user;
             if (token && u) {
+                const isSellerAccount = data.role === "seller" || data.is_seller || u.role === "seller" || u.is_seller;
+                const isAdminAccount = u.role === "admin" || u.is_admin;
+
+                if (isSellerAccount) {
+                    localStorage.setItem("np_seller_token", token);
+                    localStorage.setItem("np_seller_user", JSON.stringify(data.seller || u));
+                    localStorage.removeItem("neel_admin_user");
+                    setUser(null);
+                    window.dispatchEvent(new CustomEvent("np_seller_token_set"));
+                    window.location.replace("/seller/dashboard");
+                    return { ok: true, user: u, is_seller: true, seller: data.seller || u, is_new_user: data.is_new_user };
+                }
+
+                if (isAdminAccount) {
+                    localStorage.setItem("neel_token", token);
+                    localStorage.setItem("token", token);
+                    localStorage.setItem("neel_admin_user", JSON.stringify(u));
+                    setUser(null);
+                    window.location.replace("/admin/dashboard");
+                    return { ok: true, user: u, is_admin: true, is_new_user: data.is_new_user };
+                }
+
                 localStorage.setItem("neel_token", token);
                 localStorage.setItem("token", token);
                 localStorage.setItem("neel_admin_user", JSON.stringify(u));
                 setUser(u);
-
-            const isSellerAccount = data.role === "seller" || data.is_seller || u.role === "seller" || u.is_seller;
-            if (isSellerAccount) {
-                localStorage.setItem("np_seller_token", token);
-                localStorage.setItem("np_seller_user", JSON.stringify(data.seller || u));
-                window.dispatchEvent(new CustomEvent("np_seller_token_set"));
-                window.location.href = "/seller/dashboard";
-                return { ok: true, user: u, is_seller: true, seller: data.seller || u, is_new_user: data.is_new_user };
+                return { ok: true, user: u, is_new_user: data.is_new_user };
             }
-
-            if (u.role === "admin" || u.is_admin) {
-                window.location.href = "/admin/dashboard";
-                return { ok: true, user: u, is_admin: true, is_new_user: data.is_new_user };
-            }
-
-            return { ok: true, user: u, is_new_user: data.is_new_user };
-        }
 
         return { ok: false, message: "Invalid server response" };
     } catch (err) {

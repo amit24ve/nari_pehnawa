@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import useSEO from "./hooks/useSEO";
 import {
     BrowserRouter as Router,
     Routes,
     Route,
     Navigate,
+    useLocation,
 } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import VisitorTracker from "./components/VisitorTracker";
@@ -102,6 +103,35 @@ function HomePage() {
 
 // Layout component for regular pages (with Navbar and Footer)
 function MainLayout() {
+    const location = useLocation();
+
+    useEffect(() => {
+        // If a seller session exists, redirect immediately to /seller/dashboard
+        const sellerToken = localStorage.getItem("np_seller_token");
+        const sellerUser = localStorage.getItem("np_seller_user");
+        if (sellerToken || sellerUser) {
+            try {
+                const u = JSON.parse(sellerUser || "{}");
+                if (u.role === "seller" || u.is_seller || sellerToken) {
+                    window.location.replace("/seller/dashboard");
+                    return;
+                }
+            } catch (_) {}
+        }
+
+        // If an admin is logged in and visits root "/", redirect directly to /admin/dashboard
+        const adminUser = localStorage.getItem("neel_admin_user");
+        if (adminUser) {
+            try {
+                const u = JSON.parse(adminUser);
+                if ((u.role === "admin" || u.is_admin) && location.pathname === "/") {
+                    window.location.replace("/admin/dashboard");
+                    return;
+                }
+            } catch (_) {}
+        }
+    }, [location.pathname]);
+
     return (
         <div className="min-h-screen" style={{ backgroundColor: "#ffffff" }}>
             <Navbar />
