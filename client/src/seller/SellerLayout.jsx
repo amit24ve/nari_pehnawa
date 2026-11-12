@@ -13,6 +13,7 @@ import {
   Clock,
   AlertTriangle,
   Store,
+  Home,
   ChevronDown,
   CheckCircle2,
   ShoppingCart,
@@ -205,11 +206,19 @@ const SellerLayout = () => {
           ))}
         </nav>
 
-        {/* Clean Footer Logout */}
-        <div className="p-4 border-t border-slate-100 flex-shrink-0">
+        {/* Clean Footer Navigation */}
+        <div className="p-4 border-t border-slate-100 flex-shrink-0 space-y-2">
+          <button
+            onClick={() => navigate("/")}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-[#580C1F]/10 hover:bg-[#580C1F]/15 text-[#580C1F] border border-[#580C1F]/20 text-xs font-bold transition shadow-xs cursor-pointer"
+            title="Visit Online Store"
+          >
+            <Home className="w-4 h-4 text-[#580C1F]" />
+            Visit Store
+          </button>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-xl bg-white hover:bg-red-50 text-red-600 hover:text-red-700 border border-black text-sm font-bold transition shadow-xs cursor-pointer"
+            className="w-full flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-xl bg-white hover:bg-red-50 text-red-600 hover:text-red-700 border border-slate-200 text-xs font-bold transition shadow-xs cursor-pointer"
           >
             <LogOut className="w-4 h-4 text-red-600" />
             Logout
@@ -220,21 +229,16 @@ const SellerLayout = () => {
       {/* Main Viewport Content Area */}
       <div className="flex-1 lg:ml-64 min-w-0 w-full flex flex-col min-h-screen overflow-x-hidden">
         {/* Top Header */}
-        <header className="sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6 py-2.5 bg-white border-b border-slate-200 shadow-xs">
-          {/* Mobile hamburger & brand */}
-          <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-40 flex items-center justify-between px-3.5 sm:px-6 py-2.5 bg-white border-b border-slate-200 shadow-xs relative">
+          {/* Mobile hamburger & Desktop store indicator */}
+          <div className="flex items-center gap-3 z-10">
             <button
               onClick={() => setMobileOpen(true)}
-              className="lg:hidden p-2 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition text-gray-700 cursor-pointer"
+              className="lg:hidden p-2 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition text-gray-700 active:scale-95 cursor-pointer"
+              aria-label="Open Seller Menu"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-5 h-5 text-gray-700" />
             </button>
-            <Link to="/seller/dashboard" className="flex items-center gap-2 lg:hidden">
-              <img src={logoImg} alt="logo" className="h-7 object-contain" />
-              <span className="font-bold text-sm" style={{ color: "#0891b2" }}>
-                Seller Hub
-              </span>
-            </Link>
 
             {/* Desktop Store Indicator */}
             <div className="hidden lg:flex items-center gap-3">
@@ -249,21 +253,58 @@ const SellerLayout = () => {
             </div>
           </div>
 
+          {/* Mobile: Centered Logo + Seller Dashboard Title */}
+          <div className="lg:hidden absolute inset-0 flex items-center justify-center pointer-events-none">
+            <Link to="/seller/dashboard" className="flex items-center gap-2 pointer-events-auto">
+              <img
+                src={logoImg}
+                alt="logo"
+                className="h-7 sm:h-8 w-auto max-w-[55px] sm:max-w-[65px] object-contain flex-shrink-0"
+              />
+              <span
+                className="font-extrabold text-sm sm:text-base tracking-tight"
+                style={{ color: "#0891b2" }}
+              >
+                Seller Dashboard
+              </span>
+            </Link>
+          </div>
+
           {/* Top Right Actions & Profile Menu */}
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5 z-10">
+            {/* Mobile Home Button */}
+            <button
+              onClick={() => navigate("/")}
+              className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#580C1F]/10 hover:bg-[#580C1F]/15 text-[#580C1F] border border-[#580C1F]/20 text-xs font-bold transition shadow-xs active:scale-95 cursor-pointer"
+              title="Visit Store / Home"
+            >
+              <Home className="w-4 h-4 text-[#580C1F]" />
+              <span className="font-bold">Home</span>
+            </button>
+
+            {/* Desktop Visit Store Button */}
+            <button
+              onClick={() => navigate("/")}
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#580C1F]/10 hover:bg-[#580C1F]/15 text-[#580C1F] border border-[#580C1F]/20 text-xs font-bold transition shadow-xs cursor-pointer"
+              title="Visit Online Store"
+            >
+              <Home className="w-4 h-4 text-[#580C1F]" />
+              <span>Visit Store</span>
+            </button>
+
             {/* Quick Add Product CTA */}
             <Link
               to="/seller/products/new"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0891b2] hover:bg-[#0e7490] text-white text-xs font-semibold shadow-xs transition"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0891b2] hover:bg-[#0e7490] text-white text-xs font-semibold shadow-xs transition"
             >
               <PlusCircle className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Add Product</span>
+              <span>Add Product</span>
             </Link>
 
             {/* Orders Shortcut */}
             <Link
               to="/seller/orders"
-              className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition relative"
+              className="hidden sm:inline-flex p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition relative"
               title="Orders"
             >
               <ShoppingCart className="w-4 h-4" />
@@ -272,7 +313,7 @@ const SellerLayout = () => {
             {/* Support Inquiries Icon */}
             <Link
               to="/seller/inquiries"
-              className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition relative"
+              className="hidden sm:inline-flex p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition relative"
               title="Support Inquiries"
             >
               <Headphones className="w-4 h-4" />
@@ -422,9 +463,19 @@ const SellerLayout = () => {
                 <button
                   onClick={() => {
                     setMobileOpen(false);
+                    navigate("/");
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#580C1F]/10 hover:bg-[#580C1F]/15 text-[#580C1F] border border-[#580C1F]/20 text-sm font-bold transition shadow-xs cursor-pointer"
+                >
+                  <Home className="w-4 h-4 text-[#580C1F]" />
+                  <span>Visit Store / Home</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setMobileOpen(false);
                     handleLogout();
                   }}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg border border-black"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl border border-slate-200 cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   <span>Logout</span>

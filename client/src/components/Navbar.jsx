@@ -219,6 +219,14 @@ const Navbar = () => {
       return (u.role === "admin" || u.is_admin) ? u : null;
     } catch (_) { return null; }
   })();
+  const sellerUserObj = (user && (user.role === "seller" || user.is_seller)) ? user : (() => {
+    try {
+      const s = JSON.parse(localStorage.getItem("np_seller_user") || "{}");
+      if (s && (s.shop_name || s.name || s.role === "seller" || s.is_seller)) return s;
+      const u = JSON.parse(localStorage.getItem("neel_admin_user") || "{}");
+      return (u.role === "seller" || u.is_seller) ? u : null;
+    } catch (_) { return null; }
+  })();
   const isCustomer = Boolean(user && !isSeller && !isAdmin);
 
   /* ── Profile Dropdown Content ── */
@@ -607,7 +615,19 @@ const Navbar = () => {
                 </Link>
               )}
 
-              {/* Account / Login - Admin Dropdown (Dashboard & Logout only) OR Customer Dropdown OR Login button */}
+              {/* Mobile: Seller Shortcut */}
+              {isSeller && !isAdmin && (
+                <Link
+                  to="/seller/dashboard"
+                  className="lg:hidden flex items-center gap-1 px-2.5 py-1 rounded-xl bg-cyan-50 border border-cyan-200 text-[#0891b2] text-[11px] font-bold flex-shrink-0 shadow-xs"
+                  title="Seller Dashboard"
+                >
+                  <Store className="w-3.5 h-3.5 text-[#0891b2]" />
+                  <span>Seller</span>
+                </Link>
+              )}
+
+              {/* Account / Login - Admin Dropdown (Dashboard & Logout only) OR Seller Dropdown (Dashboard & Logout only) OR Customer Dropdown OR Login button */}
               {isAdmin ? (
                 /* Admin Profile Dropdown */
                 <div
@@ -661,6 +681,72 @@ const Navbar = () => {
                         >
                           <LayoutDashboard className="w-4 h-4 text-[#0891b2]" />
                           <span>Admin Dashboard</span>
+                        </Link>
+
+                        <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-3 px-5 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 border-t border-stone-100 transition-colors mt-1 cursor-pointer"
+                        >
+                          <LogOut className="w-4 h-4 text-red-500" />
+                          <span>Logout</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : isSeller ? (
+                /* Seller Profile Dropdown (Seller Dashboard & Logout only) */
+                <div
+                  className="relative hidden md:block"
+                  ref={profileDropdownRef}
+                >
+                  <button
+                    onClick={() =>
+                      setIsProfileDropdownOpen(!isProfileDropdownOpen)
+                    }
+                    className="flex flex-col items-center gap-1 px-3 py-1.5 text-gray-700 hover:text-[#0891b2] transition-colors group cursor-pointer"
+                    aria-label="Seller Profile"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#0891b2] to-[#06b6d4] p-0.5 shadow-sm">
+                      <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-[#0891b2] font-bold text-xs">
+                        {(sellerUserObj?.shop_name || sellerUserObj?.name || "S").charAt(0).toUpperCase()}
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-bold tracking-wide leading-none flex items-center gap-0.5 text-[#0891b2]">
+                      Seller
+                      <ChevronDown className="w-2.5 h-2.5 text-gray-400 group-hover:text-[#0891b2] transition-transform" />
+                    </span>
+                  </button>
+
+                  {isProfileDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-stone-200 rounded-2xl shadow-2xl overflow-hidden z-50 animate-fadeIn">
+                      {/* Profile Card Header */}
+                      <div className="flex items-center gap-3 px-5 py-4 bg-gradient-to-br from-cyan-50/70 to-white border-b border-stone-100">
+                        <div className="w-11 h-11 rounded-2xl bg-[#0891b2] flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-md">
+                          {(sellerUserObj?.shop_name || sellerUserObj?.name || "S").charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-bold text-stone-900 truncate">
+                            {sellerUserObj?.shop_name || sellerUserObj?.name || "Seller"}
+                          </p>
+                          <p className="text-xs text-stone-400 truncate">
+                            {sellerUserObj?.email || "seller@naripehnawa.com"}
+                          </p>
+                          <span className="inline-block mt-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-[#0891b2] uppercase tracking-wider">
+                            Verified Seller
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Menu List: ONLY Seller Dashboard and Logout */}
+                      <div className="py-2">
+                        <Link
+                          to="/seller/dashboard"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                          className="flex items-center gap-3 px-5 py-2.5 text-xs font-bold text-[#0891b2] hover:bg-cyan-50 transition-colors"
+                        >
+                          <Store className="w-4 h-4 text-[#0891b2]" />
+                          <span>Seller Dashboard</span>
                         </Link>
 
                         <button
@@ -989,6 +1075,23 @@ const Navbar = () => {
                         </span>
                       </div>
                     </div>
+                  ) : isSeller ? (
+                    <div className="flex items-center gap-3 px-5 py-4 bg-cyan-50/70 border-b border-cyan-100">
+                      <div className="w-10 h-10 rounded-full bg-[#0891b2] flex items-center justify-center text-white font-bold text-base flex-shrink-0 shadow-sm">
+                        {(sellerUserObj?.shop_name || sellerUserObj?.name || "S").charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-gray-900 font-bold text-sm truncate">
+                          {sellerUserObj?.shop_name || sellerUserObj?.name || "Seller"}
+                        </p>
+                        <p className="text-gray-500 text-xs truncate">
+                          {sellerUserObj?.email || "seller@naripehnawa.com"}
+                        </p>
+                        <span className="inline-block mt-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-[#0891b2] uppercase tracking-wider">
+                          Verified Seller
+                        </span>
+                      </div>
+                    </div>
                   ) : isCustomer ? (
                     <div className="flex items-center gap-3 px-5 py-4 bg-gray-50">
                       <div className="w-10 h-10 rounded-full bg-[#8B0000] flex items-center justify-center text-white font-bold text-base flex-shrink-0">
@@ -1115,6 +1218,30 @@ const Navbar = () => {
                       >
                         <LayoutDashboard className="w-4 h-4 text-[#0891b2]" />
                         <span>Admin Dashboard</span>
+                      </Link>
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="flex items-center gap-3 py-3 text-sm font-bold text-red-600 hover:text-red-700 w-full px-2 mt-1 cursor-pointer"
+                      >
+                        <LogOut className="w-4 h-4 text-red-500" />
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  ) : isSeller ? (
+                    <div className="px-5 py-4 border-t border-gray-100 mt-2 space-y-2">
+                      <p className="text-[10px] font-bold text-[#0891b2] uppercase tracking-widest mb-2">
+                        Seller Portal
+                      </p>
+                      <Link
+                        to="/seller/dashboard"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-3 py-3 text-sm font-bold text-[#0891b2] hover:bg-cyan-50 border-b border-gray-100 px-2 rounded-lg transition"
+                      >
+                        <Store className="w-4 h-4 text-[#0891b2]" />
+                        <span>Seller Dashboard</span>
                       </Link>
                       <button
                         onClick={() => {
@@ -1304,7 +1431,7 @@ const Navbar = () => {
               </button>
             </form>
 
-            {user && (
+            {isCustomer && (
               <div className="pt-2 border-t border-stone-100 text-center">
                 <Link
                   to="/user/orders"

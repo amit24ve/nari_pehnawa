@@ -123,7 +123,8 @@ function MainLayout() {
             parsedAdmin?.is_seller
         );
 
-        if (isSellerSession) {
+        // If a seller session exists and visits customer-only account pages, redirect to seller dashboard
+        if (isSellerSession && location.pathname.startsWith("/user")) {
             window.location.replace("/seller/dashboard");
             return;
         }

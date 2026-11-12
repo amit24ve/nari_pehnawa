@@ -6,15 +6,10 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(() => {
         try {
-            const stored = localStorage.getItem("neel_admin_user");
-            const token = localStorage.getItem("neel_token") || localStorage.getItem("token");
+            const stored = localStorage.getItem("neel_admin_user") || localStorage.getItem("np_seller_user");
+            const token = localStorage.getItem("neel_token") || localStorage.getItem("token") || localStorage.getItem("np_seller_token");
             if (stored && token) {
-                const parsed = JSON.parse(stored);
-                // If seller, storefront user state is kept null to avoid button/profile flash
-                if (parsed.role === "seller" || parsed.is_seller) {
-                    return null;
-                }
-                return parsed;
+                return JSON.parse(stored);
             }
         } catch (e) {
             console.error("Failed to parse stored user", e);
@@ -111,13 +106,18 @@ export const AuthProvider = ({ children }) => {
                         const isAdminAcc = profile.role === "admin" || profile.is_admin;
 
                         if (isSellerAcc) {
+                            const sellerObj = {
+                                id: profile.id,
+                                email: profile.email || "",
+                                name: profile.name || profile.shop_name || "Seller",
+                                role: "seller",
+                                is_seller: true,
+                                shop_name: profile.shop_name || "",
+                            };
                             localStorage.setItem("np_seller_token", token);
-                            localStorage.setItem("np_seller_user", JSON.stringify(profile));
+                            localStorage.setItem("np_seller_user", JSON.stringify(sellerObj));
                             localStorage.removeItem("neel_admin_user");
-                            setUser(null);
-                            if (window.location.pathname === "/" || !window.location.pathname.startsWith("/seller")) {
-                                window.location.replace("/seller/dashboard");
-                            }
+                            setUser(sellerObj);
                             return;
                         }
 
@@ -246,13 +246,21 @@ export const AuthProvider = ({ children }) => {
                 const isAdminAcc = Boolean(u.role === "admin" || u.is_admin);
 
                 if (isSellerAcc) {
+                    const sellerObj = {
+                        id: u.id || (data.seller && data.seller.id),
+                        email: u.email || (data.seller && data.seller.email) || "",
+                        name: (data.seller && data.seller.name) || u.name || "Seller",
+                        role: "seller",
+                        is_seller: true,
+                        shop_name: (data.seller && data.seller.shop_name) || "",
+                    };
                     localStorage.setItem("np_seller_token", token);
-                    localStorage.setItem("np_seller_user", JSON.stringify(data.seller || u));
+                    localStorage.setItem("np_seller_user", JSON.stringify(data.seller || sellerObj));
                     localStorage.removeItem("neel_admin_user");
-                    setUser(null);
+                    setUser(sellerObj);
                     window.dispatchEvent(new CustomEvent("np_seller_token_set"));
                     window.location.replace("/seller/dashboard");
-                    return { ok: true, user: u, is_seller: true, seller: data.seller || u };
+                    return { ok: true, user: u, is_seller: true, seller: data.seller || sellerObj };
                 }
 
                 if (isAdminAcc) {
@@ -312,10 +320,18 @@ export const AuthProvider = ({ children }) => {
             const isAdminAccount = u.role === "admin" || profile.is_admin;
 
             if (isSellerAccount) {
+                const sellerObj = {
+                    id: u.id,
+                    email: u.email || "",
+                    name: profile.name || profile.shop_name || u.name || "Seller",
+                    role: "seller",
+                    is_seller: true,
+                    shop_name: profile.shop_name || "",
+                };
                 localStorage.setItem("np_seller_token", token);
-                localStorage.setItem("np_seller_user", JSON.stringify(profile));
+                localStorage.setItem("np_seller_user", JSON.stringify(sellerObj));
                 localStorage.removeItem("neel_admin_user");
-                setUser(null);
+                setUser(sellerObj);
                 window.dispatchEvent(new CustomEvent("np_seller_token_set"));
                 window.location.replace("/seller/dashboard");
                 return { ok: true, user: u, is_seller: true };
@@ -405,13 +421,21 @@ export const AuthProvider = ({ children }) => {
                 const isAdminAccount = u.role === "admin" || u.is_admin;
 
                 if (isSellerAccount) {
+                    const sellerObj = {
+                        id: u.id,
+                        email: u.email || (data.seller && data.seller.email) || "",
+                        name: (data.seller && data.seller.name) || u.name || "Seller",
+                        role: "seller",
+                        is_seller: true,
+                        shop_name: (data.seller && data.seller.shop_name) || "",
+                    };
                     localStorage.setItem("np_seller_token", token);
-                    localStorage.setItem("np_seller_user", JSON.stringify(data.seller || u));
+                    localStorage.setItem("np_seller_user", JSON.stringify(data.seller || sellerObj));
                     localStorage.removeItem("neel_admin_user");
-                    setUser(null);
+                    setUser(sellerObj);
                     window.dispatchEvent(new CustomEvent("np_seller_token_set"));
                     window.location.replace("/seller/dashboard");
-                    return { ok: true, user: u, is_seller: true, seller: data.seller || u, is_new_user: data.is_new_user };
+                    return { ok: true, user: u, is_seller: true, seller: data.seller || sellerObj, is_new_user: data.is_new_user };
                 }
 
                 if (isAdminAccount) {
