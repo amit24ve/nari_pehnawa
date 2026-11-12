@@ -128,9 +128,9 @@ function MainLayout() {
             return;
         }
 
-        // If an admin is logged in and visits storefront or customer user pages, redirect directly to /admin/dashboard
+        // If an admin is logged in and visits customer-only account pages, redirect to admin dashboard
         const isAdminSession = Boolean(parsedAdmin?.role === "admin" || parsedAdmin?.is_admin);
-        if (isAdminSession && (location.pathname === "/" || location.pathname.startsWith("/user"))) {
+        if (isAdminSession && location.pathname.startsWith("/user")) {
             window.location.replace("/admin/dashboard");
             return;
         }

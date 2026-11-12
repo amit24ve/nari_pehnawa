@@ -10,8 +10,8 @@ export const AuthProvider = ({ children }) => {
             const token = localStorage.getItem("neel_token") || localStorage.getItem("token");
             if (stored && token) {
                 const parsed = JSON.parse(stored);
-                // If seller or admin, storefront user state is kept null to avoid button/profile flash
-                if (parsed.role === "seller" || parsed.is_seller || parsed.role === "admin" || parsed.is_admin) {
+                // If seller, storefront user state is kept null to avoid button/profile flash
+                if (parsed.role === "seller" || parsed.is_seller) {
                     return null;
                 }
                 return parsed;
@@ -122,10 +122,15 @@ export const AuthProvider = ({ children }) => {
                         }
 
                         if (isAdminAcc) {
-                            setUser(null);
-                            if (window.location.pathname === "/" || !window.location.pathname.startsWith("/admin")) {
-                                window.location.replace("/admin/dashboard");
-                            }
+                            const adminObj = {
+                                id: profile.id,
+                                email: profile.email || "",
+                                name: profile.name || "Admin",
+                                role: "admin",
+                                is_admin: true,
+                            };
+                            localStorage.setItem("neel_admin_user", JSON.stringify(adminObj));
+                            setUser(adminObj);
                             return;
                         }
 
@@ -254,7 +259,7 @@ export const AuthProvider = ({ children }) => {
                     localStorage.setItem("neel_token", token);
                     localStorage.setItem("token", token);
                     localStorage.setItem("neel_admin_user", JSON.stringify(u));
-                    setUser(null);
+                    setUser(u);
                     window.location.replace("/admin/dashboard");
                     return { ok: true, user: u, is_admin: true };
                 }
@@ -320,7 +325,7 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem("neel_token", token);
                 localStorage.setItem("token", token);
                 localStorage.setItem("neel_admin_user", JSON.stringify(profile));
-                setUser(null);
+                setUser(u);
                 window.location.replace("/admin/dashboard");
                 return { ok: true, user: u, is_admin: true };
             }
@@ -413,7 +418,7 @@ export const AuthProvider = ({ children }) => {
                     localStorage.setItem("neel_token", token);
                     localStorage.setItem("token", token);
                     localStorage.setItem("neel_admin_user", JSON.stringify(u));
-                    setUser(null);
+                    setUser(u);
                     window.location.replace("/admin/dashboard");
                     return { ok: true, user: u, is_admin: true, is_new_user: data.is_new_user };
                 }

@@ -13,6 +13,7 @@ import {
     LogOut,
     Menu,
     Store,
+    Home,
     User,
     ChevronDown,
     CreditCard,
@@ -158,10 +159,18 @@ const AdminLayout = () => {
                 </nav>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-slate-100 flex-shrink-0">
+                <div className="p-4 border-t border-slate-100 flex-shrink-0 space-y-2">
+                    <button
+                        onClick={() => navigate("/")}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-[#580C1F]/10 hover:bg-[#580C1F]/15 text-[#580C1F] border border-[#580C1F]/20 text-xs font-bold transition shadow-xs cursor-pointer"
+                        title="Visit Online Store"
+                    >
+                        <Home className="w-4 h-4 text-[#580C1F]" />
+                        Visit Store
+                    </button>
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-xl bg-white hover:bg-red-50 text-red-600 hover:text-red-700 border border-black text-sm font-bold transition shadow-xs cursor-pointer"
+                        className="w-full flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-xl bg-white hover:bg-red-50 text-red-600 hover:text-red-700 border border-slate-200 text-xs font-bold transition shadow-xs cursor-pointer"
                     >
                         <LogOut className="w-4 h-4 text-red-600" />
                         Logout
@@ -171,48 +180,45 @@ const AdminLayout = () => {
 
             {/* Main Content */}
             <div className="flex-1 lg:ml-64 min-w-0 w-full flex flex-col min-h-screen overflow-x-hidden">
-                {/* Mobile/Tablet Header */}
-                <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200 shadow-sm">
-                    <div className="flex items-center gap-3">
+                {/* Mobile/Tablet Header with Centered Logo + Title & Direct Home Button */}
+                <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-3.5 py-2.5 bg-white border-b border-slate-200 shadow-xs relative">
+                    {/* Left: Mobile Menu Trigger */}
+                    <div className="flex items-center z-10">
                         <button
                             onClick={() => setOpen(true)}
-                            className="p-2 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition text-gray-700"
+                            className="p-2 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition text-gray-700 active:scale-95 cursor-pointer"
+                            aria-label="Open Admin Menu"
                         >
-                            <Menu className="w-5 h-5" />
+                            <Menu className="w-5 h-5 text-gray-700" />
                         </button>
-                        <Link to="/admin" className="flex items-center gap-2">
-                            <img src={logoImg} alt="logo" className="h-8 object-contain" />
+                    </div>
+
+                    {/* Center: Logo + Admin Dashboard (Centered) */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <Link to="/admin" className="flex items-center gap-2 pointer-events-auto">
+                            <img
+                                src={logoImg}
+                                alt="logo"
+                                className="h-7 sm:h-8 w-auto max-w-[55px] sm:max-w-[65px] object-contain flex-shrink-0"
+                            />
                             <span
-                                className="font-bold text-base"
+                                className="font-extrabold text-sm sm:text-base tracking-tight"
                                 style={{ color: "#0891b2" }}
                             >
-                                Admin
+                                Admin Dashboard
                             </span>
                         </Link>
                     </div>
 
-                    {/* Admin Profile - Mobile */}
-                    <div className="flex items-center gap-2">
-                        <div className="hidden sm:flex items-center gap-3 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#d4af37] to-[#c49f2f] flex items-center justify-center shadow-lg">
-                                <span className="text-sm font-bold text-white">
-                                    {getInitials()}
-                                </span>
-                            </div>
-                            <div className="text-left min-w-0">
-                                <p className="text-xs font-medium text-white truncate max-w-[150px]">
-                                    {user?.full_name || user?.email || "Admin"}
-                                </p>
-                                <p className="text-[10px] text-gray-400 capitalize">
-                                    {user?.role || "Administrator"}
-                                </p>
-                            </div>
-                        </div>
+                    {/* Right: Visit Store / Home Button */}
+                    <div className="flex items-center gap-2 z-10">
                         <button
                             onClick={() => navigate("/")}
-                            className="text-sm text-gray-300 hover:text-white flex items-center gap-1 p-2 hover:bg-gray-800/50 rounded-lg transition"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#580C1F]/10 hover:bg-[#580C1F]/15 text-[#580C1F] border border-[#580C1F]/20 text-xs font-bold transition shadow-xs active:scale-95 cursor-pointer"
+                            title="Visit Store / Home"
                         >
-                            <Store className="w-4 h-4" />
+                            <Home className="w-4 h-4 text-[#580C1F]" />
+                            <span className="font-bold">Home</span>
                         </button>
                     </div>
                 </header>
@@ -448,16 +454,19 @@ const AdminLayout = () => {
                             </nav>
 
                             <div className="p-4 space-y-2 border-t border-slate-200">
-                                {/* <button
-                  onClick={() => { navigate('/'); closeMobileMenu(); }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 text-sm font-medium transition"
-                >
-                  <Store className="w-4 h-4" />
-                  View Store
-                </button> */}
+                                <button
+                                    onClick={() => {
+                                        navigate('/');
+                                        closeMobileMenu();
+                                    }}
+                                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#580C1F]/10 hover:bg-[#580C1F]/15 text-[#580C1F] border border-[#580C1F]/20 text-sm font-bold transition shadow-xs cursor-pointer"
+                                >
+                                    <Home className="w-4 h-4 text-[#580C1F]" />
+                                    Visit Store / Home
+                                </button>
                                 <button
                                     onClick={handleLogout}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white hover:bg-red-50 text-red-600 hover:text-red-700 border border-black text-sm font-bold transition cursor-pointer"
+                                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-white hover:bg-red-50 text-red-600 hover:text-red-700 border border-slate-200 text-sm font-bold transition cursor-pointer"
                                 >
                                     <LogOut className="w-4 h-4 text-red-600" />
                                     Logout
