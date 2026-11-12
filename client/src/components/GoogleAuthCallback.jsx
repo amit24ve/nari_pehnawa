@@ -92,12 +92,12 @@ const GoogleAuthCallback = () => {
             console.error(e);
           }
         }
-        if (res.is_seller || (res.user && (res.user.role === "seller" || res.user.is_seller))) {
-          window.location.replace("/seller/dashboard");
+        if (res.is_seller || res.redirect_url?.includes("seller") || (res.user && (res.user.role === "seller" || res.user.is_seller))) {
+          window.location.href = "/seller/dashboard";
           return;
         }
-        if (res.user && (res.user.role === "admin" || res.user.is_admin)) {
-          window.location.replace("/admin/dashboard");
+        if (res.is_admin || res.redirect_url?.includes("admin") || (res.user && (res.user.role === "admin" || res.user.is_admin))) {
+          window.location.href = "/admin/dashboard";
           return;
         }
         navigate("/", { replace: true });

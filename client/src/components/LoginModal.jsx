@@ -131,18 +131,17 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
   // Handle post-login actions
   useEffect(() => {
     if (user && isOpen && !registrationSuccess) {
-      handleClose();
-      if (!pendingCheckout) {
-        if (user.role === "seller" || user.is_seller) {
-          window.location.href = "/seller/dashboard";
-          return;
-        } else if (user.role === "admin" || user.is_admin) {
-          window.location.href = "/admin/dashboard";
-          return;
-        }
+      if (user.role === "seller" || user.is_seller) {
+        window.location.href = "/seller/dashboard";
+        return;
       }
+      if (user.role === "admin" || user.is_admin) {
+        window.location.href = "/admin/dashboard";
+        return;
+      }
+      handleClose();
     }
-  }, [user, isOpen, pendingCheckout, navigate, handleClose, registrationSuccess]);
+  }, [user, isOpen, registrationSuccess]);
 
   if (!isOpen) return null;
 
@@ -246,17 +245,23 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
     setLoading(false);
 
     if (res.ok) {
-      const isSeller = Boolean(res.is_seller || (res.user && (res.user.role === "seller" || res.user.is_seller)));
-      const isAdmin = Boolean(res.is_admin || (res.user && (res.user.role === "admin" || res.user.is_admin)));
+      const isSeller = Boolean(
+        res.is_seller || 
+        res.redirect_url?.includes("seller") || 
+        (res.user && (res.user.role === "seller" || res.user.is_seller))
+      );
+      const isAdmin = Boolean(
+        res.is_admin || 
+        res.redirect_url?.includes("admin") || 
+        (res.user && (res.user.role === "admin" || res.user.is_admin))
+      );
 
       if (isSeller) {
-        handleClose();
-        window.location.replace("/seller/dashboard");
+        window.location.href = "/seller/dashboard";
         return;
       }
       if (isAdmin) {
-        handleClose();
-        window.location.replace("/admin/dashboard");
+        window.location.href = "/admin/dashboard";
         return;
       }
 
@@ -292,14 +297,26 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
     setLoading(false);
 
     if (result.ok) {
-      handleClose();
-      if (result.is_seller || (result.user && (result.user.role === "seller" || result.user.is_seller))) {
-        window.location.replace("/seller/dashboard");
-        return;
-      } else if (result.user && (result.user.role === "admin" || result.user.is_admin)) {
-        window.location.replace("/admin/dashboard");
+      const isSeller = Boolean(
+        result.is_seller || 
+        result.redirect_url?.includes("seller") || 
+        (result.user && (result.user.role === "seller" || result.user.is_seller))
+      );
+      const isAdmin = Boolean(
+        result.is_admin || 
+        result.redirect_url?.includes("admin") || 
+        (result.user && (result.user.role === "admin" || result.user.is_admin))
+      );
+
+      if (isSeller) {
+        window.location.href = "/seller/dashboard";
         return;
       }
+      if (isAdmin) {
+        window.location.href = "/admin/dashboard";
+        return;
+      }
+      handleClose();
     } else {
       setError(result.message || "Invalid email or password");
     }
