@@ -194,37 +194,29 @@ const Navbar = () => {
     user?.is_seller ||
     (typeof window !== "undefined" && (
       localStorage.getItem("np_seller_token") ||
-      localStorage.getItem("np_seller_user") ||
-      (() => {
-        try {
-          const u = JSON.parse(localStorage.getItem("neel_admin_user") || "{}");
-          return u.role === "seller" || u.is_seller;
-        } catch (_) { return false; }
-      })()
+      localStorage.getItem("np_seller_user")
     ))
   );
   const isAdmin = Boolean(
-    user?.role === "admin" ||
-    user?.is_admin ||
+    ((user?.role === "admin" || user?.role === "super_admin") && user?.is_admin === true) ||
     (typeof window !== "undefined" && (() => {
       try {
         const u = JSON.parse(localStorage.getItem("neel_admin_user") || "{}");
-        return u.role === "admin" || u.is_admin;
+        return (u.role === "admin" || u.role === "super_admin") && u.is_admin === true;
       } catch (_) { return false; }
     })())
   );
-  const adminUserObj = (user && (user.role === "admin" || user.is_admin)) ? user : (() => {
+  const adminUserObj = ((user && (user.role === "admin" || user.role === "super_admin")) && user.is_admin === true) ? user : (() => {
     try {
       const u = JSON.parse(localStorage.getItem("neel_admin_user") || "{}");
-      return (u.role === "admin" || u.is_admin) ? u : null;
+      return ((u.role === "admin" || u.role === "super_admin") && u.is_admin === true) ? u : null;
     } catch (_) { return null; }
   })();
   const sellerUserObj = (user && (user.role === "seller" || user.is_seller)) ? user : (() => {
     try {
       const s = JSON.parse(localStorage.getItem("np_seller_user") || "{}");
       if (s && (s.shop_name || s.name || s.role === "seller" || s.is_seller)) return s;
-      const u = JSON.parse(localStorage.getItem("neel_admin_user") || "{}");
-      return (u.role === "seller" || u.is_seller) ? u : null;
+      return null;
     } catch (_) { return null; }
   })();
   const isCustomer = Boolean(user && !isSeller && !isAdmin);

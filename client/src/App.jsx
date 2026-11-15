@@ -78,7 +78,7 @@ import UserProfile from "./user/Profile";
 import UserCoins from "./user/CoinsWallet";
 import UserOrders from "./user/Orders";
 import UserSettings from "./user/Settings";
-
+import AdvertisementStrip from "./components/AdvertisementStrip";
 import InteractiveCampaignBanner from "./components/InteractiveCampaignBanner";
 
 function HomePage() {
@@ -89,6 +89,7 @@ function HomePage() {
     return (
         <>
             <HeroSection />
+            <AdvertisementStrip />
             <Categories />
             <FestiveEventBanner />
             <InteractiveCampaignBanner />
@@ -130,7 +131,10 @@ function MainLayout() {
         }
 
         // If an admin is logged in and visits customer-only account pages, redirect to admin dashboard
-        const isAdminSession = Boolean(parsedAdmin?.role === "admin" || parsedAdmin?.is_admin);
+        const isAdminSession = Boolean(
+            (parsedAdmin?.role === "admin" || parsedAdmin?.role === "super_admin") &&
+            parsedAdmin?.is_admin === true
+        );
         if (isAdminSession && location.pathname.startsWith("/user")) {
             window.location.replace("/admin/dashboard");
             return;
@@ -295,7 +299,6 @@ function App() {
                     <SellerAuthProvider>
                         <CartProvider>
                             <WishlistProvider>
-                            <WelcomePopup />
                             <SellerRegisterModal />
                             <Routes>
                                 {/* Admin Pages (protected) - No Navbar/Footer */}

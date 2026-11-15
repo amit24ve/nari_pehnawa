@@ -3,20 +3,55 @@ import { Link } from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
-const TopBar = () => {
-  const [announcements, setAnnouncements] = useState([]);
+const DEFAULT_ANNOUNCEMENTS = [
+  {
+    id: "def_mega_sale",
+    text: "MEGA SALE IS LIVE: UP TO 40% OFF ON FESTIVE ETHNIC WEAR",
+    link: "/category/sale",
+    cta: "Shop Now →",
+  },
+  {
+    id: "def_free_shipping",
+    text: "FREE EXPRESS SHIPPING ON ALL PREPAID ORDERS ABOVE ₹799",
+    link: "/category/sale",
+    cta: "Explore →",
+  },
+  {
+    id: "def_seller_hub",
+    text: "SELL ON NARI PEHNAWA: EXPAND YOUR ETHNIC BRAND NATIONWIDE",
+    link: "/seller/register",
+    cta: "Register as Seller →",
+  },
+  {
+    id: "def_new_arrival",
+    text: "HANDCRAFTED BANARASI & LUCKNOWI KURTIS NOW IN STOCK",
+    link: "/new-arrivals",
+    cta: "View Collection →",
+  },
+];
 
-  // Fetch dynamic announcements and active Mega Sale / BOGO deals from backend
+const TopBar = () => {
+  const [announcements, setAnnouncements] = useState(DEFAULT_ANNOUNCEMENTS);
+
   const loadAnnouncements = useCallback(async () => {
     try {
       const [annRes, saleRes] = await Promise.all([
         fetch(`${API_BASE_URL}/announcements/?_t=${Date.now()}`).then((r) => (r.ok ? r.json() : [])).catch(() => []),
-        fetch(`${API_BASE_URL}/products/?on_sale=true&limit=20&_t=${Date.now()}`).then((r) => (r.ok ? r.json() : [])).catch(() => []),
+        fetch(`${API_BASE_URL}/products/?on_sale=true&limit=10&_t=${Date.now()}`).then((r) => (r.ok ? r.json() : [])).catch(() => []),
       ]);
 
-      const baseAnnouncements = Array.isArray(annRes) ? annRes.filter((a) => a.is_active !== false) : [];
+      const baseAnnouncements = Array.isArray(annRes)
+        ? annRes
+            .filter((a) => a.is_active !== false && a.text)
+            .map((a) => ({
+              id: a.id || a._id,
+              // Strip excessive emojis from text to keep it clean and professional
+              text: (a.text || "").replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "").trim().toUpperCase(),
+              link: a.link || "/category/sale",
+              cta: a.link?.includes("seller") ? "Register →" : "Shop Now →",
+            }))
+        : [];
 
-      // Extract unique active deal texts from live sale products
       const activeDeals = [];
       if (Array.isArray(saleRes) && saleRes.length > 0) {
         const dealMap = new Map();
@@ -27,31 +62,24 @@ const TopBar = () => {
           }
         });
 
-        dealMap.forEach((product, dealText) => {
+        dealMap.forEach((_, dealText) => {
           activeDeals.push({
             id: `deal_${dealText}`,
-            text: `🔥 MEGA SALE IS LIVE: ${dealText.toUpperCase()}! Special Festive Offer`,
-            sub_text: "Shop BOGO Deals Now",
+            text: `EXCLUSIVE FESTIVE OFFER: ${dealText.toUpperCase()} ON SELECTED STYLES`,
             link: "/category/sale",
-            badge: "HOT DEAL",
-            icon: "⚡",
-            is_active: true,
+            cta: "Shop Deals →",
           });
         });
       }
 
-      const sellerAnnouncement = {
+      const sellerItem = {
         id: "seller_hub_announcement",
-        text: "🏪 SELL ON NARI PEHNAWA: Expand Your Ethnic Fashion Brand Nationwide!",
-        sub_text: "Register as Verified Seller",
+        text: "SELL ON NARI PEHNAWA: BECOME A VERIFIED MERCHANT PARTNER",
         link: "/seller/register",
-        badge: "SELLER HUB",
-        icon: "🏪",
-        is_active: true,
+        cta: "Register as Seller →",
       };
 
-      // Live Deals are positioned first for maximum prominence in the top bar!
-      const combined = [...activeDeals, sellerAnnouncement, ...baseAnnouncements];
+      const combined = [...activeDeals, ...baseAnnouncements, sellerItem];
       if (combined.length > 0) {
         setAnnouncements(combined);
       }
@@ -63,39 +91,28 @@ const TopBar = () => {
   useEffect(() => {
     loadAnnouncements();
 
-    // Listen to real-time custom events & storage events for instant updates without page refresh
-    const handleUpdate = () => {
-      loadAnnouncements();
-    };
-
+    const handleUpdate = () => loadAnnouncements();
     window.addEventListener("np_announcements_updated", handleUpdate);
     window.addEventListener("np_deals_updated", handleUpdate);
-    window.addEventListener("np_mystery_jar_updated", handleUpdate);
     window.addEventListener("storage", handleUpdate);
     window.addEventListener("focus", handleUpdate);
 
     return () => {
       window.removeEventListener("np_announcements_updated", handleUpdate);
       window.removeEventListener("np_deals_updated", handleUpdate);
-      window.removeEventListener("np_mystery_jar_updated", handleUpdate);
       window.removeEventListener("storage", handleUpdate);
       window.removeEventListener("focus", handleUpdate);
     };
   }, [loadAnnouncements]);
 
-  if (!announcements || announcements.length === 0) {
-    return null;
-  }
-
-  // Create a repeated array to ensure a seamless continuous infinite scroll
-  // Repeat enough times so there are no empty gaps across wide viewports
+  // Repeat for continuous seamless infinite loop
   const baseItems = announcements.length < 4
     ? [...announcements, ...announcements, ...announcements, ...announcements]
     : announcements;
   const marqueeItems = [...baseItems, ...baseItems];
 
   return (
-    <div className="relative z-50 bg-gradient-to-r from-[#4A0A19] via-[#7B1128] to-[#4A0A19] text-white border-b border-[#d4af37]/30 select-none overflow-hidden h-[34px] sm:h-[38px] flex items-center">
+    <div className="relative z-50 bg-gradient-to-r from-[#3B0713] via-[#660C22] to-[#3B0713] text-white border-b border-[#D4AF37]/30 select-none overflow-hidden h-[34px] sm:h-[36px] flex items-center">
       <style>{`
         @keyframes npTopMarquee {
           0% {
@@ -110,47 +127,48 @@ const TopBar = () => {
           align-items: center;
           width: max-content;
           will-change: transform;
-          animation: npTopMarquee 80s linear infinite;
+          animation: npTopMarquee 70s linear infinite;
         }
         .np-marquee-track:hover {
           animation-play-state: paused;
         }
       `}</style>
 
-      {/* Subtle edge fades for smooth entrance and exit */}
-      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-r from-[#4A0A19] to-transparent z-10" />
-      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-l from-[#4A0A19] to-transparent z-10" />
+      {/* Edge gradient fade masks */}
+      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-r from-[#3B0713] to-transparent z-10" />
+      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-l from-[#3B0713] to-transparent z-10" />
 
-      {/* Infinite scrolling track */}
+      {/* Infinite Scrolling Track */}
       <div className="np-marquee-track">
         {marqueeItems.map((item, idx) => {
+          const isSeller = Boolean(item.link && item.link.includes("seller"));
+
           const content = (
-            <div className="inline-flex items-center gap-2 sm:gap-2.5 text-xs sm:text-[13px] font-medium tracking-wide text-white px-6 sm:px-8 group cursor-pointer">
-              <span className="text-sm flex-shrink-0 animate-pulse">{item.icon || "✨"}</span>
-              <span className="font-semibold text-white/95 whitespace-nowrap">
+            <div className="inline-flex items-center gap-2 sm:gap-3 text-xs font-medium tracking-wide text-white px-5 sm:px-8 group cursor-pointer leading-none">
+              {/* Clean separator */}
+              <span className="text-[#D4AF37] text-[10px] select-none opacity-80">✦</span>
+
+              {/* Title Text strictly single line */}
+              <span className="font-semibold text-white/95 whitespace-nowrap tracking-wider text-[11px] sm:text-xs">
                 {item.text}
               </span>
-              {item.sub_text && (
-                <span className="hidden sm:inline text-white/70 text-xs">
-                  ({item.sub_text})
+
+              {/* Action Button */}
+              {item.cta && (
+                <span className="inline-flex items-center text-[#FFE29A] font-bold text-[10px] sm:text-[11px] bg-white/10 px-2 py-0.5 rounded-full hover:bg-white/20 transition-colors whitespace-nowrap">
+                  {item.cta}
                 </span>
               )}
-              {item.link && (
-                <span className="inline-flex items-center gap-1 text-[#ffe29a] font-bold text-[11px] ml-1 bg-white/10 px-2 py-0.5 rounded-full hover:bg-white/20 transition-colors whitespace-nowrap">
-                  {item.link.includes("seller") ? "Register Now →" : "Shop Now →"}
-                </span>
-              )}
-              <span className="text-[#d4af37]/60 ml-4 select-none">✦</span>
             </div>
           );
 
-          if (item.link && item.link.includes("seller")) {
+          if (isSeller) {
             return (
               <button
                 key={`${item.id || idx}-${idx}`}
                 type="button"
                 onClick={() => window.dispatchEvent(new CustomEvent("np_open_seller_register"))}
-                className="inline-block hover:opacity-95 transition-opacity text-left cursor-pointer"
+                className="inline-flex items-center hover:opacity-95 transition-opacity text-left cursor-pointer"
               >
                 {content}
               </button>
@@ -161,12 +179,12 @@ const TopBar = () => {
             <Link
               key={`${item.id || idx}-${idx}`}
               to={item.link}
-              className="inline-block hover:opacity-95 transition-opacity"
+              className="inline-flex items-center hover:opacity-95 transition-opacity"
             >
               {content}
             </Link>
           ) : (
-            <span key={`${item.id || idx}-${idx}`} className="inline-block">
+            <span key={`${item.id || idx}-${idx}`} className="inline-flex items-center">
               {content}
             </span>
           );
@@ -177,4 +195,3 @@ const TopBar = () => {
 };
 
 export default TopBar;
-

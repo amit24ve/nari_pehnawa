@@ -1,6 +1,11 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap");
 
 @import "tailwindcss";
+
+/* User preference: Zero italics across the storefront, clean, modern & unique typography */
+i, em, cite, .italic, blockquote {
+    font-style: normal !important;
+}
 
 @keyframes marquee {
     0% {
@@ -60,8 +65,8 @@
 }
 
 @theme {
-    --font-sans: "Inter", system-ui, sans-serif;
-    --font-serif: "Playfair Display", serif;
+    --font-sans: "Outfit", "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-serif: "Playfair Display", Georgia, serif;
 
     /* Maroon Brand Palette */
     --color-maroon-50: #fff5f5;

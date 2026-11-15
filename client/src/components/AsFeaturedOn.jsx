@@ -202,9 +202,9 @@ const AsFeaturedOn = () => {
           <div className="space-y-4 text-gray-600 text-sm leading-relaxed">
             <p>
               Looking for ethnic wear online that feels fresh, fun, and
-              on-trend? At <span className="font-semibold">Bunaai</span>, we
+              on-trend? At <span className="font-semibold text-gray-900">Nari Pehnawa</span>, we
               bring together traditional styles and modern fits for both women
-              and men. From everyday essentials to celebration-ready looks, our
+              and festive celebrations. From everyday essentials to celebration-ready looks, our
               collections suit every occasion.
             </p>
 

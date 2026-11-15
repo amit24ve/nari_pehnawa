@@ -135,7 +135,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
         window.location.href = "/seller/dashboard";
         return;
       }
-      if (user.role === "admin" || user.is_admin) {
+      if ((user.role === "admin" || user.role === "super_admin") && user.is_admin === true) {
         window.location.href = "/admin/dashboard";
         return;
       }
@@ -251,9 +251,10 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
         (res.user && (res.user.role === "seller" || res.user.is_seller))
       );
       const isAdmin = Boolean(
-        res.is_admin || 
-        res.redirect_url?.includes("admin") || 
-        (res.user && (res.user.role === "admin" || res.user.is_admin))
+        res.is_admin === true &&
+        res.user &&
+        (res.user.role === "admin" || res.user.role === "super_admin") &&
+        res.user.is_admin === true
       );
 
       if (isSeller) {
@@ -303,9 +304,10 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
         (result.user && (result.user.role === "seller" || result.user.is_seller))
       );
       const isAdmin = Boolean(
-        result.is_admin || 
-        result.redirect_url?.includes("admin") || 
-        (result.user && (result.user.role === "admin" || result.user.is_admin))
+        result.is_admin === true &&
+        result.user &&
+        (result.user.role === "admin" || result.user.role === "super_admin") &&
+        result.user.is_admin === true
       );
 
       if (isSeller) {
@@ -449,25 +451,16 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
     const currentOrigin = encodeURIComponent(window.location.origin);
     const googleLoginUrl = `${API_URL}/auth/google/login?origin=${currentOrigin}`;
 
-    // On mobile devices, redirect directly for 100% reliable OAuth without popup blockers
-    const isMobile = window.innerWidth < 640 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isMobile) {
-      window.location.href = googleLoginUrl;
-      return;
-    }
+    try {
+      // Save return path so user returns to current page after Google sign-in
+      const currentPath = window.location.pathname + window.location.search;
+      if (currentPath && !currentPath.includes("/auth/google")) {
+        sessionStorage.setItem("np_oauth_return_url", currentPath);
+      }
+    } catch (_) {}
 
-    const width = 500;
-    const height = 650;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-    const popup = window.open(
-      googleLoginUrl,
-      "google_oauth_popup",
-      `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes`
-    );
-    if (!popup || popup.closed || typeof popup.closed === "undefined") {
-      window.location.href = googleLoginUrl;
-    }
+    // Direct redirection provides 100% reliable OAuth without popup blockers or cross-origin window opener faults
+    window.location.href = googleLoginUrl;
   };
 
   return (

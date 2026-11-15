@@ -44,24 +44,17 @@ const FeaturedProducts = () => {
     }, []);
 
     return (
-        <section style={{ background: "#fdf8f5", padding: "2rem 0" }}>
+        <section className="py-12 bg-[#FAF7F2]">
             <div className="container mx-auto px-4">
                 {/* Section Header */}
                 <div className="text-center mb-8">
                     <SectionHeading>
                         Featured Collection
                     </SectionHeading>
-                    <p className="text-gray-600 text-base">
-                        Discover our handpicked selection of stunning ethnic
-                        wear
+                    <p className="text-xs md:text-sm text-stone-500 mt-2 font-sans max-w-md mx-auto">
+                        Handcrafted luxury ethnic wear curated for modern elegance &amp; everyday comfort
                     </p>
-                    <div
-                        className="w-24 h-1 mx-auto mt-3"
-                        style={{
-                            background:
-                                "linear-gradient(to right, #8B0000, #a52a2a)",
-                        }}
-                    />
+                    <div className="w-20 h-0.5 bg-gradient-to-r from-transparent via-[#8B0000] to-transparent mx-auto mt-3" />
                 </div>
 
                 {/* Loading */}

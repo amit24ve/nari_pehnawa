@@ -17,6 +17,8 @@ import {
   ChevronRight,
   Eye,
   Clock,
+  Ban,
+  Archive,
 } from "lucide-react";
 import sellerApi from "./sellerApi";
 
@@ -60,8 +62,14 @@ const SellerProducts = () => {
       };
       if (searchTerm.trim()) params.search = searchTerm.trim();
       if (selectedCategory !== "all") params.category = selectedCategory;
-      if (currentTab === "live") params.is_active = true;
-      if (currentTab === "draft") params.is_active = false;
+      if (currentTab === "live") {
+        params.is_active = true;
+        params.approval_status = "approved";
+      } else if (currentTab === "pending") {
+        params.approval_status = "pending";
+      } else if (currentTab === "draft") {
+        params.is_active = false;
+      }
 
       const [res, cats] = await Promise.all([
         sellerApi.getProducts(params),
@@ -142,15 +150,15 @@ const SellerProducts = () => {
     }
   };
 
-  const handleDelete = async () => {
+  const handleZeroCatalog = async () => {
     if (!productToDelete) return;
     try {
       setDeleting(true);
-      await sellerApi.deleteProduct(productToDelete.id);
+      await sellerApi.zeroCatalog(productToDelete.id);
       setProductToDelete(null);
       loadData();
     } catch (err) {
-      alert("Failed to delete product: " + err.message);
+      alert("Failed to zero out catalog: " + err.message);
     } finally {
       setDeleting(false);
     }
@@ -454,10 +462,10 @@ const SellerProducts = () => {
                           </Link>
                           <button
                             onClick={() => setProductToDelete(p)}
-                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition cursor-pointer"
-                            title="Delete product"
+                            className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition cursor-pointer"
+                            title="Zero stock & take offline"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Ban className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
@@ -558,32 +566,35 @@ const SellerProducts = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Zero Catalog Modal */}
       {productToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
-            <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center mb-4">
-              <Trash2 className="w-6 h-6" />
+            <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mb-4">
+              <Ban className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900">Delete Product?</h3>
+            <h3 className="text-lg font-bold text-slate-900">Zero Catalog & Deactivate?</h3>
             <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-              Are you sure you want to delete <strong>"{productToDelete.name}"</strong>? This will remove the product from the Nari Pehnawa storefront.
+              This will set all size stock for <strong>"{productToDelete.name}"</strong> to <strong>0</strong> and deactivate the product so it is taken offline immediately.
             </p>
+            <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600">
+              ℹ️ <strong>Marketplace Policy:</strong> To protect customer order tracking and GST invoices, permanent product deletion can only be performed by the marketplace Administrator.
+            </div>
             <div className="mt-6 flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setProductToDelete(null)}
-                className="px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-xl"
+                className="px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-xl cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 disabled={deleting}
-                onClick={handleDelete}
-                className="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl disabled:opacity-50"
+                onClick={handleZeroCatalog}
+                className="px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl disabled:opacity-50 cursor-pointer"
               >
-                {deleting ? "Deleting..." : "Yes, Delete Product"}
+                {deleting ? "Updating..." : "Zero Stock & Deactivate"}
               </button>
             </div>
           </div>

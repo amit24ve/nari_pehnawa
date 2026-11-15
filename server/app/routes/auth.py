@@ -248,8 +248,9 @@ def phone_verify_otp(request: PhoneVerifyOTPRequest):
         ]
     })
     is_seller = bool(seller_match or (user and user.get("role") == "seller") or (user and user.get("is_seller")))
-    role = "seller" if is_seller else user.get("role", "customer")
-    is_admin = bool((user and user.get("is_admin")) or role == "admin")
+    # Strict admin check: Only users with role admin and is_admin True in DB are admins
+    is_admin = bool(user and user.get("role") in ("admin", "super_admin") and user.get("is_admin") is True)
+    role = "admin" if is_admin else ("seller" if is_seller else user.get("role", "customer"))
 
     # Issue JWT token
     token = create_access_token({
@@ -405,6 +406,12 @@ def send_otp(request: SendOTPRequest):
         is_html=True,
         event_name="email_otp_sent"
     )
+
+    if not sent:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to dispatch verification email. Please verify your email address or try again shortly."
+        )
 
     return {
         "success": True,
@@ -771,9 +778,11 @@ def login(request: LoginRequest):
             "seller": seller_out
         }
 
-    # Case 4: Normal Customer or Admin
-    is_admin = bool(user.get("is_admin") or user.get("role") in ("admin", "super_admin"))
+    # Strict admin check: user must explicitly have role 'admin'/'super_admin' AND is_admin == True in DB
+    is_admin = bool(user.get("role") in ("admin", "super_admin") and user.get("is_admin") is True)
     role = "admin" if is_admin else user.get("role", "customer")
+    if role == "admin" and not is_admin:
+        role = "customer"
     token = create_access_token({
         "sub": str(user.get("_id")),
         "email": user.get("email"),
@@ -1028,23 +1037,18 @@ def google_callback(code: Optional[str] = None, error: Optional[str] = None, sta
     today_ist = datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d")
 
     if user:
-        # Never let Google sign-in touch an admin account
-        if user.get("role") == "admin" or user.get("is_admin"):
-            return fail("admin_must_use_password_login")
-
         users.update_one(
             {"_id": user["_id"]},
             {
                 "$set": {
                     "google_id": google_id,
-                    "avatar": picture,
+                    "avatar": picture or user.get("avatar"),
                     "last_login": today_ist,
                 }
             },
         )
     else:
-        # Auto-create a brand-new "customer" account — role is hardcoded
-        # so a Google sign-in can never produce an admin user.
+        # Auto-create user account with Google profile details
         new_user = {
             "email": email,
             "name": name,
@@ -1061,23 +1065,41 @@ def google_callback(code: Optional[str] = None, error: Optional[str] = None, sta
             "coins_earned_total": 0,
             "coins_spent_total": 0,
             "addresses": [],
+            "token_version": 1,
             "created_at": now_utc
         }
         result = users.insert_one(new_user)
         user = users.find_one({"_id": result.inserted_id})
 
-    # Check if this email is a registered merchant seller
+    # Check if this email is a registered merchant seller or verified admin
     seller = db["sellers"].find_one({"email": email})
-    user_role = "seller" if seller else user.get("role", "customer")
-    seller_id = str(seller["_id"]) if seller else str(user["_id"])
+    # Strict admin check: Only users with role in ('admin', 'super_admin') AND is_admin == True in DB are admins
+    is_admin = bool(user.get("role") in ("admin", "super_admin") and user.get("is_admin") is True)
+    is_seller = bool(seller)
+
+    if is_admin:
+        user_role = "admin"
+        subject_id = str(user["_id"])
+    elif is_seller:
+        user_role = "seller"
+        subject_id = str(seller["_id"])
+        try:
+            db["sellers"].update_one({"_id": seller["_id"]}, {"$set": {"last_login": today_ist}})
+        except Exception:
+            pass
+    else:
+        user_role = user.get("role", "customer")
+        subject_id = str(user["_id"])
 
     token = create_access_token(
         {
-            "sub": seller_id,
+            "sub": subject_id,
+            "id": subject_id,
             "email": user["email"],
             "role": user_role,
-            "is_seller": bool(seller),
-            "token_version": (seller or user).get("token_version", 1),
+            "is_admin": is_admin,
+            "is_seller": is_seller,
+            "token_version": (seller if (is_seller and not is_admin) else user).get("token_version", 1),
         }
     )
 

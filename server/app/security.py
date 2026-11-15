@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from passlib.context import CryptContext
 from jose import jwt, JWTError
@@ -37,7 +37,7 @@ def get_password_hash(password):
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     """Create a JWT access token with issued-at (iat) timestamp"""
     to_encode = data.copy()
-    now_utc = datetime.utcnow()
+    now_utc = datetime.now(timezone.utc)
     if expires_delta:
         expire = now_utc + expires_delta
     else:
@@ -125,19 +125,22 @@ def get_current_user(payload: dict = Depends(verify_token)) -> dict:
                 headers={"WWW-Authenticate": "Bearer"}
             )
 
-    # 2. Validate password_changed_at timestamp
+    # 2. Validate password_changed_at timestamp with UTC timezone handling and grace window
     pwd_changed_at = user.get("password_changed_at")
     if pwd_changed_at:
         token_iat = payload.get("iat")
         if isinstance(pwd_changed_at, datetime):
-            pwd_ts = pwd_changed_at.timestamp()
+            if pwd_changed_at.tzinfo is None:
+                pwd_ts = pwd_changed_at.replace(tzinfo=timezone.utc).timestamp()
+            else:
+                pwd_ts = pwd_changed_at.timestamp()
         else:
             try:
                 pwd_ts = float(pwd_changed_at)
             except Exception:
                 pwd_ts = 0.0
 
-        if not token_iat or float(token_iat) < (pwd_ts - 2):  # 2-second leeway
+        if token_iat and float(token_iat) < (pwd_ts - 15):  # 15-second grace window
             raise HTTPException(
                 status_code=401,
                 detail="Session expired: Your password was changed. Please log in again.",

@@ -273,25 +273,24 @@ const HeroSection = () => {
                     <div className="pointer-events-auto max-w-2xl">
                       {slide.title && (
                         <h2
-                          className="text-white font-bold drop-shadow-lg mb-1 sm:mb-2 leading-tight inline-flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap text-center font-serif"
-                          style={{ fontSize: "clamp(1.1rem, 3.5vw, 2.5rem)" }}
+                          className="text-white font-bold drop-shadow-xl mb-1.5 sm:mb-2 leading-tight text-center font-serif tracking-normal"
+                          style={{ fontSize: "clamp(1.2rem, 3.8vw, 2.75rem)" }}
                         >
-                          <NariHeadingDecoration className="w-5 h-5 sm:w-7 sm:h-7 md:w-10 md:h-10" />
-                          <span>{slide.title}</span>
-                          <NariHeadingDecoration flip={true} className="w-5 h-5 sm:w-7 sm:h-7 md:w-10 md:h-10" />
+                          {slide.title}
                         </h2>
                       )}
                       {slide.subtitle && (
-                        <p className="text-white/90 text-xs sm:text-sm max-w-xl mb-2 sm:mb-3 font-light drop-shadow line-clamp-2 sm:line-clamp-none">
+                        <p className="text-amber-100/95 text-xs sm:text-sm md:text-base max-w-xl mx-auto mb-3 sm:mb-4 font-normal drop-shadow-md line-clamp-2 sm:line-clamp-none tracking-wide">
                           {slide.subtitle}
                         </p>
                       )}
                       {slide.cta_text && slide.cta_link && (
                         <Link
                           to={slide.cta_link}
-                          className="inline-block bg-white text-[#8B0000] text-xs md:text-sm font-bold px-5 sm:px-6 py-1.5 sm:py-2 rounded-full shadow-lg tracking-wide hover:bg-amber-50 hover:scale-105 transition-all"
+                          className="inline-flex items-center gap-2 bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] hover:from-[#F3E5AB] hover:to-[#D4AF37] text-[#24060E] text-xs md:text-sm font-black px-6 sm:px-8 py-2.5 sm:py-3 rounded-full shadow-2xl tracking-wider uppercase hover:scale-105 active:scale-95 transition-all duration-300 border border-white/40"
                         >
-                          {slide.cta_text}
+                          <span>{slide.cta_text}</span>
+                          <ArrowRight className="w-4 h-4" />
                         </Link>
                       )}
                     </div>

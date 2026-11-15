@@ -34,6 +34,7 @@ const SellerAddProduct = () => {
   const [formData, setFormData] = useState({
     name: "",
     category: "",
+    sub_category: "",
     brand: seller?.shop_name || "Nari Pehnawa",
     seller_price: "499",
     delivery_charge: "50",
@@ -99,6 +100,7 @@ const SellerAddProduct = () => {
           setFormData({
             name: data.name || "",
             category: data.category || "",
+            sub_category: data.sub_category || "",
             brand: data.brand || seller?.shop_name || "",
             price: data.price || "",
             discount_price: data.discount_price || "",
@@ -295,6 +297,7 @@ const SellerAddProduct = () => {
       const payload = {
         name: formData.name.trim(),
         category: formData.category,
+        sub_category: formData.sub_category?.trim() || undefined,
         brand: formData.brand.trim() || seller?.shop_name || "Nari Pehnawa",
         seller_price: parseFloat(formData.seller_price) || priceNum,
         delivery_charge: parseFloat(formData.delivery_charge) || 50,
@@ -440,6 +443,21 @@ const SellerAddProduct = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Sub-Category / Product Type */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Sub-Category / Ethnic Style
+                </label>
+                <input
+                  type="text"
+                  name="sub_category"
+                  value={formData.sub_category}
+                  onChange={handleChange}
+                  placeholder="e.g. Anarkali, Kurta Set, Saree, Lehenga"
+                  className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2]"
+                />
               </div>
 
               {/* Brand Selector / Custom Brand */}

@@ -833,9 +833,9 @@ def get_seller_dashboard_stats(
     seller_products = list(db["products"].find({"seller_id": sid}))
     total_products = len(seller_products)
     active_products = sum(1 for p in seller_products if p.get("in_stock", True))
-    total_stock_units = sum(int(p.get("stock_quantity") or 0) for p in seller_products)
-    low_stock_products = sum(1 for p in seller_products if 0 < int(p.get("stock_quantity") or 0) <= 5)
-    out_of_stock_products = sum(1 for p in seller_products if not p.get("in_stock", True) or int(p.get("stock_quantity") or 0) <= 0)
+    total_stock_units = sum(int(p.get("stock_quantity") or p.get("stock") or 0) for p in seller_products)
+    low_stock_products = sum(1 for p in seller_products if 0 < int(p.get("stock_quantity") or p.get("stock") or 0) <= 5)
+    out_of_stock_products = sum(1 for p in seller_products if not p.get("in_stock", True) or int(p.get("stock_quantity") or p.get("stock") or 0) <= 0)
 
     # 2. Date filtering
     now = datetime.now(timezone.utc)
@@ -886,8 +886,14 @@ def get_seller_dashboard_stats(
                 o_created = datetime.fromisoformat(o_created.replace("Z", "+00:00"))
             except Exception:
                 o_created = now
-        elif not isinstance(o_created, datetime):
+        elif isinstance(o_created, datetime):
+            if o_created.tzinfo is None:
+                o_created = o_created.replace(tzinfo=timezone.utc)
+        else:
             o_created = now
+
+        if getattr(o_created, "tzinfo", None) is None:
+            o_created = o_created.replace(tzinfo=timezone.utc)
 
         # Seller sub-items in this order
         seller_items = [
@@ -1524,6 +1530,7 @@ def list_seller_products(
     search: Optional[str] = None,
     category: Optional[str] = None,
     is_active: Optional[bool] = None,
+    approval_status: Optional[str] = None,
     limit: int = 100,
     skip: int = 0,
 ):
@@ -1537,6 +1544,8 @@ def list_seller_products(
         query["category"] = category
     if is_active is not None:
         query["is_active"] = is_active
+    if approval_status and approval_status != "all":
+        query["approval_status"] = approval_status
 
     total = db["products"].count_documents(query)
     prods = list(db["products"].find(query).sort("created_at", -1).skip(skip).limit(limit))
@@ -1766,24 +1775,79 @@ def delete_seller_product(
     product_id: str,
     current_user: dict = Depends(require_seller),
 ):
-    """Seller deletes their own product."""
+    """
+    Seller attempts to delete a product.
+    Marketplace policy: Sellers cannot permanently delete catalog listings.
+    Only marketplace Administrators can permanently delete products.
+    """
+    is_admin = current_user.get("role") == "admin" or current_user.get("is_admin")
+    if not is_admin:
+        raise HTTPException(
+            status_code=403,
+            detail="Sellers cannot permanently delete products. You can set stock to 0 or deactivate the listing. Permanent deletion is reserved strictly for marketplace Administrators."
+        )
+
     if not ObjectId.is_valid(product_id):
         raise HTTPException(status_code=400, detail="Invalid product ID.")
 
     db = get_database()
     res = db["products"].delete_one({
         "_id": ObjectId(product_id),
-        "seller_id": current_user["id"],
     })
     if res.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Product not found or unauthorized.")
+        raise HTTPException(status_code=404, detail="Product not found.")
 
     try:
         clear_api_cache()
     except Exception:
         pass
 
-    return {"message": "Product deleted successfully from storefront."}
+    return {"message": "Product permanently deleted by Administrator."}
+
+
+@router.post("/products/{product_id}/zero-catalog")
+def zero_catalog_seller_product(
+    product_id: str,
+    current_user: dict = Depends(require_seller),
+):
+    """Sets product stock to 0 and marks as inactive without deleting the listing history."""
+    if not ObjectId.is_valid(product_id):
+        raise HTTPException(status_code=400, detail="Invalid product ID.")
+    db = get_database()
+    product = db["products"].find_one({
+        "_id": ObjectId(product_id),
+        "seller_id": current_user["id"],
+    })
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found or unauthorized.")
+
+    sizes = product.get("sizes") or []
+    updated_sizes = []
+    for s in sizes:
+        if isinstance(s, dict):
+            s_copy = dict(s)
+            s_copy["stock"] = 0
+            updated_sizes.append(s_copy)
+        else:
+            updated_sizes.append(s)
+
+    db["products"].update_one(
+        {"_id": ObjectId(product_id)},
+        {
+            "$set": {
+                "stock": 0,
+                "stock_quantity": 0,
+                "is_active": False,
+                "sizes": updated_sizes,
+                "updated_at": datetime.now(timezone.utc),
+            }
+        }
+    )
+    try:
+        clear_api_cache()
+    except Exception:
+        pass
+    return {"message": "Product stock set to 0 and listing deactivated successfully."}
 
 
 @router.get("/categories")
@@ -2233,25 +2297,30 @@ def admin_list_seller_products(
 
 
 @router.put("/admin/products/{product_id}/approval")
+@router.put("/admin/products/{product_id}/approve")
 def admin_approve_reject_seller_product(
     product_id: str,
-    payload: AdminProductApprovalRequest,
+    payload: dict,
     current_user: dict = Depends(require_admin),
 ):
     """Admin approves or rejects seller product before it goes live."""
     if not ObjectId.is_valid(product_id):
         raise HTTPException(status_code=400, detail="Invalid product ID.")
 
+    raw_status = str(payload.get("status") or payload.get("action") or "approved").lower().strip()
+    status_val = "approved" if raw_status in ["approved", "approve"] else ("rejected" if raw_status in ["rejected", "reject"] else "pending")
+    remarks_val = payload.get("remarks") or payload.get("admin_remarks") or ("Approved by Admin" if status_val == "approved" else "Rejected by Admin")
+
     db = get_database()
     now = datetime.now(timezone.utc)
     admin_email = current_user.get("email") or "Admin"
 
-    is_approved = (payload.status == "approved")
+    is_approved = (status_val == "approved")
     update_doc = {
-        "approval_status": payload.status,
+        "approval_status": status_val,
         "is_approved": is_approved,
         "is_active": is_approved,
-        "approval_remarks": payload.remarks or ("Approved by Admin" if is_approved else "Rejected by Admin"),
+        "approval_remarks": remarks_val,
         "reviewed_at": now,
         "reviewed_by": admin_email,
         "updated_at": now,
@@ -2267,7 +2336,7 @@ def admin_approve_reject_seller_product(
         pass
 
     return {
-        "message": f"Product has been {payload.status}.",
+        "message": f"Product has been {status_val}.",
         "is_approved": is_approved,
         "is_active": is_approved,
     }

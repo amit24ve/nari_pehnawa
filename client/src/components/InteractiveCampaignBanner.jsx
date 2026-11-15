@@ -214,11 +214,9 @@ const InteractiveCampaignBanner = () => {
               {campaign.title || "CUSTOMER'S CHOICE"}
             </p>
 
-            {/* Main Headline: WHICH LOOK DO YOU LOVE? (Large, Bold & Italic) */}
+            {/* Main Headline: WHICH LOOK DO YOU LOVE? (Large & Bold, Clean Sans/Serif) */}
             <h2
-              className={`font-serif font-black tracking-tight leading-tight my-1 drop-shadow-xs ${
-                campaign.discount_italic !== false ? "italic" : ""
-              }`}
+              className="font-serif font-black tracking-tight leading-tight my-1 drop-shadow-xs"
               style={{
                 fontSize: `${campaign.discount_font_size || 36}px`,
                 color: campaign.text_color || "#8B0000",

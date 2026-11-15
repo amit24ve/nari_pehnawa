@@ -139,7 +139,7 @@ const AdminLayout = () => {
                         Announcements
                     </NavItem>
                     <NavItem to="/admin/inquiries" icon={MessageSquare}>
-                        Inquiries
+                        Inquiries & Leads
                     </NavItem>
                     <NavItem to="/admin/reviews" icon={Star}>
                         Reviews
@@ -151,7 +151,7 @@ const AdminLayout = () => {
                         Influencer Collabs
                     </NavItem>
                     <NavItem to="/admin/sellers" icon={Store}>
-                        Sellers & Inquiries
+                        Sellers & Vendors
                     </NavItem>
                     <NavItem to="/admin/settings" icon={Settings}>
                         Settings
@@ -417,6 +417,13 @@ const AdminLayout = () => {
                                     Announcements
                                 </NavItem>
                                 <NavItem
+                                    to="/admin/inquiries"
+                                    icon={MessageSquare}
+                                    onClick={closeMobileMenu}
+                                >
+                                    Inquiries & Leads
+                                </NavItem>
+                                <NavItem
                                     to="/admin/reviews"
                                     icon={Star}
                                     onClick={closeMobileMenu}
@@ -442,7 +449,7 @@ const AdminLayout = () => {
                                     icon={Store}
                                     onClick={closeMobileMenu}
                                 >
-                                    Sellers & Inquiries
+                                    Sellers & Vendors
                                 </NavItem>
                                 <NavItem
                                     to="/admin/settings"

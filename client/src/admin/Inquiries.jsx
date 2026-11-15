@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   MessageSquare,
   Phone,
@@ -38,11 +39,12 @@ const STATUS_OPTIONS = [
 ];
 
 const Inquiries = () => {
+  const [searchParams] = useSearchParams();
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("customization"); // default to customization
+  const [typeFilter, setTypeFilter] = useState(() => searchParams.get("type") || "all");
   const [editingNotesId, setEditingNotesId] = useState(null);
   const [notesText, setNotesText] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
@@ -66,6 +68,11 @@ const Inquiries = () => {
       .catch((err) => console.error("Error fetching inquiries:", err))
       .finally(() => setLoading(false));
   };
+
+  useEffect(() => {
+    const t = searchParams.get("type");
+    if (t) setTypeFilter(t);
+  }, [searchParams]);
 
   useEffect(() => {
     fetchInquiries();
@@ -242,6 +249,27 @@ const Inquiries = () => {
       {/* ── Quick Tab Filter Pills ── */}
       <div className="flex flex-wrap items-center gap-2">
         <button
+          onClick={() => setTypeFilter("all")}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+            typeFilter === "all"
+              ? "bg-gray-900 text-white shadow-xs"
+              : "bg-white text-gray-700 border border-gray-200 hover:border-gray-900"
+          }`}
+        >
+          All Inquiries ({inquiries.length})
+        </button>
+        <button
+          onClick={() => setTypeFilter("reseller")}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            typeFilter === "reseller"
+              ? "bg-[#0891b2] text-white shadow-xs"
+              : "bg-white text-gray-700 border border-gray-200 hover:border-[#0891b2]"
+          }`}
+        >
+          <Briefcase className="w-3.5 h-3.5" />
+          <span>Seller & Reseller Leads ({inquiries.filter((i) => i.inquiry_type === "reseller" || i.inquiry_type === "seller").length})</span>
+        </button>
+        <button
           onClick={() => setTypeFilter("customization")}
           className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
             typeFilter === "customization"
@@ -253,14 +281,15 @@ const Inquiries = () => {
           <span>Custom Outfits ({inquiries.filter((i) => i.inquiry_type === "customization").length})</span>
         </button>
         <button
-          onClick={() => setTypeFilter("all")}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-            typeFilter === "all"
-              ? "bg-gray-900 text-white shadow-xs"
-              : "bg-white text-gray-700 border border-gray-200 hover:border-gray-900"
+          onClick={() => setTypeFilter("general")}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            typeFilter === "general"
+              ? "bg-amber-600 text-white shadow-xs"
+              : "bg-white text-gray-700 border border-gray-200 hover:border-amber-600"
           }`}
         >
-          All Inquiries ({inquiries.length})
+          <MessageSquare className="w-3.5 h-3.5" />
+          <span>General Inquiries ({inquiries.filter((i) => i.inquiry_type === "general").length})</span>
         </button>
       </div>
 

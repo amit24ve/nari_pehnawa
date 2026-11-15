@@ -320,7 +320,8 @@ class NotificationService:
             msg.attach(MIMEText(html_body, "html"))
 
             with self._get_smtp_connection() as server:
-                server.sendmail(smtp_from_email, [to_email], msg.as_string())
+                envelope_sender = smtp_username or smtp_from_email
+                server.sendmail(envelope_sender, [to_email], msg.as_string())
 
             self._log(event, "email", to_email, "sent", user_id, order_id, subject, plain_body)
             return True
@@ -342,7 +343,8 @@ class NotificationService:
             msg.attach(MIMEText(body_html, "html"))
 
             with self._get_smtp_connection() as server:
-                server.sendmail(smtp_from_email, [to_email], msg.as_string())
+                envelope_sender = smtp_username or smtp_from_email
+                server.sendmail(envelope_sender, [to_email], msg.as_string())
             return True
         except Exception as exc:
             print(f"[Email] Failed to send raw email: {exc}")

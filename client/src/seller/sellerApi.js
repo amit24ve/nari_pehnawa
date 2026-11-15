@@ -184,6 +184,7 @@ export const sellerApi = {
     if (params.category) query.set("category", params.category);
     if (params.search) query.set("search", params.search);
     if (params.is_active !== undefined) query.set("is_active", params.is_active);
+    if (params.approval_status) query.set("approval_status", params.approval_status);
     if (params.limit) query.set("limit", params.limit);
     if (params.skip) query.set("skip", params.skip);
     const qs = query.toString();
@@ -197,6 +198,9 @@ export const sellerApi = {
 
   updateProduct: (id, payload) =>
     sellerRequest(`/seller/products/${id}`, { method: "PUT", body: payload }),
+
+  zeroCatalog: (id) =>
+    sellerRequest(`/seller/products/${id}/zero-catalog`, { method: "POST" }),
 
   deleteProduct: (id) =>
     sellerRequest(`/seller/products/${id}`, { method: "DELETE" }),

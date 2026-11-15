@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import List, Optional
 from app.database.schemas.user import User, UserCreate, UserUpdate, PasswordChange, UserSettings
 from app.database import get_database
-from app.security import get_password_hash, get_current_user, require_admin, verify_password
+from app.security import get_password_hash, get_current_user, require_admin, verify_password, create_access_token
 from bson import ObjectId
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -43,13 +43,15 @@ def get_user_detailed_view(user_id: str, current_user: dict = Depends(require_ad
         else:
             created_ist = user.get("joined_date") or "N/A"
 
+        is_admin_flag = bool(user.get("role") in ("admin", "super_admin") or user.get("is_admin"))
         # Format user fields
         user_out = {
             "id": user_id_str,
             "email": user_email or "",
             "name": user.get("name") or user.get("full_name") or (user_email.split("@")[0] if user_email else None) or (f"User {user.get('phone', '')[-4:]}" if user.get("phone") else "Customer"),
             "phone": user.get("phone") or "",
-            "role": user.get("role") or ("admin" if user.get("is_admin") else "customer"),
+            "role": user.get("role") or ("admin" if is_admin_flag else "customer"),
+            "is_admin": is_admin_flag,
             "status": user.get("status", "active"),
             "auth_provider": user.get("auth_provider") or "email",
             "avatar": user.get("avatar") or "",
@@ -140,6 +142,7 @@ def get_user_detailed_view(user_id: str, current_user: dict = Depends(require_ad
             })
 
         return {
+            **user_out,
             "user": user_out,
             "addresses": addresses,
             "orders": orders,
@@ -653,64 +656,95 @@ def delete_user(user_id: str, current_user: dict = Depends(require_admin)):
 
 @router.post("/me/change-password")
 def change_password(password_data: PasswordChange, current_user: dict = Depends(get_current_user)):
-    """Change current user's password"""
+    """Change or set current user's password (supports Google Auth users setting password for the first time)"""
     db = get_database()
     users_collection = db["users"]
+    sellers_collection = db["sellers"]
     try:
         user_id = current_user.get("id")
+        user_email = current_user.get("email")
+
+        if not password_data.new_password or len(password_data.new_password.strip()) < 6:
+            raise HTTPException(status_code=400, detail="New password must be at least 6 characters long.")
+
         user = None
         try:
             user = users_collection.find_one({"_id": ObjectId(user_id)})
         except Exception:
             user = None
 
-        if not user:
-            # Check sellers collection in case a seller is browsing the storefront
-            try:
-                seller = db["sellers"].find_one({"_id": ObjectId(user_id)})
-                if seller:
-                    return {
-                        "id": str(seller["_id"]),
-                        "email": seller.get("email"),
-                        "name": seller.get("name") or seller.get("shop_name") or "Merchant Seller",
-                        "full_name": seller.get("name") or seller.get("shop_name") or "Merchant Seller",
-                        "phone": seller.get("phone", ""),
-                        "role": "seller",
-                        "coins_balance": 0,
-                        "orders_count": 0,
-                        "cancelled_orders_count": 0,
-                        "coins_earned_total": 0,
-                        "coins_spent_total": 0,
-                        "coins_rupee_value": 0.0,
-                        "is_active": True,
-                    }
-            except Exception:
-                pass
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        # Hash and update new password
-        new_password_hash = get_password_hash(password_data.new_password)
-        now_utc = datetime.now(timezone.utc)
-        current_ver = user.get("token_version") or 1
+        seller = None
+        try:
+            seller = sellers_collection.find_one({"_id": ObjectId(user_id)})
+        except Exception:
+            seller = None
 
-        users_collection.update_one(
-            {"_id": ObjectId(user_id)},
-            {
-                "$set": {
-                    "password_hash": new_password_hash,
-                    "password_changed_at": now_utc,
-                    "token_version": current_ver + 1
+        if not user and user_email:
+            user = users_collection.find_one({"email": user_email})
+        if not seller and user_email:
+            seller = sellers_collection.find_one({"email": user_email})
+
+        if not user and not seller:
+            raise HTTPException(status_code=404, detail="User account not found")
+
+        # Hash and update new password
+        new_password_hash = get_password_hash(password_data.new_password.strip())
+        now_utc = datetime.now(timezone.utc)
+
+        updated = False
+        if user:
+            current_ver = user.get("token_version") or 1
+            users_collection.update_one(
+                {"_id": user["_id"]},
+                {
+                    "$set": {
+                        "password_hash": new_password_hash,
+                        "password_changed_at": now_utc,
+                        "token_version": current_ver + 1
+                    },
+                    "$unset": {"password": ""}
                 }
+            )
+            updated = True
+
+        if seller or user_email:
+            seller_filter = {"_id": seller["_id"]} if seller else {"email": user_email}
+            current_ver_s = (seller.get("token_version") or 1) if seller else 1
+            sellers_collection.update_many(
+                seller_filter,
+                {
+                    "$set": {
+                        "password_hash": new_password_hash,
+                        "password_changed_at": now_utc,
+                        "token_version": current_ver_s + 1
+                    },
+                    "$unset": {"password": ""}
+                }
+            )
+            updated = True
+
+        try:
+            db["mobile_refresh_sessions"].delete_many({"user_id": str(user_id)})
+        except Exception:
+            pass
+
+        # Issue fresh access token with updated token_version so current session stays seamless
+        new_token_version = (current_ver + 1) if user else ((current_ver_s + 1) if seller else 1)
+        new_token = create_access_token(
+            data={
+                "sub": str(user_id),
+                "id": str(user_id),
+                "email": user_email,
+                "role": current_user.get("role") or "customer",
+                "token_version": new_token_version,
             }
         )
-        if user.get("email"):
-            db["sellers"].update_many(
-                {"email": user["email"]},
-                {"$set": {"password_hash": new_password_hash, "password_changed_at": now_utc, "token_version": current_ver + 1}}
-            )
-        db["mobile_refresh_sessions"].delete_many({"user_id": str(user_id)})
-        
-        return {"message": "Password changed successfully"}
+
+        return {
+            "message": "Password updated successfully. You can now log in using this password.",
+            "access_token": new_token,
+            "token_type": "bearer",
+        }
     except HTTPException:
         raise
     except Exception as e:

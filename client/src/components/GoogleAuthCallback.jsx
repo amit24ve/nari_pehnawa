@@ -92,12 +92,25 @@ const GoogleAuthCallback = () => {
             console.error(e);
           }
         }
+        const returnUrl = sessionStorage.getItem("np_oauth_return_url");
+        sessionStorage.removeItem("np_oauth_return_url");
+
+        const isRealAdmin = Boolean(
+          res.is_admin === true &&
+          res.user &&
+          (res.user.role === "admin" || res.user.role === "super_admin") &&
+          res.user.is_admin === true
+        );
+        if (isRealAdmin) {
+          window.location.href = "/admin/dashboard";
+          return;
+        }
         if (res.is_seller || res.redirect_url?.includes("seller") || (res.user && (res.user.role === "seller" || res.user.is_seller))) {
           window.location.href = "/seller/dashboard";
           return;
         }
-        if (res.is_admin || res.redirect_url?.includes("admin") || (res.user && (res.user.role === "admin" || res.user.is_admin))) {
-          window.location.href = "/admin/dashboard";
+        if (returnUrl && returnUrl.startsWith("/") && !returnUrl.includes("/auth/google")) {
+          navigate(returnUrl, { replace: true });
           return;
         }
         navigate("/", { replace: true });

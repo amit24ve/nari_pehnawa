@@ -85,7 +85,7 @@ const CategoryProductSection = ({ category, alternate = false }) => {
     if (products.length === 0) return null;
 
     return (
-        <section className="py-8" style={{ background: bg }}>
+        <section className="py-12" style={{ background: bg }}>
             <div className="container mx-auto px-4">
                 {/* Section Header */}
                 <div className="text-center mb-8">
@@ -93,10 +93,11 @@ const CategoryProductSection = ({ category, alternate = false }) => {
                         {category.name.toUpperCase()}
                     </SectionHeading>
                     {category.tagline && (
-                        <p className="text-gray-600 text-base">
+                        <p className="text-xs md:text-sm text-stone-500 mt-2 font-sans max-w-md mx-auto">
                             {category.tagline}
                         </p>
                     )}
+                    <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-[#8B0000]/60 to-transparent mx-auto mt-2.5" />
                 </div>
 
                 {/* Products Grid */}

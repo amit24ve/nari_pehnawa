@@ -28,6 +28,10 @@ import {
     Image as ImageIcon,
     Zap,
     Flame,
+    PackageCheck,
+    CheckCircle2,
+    XCircle,
+    Clock,
 } from "lucide-react";
 import shippingApi from "../services/shippingApi";
 
@@ -99,6 +103,68 @@ const Products = () => {
     const [showEditBrandModal, setShowEditBrandModal] = useState(false);
     const [editingBrand, setEditingBrand] = useState(null);
     const [newBrand, setNewBrand] = useState({ name: "", country: "", status: "Active" });
+
+    // Seller Submissions & Approvals states
+    const [sellerProducts, setSellerProducts] = useState([]);
+    const [loadingSellerProducts, setLoadingSellerProducts] = useState(false);
+    const [sellerProductFilter, setSellerProductFilter] = useState("all");
+    const [sellerProductSearch, setSellerProductSearch] = useState("");
+    const [actionLoadingId, setActionLoadingId] = useState(null);
+    const [sellerProductApprovalMsg, setSellerProductApprovalMsg] = useState("");
+
+    const fetchSellerProducts = async () => {
+        try {
+            setLoadingSellerProducts(true);
+            const token = localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
+            const res = await fetch(`${API_BASE_URL}/seller/admin/products`, {
+                headers: {
+                    Accept: "application/json",
+                    ...(token ? { Authorization: `Bearer ${token}` } : {})
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setSellerProducts(Array.isArray(data?.products) ? data.products : []);
+            }
+        } catch (err) {
+            console.error("Error fetching seller products:", err);
+        } finally {
+            setLoadingSellerProducts(false);
+        }
+    };
+
+    const handleApproveRejectSellerProduct = async (productId, status, remarks = "") => {
+        try {
+            setActionLoadingId(productId);
+            const token = localStorage.getItem("neel_token") || localStorage.getItem("token") || "";
+            const res = await fetch(`${API_BASE_URL}/seller/admin/products/${productId}/approval`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                    ...(token ? { Authorization: `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({ status, remarks })
+            });
+            if (res.ok) {
+                setSellerProductApprovalMsg(
+                    status === "approved"
+                        ? "Product approved! It is now live on the storefront / home page."
+                        : `Product status updated to ${status}.`
+                );
+                setTimeout(() => setSellerProductApprovalMsg(""), 5000);
+                await fetchSellerProducts();
+                fetchProducts();
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                alert(errData.detail || "Failed to update product approval status");
+            }
+        } catch (err) {
+            alert("Error updating product approval: " + err.message);
+        } finally {
+            setActionLoadingId(null);
+        }
+    };
 
     // Categories states (Dynamic from Backend API)
     const [categoriesList, setCategoriesList] = useState([]);
@@ -468,6 +534,7 @@ const Products = () => {
         fetchBrands();
         fetchCategories();
         fetchDepartments();
+        fetchSellerProducts();
     }, []);
 
     // Inline stock editing
@@ -1265,6 +1332,19 @@ const Products = () => {
                     Brands Manager
                     {activeTab === "brands" && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#0891b2] rounded-full"></span>}
                 </button>
+                <button
+                    onClick={() => { setActiveTab("seller_products"); fetchSellerProducts(); }}
+                    className={`pb-3 text-sm font-bold relative transition cursor-pointer flex items-center gap-2 ${activeTab === "seller_products" ? "text-[#0891b2]" : "text-slate-600 hover:text-slate-900"}`}
+                >
+                    <PackageCheck className="w-4 h-4 text-[#0891b2]" />
+                    <span>Seller Submissions</span>
+                    {sellerProducts.filter(p => p.approval_status === "pending" || !p.is_approved).length > 0 && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-200 animate-pulse">
+                            {sellerProducts.filter(p => p.approval_status === "pending" || !p.is_approved).length} Pending
+                        </span>
+                    )}
+                    {activeTab === "seller_products" && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#0891b2] rounded-full"></span>}
+                </button>
             </div>
 
             {/* TAB: PRODUCTS */}
@@ -1751,6 +1831,283 @@ const Products = () => {
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* TAB: SELLER PRODUCTS APPROVAL QUEUE */}
+            {activeTab === "seller_products" && (
+                <div className="space-y-4 text-left">
+                    {/* Header Banner */}
+                    <div className="bg-gradient-to-r from-cyan-50 via-sky-50 to-white p-5 rounded-2xl border border-cyan-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#0891b2] text-white uppercase tracking-wider">
+                                    Marketplace Catalog
+                                </span>
+                                <span className="text-xs text-slate-400">•</span>
+                                <span className="text-xs font-semibold text-slate-600">Admin Verification Center</span>
+                            </div>
+                            <h2 className="text-lg font-bold text-slate-900">
+                                Seller Product Submissions & Live Approvals
+                            </h2>
+                            <p className="text-xs text-slate-600 mt-0.5">
+                                Review merchant products before they appear on the homepage, category collections, and PDP. Approving a product makes it instantly live on the storefront.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2 self-start sm:self-auto">
+                            <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 shadow-2xs">
+                                {sellerProducts.filter(p => p.approval_status === "pending" || !p.is_approved).length} Pending Review
+                            </span>
+                        </div>
+                    </div>
+
+                    {sellerProductApprovalMsg && (
+                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 font-semibold flex items-center gap-2 shadow-xs">
+                            <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+                            <span>{sellerProductApprovalMsg}</span>
+                        </div>
+                    )}
+
+                    {/* Filter Bar */}
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-bold text-slate-700">Filter By Status:</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                {[
+                                    { id: "all", label: "All Products" },
+                                    { id: "pending", label: "Pending Verification" },
+                                    { id: "approved", label: "Live on Store" },
+                                    { id: "rejected", label: "Rejected" },
+                                ].map((f) => (
+                                    <button
+                                        key={f.id}
+                                        type="button"
+                                        onClick={() => setSellerProductFilter(f.id)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                            sellerProductFilter === f.id
+                                                ? "bg-[#0891b2] text-white shadow-2xs"
+                                                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                        }`}
+                                    >
+                                        {f.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-1 sm:flex-initial justify-end">
+                            <div className="relative">
+                                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                <input
+                                    type="text"
+                                    value={sellerProductSearch}
+                                    onChange={(e) => setSellerProductSearch(e.target.value)}
+                                    placeholder="Search title, shop name, category..."
+                                    className="pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#0891b2] w-52 sm:w-64"
+                                />
+                            </div>
+                            <button
+                                type="button"
+                                onClick={fetchSellerProducts}
+                                className="p-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition shadow-xs cursor-pointer"
+                                title="Refresh Catalog"
+                            >
+                                <RefreshCw className={`w-4 h-4 ${loadingSellerProducts ? "animate-spin" : ""}`} />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Table */}
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                        {loadingSellerProducts ? (
+                            <div className="p-12 text-center text-slate-500">
+                                <div className="w-8 h-8 border-4 border-[#0891b2] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                                <p className="text-sm font-medium">Loading seller product submissions...</p>
+                            </div>
+                        ) : (() => {
+                            const filtered = sellerProducts.filter((p) => {
+                                const matchesFilter =
+                                    sellerProductFilter === "all" ||
+                                    (sellerProductFilter === "pending" && (p.approval_status === "pending" || !p.is_approved)) ||
+                                    (sellerProductFilter === "approved" && (p.approval_status === "approved" || p.is_approved)) ||
+                                    (sellerProductFilter === "rejected" && p.approval_status === "rejected");
+
+                                const query = sellerProductSearch.trim().toLowerCase();
+                                const matchesSearch =
+                                    !query ||
+                                    (p.name || "").toLowerCase().includes(query) ||
+                                    (p.seller_name || "").toLowerCase().includes(query) ||
+                                    (p.brand || "").toLowerCase().includes(query) ||
+                                    (p.category || "").toLowerCase().includes(query);
+
+                                return matchesFilter && matchesSearch;
+                            });
+
+                            if (filtered.length === 0) {
+                                return (
+                                    <div className="p-12 text-center text-slate-500">
+                                        <PackageCheck className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                                        <h3 className="text-base font-bold text-slate-800">No seller products match your filter</h3>
+                                        <p className="text-xs text-slate-400 mt-1">
+                                            When sellers upload new ethnic products from their Seller Hub, they appear here for Admin review and 1-click verification.
+                                        </p>
+                                    </div>
+                                );
+                            }
+
+                            return (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                                                <th className="py-3.5 px-4">Product Details</th>
+                                                <th className="py-3.5 px-4">Merchant Seller</th>
+                                                <th className="py-3.5 px-4">Category & Sub-Type</th>
+                                                <th className="py-3.5 px-4">Pricing Breakdown</th>
+                                                <th className="py-3.5 px-4">Sizes & Stock</th>
+                                                <th className="py-3.5 px-4">Status</th>
+                                                <th className="py-3.5 px-4 text-right">Verification Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 text-xs">
+                                            {filtered.map((p) => {
+                                                const pId = p.id || p._id;
+                                                const img = (p.images && p.images[0]) || p.image || p.image_url || "/placeholder.png";
+                                                const isPending = p.approval_status === "pending" || !p.is_approved;
+                                                const isApproved = p.approval_status === "approved" || p.is_approved;
+                                                const isRejected = p.approval_status === "rejected";
+                                                const isLoadingThis = actionLoadingId === pId;
+
+                                                return (
+                                                    <tr key={pId} className="hover:bg-slate-50/70 transition">
+                                                        <td className="py-3.5 px-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <img
+                                                                    src={img}
+                                                                    alt={p.name}
+                                                                    className="w-12 h-14 object-cover rounded-lg border border-slate-200 flex-shrink-0 bg-slate-100"
+                                                                />
+                                                                <div className="max-w-xs">
+                                                                    <span className="font-bold text-slate-900 block truncate leading-tight">
+                                                                        {p.name}
+                                                                    </span>
+                                                                    <span className="text-[11px] text-slate-400 block mt-0.5">
+                                                                        ID: {pId?.slice(-8)}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+
+                                                        <td className="py-3.5 px-4">
+                                                            <span className="font-bold text-slate-800 block">
+                                                                {p.seller_name || p.brand || "Vendor"}
+                                                            </span>
+                                                            <span className="text-[11px] text-slate-500">
+                                                                {p.seller_city || "City N/A"}
+                                                            </span>
+                                                        </td>
+
+                                                        <td className="py-3.5 px-4">
+                                                            <span className="font-semibold text-slate-800 block">
+                                                                {p.category}
+                                                            </span>
+                                                            <span className="text-[11px] text-slate-400 block">
+                                                                {p.sub_category || p.fabric || "Ethnic Wear"}
+                                                            </span>
+                                                        </td>
+
+                                                        <td className="py-3.5 px-4">
+                                                            <span className="font-bold text-slate-900 block">
+                                                                ₹{p.price} <span className="text-[10px] text-slate-400 font-normal">(Customer)</span>
+                                                            </span>
+                                                            <span className="text-[11px] text-emerald-700 font-semibold block">
+                                                                Payout: ₹{p.seller_price || Math.max(0, p.price - 95)}
+                                                            </span>
+                                                        </td>
+
+                                                        <td className="py-3.5 px-4">
+                                                            <span className="font-bold text-slate-800 block">
+                                                                {p.stock !== undefined ? p.stock : (p.stock_quantity || 0)} Units
+                                                            </span>
+                                                            <span className="text-[10px] text-slate-400 block truncate max-w-[120px]">
+                                                                {Array.isArray(p.sizes) ? p.sizes.join(", ") : (p.sizes || "Free Size")}
+                                                            </span>
+                                                        </td>
+
+                                                        <td className="py-3.5 px-4">
+                                                            {isApproved ? (
+                                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                                                    <span>Live on Store</span>
+                                                                </span>
+                                                            ) : isRejected ? (
+                                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-50 text-red-700 border border-red-200">
+                                                                    <XCircle className="w-3.5 h-3.5 text-red-600" />
+                                                                    <span>Rejected</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                                                    <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                                                                    <span>Pending Approval</span>
+                                                                </span>
+                                                            )}
+                                                        </td>
+
+                                                        <td className="py-3.5 px-4 text-right">
+                                                            <div className="inline-flex items-center gap-2">
+                                                                {isPending ? (
+                                                                    <>
+                                                                        <button
+                                                                            type="button"
+                                                                            disabled={isLoadingThis}
+                                                                            onClick={() => handleApproveRejectSellerProduct(pId, "approved")}
+                                                                            className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition shadow-2xs cursor-pointer flex items-center gap-1 disabled:opacity-50"
+                                                                        >
+                                                                            <CheckCircle2 className="w-3.5 h-3.5" />
+                                                                            <span>Approve & Make Live</span>
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            disabled={isLoadingThis}
+                                                                            onClick={() => {
+                                                                                const reason = prompt("Enter rejection reason for seller:", "Catalog details or image quality do not meet ethnic wear guidelines");
+                                                                                if (reason) handleApproveRejectSellerProduct(pId, "rejected", reason);
+                                                                            }}
+                                                                            className="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 font-bold border border-red-200 transition cursor-pointer disabled:opacity-50"
+                                                                        >
+                                                                            Reject
+                                                                        </button>
+                                                                    </>
+                                                                ) : isApproved ? (
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={isLoadingThis}
+                                                                        onClick={() => handleApproveRejectSellerProduct(pId, "rejected", "Delisted by Admin")}
+                                                                        className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition cursor-pointer disabled:opacity-50"
+                                                                    >
+                                                                        Delist
+                                                                    </button>
+                                                                ) : (
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={isLoadingThis}
+                                                                        onClick={() => handleApproveRejectSellerProduct(pId, "approved")}
+                                                                        className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold border border-emerald-200 transition cursor-pointer disabled:opacity-50"
+                                                                    >
+                                                                        Re-Approve
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            );
+                        })()}
                     </div>
                 </div>
             )}

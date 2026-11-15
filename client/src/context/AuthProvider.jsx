@@ -6,16 +6,47 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(() => {
         try {
-            const stored = localStorage.getItem("neel_admin_user") || localStorage.getItem("np_seller_user");
             const token = localStorage.getItem("neel_token") || localStorage.getItem("token") || localStorage.getItem("np_seller_token");
-            if (stored && token) {
-                return JSON.parse(stored);
+            if (!token) return null;
+
+            // 1. Check verified admin user
+            const adminRaw = localStorage.getItem("neel_admin_user");
+            if (adminRaw) {
+                const parsed = JSON.parse(adminRaw);
+                if ((parsed.role === "admin" || parsed.role === "super_admin") && parsed.is_admin === true) {
+                    return parsed;
+                }
+            }
+
+            // 2. Check seller user
+            const sellerRaw = localStorage.getItem("np_seller_user");
+            if (sellerRaw) {
+                const parsed = JSON.parse(sellerRaw);
+                if (parsed.role === "seller" || parsed.is_seller) {
+                    return parsed;
+                }
+            }
+
+            // 3. Check regular customer user
+            const userRaw = localStorage.getItem("neel_user") || localStorage.getItem("user");
+            if (userRaw) {
+                const parsed = JSON.parse(userRaw);
+                return { ...parsed, role: parsed.role || "customer", is_admin: false };
+            }
+
+            // Legacy fallback: if stored in neel_admin_user but not real admin
+            if (adminRaw) {
+                const parsed = JSON.parse(adminRaw);
+                if (parsed.role !== "admin" || !parsed.is_admin) {
+                    return { ...parsed, role: "customer", is_admin: false };
+                }
             }
         } catch (e) {
             console.error("Failed to parse stored user", e);
         }
         return null;
     });
+
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     const [loginNotice, setLoginNotice] = useState("");
     const [loginModalMode, setLoginModalMode] = useState("login"); // "login" | "signup" | "forgot"
@@ -86,12 +117,14 @@ export const AuthProvider = ({ children }) => {
                 headers: { Authorization: `Bearer ${token}` }
             }).then(res => {
                 if (res.status === 401) {
-                    // Password was changed or token invalidated on backend
                     console.warn("Session revoked by backend (password changed). Clearing auth.");
                     localStorage.removeItem("neel_admin_user");
+                    localStorage.removeItem("neel_user");
+                    localStorage.removeItem("user");
                     localStorage.removeItem("neel_token");
                     localStorage.removeItem("token");
                     localStorage.removeItem("np_seller_token");
+                    localStorage.removeItem("np_seller_user");
                     setUser(null);
 
                     const pathname = window.location.pathname;
@@ -101,9 +134,10 @@ export const AuthProvider = ({ children }) => {
                         openLoginModal("🔒 Your password has been changed. Please log in with your new password to continue.");
                     }
                 } else if (res.ok) {
-                    res.json().then(profile => {
+                    res.json().then(resData => {
+                        const profile = resData.user || resData;
                         const isSellerAcc = profile.role === "seller" || profile.is_seller;
-                        const isAdminAcc = profile.role === "admin" || profile.is_admin;
+                        const isAdminAcc = (profile.role === "admin" || profile.role === "super_admin") && (profile.is_admin === true || resData.is_admin === true);
 
                         if (isSellerAcc) {
                             const sellerObj = {
@@ -130,23 +164,27 @@ export const AuthProvider = ({ children }) => {
                                 is_admin: true,
                             };
                             localStorage.setItem("neel_admin_user", JSON.stringify(adminObj));
+                            localStorage.setItem("neel_user", JSON.stringify(adminObj));
                             setUser(adminObj);
                             return;
                         }
 
+                        // Regular Customer: purge admin key, store purely as customer
+                        localStorage.removeItem("neel_admin_user");
                         const u = {
                             id: profile.id,
                             email: profile.email || "",
                             name: profile.name || "User",
                             phone: profile.phone || "",
-                            role: profile.role || "customer",
+                            role: "customer",
                             is_admin: false,
                             age: profile.age,
                             bio: profile.bio || "",
                             coins_balance: profile.coins_balance || 0,
                             orders_count: profile.orders_count || 0
                         };
-                        localStorage.setItem("neel_admin_user", JSON.stringify(u));
+                        localStorage.setItem("neel_user", JSON.stringify(u));
+                        localStorage.setItem("user", JSON.stringify(u));
                         setUser(u);
                     });
                 }
@@ -155,16 +193,10 @@ export const AuthProvider = ({ children }) => {
             });
         };
 
-        // Initial check on mount
         validateSession();
-
-        // Check on window focus (when switching back to tab)
         window.addEventListener("focus", validateSession);
-
-        // Periodic heartbeat every 15 seconds to ensure immediate logout across all devices/tabs
         const intervalId = setInterval(validateSession, 15000);
 
-        // Listen for global session expired event
         const handleSessionExpired = () => {
             setUser(null);
         };
@@ -180,11 +212,16 @@ export const AuthProvider = ({ children }) => {
     const updateUserProfile = (updatedData) => {
         setUser(prev => {
             const updated = { ...prev, ...updatedData };
-            localStorage.setItem("neel_admin_user", JSON.stringify(updated));
+            if (updated.role === "admin" && updated.is_admin === true) {
+                localStorage.setItem("neel_admin_user", JSON.stringify(updated));
+            } else {
+                localStorage.removeItem("neel_admin_user");
+                localStorage.setItem("neel_user", JSON.stringify(updated));
+                localStorage.setItem("user", JSON.stringify(updated));
+            }
             return updated;
         });
     };
-
 
     // Listen for Google Auth popup response & cross-tab storage synchronization
     useEffect(() => {
@@ -199,18 +236,41 @@ export const AuthProvider = ({ children }) => {
 
         const handleMessage = async (event) => {
             if (!allowedOrigins.includes(event.origin)) return;
-            if (event.data?.type === "GOOGLE_AUTH_SUCCESS" && event.data?.token) {
-                await loginWithToken(event.data.token);
-                closeLoginModal();
+
+            if (event.data?.type === "GOOGLE_AUTH_SUCCESS" && event.data.token) {
+                const res = await loginWithToken(event.data.token);
+                if (res.ok) {
+                    closeLoginModal();
+                    if (pendingCheckout) {
+                        if (pendingCheckout.type === "buy_now" && pendingCheckout.item?.productUrl) {
+                            navigate(pendingCheckout.item.productUrl, { replace: true });
+                            return;
+                        }
+                        if (pendingCheckout.type === "cart") {
+                            navigate("/cart", { replace: true });
+                            return;
+                        }
+                    }
+                    if (res.is_admin && res.user && res.user.role === "admin") {
+                        window.location.href = "/admin/dashboard";
+                    }
+                }
+            } else if (event.data?.type === "GOOGLE_AUTH_ERROR") {
+                openLoginModal(event.data.error || "Google sign-in was cancelled or failed.");
             }
         };
 
-        const handleStorage = async (event) => {
-            if (event.key === "np_google_auth_token" && event.newValue) {
-                const token = event.newValue;
+        const handleStorage = (e) => {
+            if (e.key === "np_google_auth_token" && e.newValue) {
                 localStorage.removeItem("np_google_auth_token");
-                await loginWithToken(token);
-                closeLoginModal();
+                loginWithToken(e.newValue).then((res) => {
+                    if (res.ok) {
+                        closeLoginModal();
+                        if (res.is_admin && res.user && res.user.role === "admin") {
+                            window.location.href = "/admin/dashboard";
+                        }
+                    }
+                });
             }
         };
 
@@ -220,11 +280,10 @@ export const AuthProvider = ({ children }) => {
             window.removeEventListener("message", handleMessage);
             window.removeEventListener("storage", handleStorage);
         };
-    }, []);
+    }, [pendingCheckout, navigate]);
 
-    const login = async ({ email, password }) => {
-        const API_URL =
-            import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
+    const login = async (email, password) => {
+        const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
         try {
             const res = await fetch(`${API_URL}/auth/login`, {
@@ -234,8 +293,11 @@ export const AuthProvider = ({ children }) => {
             });
 
             if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                return { ok: false, message: data.detail || "Login failed" };
+                const errData = await res.json().catch(() => ({}));
+                return {
+                    ok: false,
+                    message: errData.detail || "Invalid email or password",
+                };
             }
 
             const data = await res.json();
@@ -250,11 +312,9 @@ export const AuthProvider = ({ children }) => {
                     data.redirect_url?.includes("seller")
                 );
                 const isAdminAcc = Boolean(
-                    u.role === "admin" || 
-                    u.is_admin || 
-                    data.role === "admin" || 
-                    data.is_admin ||
-                    data.redirect_url?.includes("admin")
+                    (u.role === "admin" || u.role === "super_admin") &&
+                    u.is_admin === true &&
+                    data.is_admin === true
                 );
 
                 if (isSellerAcc) {
@@ -279,16 +339,21 @@ export const AuthProvider = ({ children }) => {
                     localStorage.setItem("neel_token", token);
                     localStorage.setItem("token", token);
                     localStorage.setItem("neel_admin_user", JSON.stringify(u));
+                    localStorage.setItem("neel_user", JSON.stringify(u));
                     setUser(u);
                     window.location.href = "/admin/dashboard";
                     return { ok: true, user: u, is_admin: true, redirect_url: "/admin/dashboard" };
                 }
 
+                // Regular Customer: purge admin key
+                localStorage.removeItem("neel_admin_user");
                 localStorage.setItem("neel_token", token);
                 localStorage.setItem("token", token);
-                localStorage.setItem("neel_admin_user", JSON.stringify(u));
-                setUser(u);
-                return { ok: true, user: u };
+                const custUser = { ...u, role: "customer", is_admin: false };
+                localStorage.setItem("neel_user", JSON.stringify(custUser));
+                localStorage.setItem("user", JSON.stringify(custUser));
+                setUser(custUser);
+                return { ok: true, user: custUser, is_admin: false };
             }
 
             return { ok: false, message: "Invalid response from server" };
@@ -297,14 +362,8 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    /**
-     * Used by the Google sign-in callback: we already have a valid JWT
-     * (issued by /auth/google/callback), so just store it and fetch the
-     * user's profile with it to populate the auth context.
-     */
     const loginWithToken = async (token) => {
-        const API_URL =
-            import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
+        const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
         try {
             const res = await fetch(`${API_URL}/users/me`, {
@@ -315,35 +374,19 @@ export const AuthProvider = ({ children }) => {
                 return { ok: false, message: "Could not load your profile" };
             }
 
-            const profile = await res.json();
-            const u = {
-                id: profile.id,
-                email: profile.email || "",
-                name: profile.name || "User",
-                phone: profile.phone || "",
-                role: profile.role || "customer",
-                is_admin: profile.is_admin || false,
-                avatar: profile.avatar || "",
-                coins_balance: profile.coins_balance || 0,
-                orders_count: profile.orders_count || 0
-            };
-
-            const isSellerAccount = Boolean(
-                u.role === "seller" || 
-                profile.role === "seller" || 
-                profile.is_seller
-            );
+            const resData = await res.json();
+            const profile = resData.user || resData;
+            const isSellerAccount = Boolean(profile.role === "seller" || profile.is_seller);
             const isAdminAccount = Boolean(
-                u.role === "admin" || 
-                profile.is_admin || 
-                profile.role === "admin"
+                (profile.role === "admin" || profile.role === "super_admin") &&
+                (profile.is_admin === true || resData.is_admin === true)
             );
 
             if (isSellerAccount) {
                 const sellerObj = {
-                    id: u.id,
-                    email: u.email || "",
-                    name: profile.name || profile.shop_name || u.name || "Seller",
+                    id: profile.id,
+                    email: profile.email || "",
+                    name: profile.name || profile.shop_name || "Seller",
                     role: "seller",
                     is_seller: true,
                     shop_name: profile.shop_name || "",
@@ -354,84 +397,88 @@ export const AuthProvider = ({ children }) => {
                 setUser(sellerObj);
                 window.dispatchEvent(new CustomEvent("np_seller_token_set"));
                 window.location.href = "/seller/dashboard";
-                return { ok: true, user: u, is_seller: true, redirect_url: "/seller/dashboard" };
+                return { ok: true, user: sellerObj, is_seller: true, redirect_url: "/seller/dashboard" };
             }
 
             if (isAdminAccount) {
+                const adminObj = {
+                    id: profile.id,
+                    email: profile.email || "",
+                    name: profile.name || "Admin",
+                    role: "admin",
+                    is_admin: true,
+                };
                 localStorage.setItem("neel_token", token);
                 localStorage.setItem("token", token);
-                localStorage.setItem("neel_admin_user", JSON.stringify(profile));
-                setUser(u);
+                localStorage.setItem("neel_admin_user", JSON.stringify(adminObj));
+                localStorage.setItem("neel_user", JSON.stringify(adminObj));
+                setUser(adminObj);
                 window.location.href = "/admin/dashboard";
-                return { ok: true, user: u, is_admin: true, redirect_url: "/admin/dashboard" };
+                return { ok: true, user: adminObj, is_admin: true, redirect_url: "/admin/dashboard" };
             }
 
+            // Customer: purge admin key
+            localStorage.removeItem("neel_admin_user");
             localStorage.setItem("neel_token", token);
             localStorage.setItem("token", token);
-            localStorage.setItem("neel_admin_user", JSON.stringify(u));
-            setUser(u);
-            return { ok: true, user: u };
+            const custUser = {
+                id: profile.id,
+                email: profile.email || "",
+                name: profile.name || "User",
+                phone: profile.phone || "",
+                role: "customer",
+                is_admin: false,
+                avatar: profile.avatar || "",
+                coins_balance: profile.coins_balance || 0,
+                orders_count: profile.orders_count || 0
+            };
+            localStorage.setItem("neel_user", JSON.stringify(custUser));
+            localStorage.setItem("user", JSON.stringify(custUser));
+            setUser(custUser);
+            return { ok: true, user: custUser, is_admin: false };
         } catch (err) {
             return { ok: false, message: err.message };
         }
     };
 
     const sendPhoneOtp = async (phone) => {
-        const API_URL =
-            import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
-
+        const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
         try {
             const res = await fetch(`${API_URL}/auth/phone/send-otp`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ phone }),
             });
-
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                return { ok: false, message: data.detail || "Failed to send OTP" };
+            const data = await res.json();
+            if (res.ok) {
+                return {
+                    ok: true,
+                    message: data.message || "OTP code sent to your phone",
+                    is_existing_user: data.is_existing_user ?? true,
+                    user_name: data.name || "",
+                };
             }
-            return { ok: true, data };
+            return { ok: false, message: data.detail || "Failed to send SMS code" };
         } catch (err) {
             return { ok: false, message: err.message };
         }
     };
 
-    const resendPhoneOtp = async (phone) => {
-        const API_URL =
-            import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
-
+    const verifyPhoneOtp = async (phone, otp, name = null) => {
+        const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
         try {
-            const res = await fetch(`${API_URL}/auth/phone/resend-otp`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ phone }),
-            });
+            const body = { phone, otp };
+            if (name && name.trim()) body.name = name.trim();
 
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                return { ok: false, message: data.detail || "Failed to resend OTP" };
-            }
-            return { ok: true, data };
-        } catch (err) {
-            return { ok: false, message: err.message };
-        }
-    };
-
-    const verifyPhoneOtp = async ({ phone, otp, name, email }) => {
-        const API_URL =
-            import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
-
-        try {
             const res = await fetch(`${API_URL}/auth/phone/verify-otp`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ phone, otp, name, email }),
+                body: JSON.stringify(body),
             });
 
-            const data = await res.json().catch(() => ({}));
+            const data = await res.json();
             if (!res.ok) {
-                return { ok: false, message: data.detail || "Failed to verify OTP" };
+                return { ok: false, message: data.detail || "Invalid verification code" };
             }
 
             const token = data.access_token;
@@ -445,11 +492,9 @@ export const AuthProvider = ({ children }) => {
                     data.redirect_url?.includes("seller")
                 );
                 const isAdminAccount = Boolean(
-                    u.role === "admin" || 
-                    u.is_admin || 
-                    data.role === "admin" || 
-                    data.is_admin ||
-                    data.redirect_url?.includes("admin")
+                    (u.role === "admin" || u.role === "super_admin") &&
+                    u.is_admin === true &&
+                    data.is_admin === true
                 );
 
                 if (isSellerAccount) {
@@ -474,73 +519,76 @@ export const AuthProvider = ({ children }) => {
                     localStorage.setItem("neel_token", token);
                     localStorage.setItem("token", token);
                     localStorage.setItem("neel_admin_user", JSON.stringify(u));
+                    localStorage.setItem("neel_user", JSON.stringify(u));
                     setUser(u);
                     window.location.href = "/admin/dashboard";
                     return { ok: true, user: u, is_admin: true, redirect_url: "/admin/dashboard", is_new_user: data.is_new_user };
                 }
 
+                // Customer: purge admin key
+                localStorage.removeItem("neel_admin_user");
                 localStorage.setItem("neel_token", token);
                 localStorage.setItem("token", token);
-                localStorage.setItem("neel_admin_user", JSON.stringify(u));
-                setUser(u);
-                return { ok: true, user: u, is_new_user: data.is_new_user };
+                const custUser = { ...u, role: "customer", is_admin: false };
+                localStorage.setItem("neel_user", JSON.stringify(custUser));
+                localStorage.setItem("user", JSON.stringify(custUser));
+                setUser(custUser);
+                return { ok: true, user: custUser, is_new_user: data.is_new_user, is_admin: false };
             }
 
-        return { ok: false, message: "Invalid server response" };
-    } catch (err) {
-        return { ok: false, message: err.message };
-    }
-};
-
-const logout = async () => {
-    const API_URL =
-        import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
-    const token = localStorage.getItem("neel_token") || localStorage.getItem("np_seller_token");
-
-    try {
-        // Call logout API
-        if (token) {
-            await fetch(`${API_URL}/auth/logout`, {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            });
+            return { ok: false, message: "Invalid server response" };
+        } catch (err) {
+            return { ok: false, message: err.message };
         }
-    } catch (err) {
-        console.error("Logout API error:", err);
-    } finally {
-        // Always clear all auth storage and redirect directly to /
-        localStorage.removeItem("neel_admin_user");
-        localStorage.removeItem("neel_token");
-        localStorage.removeItem("token");
-        localStorage.removeItem("np_seller_token");
-        localStorage.removeItem("np_seller_user");
-        clearPendingCheckout();
-        setUser(null);
-        window.location.href = "/";
-    }
-};
+    };
+
+    const logout = async () => {
+        const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
+        const token = localStorage.getItem("neel_token") || localStorage.getItem("np_seller_token");
+
+        try {
+            if (token) {
+                await fetch(`${API_URL}/auth/logout`, {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                });
+            }
+        } catch (err) {
+            console.error("Logout API error:", err);
+        } finally {
+            localStorage.removeItem("neel_admin_user");
+            localStorage.removeItem("neel_user");
+            localStorage.removeItem("user");
+            localStorage.removeItem("neel_token");
+            localStorage.removeItem("token");
+            localStorage.removeItem("np_seller_token");
+            localStorage.removeItem("np_seller_user");
+            clearPendingCheckout();
+            setUser(null);
+            window.location.href = "/";
+        }
+    };
 
     return (
         <AuthContext.Provider
             value={{
                 user,
+                isLoginModalOpen,
+                loginNotice,
+                loginModalMode,
+                pendingCheckout,
+                setPendingCheckout,
+                clearPendingCheckout,
+                openLoginModal,
+                closeLoginModal,
                 login,
                 loginWithToken,
                 sendPhoneOtp,
                 verifyPhoneOtp,
-                resendPhoneOtp,
                 logout,
-                isLoginModalOpen,
-                loginNotice,
-                pendingCheckout,
-                loginModalMode,
-                openLoginModal,
-                closeLoginModal,
-                setPendingCheckout,
-                clearPendingCheckout,
                 updateUserProfile,
             }}
         >
@@ -550,5 +598,3 @@ const logout = async () => {
 };
 
 export const useAuth = () => useContext(AuthContext);
-
-export default AuthContext;

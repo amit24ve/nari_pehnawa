@@ -19,6 +19,8 @@ import {
   Box,
   Trash2,
   ExternalLink,
+  Lock,
+  KeyRound,
 } from "lucide-react";
 import sellerApi from "./sellerApi";
 import { useSellerAuth } from "./SellerAuthContext";
@@ -65,6 +67,54 @@ const SellerProfile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Password Management state
+  const [passwordForm, setPasswordForm] = useState({ new_password: "", confirm_password: "" });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState({ type: "", text: "" });
+
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    setPasswordMsg({ type: "", text: "" });
+    if (!passwordForm.new_password || passwordForm.new_password.length < 6) {
+      setPasswordMsg({ type: "error", text: "New password must be at least 6 characters long." });
+      return;
+    }
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      setPasswordMsg({ type: "error", text: "Passwords do not match." });
+      return;
+    }
+
+    try {
+      setPasswordLoading(true);
+      const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
+      const token = localStorage.getItem("np_seller_token") || localStorage.getItem("neel_token") || localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/users/me/change-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ new_password: passwordForm.new_password })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        if (data.access_token) {
+          localStorage.setItem("np_seller_token", data.access_token);
+          localStorage.setItem("token", data.access_token);
+          localStorage.setItem("neel_token", data.access_token);
+        }
+        setPasswordMsg({ type: "success", text: "Password updated successfully! You can now log in using your email and this password." });
+        setPasswordForm({ new_password: "", confirm_password: "" });
+      } else {
+        setPasswordMsg({ type: "error", text: data.detail || "Failed to update password." });
+      }
+    } catch (err) {
+      setPasswordMsg({ type: "error", text: err.message || "Failed to update password." });
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
 
   // Change Requests History
   const [changeRequests, setChangeRequests] = useState([]);
@@ -1031,6 +1081,81 @@ const SellerProfile = () => {
           </button>
         </div>
       </form>
+
+      {/* Card: Account Security & Login Password */}
+      <div className="bg-white p-5 sm:p-6 rounded-xl border border-slate-200 shadow-xs space-y-4 text-left">
+        <div className="pb-3 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <KeyRound className="w-4 h-4 text-[#0891b2]" />
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+              Account Security & Login Password
+            </h3>
+          </div>
+          <span className="text-[11px] text-slate-400">Direct Update (No Admin Review Required)</span>
+        </div>
+
+        <p className="text-xs text-slate-500">
+          Set or update your login password. If you signed in via Google, you can create a password here to enable password-based login with your registered email ({seller?.email}).
+        </p>
+
+        {passwordMsg.text && (
+          <div
+            className={`p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 ${
+              passwordMsg.type === "success"
+                ? "bg-emerald-50 border border-emerald-200 text-emerald-800"
+                : "bg-red-50 border border-red-200 text-red-800"
+            }`}
+          >
+            {passwordMsg.type === "success" ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+            )}
+            <span>{passwordMsg.text}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleUpdatePassword} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                New Password (Minimum 6 characters)
+              </label>
+              <input
+                type="password"
+                required
+                value={passwordForm.new_password}
+                onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                placeholder="Enter new strong password"
+                className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Confirm New Password
+              </label>
+              <input
+                type="password"
+                required
+                value={passwordForm.confirm_password}
+                onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
+                placeholder="Re-type new password"
+                className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2]"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={passwordLoading}
+              className="px-5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>{passwordLoading ? "Updating Password..." : "Update Password"}</span>
+            </button>
+          </div>
+        </form>
+      </div>
 
       {/* Change Requests History Table */}
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4">

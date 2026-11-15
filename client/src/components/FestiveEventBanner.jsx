@@ -116,21 +116,21 @@ const FestiveEventBanner = () => {
                             {sale.title || "Grand Festive Flash Sale"}
                         </h2>
 
-                        {/* Special Offer Deal Display - Bold, Italic & Font-Serif */}
+                        {/* Special Offer Deal Display - Bold & Crisp Non-Italic */}
                         <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-                            <span className="text-2xl sm:text-3xl md:text-4xl font-black italic text-[#FACC15] tracking-tight drop-shadow-lg font-serif">
+                            <span className="text-2xl sm:text-3xl md:text-4xl font-black text-[#FACC15] tracking-tight drop-shadow-lg font-serif">
                                 {dealText}
                             </span>
 
                             {countdown.isLive && (
-                                <span className="text-xs sm:text-sm font-bold text-white/90 bg-black/60 border border-amber-400/40 px-3 py-1 rounded-full backdrop-blur-md italic">
-                                    Ends in: {String(countdown.hours).padStart(2, "0")}h {String(countdown.minutes).padStart(2, "0")}m {String(countdown.seconds).padStart(2, "0")}s
+                                <span className="text-xs sm:text-sm font-bold text-white/90 bg-black/60 border border-amber-400/40 px-3.5 py-1 rounded-full backdrop-blur-md tracking-wider">
+                                    ENDS IN: {String(countdown.hours).padStart(2, "0")}h {String(countdown.minutes).padStart(2, "0")}m {String(countdown.seconds).padStart(2, "0")}s
                                 </span>
                             )}
                         </div>
 
-                        {/* Product Subtitle - Italic & Medium */}
-                        <p className="text-xs sm:text-sm md:text-base text-amber-100/90 font-medium italic drop-shadow-sm line-clamp-1 sm:line-clamp-2">
+                        {/* Product Subtitle - Clean Non-Italic */}
+                        <p className="text-xs sm:text-sm md:text-base text-amber-100/90 font-medium drop-shadow-sm line-clamp-1 sm:line-clamp-2 tracking-wide">
                             {productSubtitle}
                         </p>
                     </div>

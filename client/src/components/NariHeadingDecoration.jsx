@@ -101,15 +101,15 @@ export const SectionHeading = ({
   children,
   className = "",
   style = {},
-  iconClassName = "w-9 h-9 md:w-11 md:h-11",
+  iconClassName = "w-6 h-6 sm:w-8 sm:h-8 md:w-9 md:h-9",
 }) => {
   return (
     <h2
-      className={`text-2xl md:text-4xl font-serif font-bold tracking-wide uppercase inline-flex items-center justify-center flex-wrap gap-1 md:gap-2 ${className}`}
+      className={`text-xl sm:text-2xl md:text-3xl font-serif font-bold tracking-wider uppercase inline-flex items-center justify-center flex-wrap gap-1.5 sm:gap-2 text-center ${className}`}
       style={{ color: "#8B0000", ...style }}
     >
       <NariHeadingDecoration className={iconClassName} />
-      <span>{children}</span>
+      <span className="drop-shadow-xs">{children}</span>
       <NariHeadingDecoration flip={true} className={iconClassName} />
     </h2>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
 import {
   Store,
   Users,
@@ -362,7 +363,7 @@ const Sellers = () => {
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            Registered Sellers ({sellers.length})
+            Registered Vendors ({sellers.length})
           </button>
           <button
             onClick={() => setActiveTab("inquiries")}
@@ -373,7 +374,7 @@ const Sellers = () => {
             }`}
           >
             <Clock className="w-3.5 h-3.5 text-amber-600" />
-            <span>Support Desk (24-48h SLA)</span>
+            <span>Vendor Support Tickets ({inquiries.length})</span>
           </button>
           <button
             onClick={() => setActiveTab("products")}
@@ -408,6 +409,14 @@ const Sellers = () => {
             <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
             <span>Commission & Payouts</span>
           </button>
+          <Link
+            to="/admin/inquiries?type=reseller"
+            className="px-3 py-2 rounded-lg text-xs font-bold text-[#0891b2] hover:bg-cyan-50 hover:text-[#0e7490] transition flex items-center gap-1 border border-cyan-200"
+            title="View prospective seller & reseller leads submitted from website"
+          >
+            <User className="w-3.5 h-3.5" />
+            <span>Seller Leads & Inquiries →</span>
+          </Link>
         </div>
       </div>
 
