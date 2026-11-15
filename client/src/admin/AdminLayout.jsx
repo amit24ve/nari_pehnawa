@@ -22,6 +22,7 @@ import {
     MessageSquare,
     Megaphone,
     Share2,
+    Image as ImageIcon,
 } from "lucide-react";
 import logoImg from "../assets/logo.png";
 
@@ -134,6 +135,9 @@ const AdminLayout = () => {
                     </NavItem>
                     <NavItem to="/admin/hero" icon={Sparkles}>
                         Hero Sections
+                    </NavItem>
+                    <NavItem to="/admin/advertisements" icon={ImageIcon}>
+                        Advertisements
                     </NavItem>
                     <NavItem to="/admin/announcements" icon={Megaphone}>
                         Announcements
@@ -408,6 +412,13 @@ const AdminLayout = () => {
                                     onClick={closeMobileMenu}
                                 >
                                     Hero Banners
+                                </NavItem>
+                                <NavItem
+                                    to="/admin/advertisements"
+                                    icon={ImageIcon}
+                                    onClick={closeMobileMenu}
+                                >
+                                    Advertisements
                                 </NavItem>
                                 <NavItem
                                     to="/admin/announcements"

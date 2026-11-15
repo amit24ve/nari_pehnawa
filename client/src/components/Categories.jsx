@@ -1,24 +1,39 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { resolveImageUrl, DEFAULT_HERO_FALLBACK } from "../utils/imageUrl";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
-// Soft luxury pastel ambient glows for alternating podiums (rose, lavender, cream, champagne, mint, peach)
-const PASTEL_GLOWS = [
-  "radial-gradient(circle, rgba(254, 205, 211, 0.65) 0%, rgba(254, 226, 226, 0.25) 55%, transparent 75%)",
-  "radial-gradient(circle, rgba(233, 213, 255, 0.65) 0%, rgba(243, 232, 255, 0.25) 55%, transparent 75%)",
-  "radial-gradient(circle, rgba(254, 240, 138, 0.6) 0%, rgba(254, 243, 199, 0.25) 55%, transparent 75%)",
-  "radial-gradient(circle, rgba(254, 215, 170, 0.65) 0%, rgba(255, 237, 213, 0.25) 55%, transparent 75%)",
-  "radial-gradient(circle, rgba(204, 251, 241, 0.65) 0%, rgba(236, 253, 245, 0.25) 55%, transparent 75%)",
-  "radial-gradient(circle, rgba(251, 207, 232, 0.65) 0%, rgba(254, 240, 138, 0.25) 55%, transparent 75%)",
-];
+// Stylized Ethnic Kurti / Apparel Icon (Strictly fashion garment - no ladies, no stars, no emojis)
+const KurtiIcon = ({ className = "w-5 h-5 text-[#8B0000]" }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+    aria-hidden="true"
+  >
+    {/* Clean, luxury kurti outline with elegant neckline and side slits */}
+    <path d="M7 2.5L9.5 5H14.5L17 2.5L20 6.5L18 8L17 7.2V21C17 21.55 16.55 22 16 22H14.5L14 15.5H10L9.5 22H8C7.45 22 7 21.55 7 21V7.2L6 8L4 6.5L7 2.5Z" />
+    <path
+      d="M10 5C10 6.1 10.9 7 12 7C13.1 7 14 6.1 14 5H10Z"
+      fill="#ffffff"
+      opacity="0.85"
+    />
+  </svg>
+);
 
 const Categories = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const scrollRef = useRef(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeftStart = useRef(0);
+  const hasMoved = useRef(false);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/categories/?is_active=true`)
@@ -28,8 +43,9 @@ const Categories = () => {
       })
       .then((data) => {
         if (Array.isArray(data)) {
-          // Sort by display_order if present
-          const sorted = [...data].sort((a, b) => (a.display_order || 99) - (b.display_order || 99));
+          const sorted = [...data].sort(
+            (a, b) => (a.display_order || 99) - (b.display_order || 99)
+          );
           setCategories(sorted);
         } else {
           setCategories([]);
@@ -44,140 +60,221 @@ const Categories = () => {
 
   const getCategoryLink = (cat) => {
     if (cat.link) return cat.link;
-    const slug = (cat.slug || cat.name || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-");
+    const slug = (cat.slug || cat.name || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-");
     return `/category/${slug}`;
   };
 
   const getCategoryImage = (cat) => {
-    if (cat.image && cat.image.trim() !== "") return resolveImageUrl(cat.image, DEFAULT_HERO_FALLBACK);
+    if (cat.image && cat.image.trim() !== "")
+      return resolveImageUrl(cat.image, DEFAULT_HERO_FALLBACK);
     return DEFAULT_HERO_FALLBACK;
   };
 
-  const getCategoryBadge = (cat, index) => {
-    if (cat.badge && cat.badge.trim() !== "") return cat.badge.trim();
+  const getCategoryBadge = (cat) => {
+    if (cat.badge && cat.badge.trim() !== "") {
+      const b = cat.badge.trim();
+      return b.length > 20 ? `${b.slice(0, 18)}...` : b;
+    }
     if (cat.tagline && cat.tagline.trim() !== "") {
       const lower = cat.tagline.toLowerCase();
-      if (lower.includes("sale") || lower.includes("discount") || lower.includes("%") || lower.includes("off")) {
-        return cat.tagline.replace(/[!🌸🖤✨🔥]/g, "").trim();
+      if (
+        lower.includes("sale") ||
+        lower.includes("discount") ||
+        lower.includes("%") ||
+        lower.includes("off")
+      ) {
+        const cleaned = cat.tagline.replace(/[!🌸🖤✨🔥]/g, "").trim();
+        const matchPercent = cleaned.match(/(\d+%\s*off)/i);
+        if (matchPercent) return `UP TO ${matchPercent[1].toUpperCase()}`;
+        return cleaned.length > 20 ? "FESTIVE DEAL" : cleaned.toUpperCase();
       }
     }
-    // Default badge to match boutique presentation
     return "POPULAR";
+  };
+
+  // Continuous auto-sliding animation for multiple / unlimited categories
+  useEffect(() => {
+    if (loading || isPaused || categories.length === 0) return;
+    const el = scrollRef.current;
+    if (!el) return;
+
+    let animId;
+    const step = () => {
+      if (!isPaused && !isDragging.current && el) {
+        if (el.scrollLeft >= el.scrollWidth / 2) {
+          el.scrollLeft = 0;
+        } else {
+          el.scrollLeft += 0.8;
+        }
+      }
+      animId = requestAnimationFrame(step);
+    };
+
+    animId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(animId);
+  }, [loading, isPaused, categories.length]);
+
+  const onMouseDown = (e) => {
+    if (!scrollRef.current) return;
+    isDragging.current = true;
+    hasMoved.current = false;
+    startX.current = e.pageX - scrollRef.current.offsetLeft;
+    scrollLeftStart.current = scrollRef.current.scrollLeft;
+  };
+
+  const onMouseMove = (e) => {
+    if (!isDragging.current || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX.current) * 1.5;
+    if (Math.abs(walk) > 5) {
+      hasMoved.current = true;
+    }
+    scrollRef.current.scrollLeft = scrollLeftStart.current - walk;
+  };
+
+  const onMouseUp = () => {
+    isDragging.current = false;
   };
 
   if (!loading && categories.length === 0) {
     return null;
   }
 
+  // Ensure seamless continuous loop when scrolling
+  const displayCategories =
+    categories.length < 6
+      ? [...categories, ...categories, ...categories, ...categories]
+      : [...categories, ...categories];
+
   return (
-    <section className="py-12 sm:py-16 bg-white relative overflow-hidden select-none">
-      {/* 3D Keyframe Animations & Ambient Styling */}
+    <section className="py-10 sm:py-14 bg-white relative overflow-hidden select-none border-b border-stone-100">
+      {/* 3D Border Shine & Shimmer Animation Style */}
       <style>{`
-        @keyframes npFloat3D {
-          0%, 100% {
-            transform: translateY(0px) rotate(0deg);
+        @keyframes npBorderGleam {
+          0% {
+            background-position: 0% 50%;
           }
           50% {
-            transform: translateY(-8px) rotate(0.4deg);
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
           }
         }
-        .animate-np-float-0 { animation: npFloat3D 4.5s ease-in-out infinite 0s; }
-        .animate-np-float-1 { animation: npFloat3D 4.8s ease-in-out infinite 0.7s; }
-        .animate-np-float-2 { animation: npFloat3D 4.4s ease-in-out infinite 1.4s; }
-        .animate-np-float-3 { animation: npFloat3D 4.7s ease-in-out infinite 2.1s; }
-        .animate-np-float-4 { animation: npFloat3D 4.5s ease-in-out infinite 2.8s; }
-        .animate-np-float-5 { animation: npFloat3D 4.9s ease-in-out infinite 3.5s; }
+        .np-3d-border {
+          background: linear-gradient(135deg, #111827 0%, #780016 35%, #ffffff 50%, #8B0000 68%, #111827 100%);
+          background-size: 250% 250%;
+          transition: all 0.35s ease-out;
+        }
+        .group:hover .np-3d-border {
+          animation: npBorderGleam 2.8s ease infinite;
+          box-shadow: 0 12px 24px -4px rgba(120, 0, 22, 0.3), 0 4px 12px rgba(0, 0, 0, 0.18);
+        }
       `}</style>
 
-      {/* Subtle Luxury Background Accents */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#FFFDF9] to-transparent opacity-60" />
-
-      {/* Section Header */}
-      <div className="container mx-auto px-4 mb-10 sm:mb-14 text-center relative z-10">
+      {/* Section Header with Stylized Kurti Icons & Brand Maroon/Black/White Theme */}
+      <div className="container mx-auto px-4 mb-8 sm:mb-10 text-center relative z-10">
         <div className="inline-flex items-center justify-center gap-3 mb-1.5">
-          <span className="text-[#8B0000] text-sm animate-pulse">✦</span>
-          <h2 className="text-2xl sm:text-3xl md:text-[32px] font-extrabold text-[#780016] tracking-wider uppercase font-serif">
+          <KurtiIcon className="w-5 h-5 sm:w-6 sm:h-6 text-[#8B0000] drop-shadow-xs" />
+          <h2 className="text-xl sm:text-2xl md:text-[28px] font-extrabold text-[#780016] tracking-wider uppercase font-serif">
             SHOP BY CATEGORY
           </h2>
-          <span className="text-[#8B0000] text-sm animate-pulse">✦</span>
+          <KurtiIcon className="w-5 h-5 sm:w-6 sm:h-6 text-[#8B0000] drop-shadow-xs" />
         </div>
         <p className="text-xs sm:text-sm text-stone-500 font-normal tracking-wide max-w-xl mx-auto">
           Explore handcrafted ethnic designs tailored for authentic elegance
         </p>
-        <div className="w-20 h-[2px] bg-gradient-to-r from-transparent via-[#8B0000] to-transparent mx-auto mt-3"></div>
+        <div className="w-20 h-[2px] bg-gradient-to-r from-transparent via-[#8B0000] to-transparent mx-auto mt-2.5"></div>
       </div>
 
       {loading ? (
-        <div className="flex justify-center items-center py-16">
-          <Loader2 className="w-9 h-9 text-[#8B0000] animate-spin" />
+        <div className="flex justify-center items-center py-14">
+          <Loader2 className="w-8 h-8 text-[#8B0000] animate-spin" />
         </div>
       ) : (
-        /* Responsive 3D Category Grid:
-           - Desktop: 6 categories in one row (lg:grid-cols-6)
-           - Tablet: 3 categories per row (md:grid-cols-3)
-           - Mobile: 2 categories per row (grid-cols-2)
-        */
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 sm:gap-7 lg:gap-5 xl:gap-7 items-end justify-center">
-            {categories.map((category, index) => {
+        /* Slider Track with Clean Edge Fades — No clunky arrow buttons */
+        <div
+          className="relative max-w-[1440px] mx-auto px-2 sm:px-4"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => {
+            setIsPaused(false);
+            onMouseUp();
+          }}
+        >
+          {/* Subtle edge fade masks for seamless entrance and exit */}
+          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-r from-white via-white/80 to-transparent z-20" />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-l from-white via-white/80 to-transparent z-20" />
+
+          {/* Continuous Sliding Container */}
+          <div
+            ref={scrollRef}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            onTouchStart={() => setIsPaused(true)}
+            onTouchEnd={() => setIsPaused(false)}
+            className="flex items-end gap-6 sm:gap-8 md:gap-9 overflow-x-auto scrollbar-hide py-3 px-3 cursor-grab active:cursor-grabbing"
+            style={{ scrollBehavior: "auto" }}
+          >
+            {displayCategories.map((category, index) => {
               const catLink = getCategoryLink(category);
               const catImg = getCategoryImage(category);
-              const badgeText = getCategoryBadge(category, index);
-              const pastelGlow = PASTEL_GLOWS[index % PASTEL_GLOWS.length];
-              const animClass = `animate-np-float-${index % 6}`;
-              const isSaleBadge = badgeText.toLowerCase().includes("sale") || badgeText.includes("%") || badgeText.toLowerCase().includes("festive");
+              const badgeText = getCategoryBadge(category);
+              const isSaleBadge =
+                badgeText.toLowerCase().includes("sale") ||
+                badgeText.includes("%") ||
+                badgeText.toLowerCase().includes("festive");
 
               return (
                 <div
                   key={`${category.id || category._id || index}-${index}`}
-                  onClick={() => navigate(catLink)}
-                  className="group flex flex-col items-center cursor-pointer text-center relative pt-2"
-                  style={{ perspective: "1000px" }}
+                  onClick={() => {
+                    if (!hasMoved.current) {
+                      navigate(catLink);
+                    }
+                  }}
+                  className="flex-shrink-0 flex flex-col items-center group cursor-pointer text-center relative w-[130px] sm:w-[145px] md:w-[155px]"
                 >
-                  {/* ── Soft Ambient Pastel Glow ── */}
-                  <div
-                    className="pointer-events-none absolute -top-4 w-36 h-36 sm:w-44 sm:h-44 rounded-full blur-2xl opacity-70 group-hover:opacity-100 transition-opacity duration-700 scale-100 group-hover:scale-125 z-0"
-                    style={{ background: pastelGlow }}
-                  />
-
-                  {/* ── 3D Floating Garment Container ── */}
-                  <div
-                    className={`relative z-20 w-[116px] h-[132px] sm:w-[130px] sm:h-[148px] md:w-[140px] md:h-[160px] lg:w-[136px] lg:h-[154px] xl:w-[150px] xl:h-[170px] mb-[-18px] sm:mb-[-22px] transition-all duration-500 ease-out group-hover:-translate-y-4 group-hover:scale-105 ${animClass}`}
-                  >
-                    {/* Golden Metallic Beveled Portal Frame */}
+                  {/* ── Stable Garment Frame with 3D Maroon/Black/White Border ── */}
+                  <div className="relative z-20 w-[114px] h-[130px] sm:w-[126px] sm:h-[144px] md:w-[136px] md:h-[156px] mb-[-16px] sm:mb-[-18px] transition-transform duration-300 ease-out group-hover:-translate-y-2">
+                    {/* 3D Multi-Layer Metallic Border (Maroon, Black, White gleam) */}
                     <div
-                      className="w-full h-full rounded-full p-[3px] transition-all duration-500 relative"
+                      className="w-full h-full rounded-full p-[3px] np-3d-border shadow-md"
                       style={{
-                        background: "linear-gradient(145deg, #FFF6D1 0%, #D4AF37 30%, #8C6514 65%, #FFEAA7 85%, #AA7818 100%)",
-                        boxShadow: "0 14px 28px -6px rgba(0, 0, 0, 0.22), 0 6px 14px -3px rgba(212, 175, 55, 0.4), inset 0 1px 2px rgba(255,255,255,0.9)",
+                        boxShadow:
+                          "0 8px 18px -4px rgba(0, 0, 0, 0.2), 0 3px 8px rgba(120, 0, 22, 0.22)",
                       }}
                     >
                       {/* Inner Circular Garment Frame */}
-                      <div className="w-full h-full rounded-full overflow-hidden bg-white relative shadow-inner">
+                      <div className="w-full h-full rounded-full overflow-hidden bg-white relative">
                         <img
                           src={catImg}
                           alt={category.name}
                           loading="lazy"
-                          className="w-full h-full rounded-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-112 pointer-events-none"
+                          className="w-full h-full rounded-full object-cover object-top transition-transform duration-500 ease-out group-hover:scale-108 pointer-events-none"
                           onError={(e) => {
                             e.target.onerror = null;
                             e.target.src = DEFAULT_HERO_FALLBACK;
                           }}
                         />
 
-                        {/* Specular 3D Glass Light Gleam */}
+                        {/* Subtle Glass Reflection Light */}
                         <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/35 rounded-full" />
                       </div>
                     </div>
 
-                    {/* Floating Pill Badge */}
+                    {/* Floating Pill Badge (Maroon & White) */}
                     {badgeText && (
-                      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 z-30 whitespace-nowrap max-w-[92%] pointer-events-none">
+                      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 z-30 whitespace-nowrap max-w-[94%] pointer-events-none">
                         <span
-                          className={`inline-block font-bold text-white uppercase tracking-wider rounded-full shadow-md border border-white/60 transition-transform duration-300 group-hover:scale-105 truncate max-w-full ${
+                          className={`inline-block font-bold text-white uppercase tracking-wider rounded-full shadow-md border border-white/70 transition-transform duration-300 group-hover:scale-105 truncate max-w-full ${
                             isSaleBadge
-                              ? "bg-gradient-to-r from-[#8B0000] via-[#A81111] to-[#680000] text-[8px] sm:text-[9px] px-2.5 py-0.5"
-                              : "bg-[#8B0000] text-[9px] sm:text-[10px] px-2.5 py-0.5 font-sans"
+                              ? "bg-gradient-to-r from-[#780016] via-[#8B0000] to-[#580C1F] text-[8px] sm:text-[9px] px-2.5 py-0.5"
+                              : "bg-[#780016] text-[9px] sm:text-[10px] px-2.5 py-0.5 font-sans"
                           }`}
                         >
                           {badgeText}
@@ -186,53 +283,55 @@ const Categories = () => {
                     )}
                   </div>
 
-                  {/* ── 3D Circular Podium / Pedestal ── */}
+                  {/* ── 3D Pedestal in Maroon, White & Black ── */}
                   <div className="relative z-10 w-full flex flex-col items-center">
-                    {/* Podium Contact / Ground Shadows */}
-                    <div className="absolute -bottom-1 w-[110px] sm:w-[130px] lg:w-[126px] xl:w-[140px] h-4 bg-stone-900/18 blur-md rounded-[100%] transition-all duration-500 group-hover:blur-lg group-hover:opacity-80 group-hover:scale-110 pointer-events-none" />
+                    {/* Realistic Ground Contact Shadow */}
+                    <div className="absolute -bottom-1 w-[105px] sm:w-[118px] md:w-[128px] h-3.5 bg-black/16 blur-md rounded-[100%] transition-all duration-300 group-hover:blur-lg group-hover:opacity-75 pointer-events-none" />
 
                     {/* 3D Pedestal Body */}
-                    <div className="relative w-[114px] sm:w-[132px] lg:w-[128px] xl:w-[144px] h-[34px] sm:h-[38px] transition-transform duration-500 group-hover:scale-[1.02]">
-                      {/* Cylindrical Base (3D Depth) */}
+                    <div className="relative w-[110px] sm:w-[124px] md:w-[134px] h-[30px] sm:h-[34px] transition-transform duration-300 group-hover:scale-[1.02]">
+                      {/* Cylindrical Base (3D Depth) in Deep Maroon/Black */}
                       <div
-                        className="absolute inset-x-0 bottom-0 h-[22px] sm:h-[25px] rounded-b-[50%] transition-all duration-300"
+                        className="absolute inset-x-0 bottom-0 h-[19px] sm:h-[22px] rounded-b-[50%] transition-all duration-300"
                         style={{
-                          background: "linear-gradient(to right, #6D4C1B 0%, #A57813 15%, #D4AF37 32%, #FFF4C4 50%, #D4AF37 68%, #A57813 85%, #593D11 100%)",
-                          boxShadow: "0 8px 18px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(180, 130, 20, 0.28)",
+                          background:
+                            "linear-gradient(to right, #111827 0%, #4A0A14 20%, #780016 50%, #4A0A14 80%, #111827 100%)",
+                          boxShadow:
+                            "0 6px 14px rgba(0, 0, 0, 0.18), 0 2px 5px rgba(120, 0, 22, 0.25)",
                         }}
                       >
                         {/* Specular highlight rim line */}
-                        <div className="absolute inset-x-0 bottom-1 h-[1.5px] bg-gradient-to-r from-transparent via-amber-100/70 to-transparent" />
+                        <div className="absolute inset-x-0 bottom-1 h-[1.5px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
                       </div>
 
-                      {/* Pedestal Top Disc (Tilted 3D Ellipse) */}
+                      {/* Pedestal Top Disc (Tilted 3D Ellipse) in Silver-Maroon Bevel */}
                       <div
-                        className="absolute top-0 inset-x-0 h-[24px] sm:h-[27px] rounded-[50%] p-[2px] transition-all duration-300 group-hover:brightness-105"
+                        className="absolute top-0 inset-x-0 h-[22px] sm:h-[25px] rounded-[50%] p-[2px] transition-all duration-300"
                         style={{
-                          background: "linear-gradient(135deg, #FFF7D6 0%, #E0BC52 25%, #946312 60%, #FFE187 85%, #84550F 100%)",
-                          boxShadow: "inset 0 1px 2px rgba(255,255,255,0.9), 0 2px 4px rgba(0,0,0,0.12)",
+                          background:
+                            "linear-gradient(135deg, #ffffff 0%, #e5e7eb 30%, #780016 65%, #111827 100%)",
+                          boxShadow:
+                            "inset 0 1px 2px rgba(255,255,255,0.9), 0 2px 4px rgba(0,0,0,0.12)",
                         }}
                       >
-                        {/* Top Surface Texture: Soft Marble Sheen */}
+                        {/* Top Surface Texture: White/Pearl Sheen with Maroon Tint */}
                         <div
                           className="w-full h-full rounded-[50%] relative overflow-hidden flex items-center justify-center"
                           style={{
-                            background: "radial-gradient(ellipse at 50% 35%, #ffffff 0%, #FCF9F2 45%, #F5EADA 75%, #E2CCA1 100%)",
+                            background:
+                              "radial-gradient(ellipse at 50% 35%, #ffffff 0%, #FAFAF9 50%, #F5F5F4 80%, #E7E5E4 100%)",
                           }}
                         >
-                          {/* Ambient golden glow on top disc */}
-                          <div className="absolute inset-0 bg-gradient-to-tr from-amber-400/10 via-transparent to-white/40 pointer-events-none" />
-
-                          {/* Contact Shadow of Floating Garment */}
-                          <div className="w-14 sm:w-16 h-3 rounded-[100%] bg-black/25 blur-[3px] transition-all duration-500 group-hover:scale-75 group-hover:opacity-40 pointer-events-none" />
+                          {/* Contact Shadow of Garment */}
+                          <div className="w-12 sm:w-14 h-2.5 rounded-[100%] bg-black/25 blur-[2.5px] transition-all duration-300 group-hover:scale-75 group-hover:opacity-45 pointer-events-none" />
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* ── Category Information Below Pedestal ── */}
-                  <div className="mt-3.5 sm:mt-4 w-full px-1 z-20">
-                    <h3 className="text-xs sm:text-[13px] md:text-sm font-bold text-stone-900 tracking-wide line-clamp-1 group-hover:text-[#8B0000] transition-colors duration-300 font-serif">
+                  <div className="mt-3 sm:mt-3.5 w-full px-1 z-20">
+                    <h3 className="text-xs sm:text-[13px] font-bold text-stone-900 tracking-wide line-clamp-1 group-hover:text-[#8B0000] transition-colors duration-200 font-serif">
                       {category.name}
                     </h3>
                     <p className="text-[10px] sm:text-[11px] text-stone-500 font-medium tracking-normal mt-0.5 truncate">

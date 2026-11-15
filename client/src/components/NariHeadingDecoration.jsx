@@ -1,94 +1,61 @@
 import React from "react";
 
 /**
- * NariHeadingDecoration component renders an elegant 💃🏻 (Woman in Red Dress) icon
- * with floating/pulsing hearts & twinkling stars beside it for section headings.
+ * NariHeadingDecoration component renders an authentic boutique Ethnic Kurti / Garment silhouette.
+ * Strictly garment apparel design — NO dancing female silhouettes, NO hearts, NO stars, and NO gold.
+ * Styled in Royal Maroon (#8B0000, #780016) and Crisp White.
  */
-export const NariHeadingDecoration = ({ flip = false, className = "w-9 h-9 md:w-11 md:h-11" }) => {
+export const NariHeadingDecoration = ({ flip = false, className = "w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" }) => {
   return (
     <span
-      className={`inline-flex items-center justify-center relative select-none mx-1 md:mx-2 transition-transform duration-300 hover:scale-110 ${
+      className={`inline-flex items-center justify-center relative select-none mx-1 sm:mx-1.5 transition-transform duration-300 hover:scale-105 ${
         flip ? "scale-x-[-1]" : ""
       }`}
+      aria-hidden="true"
     >
-      {/* Background Subtle Glow */}
-      <span className="absolute inset-0 rounded-full bg-gradient-to-r from-red-500/20 via-pink-500/20 to-amber-400/20 animate-ping opacity-25 scale-125 pointer-events-none"></span>
-
       <svg
-        viewBox="0 0 64 64"
+        viewBox="0 0 32 32"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className={`${className} drop-shadow-[0_2px_5px_rgba(139,0,0,0.35)]`}
+        className={`${className} drop-shadow-[0_1px_3px_rgba(120,0,22,0.25)]`}
       >
-        {/* 💃🏻 ELEGANT WOMAN IN RED DRESS SILHOUETTE & FLUID GOWN */}
-        {/* Hair Bun & Graceful Face Contour */}
-        <circle cx="27" cy="12" r="4.5" fill="#580C1F" />
-        <path d="M25 8.5C26 7.5 28.5 7.5 29.5 8.5" stroke="#D4AF37" strokeWidth="1.2" strokeLinecap="round" />
-
-        {/* Slender Neck & Gracefully Raised Arms (💃 Pose) */}
-        <path d="M27 16.5V19.5" stroke="#8B0000" strokeWidth="2" strokeLinecap="round" />
-        {/* Left Arm Raising Up */}
-        <path d="M26 20C21 16 16 11 19 7" stroke="#8B0000" strokeWidth="2.2" strokeLinecap="round" fill="none" />
-        {/* Right Arm Curved to Waist */}
-        <path d="M28 20C32 23 33 26 30 30" stroke="#8B0000" strokeWidth="2.2" strokeLinecap="round" fill="none" />
-
-        {/* Elegant Red Bodice */}
-        <path d="M24 19.5C24 19.5 27 19 30 19.5C29.5 24.5 28.5 28.5 27 31.5C25.5 28.5 24.5 24.5 24 19.5Z" fill="#8B0000" />
-
-        {/* Golden Ornate Kamarbandh / Waistband */}
-        <path d="M23.5 31.5C25.5 33 28.5 33 30.5 31.5" stroke="#D4AF37" strokeWidth="2.2" strokeLinecap="round" fill="none" />
-
-        {/* Flared Voluminous Red Lehenga / Dancing Dress Skirt */}
-        <path
-          d="M24 32C17 40 8 50 6 56C14 59 36 60 44 55C40 48 31 40 27 32Z"
-          fill="url(#gown-red-grad)"
-        />
-
-        {/* Skirt Layer Shading & Swirl Lines */}
-        <path
-          d="M15 45C22 49 31 53 41 53.5"
-          stroke="#D4AF37"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeDasharray="2.5 2"
-          fill="none"
-        />
-        <path
-          d="M10 54C19 56.5 29 57.5 41 54.5"
-          stroke="#7F1D1D"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          fill="none"
-        />
-
-        {/* ── ACCOMPANYING HEART & STAR ON THE SIDE ── */}
-        {/* Animated Pulsing Red Heart */}
-        <g className="animate-pulse" style={{ animationDuration: "1.5s" }}>
-          <path
-            d="M50 11C47.5 11 45.5 12.5 44.5 14.2C43.5 12.5 41.5 11 39 11C35.7 11 33 13.5 33 16.8C33 21.5 44.5 27.5 44.5 27.5C44.5 27.5 56 21.5 56 16.8C56 13.5 53.3 11 50 11Z"
-            fill="#8B0000"
-            stroke="#FFFFFF"
-            strokeWidth="0.8"
-          />
-        </g>
-
-        {/* Animated Twinkling Golden Star */}
-        <g className="animate-bounce" style={{ animationDuration: "2.1s" }}>
-          <path
-            d="M48 34L49.5 38.5L54 40L49.5 41.5L48 46L46.5 41.5L42 40L46.5 38.5L48 34Z"
-            fill="#D4AF37"
-            className="drop-shadow-sm"
-          />
-        </g>
-
-        {/* Gradient Defs */}
+        {/* Outer subtle glow in royal maroon */}
         <defs>
-          <linearGradient id="gown-red-grad" x1="6" y1="32" x2="44" y2="60" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#991B1B" />
-            <stop offset="0.5" stopColor="#8B0000" />
-            <stop offset="1" stopColor="#DC2626" />
+          <linearGradient id="kurtiGrad" x1="6" y1="3" x2="26" y2="29" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#9E1616" />
+            <stop offset="0.5" stopColor="#780016" />
+            <stop offset="1" stopColor="#4A0A14" />
+          </linearGradient>
+          <linearGradient id="slitGleam" x1="16" y1="16" x2="16" y2="29" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#ffffff" stopOpacity="0.9" />
+            <stop offset="1" stopColor="#ffffff" stopOpacity="0.4" />
           </linearGradient>
         </defs>
+
+        {/* ── ETHNIC KURTI SILHOUETTE ── */}
+        {/* Shoulders & Sleeves & Flared Hem Body */}
+        <path
+          d="M9.5 3.5 L12.5 7 H19.5 L22.5 3.5 L27 8.5 L24 10.5 L23 9.5 V28.5 C23 29 22.5 29.5 22 29.5 H19.5 L19 20 H13 L12.5 29.5 H10 C9.5 29.5 9 29 9 28.5 V9.5 L8 10.5 L5 8.5 L9.5 3.5 Z"
+          fill="url(#kurtiGrad)"
+        />
+
+        {/* Elegant Designer V-Neckline Notch (Crisp White Accent) */}
+        <path
+          d="M13 7 C13 8.8 14.2 10.2 16 10.2 C17.8 10.2 19 8.8 19 7 H13 Z"
+          fill="#ffffff"
+          opacity="0.95"
+        />
+
+        {/* Delicate Yoke Piping Stitch Accent */}
+        <line x1="16" y1="10.5" x2="16" y2="15.5" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" opacity="0.8" />
+
+        {/* Center Placket Buttons (Clean micro dots) */}
+        <circle cx="16" cy="12" r="0.75" fill="#ffffff" />
+        <circle cx="16" cy="14" r="0.75" fill="#ffffff" />
+
+        {/* Side Slits Hem Highlight */}
+        <line x1="13.2" y1="20" x2="12.6" y2="29" stroke="url(#slitGleam)" strokeWidth="0.75" opacity="0.6" />
+        <line x1="18.8" y1="20" x2="19.4" y2="29" stroke="url(#slitGleam)" strokeWidth="0.75" opacity="0.6" />
       </svg>
     </span>
   );
@@ -101,12 +68,12 @@ export const SectionHeading = ({
   children,
   className = "",
   style = {},
-  iconClassName = "w-6 h-6 sm:w-8 sm:h-8 md:w-9 md:h-9",
+  iconClassName = "w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7",
 }) => {
   return (
     <h2
-      className={`text-xl sm:text-2xl md:text-3xl font-serif font-bold tracking-wider uppercase inline-flex items-center justify-center flex-wrap gap-1.5 sm:gap-2 text-center ${className}`}
-      style={{ color: "#8B0000", ...style }}
+      className={`text-xl sm:text-2xl md:text-3xl font-serif font-bold tracking-wider uppercase inline-flex items-center justify-center flex-wrap gap-1.5 sm:gap-2 text-center text-[#780016] ${className}`}
+      style={{ color: "#780016", ...style }}
     >
       <NariHeadingDecoration className={iconClassName} />
       <span className="drop-shadow-xs">{children}</span>

@@ -28,7 +28,7 @@ class AdBase(BaseModel):
     link: Optional[str] = "/category/sale"
     order: int = 0
     is_active: bool = True
-    accent_color: Optional[str] = "#D4AF37"
+    accent_color: Optional[str] = "#780016"
 
 
 class AdCreate(AdBase):

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { resolveImageUrl, DEFAULT_HERO_FALLBACK } from "../utils/imageUrl";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
-// Curated default promotional ads if backend list is loading or empty
+// Fallback curated ads if backend list is empty
 const FALLBACK_ADS = [
   {
     id: "promo_festive_sale",
@@ -14,8 +14,6 @@ const FALLBACK_ADS = [
     badge: "FESTIVE DEAL",
     image: "/api/api/uploads/7f6c4498b0ef46d2aab5b5dad0ede8d5.webp",
     link: "/category/sale",
-    bg_gradient: "from-[#4A0A19] to-[#780016]",
-    accent_color: "#D4AF37",
   },
   {
     id: "promo_new_arrivals",
@@ -24,8 +22,6 @@ const FALLBACK_ADS = [
     badge: "JUST LAUNCHED",
     image: "/api/api/uploads/a280729561574dfa80ac1290f9eb68c8.webp",
     link: "/new-arrivals",
-    bg_gradient: "from-[#1a2e3b] to-[#0f172a]",
-    accent_color: "#38bdf8",
   },
   {
     id: "promo_wedding_bogo",
@@ -34,8 +30,6 @@ const FALLBACK_ADS = [
     badge: "LIMITED PERIOD",
     image: "/api/api/uploads/bb5701bc0f9e4bad8bbc32880cf95b1f.webp",
     link: "/category/sale",
-    bg_gradient: "from-[#311124] to-[#581335]",
-    accent_color: "#f472b6",
   },
   {
     id: "promo_seller_hub",
@@ -44,8 +38,6 @@ const FALLBACK_ADS = [
     badge: "SELLER HUB",
     image: "/api/api/uploads/e822dee5ee8d4a6e9ab3475dbe877a70.webp",
     link: "/seller/register",
-    bg_gradient: "from-[#064e3b] to-[#022c22]",
-    accent_color: "#34d399",
   },
 ];
 
@@ -62,7 +54,6 @@ const AdvertisementStrip = () => {
   useEffect(() => {
     const fetchAds = async () => {
       try {
-        // Attempt fetching dedicated advertisements or hero slider banners
         const [adRes, slideRes] = await Promise.allSettled([
           fetch(`${API_BASE_URL}/advertisements/?active_only=true`),
           fetch(`${API_BASE_URL}/slider/?active_only=true`),
@@ -83,10 +74,9 @@ const AdvertisementStrip = () => {
               id: s.id || `slide_ad_${idx}`,
               title: s.title || (idx === 0 ? "Grand Festive Kurti Collection" : "Premium Handcrafted Styles"),
               subtitle: s.subtitle || "Explore Authentic Indian Heritage Fashion",
-              badge: idx % 2 === 0 ? "TRENDING NOW" : "SPECIAL DEAL",
+              badge: idx % 2 === 0 ? "POPULAR" : "SPECIAL DEAL",
               image: s.image,
               link: s.cta_link || "/category/sale",
-              accent_color: idx % 2 === 0 ? "#D4AF37" : "#f43f5e",
             }));
           }
         }
@@ -106,12 +96,15 @@ const AdvertisementStrip = () => {
     fetchAds();
   }, []);
 
-  // Duplicate items for continuous infinite scroll when multiple ads exist
-  const displayAds = ads.length > 0
-    ? (ads.length < 5 ? [...ads, ...ads, ...ads] : [...ads, ...ads])
-    : FALLBACK_ADS;
+  // Duplicate items for continuous infinite scroll
+  const displayAds =
+    ads.length > 0
+      ? ads.length < 5
+        ? [...ads, ...ads, ...ads, ...ads]
+        : [...ads, ...ads]
+      : FALLBACK_ADS;
 
-  // Auto-scroll loop
+  // Auto-scroll loop — smooth and continuous
   useEffect(() => {
     if (loading || isPaused || displayAds.length === 0) return;
     const el = scrollRef.current;
@@ -156,45 +149,19 @@ const AdvertisementStrip = () => {
     isDragging.current = false;
   };
 
-  const scrollByAmount = (offset) => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: offset, behavior: "smooth" });
-    }
-  };
-
   return (
-    <section className="relative w-full py-3 sm:py-4 bg-gradient-to-b from-stone-100/90 via-white to-stone-100/60 border-b border-stone-200/80 overflow-hidden select-none">
+    <section className="relative w-full py-3 sm:py-4 bg-gradient-to-b from-stone-50 via-white to-stone-50 border-b border-stone-200/70 overflow-hidden select-none">
       <div
-        className="relative max-w-7xl mx-auto px-3 sm:px-6 group/ad-slider"
+        className="relative max-w-7xl mx-auto px-2 sm:px-4"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => {
           setIsPaused(false);
           onMouseUp();
         }}
       >
-        {/* Left Arrow Button */}
-        <button
-          type="button"
-          onClick={() => scrollByAmount(-360)}
-          aria-label="Scroll ads left"
-          className="absolute left-1 sm:left-3 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/95 text-stone-800 shadow-lg border border-stone-200 flex items-center justify-center opacity-0 group-hover/ad-slider:opacity-100 transition-opacity hover:bg-[#8B0000] hover:text-white cursor-pointer"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-
-        {/* Right Arrow Button */}
-        <button
-          type="button"
-          onClick={() => scrollByAmount(360)}
-          aria-label="Scroll ads right"
-          className="absolute right-1 sm:right-3 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/95 text-stone-800 shadow-lg border border-stone-200 flex items-center justify-center opacity-0 group-hover/ad-slider:opacity-100 transition-opacity hover:bg-[#8B0000] hover:text-white cursor-pointer"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-
-        {/* Subtle Edge Fade Masks */}
-        <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-r from-stone-100/90 to-transparent z-10" />
-        <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-l from-stone-100/90 to-transparent z-10" />
+        {/* Subtle Edge Fade Masks for seamless sliding without arrow buttons */}
+        <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-r from-stone-50 via-stone-50/80 to-transparent z-10" />
+        <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-l from-stone-50 via-stone-50/80 to-transparent z-10" />
 
         {/* Scrolling Cards Row */}
         <div
@@ -204,20 +171,21 @@ const AdvertisementStrip = () => {
           onMouseUp={onMouseUp}
           onTouchStart={() => setIsPaused(true)}
           onTouchEnd={() => setIsPaused(false)}
-          className="flex items-center gap-3 sm:gap-4 md:gap-5 overflow-x-auto scrollbar-hide py-1 px-1 cursor-grab active:cursor-grabbing"
+          className="flex items-center gap-3.5 sm:gap-4 md:gap-5 overflow-x-auto scrollbar-hide py-1 px-1 cursor-grab active:cursor-grabbing"
           style={{ scrollBehavior: "auto" }}
         >
           {displayAds.map((ad, idx) => {
             const rawImg = ad.image || "";
-            const imgSrc = rawImg.trim() !== "" ? resolveImageUrl(rawImg, DEFAULT_HERO_FALLBACK) : DEFAULT_HERO_FALLBACK;
+            const imgSrc =
+              rawImg.trim() !== ""
+                ? resolveImageUrl(rawImg, DEFAULT_HERO_FALLBACK)
+                : DEFAULT_HERO_FALLBACK;
             const targetLink = ad.link || ad.cta_link || "/category/sale";
-            const badgeText = ad.badge || "PROMOTION";
-            const accent = ad.accent_color || "#D4AF37";
-
+            const badgeText = ad.badge || "SPECIAL OFFER";
             const isExternal = targetLink.startsWith("http");
 
             const CardInner = (
-              <div className="relative w-[280px] sm:w-[340px] md:w-[380px] lg:w-[410px] h-[130px] sm:h-[150px] md:h-[165px] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl border border-stone-200/90 transition-all duration-300 group/card flex-shrink-0 bg-stone-900 cursor-pointer">
+              <div className="relative w-[280px] sm:w-[340px] md:w-[380px] lg:w-[400px] h-[130px] sm:h-[148px] md:h-[160px] rounded-2xl overflow-hidden shadow-xs hover:shadow-xl border border-stone-200 transition-all duration-300 group/card flex-shrink-0 bg-stone-900 cursor-pointer">
                 {/* Background Image */}
                 <img
                   src={imgSrc}
@@ -230,21 +198,19 @@ const AdvertisementStrip = () => {
                   }}
                 />
 
-                {/* Dark Luxury Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/20 z-10 pointer-events-none" />
+                {/* Dark Luxury Gradient Overlay (Brand Maroon & Black Tint) */}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/25 z-10 pointer-events-none" />
 
                 {/* Content Overlay */}
                 <div className="absolute inset-0 z-20 p-3 sm:p-4 flex flex-col justify-between pointer-events-none">
-                  {/* Top Badge */}
+                  {/* Top Badge (Royal Maroon & Crisp White) */}
                   <div className="flex items-center justify-between">
-                    <span
-                      className="inline-block text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm text-stone-900 backdrop-blur-sm"
-                      style={{ backgroundColor: accent }}
-                    >
+                    <span className="inline-block text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm text-white bg-[#780016] border border-white/30 backdrop-blur-sm">
                       {badgeText}
                     </span>
-                    <span className="text-[10px] sm:text-xs text-white/80 font-medium flex items-center gap-1 group-hover/card:text-amber-300 transition-colors">
-                      Explore <ArrowRight className="w-3 h-3 group-hover/card:translate-x-0.5 transition-transform" />
+                    <span className="text-[10px] sm:text-xs text-white/90 font-medium flex items-center gap-1 group-hover/card:text-white transition-colors">
+                      Explore{" "}
+                      <ArrowRight className="w-3 h-3 group-hover/card:translate-x-1 transition-transform" />
                     </span>
                   </div>
 
@@ -254,7 +220,7 @@ const AdvertisementStrip = () => {
                       {ad.title}
                     </h4>
                     {ad.subtitle && (
-                      <p className="text-[10px] sm:text-xs text-white/85 font-normal line-clamp-1 mt-0.5 drop-shadow-xs">
+                      <p className="text-[10px] sm:text-xs text-stone-200 font-normal line-clamp-1 mt-0.5 drop-shadow-xs">
                         {ad.subtitle}
                       </p>
                     )}

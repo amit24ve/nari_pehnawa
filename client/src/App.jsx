@@ -46,6 +46,7 @@ import Settings from "./admin/Settings";
 import PaymentHistory from "./admin/PaymentHistory";
 import Visitors from "./admin/Visitors";
 import HeroBanners from "./admin/HeroBanners";
+import AdvertisementManagement from "./admin/AdvertisementManagement";
 import Inquiries from "./admin/Inquiries";
 import AdminAnnouncementsModal from "./admin/AdminAnnouncementsModal";
 import Collaborations from "./admin/Collaborations";
@@ -79,6 +80,7 @@ import UserCoins from "./user/CoinsWallet";
 import UserOrders from "./user/Orders";
 import UserSettings from "./user/Settings";
 import AdvertisementStrip from "./components/AdvertisementStrip";
+import TrustFeaturesStrip from "./components/TrustFeaturesStrip";
 import InteractiveCampaignBanner from "./components/InteractiveCampaignBanner";
 
 function HomePage() {
@@ -89,6 +91,7 @@ function HomePage() {
     return (
         <>
             <HeroSection />
+            <TrustFeaturesStrip />
             <AdvertisementStrip />
             <Categories />
             <FestiveEventBanner />
@@ -344,6 +347,10 @@ function App() {
                                     <Route
                                         path="hero"
                                         element={<HeroBanners />}
+                                    />
+                                    <Route
+                                        path="advertisements"
+                                        element={<AdvertisementManagement />}
                                     />
                                     <Route
                                         path="announcements"
