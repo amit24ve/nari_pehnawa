@@ -18,7 +18,44 @@ def get_user_detailed_view(user_id: str, current_user: dict = Depends(require_ad
     addresses_collection = db["addresses"]
     orders_collection = db["orders"]
     try:
-        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        user = None
+        oid = None
+        try:
+            oid = ObjectId(user_id)
+            user = users_collection.find_one({"_id": oid})
+        except Exception:
+            pass
+
+        if not user:
+            # Check if user_id is seller_id in db["sellers"]
+            s_match = None
+            if oid:
+                s_match = db["sellers"].find_one({"_id": oid})
+            if not s_match:
+                s_match = db["sellers"].find_one({"id": user_id})
+
+            if s_match:
+                s_email = (s_match.get("email") or "").strip().lower()
+                user = users_collection.find_one({"$or": [{"seller_id": str(s_match["_id"])}, {"email": s_email}]})
+                if not user:
+                    now = datetime.now(timezone.utc)
+                    new_u = {
+                        "email": s_email,
+                        "name": s_match.get("name") or s_match.get("shop_name") or "Seller",
+                        "full_name": s_match.get("name") or s_match.get("shop_name") or "Seller",
+                        "phone": s_match.get("phone") or "",
+                        "role": "seller",
+                        "is_seller": True,
+                        "seller_id": str(s_match["_id"]),
+                        "shop_name": s_match.get("shop_name") or "",
+                        "kyc_status": s_match.get("kyc_status") or "submitted",
+                        "status": "active",
+                        "created_at": s_match.get("created_at") or now,
+                        "coins_balance": 0,
+                    }
+                    ins_res = users_collection.insert_one(new_u)
+                    user = users_collection.find_one({"_id": ins_res.inserted_id})
+
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
@@ -146,6 +183,12 @@ def get_user_detailed_view(user_id: str, current_user: dict = Depends(require_ad
         seller_inquiries = []
         seller_products_count = 0
         seller_or_filters = []
+        if user.get("seller_id"):
+            try:
+                seller_or_filters.append({"_id": ObjectId(user["seller_id"])})
+            except Exception:
+                pass
+            seller_or_filters.append({"id": user["seller_id"]})
         if user_id_str:
             seller_or_filters.append({"user_id": user_id_str})
         if user_email:
@@ -241,9 +284,64 @@ def get_users(
     users_collection = db["users"]
     orders_collection = db["orders"]
     try:
+        # Auto-sync any sellers from db["sellers"] into db["users"] so they are always visible in Admin Users
+        try:
+            sellers = list(db["sellers"].find({}))
+            for s in sellers:
+                sid = str(s["_id"])
+                s_email = (s.get("email") or "").strip().lower()
+                s_phone = (s.get("phone") or "").strip()
+                s_name = s.get("name") or s.get("shop_name") or "Seller"
+                s_shop = s.get("shop_name") or s_name
+                
+                or_terms = [{"seller_id": sid}]
+                if s_email:
+                    or_terms.append({"email": s_email})
+                if s_phone:
+                    or_terms.append({"phone": s_phone})
+                
+                existing_u = users_collection.find_one({"$or": or_terms})
+                if not existing_u:
+                    users_collection.insert_one({
+                        "email": s_email,
+                        "name": s_name,
+                        "full_name": s_name,
+                        "phone": s_phone,
+                        "role": "seller",
+                        "is_seller": True,
+                        "seller_id": sid,
+                        "seller_code": s.get("seller_code"),
+                        "shop_name": s_shop,
+                        "kyc_status": s.get("kyc_status", "submitted"),
+                        "status": s.get("status", "active"),
+                        "created_at": s.get("created_at") or datetime.now(timezone.utc),
+                        "coins_balance": 0,
+                    })
+                elif existing_u.get("role") != "seller" or not existing_u.get("seller_id") or not existing_u.get("shop_name"):
+                    users_collection.update_one(
+                        {"_id": existing_u["_id"]},
+                        {"$set": {
+                            "role": "seller",
+                            "is_seller": True,
+                            "seller_id": sid,
+                            "shop_name": s_shop,
+                            "seller_code": s.get("seller_code"),
+                        }}
+                    )
+        except Exception as sync_err:
+            print(f"Seller auto-sync error: {sync_err}")
+
         query = {}
         if role:
-            query["role"] = role
+            if role == "seller":
+                query["$or"] = [{"role": "seller"}, {"is_seller": True}]
+            elif role == "admin":
+                query["$or"] = [{"role": {"$in": ["admin", "super_admin"]}}, {"is_admin": True}]
+            elif role == "customer":
+                query["$or"] = [{"role": "customer"}, {"role": {"$nin": ["admin", "super_admin", "seller"]}}]
+            else:
+                query["role"] = role
+
         if status:
             query["status"] = status
         if search:
@@ -251,7 +349,8 @@ def get_users(
                 {"name": {"$regex": search, "$options": "i"}},
                 {"full_name": {"$regex": search, "$options": "i"}},
                 {"email": {"$regex": search, "$options": "i"}},
-                {"phone": {"$regex": search, "$options": "i"}}
+                {"phone": {"$regex": search, "$options": "i"}},
+                {"shop_name": {"$regex": search, "$options": "i"}}
             ]
         
         cursor = users_collection.find(query).sort("_id", -1).skip(skip).limit(limit)
@@ -262,8 +361,22 @@ def get_users(
                 user["name"] = user.get("full_name") or (user.get("email", "").split("@")[0] if user.get("email") else None) or (f"User {user.get('phone', '')[-4:]}" if user.get("phone") else "Customer")
             if not user.get("email"):
                 user["email"] = user.get("email") or ""
-            if not user.get("role"):
-                user["role"] = "admin" if user.get("is_admin") else "customer"
+
+            # Standardize role
+            if user.get("is_seller") or user.get("seller_id") or user.get("role") == "seller":
+                user["role"] = "seller"
+                user["is_seller"] = True
+            elif user.get("is_admin") or user.get("role") in ("admin", "super_admin"):
+                user["role"] = "admin"
+                user["is_admin"] = True
+            elif not user.get("role"):
+                user["role"] = "customer"
+
+            user["shop_name"] = user.get("shop_name") or ""
+            user["seller_id"] = user.get("seller_id") or ""
+            user["seller_code"] = user.get("seller_code") or ""
+            user["kyc_status"] = user.get("kyc_status") or ""
+
             if not user.get("status"):
                 user["status"] = "active"
             
@@ -500,7 +613,44 @@ def get_user(user_id: str, current_user: dict = Depends(get_current_user)):
     db = get_database()
     users_collection = db["users"]
     try:
-        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        user = None
+        oid = None
+        try:
+            oid = ObjectId(user_id)
+            user = users_collection.find_one({"_id": oid})
+        except Exception:
+            pass
+
+        if not user:
+            # Check if user_id is seller_id in db["sellers"]
+            s_match = None
+            if oid:
+                s_match = db["sellers"].find_one({"_id": oid})
+            if not s_match:
+                s_match = db["sellers"].find_one({"id": user_id})
+
+            if s_match:
+                s_email = (s_match.get("email") or "").strip().lower()
+                user = users_collection.find_one({"$or": [{"seller_id": str(s_match["_id"])}, {"email": s_email}]})
+                if not user:
+                    now = datetime.now(timezone.utc)
+                    new_u = {
+                        "email": s_email,
+                        "name": s_match.get("name") or s_match.get("shop_name") or "Seller",
+                        "full_name": s_match.get("name") or s_match.get("shop_name") or "Seller",
+                        "phone": s_match.get("phone") or "",
+                        "role": "seller",
+                        "is_seller": True,
+                        "seller_id": str(s_match["_id"]),
+                        "shop_name": s_match.get("shop_name") or "",
+                        "kyc_status": s_match.get("kyc_status") or "submitted",
+                        "status": "active",
+                        "created_at": s_match.get("created_at") or now,
+                        "coins_balance": 0,
+                    }
+                    ins_res = users_collection.insert_one(new_u)
+                    user = users_collection.find_one({"_id": ins_res.inserted_id})
+
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         user["id"] = str(user["_id"])
@@ -700,6 +850,31 @@ def delete_user(user_id: str, current_user: dict = Depends(require_admin)):
 
         # Proceed with deletion
         users_collection.delete_one({"_id": oid})
+
+        # If this account is a seller, also remove from sellers collection and clean inquiries
+        try:
+            seller_id = target_user.get("seller_id")
+            seller_queries = []
+            if seller_id:
+                try:
+                    seller_queries.append({"_id": ObjectId(seller_id)})
+                except Exception:
+                    pass
+                seller_queries.append({"id": seller_id})
+            if target_email:
+                seller_queries.append({"email": target_email})
+            if target_user.get("phone"):
+                seller_queries.append({"phone": target_user.get("phone")})
+            
+            if seller_queries:
+                matched_sellers = list(db["sellers"].find({"$or": seller_queries}))
+                for s in matched_sellers:
+                    sid = str(s["_id"])
+                    db["sellers"].delete_one({"_id": s["_id"]})
+                    db["seller_inquiries"].delete_many({"$or": [{"seller_id": sid}, {"seller_id": user_id}]})
+                    db["kyc_documents"].delete_many({"seller_id": sid})
+        except Exception as seller_del_err:
+            print(f"Error cleaning up seller data on user delete: {seller_del_err}")
 
         # Clean up related helper collections
         try:

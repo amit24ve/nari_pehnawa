@@ -240,12 +240,22 @@ const Users = () => {
         const userName = user.full_name || user.name || "";
         const userEmail = user.email || "";
         const userPhone = user.phone || "";
+        const userShop = user.shop_name || "";
         const term = searchTerm.toLowerCase();
         const matchesSearch =
             userName.toLowerCase().includes(term) ||
             userEmail.toLowerCase().includes(term) ||
-            userPhone.toLowerCase().includes(term);
-        const matchesRole = roleFilter === "all" || user.role === roleFilter;
+            userPhone.toLowerCase().includes(term) ||
+            userShop.toLowerCase().includes(term);
+
+        let matchesRole = true;
+        if (roleFilter === "seller") {
+            matchesRole = Boolean(user.role === "seller" || user.is_seller);
+        } else if (roleFilter === "admin") {
+            matchesRole = Boolean(user.role === "admin" || user.role === "super_admin" || user.is_admin);
+        } else if (roleFilter === "customer") {
+            matchesRole = Boolean(user.role === "customer" || (!user.is_admin && !user.is_seller && user.role !== "admin" && user.role !== "seller"));
+        }
         return matchesSearch && matchesRole;
     });
 
@@ -493,9 +503,9 @@ const Users = () => {
 
     const roleCounts = {
         all: users.length,
-        admin: users.filter((u) => u.role === "admin" || u.is_admin).length,
+        admin: users.filter((u) => u.role === "admin" || u.role === "super_admin" || u.is_admin).length,
         seller: users.filter((u) => u.role === "seller" || u.is_seller).length,
-        customer: users.filter((u) => u.role === "customer" || (!u.role && !u.is_admin && !u.is_seller)).length,
+        customer: users.filter((u) => u.role === "customer" || (!u.is_admin && !u.is_seller && u.role !== "admin" && u.role !== "seller")).length,
     };
 
     const statusCounts = {
@@ -796,6 +806,12 @@ const Users = () => {
                                                             <Mail className="w-3 h-3 text-slate-400" />
                                                             {user.email || "N/A"}
                                                         </div>
+                                                        {(user.shop_name || user.role === "seller" || user.is_seller) && (
+                                                            <div className="text-[11px] font-bold text-amber-800 flex items-center gap-1 mt-0.5">
+                                                                <Store className="w-3 h-3 text-amber-600 flex-shrink-0" />
+                                                                <span className="truncate">{user.shop_name || "Merchant Store"}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </td>
@@ -851,15 +867,27 @@ const Users = () => {
                                                         <Edit className="w-3.5 h-3.5" />
                                                         Edit
                                                     </button>
-                                                    {user.role !== "admin" && !user.is_admin && user.email !== "admin@naripehnawa.com" && (
-                                                        <button
-                                                            onClick={() => handleDelete(user.id)}
-                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 rounded-xl transition text-xs font-bold cursor-pointer shadow-xs"
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                            Delete
-                                                        </button>
-                                                    )}
+                                                    <button
+                                                        onClick={() => promptDelete(user)}
+                                                        disabled={currentAdmin && (currentAdmin.id === user.id || currentAdmin.email === user.email)}
+                                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-xl transition text-xs font-bold shadow-xs cursor-pointer ${
+                                                            currentAdmin && (currentAdmin.id === user.id || currentAdmin.email === user.email)
+                                                                ? "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed opacity-40"
+                                                                : user.role === "admin" || user.is_admin
+                                                                ? "bg-white hover:bg-red-50 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                                                                : "bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border-slate-300"
+                                                        }`}
+                                                        title={
+                                                            currentAdmin && (currentAdmin.id === user.id || currentAdmin.email === user.email)
+                                                                ? "Cannot delete your own logged-in admin account"
+                                                                : user.role === "admin" || user.is_admin
+                                                                ? "Delete Administrator Account"
+                                                                : "Delete User Account"
+                                                        }
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                        Delete
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -889,6 +917,12 @@ const Users = () => {
                                                 <Mail className="w-3 h-3 text-slate-400" />
                                                 {user.email || "N/A"}
                                             </div>
+                                            {(user.shop_name || user.role === "seller" || user.is_seller) && (
+                                                <div className="text-[11px] font-bold text-amber-800 flex items-center gap-1 mt-0.5">
+                                                    <Store className="w-3 h-3 text-amber-600 flex-shrink-0" />
+                                                    <span className="truncate">{user.shop_name || "Merchant Store"}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="flex flex-col gap-1.5 items-end">
@@ -922,15 +956,27 @@ const Users = () => {
                                         <Edit className="w-4 h-4" />
                                         Edit
                                     </button>
-                                    {user.role !== "admin" && !user.is_admin && user.email !== "admin@naripehnawa.com" && (
-                                        <button
-                                            onClick={() => handleDelete(user.id)}
-                                            className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 rounded-xl transition text-xs font-bold cursor-pointer shadow-xs"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                            Delete
-                                        </button>
-                                    )}
+                                    <button
+                                        onClick={() => promptDelete(user)}
+                                        disabled={currentAdmin && (currentAdmin.id === user.id || currentAdmin.email === user.email)}
+                                        className={`flex-1 min-w-[70px] flex items-center justify-center gap-1.5 px-3 py-2 border rounded-xl transition text-xs font-bold shadow-xs cursor-pointer ${
+                                            currentAdmin && (currentAdmin.id === user.id || currentAdmin.email === user.email)
+                                                ? "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed opacity-40"
+                                                : user.role === "admin" || user.is_admin
+                                                ? "bg-white hover:bg-red-50 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                                                : "bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border-slate-300"
+                                        }`}
+                                        title={
+                                            currentAdmin && (currentAdmin.id === user.id || currentAdmin.email === user.email)
+                                                ? "Cannot delete your own logged-in admin account"
+                                                : user.role === "admin" || user.is_admin
+                                                ? "Delete Administrator Account"
+                                                : "Delete User Account"
+                                        }
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                        Delete
+                                    </button>
                                 </div>
                             </div>
                         ))}

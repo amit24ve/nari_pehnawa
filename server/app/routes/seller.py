@@ -2240,6 +2240,20 @@ def admin_list_seller_inquiries(
         query["category"] = category
 
     inquiries = list(db["seller_inquiries"].find(query).sort("created_at", -1))
+    for i in inquiries:
+        if not i.get("shop_name") or not i.get("seller_name") or not i.get("seller_phone"):
+            sid = i.get("seller_id")
+            if sid:
+                s_obj = None
+                try:
+                    s_obj = db["sellers"].find_one({"_id": ObjectId(sid)})
+                except Exception:
+                    s_obj = db["sellers"].find_one({"id": sid})
+                if s_obj:
+                    i["shop_name"] = i.get("shop_name") or s_obj.get("shop_name") or "Merchant Partner"
+                    i["seller_name"] = i.get("seller_name") or s_obj.get("name") or "Seller"
+                    i["seller_email"] = i.get("seller_email") or s_obj.get("email") or ""
+                    i["seller_phone"] = i.get("seller_phone") or s_obj.get("phone") or ""
     return [serialize_doc(i) for i in inquiries]
 
 
