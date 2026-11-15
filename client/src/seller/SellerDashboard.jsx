@@ -21,6 +21,12 @@ import {
   AlertCircle,
   FileText,
   Boxes,
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp,
+  Check,
+  Store,
+  Layers,
 } from "lucide-react";
 import { useSellerAuth } from "./SellerAuthContext";
 import sellerApi from "./sellerApi";
@@ -107,6 +113,90 @@ const SellerDashboard = () => {
   const [recentProducts, setRecentProducts] = useState([]);
   const [recentInquiries, setRecentInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [workflowCollapsed, setWorkflowCollapsed] = useState(false);
+
+  // Dynamic 5-Step Seller Onboarding & Operations Workflow
+  const isKycComplete = Boolean(
+    stats.kyc_status === "approved" ||
+    stats.kyc_status === "verified" ||
+    seller?.kyc_status === "approved" ||
+    seller?.kyc_status === "verified" ||
+    (seller?.gstin && seller?.pan_number && seller?.bank_details?.account_number)
+  );
+  const hasProducts = (stats.total_products || 0) > 0;
+  const isPackagingDispatched = Boolean(
+    stats.welcome_kit_status === "dispatched" ||
+    stats.welcome_kit_status === "delivered" ||
+    seller?.welcome_kit_status === "dispatched"
+  );
+  const hasOrders = (stats.total_orders || 0) > 0;
+  const hasSettlements = (stats.total_sales_amount || 0) > 0;
+
+  const workflowSteps = [
+    {
+      id: 1,
+      title: "Store KYC & Profile",
+      desc: "Register GSTIN, PAN, Bank account & pickup warehouse.",
+      done: isKycComplete,
+      current: !isKycComplete,
+      link: "/seller/profile",
+      cta: isKycComplete ? "Review Profile" : "Complete KYC Setup",
+      badge: isKycComplete ? "Verified" : "Action Required",
+      badgeColor: isKycComplete ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200",
+      icon: ShieldCheck,
+    },
+    {
+      id: 2,
+      title: "Ethnic Kurti Catalog",
+      desc: "Upload handcrafted kurtis, sizes, colors and inventory.",
+      done: hasProducts,
+      current: isKycComplete && !hasProducts,
+      link: "/seller/products/new",
+      cta: hasProducts ? `Manage (${stats.total_products})` : "Add 1st Product",
+      badge: hasProducts ? `${stats.total_products} Listed` : "Pending Listing",
+      badgeColor: hasProducts ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-cyan-50 text-[#0891b2] border-cyan-200",
+      icon: PlusCircle,
+    },
+    {
+      id: 3,
+      title: "Official Packaging Kit",
+      desc: "Request Nari Pehnawa tamper-proof security polybags & labels.",
+      done: isPackagingDispatched,
+      current: isKycComplete && hasProducts && !isPackagingDispatched,
+      link: "/seller/packaging",
+      cta: isPackagingDispatched ? "Track Packaging" : "Order Kit",
+      badge: isPackagingDispatched ? "Dispatched" : "Ready to Order",
+      badgeColor: isPackagingDispatched ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-700 border-slate-200",
+      icon: Box,
+    },
+    {
+      id: 4,
+      title: "Order Dispatch",
+      desc: "Pack orders with barcode manifest and handover to couriers.",
+      done: hasOrders,
+      current: hasProducts && !hasOrders,
+      link: "/seller/orders",
+      cta: hasOrders ? `Orders (${stats.total_orders})` : "Awaiting Orders",
+      badge: hasOrders ? `${stats.total_orders} Orders` : "Awaiting Orders",
+      badgeColor: hasOrders ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-700 border-slate-200",
+      icon: Truck,
+    },
+    {
+      id: 5,
+      title: "7-Day Bank Settlements",
+      desc: "Direct payouts to your bank account with transparent reports.",
+      done: hasSettlements,
+      current: hasOrders && !hasSettlements,
+      link: "/seller/finance",
+      cta: hasSettlements ? `Ledger (₹${stats.total_sales_amount})` : "View Ledger",
+      badge: hasSettlements ? "Payouts Active" : "7-Day Payout",
+      badgeColor: hasSettlements ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-700 border-slate-200",
+      icon: IndianRupee,
+    },
+  ];
+
+  const completedStepsCount = workflowSteps.filter((s) => s.done).length;
+  const progressPercent = Math.round((completedStepsCount / workflowSteps.length) * 100);
 
   const loadDashboardData = async () => {
     try {
@@ -194,6 +284,147 @@ const SellerDashboard = () => {
             <span className="hidden sm:inline">Add Product</span>
           </Link>
         </div>
+      </div>
+
+      {/* 5-Step Guided Seller Operations & Growth Roadmap Tracker */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden transition-all duration-300">
+        {/* Banner Header with Progress Rail */}
+        <div className="p-4 sm:p-5 border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-cyan-50/20">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#0891b2]/10 text-[#0891b2] border border-[#0891b2]/20">
+                  <Layers className="w-3 h-3" />
+                  Step-by-Step Seller Roadmap
+                </span>
+                <span className="text-slate-300">•</span>
+                <span className="text-[11px] font-semibold text-slate-500">
+                  {completedStepsCount === 5
+                    ? "Store Fully Activated 🎉"
+                    : `Step ${Math.min(completedStepsCount + 1, 5)} of 5 in Progress`}
+                </span>
+              </div>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                Nari Pehnawa Onboarding &amp; Operations Workflow
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5 max-w-2xl leading-relaxed">
+                Follow these 5 core milestones step-by-step to scale your handcrafted ethnic apparel catalog, manage orders, and receive fast 7-day bank settlements.
+              </p>
+            </div>
+
+            {/* Overall Progress Meter & Collapse Control */}
+            <div className="flex items-center gap-3.5 flex-shrink-0 self-start md:self-center">
+              <div className="flex flex-col items-end">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-700">
+                    {completedStepsCount}/5 Completed
+                  </span>
+                  <span className="text-xs font-mono font-extrabold text-[#0891b2]">
+                    {progressPercent}%
+                  </span>
+                </div>
+                <div className="w-32 sm:w-40 h-2 bg-slate-100 rounded-full overflow-hidden mt-1.5 border border-slate-200/60">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#0891b2] to-emerald-500 rounded-full transition-all duration-500"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setWorkflowCollapsed(!workflowCollapsed)}
+                className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition cursor-pointer shadow-xs"
+                title={workflowCollapsed ? "Expand 5-Step Guide" : "Collapse Guide"}
+              >
+                {workflowCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 5 Sequential Milestone Cards */}
+        {!workflowCollapsed && (
+          <div className="p-4 sm:p-5 bg-slate-50/40">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+              {workflowSteps.map((step) => {
+                const Icon = step.icon;
+                return (
+                  <div
+                    key={step.id}
+                    className={`relative rounded-2xl p-4 border transition-all duration-200 flex flex-col justify-between ${
+                      step.done
+                        ? "bg-white border-emerald-200/80 shadow-xs hover:border-emerald-300"
+                        : step.current
+                        ? "bg-white border-[#0891b2] ring-2 ring-[#0891b2]/10 shadow-sm"
+                        : "bg-white/70 border-slate-200/70 opacity-80 hover:opacity-100"
+                    }`}
+                  >
+                    <div>
+                      {/* Step Header: Number / Done checkmark & Status Badge */}
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div
+                          className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs flex-shrink-0 transition-transform ${
+                            step.done
+                              ? "bg-emerald-500 text-white shadow-xs"
+                              : step.current
+                              ? "bg-[#0891b2] text-white shadow-xs animate-pulse"
+                              : "bg-slate-100 text-slate-500 border border-slate-200"
+                          }`}
+                        >
+                          {step.done ? <Check className="w-4 h-4 stroke-[2.5]" /> : step.id}
+                        </div>
+
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${step.badgeColor}`}
+                        >
+                          {step.badge}
+                        </span>
+                      </div>
+
+                      {/* Step Title & Details */}
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <Icon
+                          className={`w-4 h-4 flex-shrink-0 ${
+                            step.done
+                              ? "text-emerald-600"
+                              : step.current
+                              ? "text-[#0891b2]"
+                              : "text-slate-400"
+                          }`}
+                        />
+                        <h4 className="font-bold text-xs sm:text-[13px] text-slate-800 leading-snug">
+                          {step.title}
+                        </h4>
+                      </div>
+
+                      <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
+                        {step.desc}
+                      </p>
+                    </div>
+
+                    {/* Step CTA Action */}
+                    <div className="pt-3.5 mt-3 border-t border-slate-100">
+                      <Link
+                        to={step.link}
+                        className={`w-full py-1.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition text-center ${
+                          step.current
+                            ? "bg-[#0891b2] hover:bg-[#0e7490] text-white shadow-xs"
+                            : step.done
+                            ? "bg-slate-100 hover:bg-slate-200/80 text-slate-700"
+                            : "bg-slate-50 hover:bg-slate-100 text-slate-500 border border-slate-200"
+                        }`}
+                      >
+                        <span>{step.cta}</span>
+                        <ArrowRight className="w-3 h-3 flex-shrink-0" />
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Action Center / To-Do Alerts */}

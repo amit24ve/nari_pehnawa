@@ -74,23 +74,23 @@ const Categories = () => {
   };
 
   const getCategoryBadge = (cat) => {
-    if (cat.badge && cat.badge.trim() !== "") {
-      const b = cat.badge.trim();
-      return b.length > 20 ? `${b.slice(0, 18)}...` : b;
-    }
-    if (cat.tagline && cat.tagline.trim() !== "") {
-      const lower = cat.tagline.toLowerCase();
-      if (
-        lower.includes("sale") ||
-        lower.includes("discount") ||
-        lower.includes("%") ||
-        lower.includes("off")
-      ) {
-        const cleaned = cat.tagline.replace(/[!🌸🖤✨🔥]/g, "").trim();
-        const matchPercent = cleaned.match(/(\d+%\s*off)/i);
-        if (matchPercent) return `UP TO ${matchPercent[1].toUpperCase()}`;
-        return cleaned.length > 20 ? "FESTIVE DEAL" : cleaned.toUpperCase();
-      }
+    const raw = (cat.badge || cat.tagline || "").trim();
+    if (raw) {
+      const lower = raw.toLowerCase();
+      // Smartly format discounts like "50% off", "up to 60% off", etc.
+      const matchPercent = raw.match(/(\d+%\s*off|\d+%\s*discount)/i);
+      if (matchPercent) return `UP TO ${matchPercent[1].toUpperCase()}`;
+      if (lower.includes("mega sale")) return "MEGA SALE";
+      if (lower.includes("exclusive") && lower.includes("sale")) return "EXCLUSIVE SALE";
+      if (lower.includes("festive")) return "FESTIVE DEAL";
+      if (lower.includes("trending")) return "TRENDING";
+      if (lower.includes("new arrival") || lower.includes("new arrivals")) return "NEW ARRIVAL";
+      if (lower.includes("popular")) return "POPULAR";
+      if (lower.includes("hot")) return "HOT DEAL";
+
+      const cleaned = raw.replace(/[!🌸🖤✨🔥]/g, "").trim();
+      if (cleaned.length <= 14) return cleaned.toUpperCase();
+      return `${cleaned.slice(0, 12).toUpperCase()}...`;
     }
     return "POPULAR";
   };
@@ -269,12 +269,12 @@ const Categories = () => {
 
                     {/* Floating Pill Badge (Maroon & White) */}
                     {badgeText && (
-                      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 z-30 whitespace-nowrap max-w-[94%] pointer-events-none">
+                      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 z-30 pointer-events-none max-w-[94%] flex justify-center">
                         <span
-                          className={`inline-block font-bold text-white uppercase tracking-wider rounded-full shadow-md border border-white/70 transition-transform duration-300 group-hover:scale-105 truncate max-w-full ${
+                          className={`inline-block font-bold text-white uppercase tracking-wider rounded-full shadow-md border border-white/70 transition-transform duration-300 group-hover:scale-105 truncate max-w-[105px] sm:max-w-[115px] ${
                             isSaleBadge
                               ? "bg-gradient-to-r from-[#780016] via-[#8B0000] to-[#580C1F] text-[8px] sm:text-[9px] px-2.5 py-0.5"
-                              : "bg-[#780016] text-[9px] sm:text-[10px] px-2.5 py-0.5 font-sans"
+                              : "bg-[#780016] text-[8.5px] sm:text-[9.5px] px-2.5 py-0.5 font-sans"
                           }`}
                         >
                           {badgeText}

@@ -141,18 +141,58 @@ def get_user_detailed_view(user_id: str, current_user: dict = Depends(require_ad
                 "cancellation_reason": o.get("cancellation_reason") or o.get("cancel_reason") or ""
             })
 
+        # Check if user has an associated seller profile or inquiries
+        seller_doc = None
+        seller_inquiries = []
+        seller_products_count = 0
+        seller_or_filters = []
+        if user_id_str:
+            seller_or_filters.append({"user_id": user_id_str})
+        if user_email:
+            seller_or_filters.append({"email": user_email})
+        if user.get("phone"):
+            seller_or_filters.append({"phone": user.get("phone")})
+
+        if seller_or_filters:
+            seller_doc = db["sellers"].find_one({"$or": seller_or_filters})
+            if seller_doc:
+                sid = str(seller_doc["_id"])
+                # Fetch seller's support inquiries
+                raw_inqs = list(
+                    db["seller_inquiries"]
+                    .find({"$or": [{"seller_id": sid}, {"seller_id": user_id_str}]})
+                    .sort("created_at", -1)
+                )
+                for inq in raw_inqs:
+                    inq["id"] = str(inq.pop("_id"))
+                    if isinstance(inq.get("created_at"), datetime):
+                        inq["created_at"] = inq["created_at"].isoformat()
+                    if isinstance(inq.get("updated_at"), datetime):
+                        inq["updated_at"] = inq["updated_at"].isoformat()
+                    seller_inquiries.append(inq)
+
+                seller_products_count = db["products"].count_documents({"seller_id": sid})
+                seller_doc["id"] = sid
+                seller_doc.pop("_id", None)
+                seller_doc.pop("password_hash", None)
+
         return {
             **user_out,
             "user": user_out,
             "addresses": addresses,
             "orders": orders,
+            "seller_profile": seller_doc,
+            "seller_inquiries": seller_inquiries,
+            "seller_products_count": seller_products_count,
             "stats": {
                 "total_orders": active_orders_count,
                 "active_orders": active_orders_count,
                 "cancelled_orders": cancelled_count,
                 "total_spent": total_spent,
                 "delivered_orders": delivered_count,
-                "in_transit_orders": in_transit_count
+                "in_transit_orders": in_transit_count,
+                "seller_inquiries_total": len(seller_inquiries),
+                "seller_inquiries_open": sum(1 for i in seller_inquiries if i.get("status") == "open"),
             }
         }
     except HTTPException:
@@ -634,20 +674,46 @@ def admin_reset_user_password(user_id: str, payload: dict, current_user: dict = 
 
 @router.delete("/{user_id}")
 def delete_user(user_id: str, current_user: dict = Depends(require_admin)):
-    """Delete a user (Admin only)"""
+    """Delete a user or admin account (Admin only). Allows deleting any selected user or admin account, protecting only the currently logged-in account from accidental self-deletion."""
     db = get_database()
     users_collection = db["users"]
     try:
-        target_user = users_collection.find_one({"_id": ObjectId(user_id)})
+        try:
+            oid = ObjectId(user_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid user ID format")
+
+        target_user = users_collection.find_one({"_id": oid})
         if not target_user:
             raise HTTPException(status_code=404, detail="User not found")
-        
-        # Protect Admin accounts from deletion
-        if target_user.get("role") == "admin" or target_user.get("is_admin") or target_user.get("email") == "admin@naripehnawa.com":
-            raise HTTPException(status_code=400, detail="Admin accounts cannot be deleted")
 
-        result = users_collection.delete_one({"_id": ObjectId(user_id)})
-        return {"message": "User deleted successfully"}
+        # Prevent admin from accidentally deleting their own currently logged-in session account
+        curr_id = str(current_user.get("id") or current_user.get("_id") or "")
+        curr_email = (current_user.get("email") or "").strip().lower()
+        target_email = (target_user.get("email") or "").strip().lower()
+
+        if str(oid) == curr_id or (curr_email and curr_email == target_email):
+            raise HTTPException(
+                status_code=400,
+                detail="You cannot delete your own logged-in admin account. Please ask another administrator to delete this account if required."
+            )
+
+        # Proceed with deletion
+        users_collection.delete_one({"_id": oid})
+
+        # Clean up related helper collections
+        try:
+            db["addresses"].delete_many({"user_id": user_id})
+            db["mobile_refresh_sessions"].delete_many({"user_id": user_id})
+        except Exception:
+            pass
+
+        account_name = target_user.get("name") or target_user.get("full_name") or target_email or "Account"
+        account_role = target_user.get("role") or ("admin" if target_user.get("is_admin") else "user")
+        return {
+            "success": True,
+            "message": f"{account_role.capitalize()} account '{account_name}' deleted successfully"
+        }
     except HTTPException:
         raise
     except Exception as e:

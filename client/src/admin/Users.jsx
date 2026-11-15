@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import {
     Search,
     Filter,
@@ -29,7 +30,10 @@ import {
     RefreshCw,
     Coins,
     Sparkles,
-    Store
+    Store,
+    ExternalLink,
+    Send,
+    MessageSquare
 } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
@@ -55,6 +59,24 @@ const Users = () => {
     const [adjustAmount, setAdjustAmount] = useState("");
     const [adjustReason, setAdjustReason] = useState("");
     const [adjustLoading, setAdjustLoading] = useState(false);
+
+    // Delete Confirmation Modal State (Allows deleting any user & admin account except self)
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [userToDelete, setUserToDelete] = useState(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+
+    // Seller Inquiry Reply State inside View Modal
+    const [adminReplyText, setAdminReplyText] = useState({});
+    const [replyingInquiryId, setReplyingInquiryId] = useState(null);
+
+    const getCurrentAdmin = () => {
+        try {
+            return JSON.parse(localStorage.getItem("neel_admin_user")) || null;
+        } catch {
+            return null;
+        }
+    };
+    const currentAdmin = getCurrentAdmin();
 
     const handleOpenAdjustCoins = (user) => {
         setAdjustUser(user);
@@ -354,31 +376,80 @@ const Users = () => {
         }
     };
 
-    const handleDelete = async (userId) => {
-        if (!window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
+    const promptDelete = (u) => {
+        if (currentAdmin && (currentAdmin.id === u.id || currentAdmin.email === u.email)) {
+            alert("You cannot delete your own currently logged-in admin account.");
             return;
         }
+        setUserToDelete(u);
+        setShowDeleteModal(true);
+    };
 
+    const confirmDelete = async () => {
+        if (!userToDelete) return;
+        setDeleteLoading(true);
         try {
             const token = localStorage.getItem("neel_token") || localStorage.getItem("token");
-
-            const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+            const response = await fetch(`${API_BASE_URL}/users/${userToDelete.id}`, {
                 method: "DELETE",
                 headers: {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json",
                 },
             });
-
+            const data = await response.json().catch(() => ({}));
             if (!response.ok) {
-                const data = await response.json().catch(() => ({}));
-                throw new Error(data.detail || "Failed to delete user");
+                throw new Error(data.detail || "Failed to delete account");
             }
-
+            alert(data.message || "Account deleted successfully.");
+            setShowDeleteModal(false);
+            setUserToDelete(null);
             fetchUsers();
+            if (viewDetails?.user?.id === userToDelete.id) {
+                setShowViewModal(false);
+                setViewDetails(null);
+            }
         } catch (err) {
             console.error("Error deleting user:", err);
             alert("Failed to delete user: " + err.message);
+        } finally {
+            setDeleteLoading(false);
+        }
+    };
+
+    const handleReplySellerInquiry = async (inquiryId) => {
+        const replyMsg = (adminReplyText[inquiryId] || "").trim();
+        if (!replyMsg) {
+            alert("Please enter a reply message.");
+            return;
+        }
+        try {
+            setReplyingInquiryId(inquiryId);
+            const token = localStorage.getItem("neel_token") || localStorage.getItem("token");
+            const res = await fetch(`${API_BASE_URL}/seller/admin/inquiries/${inquiryId}/reply`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    reply_message: replyMsg,
+                    new_status: "resolved",
+                }),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || "Failed to send reply");
+            }
+            alert("Reply sent successfully to seller!");
+            setAdminReplyText((prev) => ({ ...prev, [inquiryId]: "" }));
+            if (viewDetails?.user?.id) {
+                handleViewUser(viewDetails.user.id);
+            }
+        } catch (e) {
+            alert(e.message);
+        } finally {
+            setReplyingInquiryId(null);
         }
     };
 
@@ -482,7 +553,12 @@ const Users = () => {
                     {/* Stats Cards (Cyan Admin Palette) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full">
                         {/* Stat 1: Total Users */}
-                        <div className="bg-white border border-slate-100 hover:shadow-md hover:border-[#0891b2]/30 transition-all duration-300 rounded-2xl p-5 shadow-sm relative overflow-hidden flex items-center justify-between group">
+                        <div
+                            onClick={() => { setRoleFilter("all"); setCurrentPage(1); }}
+                            className={`bg-white border hover:shadow-md transition-all duration-300 rounded-2xl p-5 shadow-sm relative overflow-hidden flex items-center justify-between group cursor-pointer ${
+                                roleFilter === "all" ? "border-[#0891b2] ring-2 ring-[#0891b2]/20" : "border-slate-100"
+                            }`}
+                        >
                             <div className="relative z-10">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Users</span>
                                 <span className="text-[9px] text-slate-500 block mt-0.5">All Registered Profiles</span>
@@ -493,20 +569,13 @@ const Users = () => {
                             </div>
                         </div>
 
-                        {/* Stat 2: Admins */}
-                        <div className="bg-white border border-slate-100 hover:shadow-md hover:border-[#0891b2]/30 transition-all duration-300 rounded-2xl p-5 shadow-sm relative overflow-hidden flex items-center justify-between group">
-                            <div className="relative z-10">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Admin Accounts</span>
-                                <span className="text-[9px] text-slate-500 block mt-0.5">System Administrators</span>
-                                <h4 className="text-2xl font-black font-mono mt-2 text-slate-800">{roleCounts.admin}</h4>
-                            </div>
-                            <div className="p-3 bg-purple-50 rounded-2xl text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-all duration-300">
-                                <Shield className="w-5 h-5" />
-                            </div>
-                        </div>
-
-                        {/* Stat 3: Customers */}
-                        <div className="bg-white border border-slate-100 hover:shadow-md hover:border-[#0891b2]/30 transition-all duration-300 rounded-2xl p-5 shadow-sm relative overflow-hidden flex items-center justify-between group">
+                        {/* Stat 2: Customers */}
+                        <div
+                            onClick={() => { setRoleFilter("customer"); setCurrentPage(1); }}
+                            className={`bg-white border hover:shadow-md transition-all duration-300 rounded-2xl p-5 shadow-sm relative overflow-hidden flex items-center justify-between group cursor-pointer ${
+                                roleFilter === "customer" ? "border-[#0891b2] ring-2 ring-[#0891b2]/20" : "border-slate-100"
+                            }`}
+                        >
                             <div className="relative z-10">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Customers</span>
                                 <span className="text-[9px] text-slate-500 block mt-0.5">Verified Shoppers</span>
@@ -516,15 +585,38 @@ const Users = () => {
                                 <User className="w-5 h-5" />
                             </div>
                         </div>
-                        {/* Stat 4: Active Users */}
-                        <div className="bg-white border border-slate-100 hover:shadow-md hover:border-[#0891b2]/30 transition-all duration-300 rounded-2xl p-5 shadow-sm relative overflow-hidden flex items-center justify-between group">
+
+                        {/* Stat 3: Sellers / Vendors */}
+                        <div
+                            onClick={() => { setRoleFilter("seller"); setCurrentPage(1); }}
+                            className={`bg-white border hover:shadow-md transition-all duration-300 rounded-2xl p-5 shadow-sm relative overflow-hidden flex items-center justify-between group cursor-pointer ${
+                                roleFilter === "seller" ? "border-amber-500 ring-2 ring-amber-500/20" : "border-slate-100"
+                            }`}
+                        >
                             <div className="relative z-10">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active Accounts</span>
-                                <span className="text-[9px] text-slate-500 block mt-0.5">Currently Enabled</span>
-                                <h4 className="text-2xl font-black font-mono mt-2 text-slate-800">{statusCounts.active}</h4>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Sellers &amp; Vendors</span>
+                                <span className="text-[9px] text-slate-500 block mt-0.5">Partner Merchant Stores</span>
+                                <h4 className="text-2xl font-black font-mono mt-2 text-slate-800">{roleCounts.seller}</h4>
                             </div>
-                            <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
-                                <CheckCircle className="w-5 h-5" />
+                            <div className="p-3 bg-amber-50 rounded-2xl text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-all duration-300">
+                                <Store className="w-5 h-5" />
+                            </div>
+                        </div>
+
+                        {/* Stat 4: Admins */}
+                        <div
+                            onClick={() => { setRoleFilter("admin"); setCurrentPage(1); }}
+                            className={`bg-white border hover:shadow-md transition-all duration-300 rounded-2xl p-5 shadow-sm relative overflow-hidden flex items-center justify-between group cursor-pointer ${
+                                roleFilter === "admin" ? "border-purple-500 ring-2 ring-purple-500/20" : "border-slate-100"
+                            }`}
+                        >
+                            <div className="relative z-10">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Admin Accounts</span>
+                                <span className="text-[9px] text-slate-500 block mt-0.5">System Administrators</span>
+                                <h4 className="text-2xl font-black font-mono mt-2 text-slate-800">{roleCounts.admin}</h4>
+                            </div>
+                            <div className="p-3 bg-purple-50 rounded-2xl text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-all duration-300">
+                                <Shield className="w-5 h-5" />
                             </div>
                         </div>
                     </div>
@@ -585,6 +677,37 @@ const Users = () => {
                                     <option value="date">Sort by Date</option>
                                 </select>
                             </div>
+                        </div>
+
+                        {/* Quick Role Filter Tabs */}
+                        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1 border-t border-slate-100">
+                            {[
+                                { id: "all", label: `All Users (${roleCounts.all})`, icon: UsersIcon },
+                                { id: "customer", label: `Customers (${roleCounts.customer})`, icon: User },
+                                { id: "seller", label: `Sellers / Vendors (${roleCounts.seller})`, icon: Store },
+                                { id: "admin", label: `Administrators (${roleCounts.admin})`, icon: Shield },
+                            ].map((tab) => {
+                                const Icon = tab.icon;
+                                const isActive = roleFilter === tab.id;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        type="button"
+                                        onClick={() => {
+                                            setRoleFilter(tab.id);
+                                            setCurrentPage(1);
+                                        }}
+                                        className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer shadow-xs ${
+                                            isActive
+                                                ? "bg-[#0891b2] text-white shadow-md shadow-[#0891b2]/20 font-black"
+                                                : "bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200"
+                                        }`}
+                                    >
+                                        <Icon className="w-3.5 h-3.5" />
+                                        <span>{tab.label}</span>
+                                    </button>
+                                );
+                            })}
                         </div>
 
                         {/* Mobile Filters */}
@@ -1167,6 +1290,205 @@ const Users = () => {
                                         </div>
                                     </div>
 
+                                    {/* ══════════════════════════════════════════════════════════
+                                        SELLER BUSINESS PROFILE & SUPPORT INQUIRIES (When Seller)
+                                    ══════════════════════════════════════════════════════════ */}
+                                    {viewDetails.seller_profile && (
+                                        <div className="space-y-4">
+                                            {/* Store Profile Card */}
+                                            <div className="bg-gradient-to-r from-amber-50/70 via-white to-amber-50/30 border border-amber-200 rounded-2xl p-5 shadow-xs space-y-3.5">
+                                                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-100 pb-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="p-2.5 rounded-2xl bg-amber-600 text-white shadow-xs">
+                                                            <Store className="w-5 h-5" />
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <h4 className="font-bold text-sm sm:text-base text-slate-900">
+                                                                    {viewDetails.seller_profile.shop_name || "Merchant Store"}
+                                                                </h4>
+                                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                                                    viewDetails.seller_profile.kyc_status === 'verified'
+                                                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                                        : 'bg-amber-100 text-amber-800 border-amber-300'
+                                                                }`}>
+                                                                    KYC: {(viewDetails.seller_profile.kyc_status || 'PENDING').toUpperCase()}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs text-slate-500 mt-0.5">
+                                                                Partner Vendor • Total Products Listed: <strong className="text-slate-800 font-mono">{viewDetails.seller_products_count || 0}</strong>
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <Link
+                                                        to="/admin/sellers"
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-bold transition shadow-xs"
+                                                    >
+                                                        <span>Open in Sellers Panel</span>
+                                                        <ExternalLink className="w-3.5 h-3.5" />
+                                                    </Link>
+                                                </div>
+
+                                                {/* Profile Details Grid */}
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                                                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                                                        <span className="text-slate-400 font-semibold block text-[11px]">Merchant Contact</span>
+                                                        <span className="font-bold text-slate-900 text-xs block mt-0.5">{viewDetails.seller_profile.name}</span>
+                                                        <span className="text-slate-500 text-[11px] block">{viewDetails.seller_profile.phone}</span>
+                                                    </div>
+                                                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                                                        <span className="text-slate-400 font-semibold block text-[11px]">Tax Credentials</span>
+                                                        <span className="font-bold text-slate-900 text-xs block mt-0.5">
+                                                            GSTIN: {viewDetails.seller_profile.gstin || "N/A"}
+                                                        </span>
+                                                        <span className="text-slate-500 text-[11px] block">
+                                                            PAN: {viewDetails.seller_profile.pan || "N/A"}
+                                                        </span>
+                                                    </div>
+                                                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                                                        <span className="text-slate-400 font-semibold block text-[11px]">Pickup Location</span>
+                                                        <span className="font-bold text-slate-900 text-xs block mt-0.5">
+                                                            {viewDetails.seller_profile.city || "City"}, {viewDetails.seller_profile.state || "State"}
+                                                        </span>
+                                                        <span className="text-slate-500 text-[11px] block font-mono">
+                                                            PIN: {viewDetails.seller_profile.pincode || "N/A"}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Bank Payout Settlement Info */}
+                                                <div className="bg-white p-3 rounded-xl border border-slate-200 text-xs">
+                                                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-2 flex items-center gap-1.5">
+                                                        <CreditCard className="w-3.5 h-3.5 text-amber-600" />
+                                                        Bank Settlement Account
+                                                    </span>
+                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                                                        <div>
+                                                            <span className="text-slate-400 block">Bank Name</span>
+                                                            <strong className="text-slate-800 block truncate">{viewDetails.seller_profile.bank_name || "N/A"}</strong>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-slate-400 block">Account Number</span>
+                                                            <strong className="text-slate-800 font-mono block truncate">{viewDetails.seller_profile.account_number || "N/A"}</strong>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-slate-400 block">IFSC Code</span>
+                                                            <strong className="text-slate-800 font-mono block truncate">{viewDetails.seller_profile.ifsc_code || "N/A"}</strong>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-slate-400 block">Beneficiary</span>
+                                                            <strong className="text-slate-800 block truncate">{viewDetails.seller_profile.account_holder_name || viewDetails.seller_profile.name || "N/A"}</strong>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* ── Seller Inquiries & Help Support History ── */}
+                                            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3.5">
+                                                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <MessageSquare className="w-4 h-4 text-[#0891b2]" />
+                                                        <h4 className="font-bold text-slate-900 text-xs sm:text-sm uppercase tracking-wide">
+                                                            Seller Support Inquiries ({viewDetails.seller_inquiries?.length || 0})
+                                                        </h4>
+                                                    </div>
+                                                    <span className="text-xs bg-cyan-50 text-[#0891b2] border border-cyan-200 px-2.5 py-0.5 rounded-full font-bold">
+                                                        {viewDetails.stats?.seller_inquiries_open || 0} Open Tickets
+                                                    </span>
+                                                </div>
+
+                                                {viewDetails.seller_inquiries && viewDetails.seller_inquiries.length > 0 ? (
+                                                    <div className="space-y-3">
+                                                        {viewDetails.seller_inquiries.map((inq) => (
+                                                            <div
+                                                                key={inq.id}
+                                                                className={`p-4 rounded-xl border transition space-y-2.5 text-xs ${
+                                                                    inq.status === 'open'
+                                                                        ? 'bg-amber-50/50 border-amber-200'
+                                                                        : 'bg-slate-50 border-slate-200'
+                                                                }`}
+                                                            >
+                                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#0891b2]/10 text-[#0891b2] border border-[#0891b2]/20">
+                                                                            {inq.category || "General Support"}
+                                                                        </span>
+                                                                        <h5 className="font-bold text-slate-900">{inq.subject}</h5>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-[11px] text-slate-400">
+                                                                            {inq.created_at ? new Date(inq.created_at).toLocaleDateString() : ""}
+                                                                        </span>
+                                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                                                            inq.status === 'resolved'
+                                                                                ? 'bg-emerald-100 text-emerald-800'
+                                                                                : 'bg-amber-100 text-amber-800'
+                                                                        }`}>
+                                                                            {inq.status || "open"}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1">
+                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Seller Query:</span>
+                                                                    <p className="text-slate-800 leading-relaxed font-sans">{inq.message}</p>
+                                                                </div>
+
+                                                                {/* Admin Reply or Reply Box */}
+                                                                {inq.admin_reply ? (
+                                                                    <div className="bg-cyan-50/80 border border-cyan-200 rounded-xl p-3 text-xs space-y-1">
+                                                                        <div className="flex items-center justify-between text-[11px] font-bold text-[#0891b2]">
+                                                                            <span>Admin Response ({inq.replied_by || "Admin Support"}):</span>
+                                                                            <span className="text-slate-500 font-normal">
+                                                                                {inq.replied_at ? new Date(inq.replied_at).toLocaleDateString() : ""}
+                                                                            </span>
+                                                                        </div>
+                                                                        <p className="text-slate-800 leading-relaxed">{inq.admin_reply}</p>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="pt-1 space-y-2">
+                                                                        <div className="flex gap-2">
+                                                                            <input
+                                                                                type="text"
+                                                                                placeholder="Write reply to seller..."
+                                                                                value={adminReplyText[inq.id] || ""}
+                                                                                onChange={(e) =>
+                                                                                    setAdminReplyText((prev) => ({
+                                                                                        ...prev,
+                                                                                        [inq.id]: e.target.value,
+                                                                                    }))
+                                                                                }
+                                                                                className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#0891b2]"
+                                                                            />
+                                                                            <button
+                                                                                type="button"
+                                                                                disabled={replyingInquiryId === inq.id}
+                                                                                onClick={() => handleReplySellerInquiry(inq.id)}
+                                                                                className="px-3.5 py-2 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs disabled:opacity-50"
+                                                                            >
+                                                                                {replyingInquiryId === inq.id ? (
+                                                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                                                ) : (
+                                                                                    <Send className="w-3.5 h-3.5" />
+                                                                                )}
+                                                                                <span>Reply</span>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xs text-slate-400 italic py-3 bg-slate-50 rounded-xl text-center">
+                                                        No help &amp; support inquiries submitted yet by this seller.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Saved Delivery Addresses */}
                                     <div>
                                         <h4 className="font-bold text-slate-700 uppercase tracking-wider text-xs mb-3 flex items-center gap-2">
@@ -1418,6 +1740,95 @@ const Users = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Permanent Account Deletion Modal (Supports Users and Admin Role Deletion) */}
+            {showDeleteModal && userToDelete && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-red-100 animate-fadeIn">
+                        <div className="flex items-center gap-3.5 mb-4">
+                            <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center border border-red-100 flex-shrink-0">
+                                <Trash2 className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                                    Delete {userToDelete.role === "admin" || userToDelete.is_admin ? "Administrator Account" : "User Account"}
+                                </h3>
+                                <p className="text-xs text-slate-500">This action cannot be undone.</p>
+                            </div>
+                        </div>
+
+                        {/* Special Warning if Target is an Administrator */}
+                        {(userToDelete.role === "admin" || userToDelete.is_admin) && (
+                            <div className="mb-4 p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-900 text-xs flex items-start gap-2.5 leading-relaxed">
+                                <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <strong className="font-bold block text-red-950 mb-0.5">Warning: Deleting Admin Access</strong>
+                                    You are about to permanently delete an Administrator account. This person will immediately lose all administrative dashboard access.
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 mb-5 space-y-1.5 text-xs">
+                            <div className="flex justify-between">
+                                <span className="text-slate-400 font-semibold">Account Name:</span>
+                                <span className="font-bold text-slate-800">{userToDelete.name || "N/A"}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-slate-400 font-semibold">Email:</span>
+                                <span className="font-mono text-slate-700">{userToDelete.email}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-slate-400 font-semibold">Role:</span>
+                                <span className={`font-bold uppercase text-[11px] px-2 py-0.5 rounded-full ${
+                                    userToDelete.role === "admin" || userToDelete.is_admin
+                                        ? "bg-purple-100 text-purple-700"
+                                        : userToDelete.role === "seller"
+                                        ? "bg-amber-100 text-amber-700"
+                                        : "bg-cyan-100 text-[#0891b2]"
+                                }`}>
+                                    {userToDelete.role || "customer"}
+                                </span>
+                            </div>
+                        </div>
+
+                        <p className="text-xs text-slate-600 mb-6 leading-relaxed">
+                            Are you sure you want to permanently delete this account? All associated delivery addresses and active mobile sessions will also be purged.
+                        </p>
+
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                disabled={deleteLoading}
+                                onClick={() => {
+                                    setShowDeleteModal(false);
+                                    setUserToDelete(null);
+                                }}
+                                className="flex-1 py-2.5 border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 text-xs transition cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                disabled={deleteLoading}
+                                onClick={confirmDelete}
+                                className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-red-600/20"
+                            >
+                                {deleteLoading ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Deleting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Trash2 className="w-4 h-4" />
+                                        Confirm &amp; Delete
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
