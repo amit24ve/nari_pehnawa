@@ -25,6 +25,18 @@ import {
 import { useAuth } from "../context/AuthProvider";
 import { useNavigate } from "react-router-dom";
 
+const stringifyError = (err) => {
+  if (!err) return "";
+  if (typeof err === "string") return err;
+  if (Array.isArray(err)) {
+    return err
+      .map((e) => (typeof e === "string" ? e : e.msg || e.message || JSON.stringify(e)))
+      .join(", ");
+  }
+  if (typeof err === "object") return err.message || err.msg || err.detail || JSON.stringify(err);
+  return String(err);
+};
+
 const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
   const {
     login,
@@ -48,7 +60,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
   const [loginMethod, setLoginMethod] = useState("phone");
 
   useEffect(() => {
-    if (loginNotice && loginNotice.toLowerCase().includes("password")) {
+    if (loginNotice && typeof loginNotice === "string" && loginNotice.toLowerCase().includes("password")) {
       setLoginMethod("email");
     }
   }, [loginNotice]);
@@ -294,7 +306,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
     setError("");
     setSuccessMsg("");
     setLoading(true);
-    const result = await login({ email: email.trim(), password });
+    const result = await login(email.trim(), password);
     setLoading(false);
 
     if (result.ok) {
@@ -353,7 +365,7 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const detailMsg = data.detail || "Registration failed. Please try again.";
+        const detailMsg = stringifyError(data.detail) || "Registration failed. Please try again.";
         if (detailMsg.toLowerCase().includes("already exists") || detailMsg.toLowerCase().includes("already registered")) {
           throw new Error("Email is already exist! An account with this email already exists. Please log in.");
         }
@@ -1319,48 +1331,52 @@ const LoginModal = ({ isOpen: propsIsOpen, onClose: propsOnClose }) => {
               )}
 
               {/* Status Notifications (Errors / Success) */}
-              {error && (
-                <div className="text-xs mt-3 font-semibold p-3 rounded-xl bg-red-50 text-red-800 border border-red-200 flex flex-col items-center justify-center gap-2 animate-fadeIn">
-                  <div className="flex items-center gap-1.5 text-center">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-600" />
-                    <span>{error}</span>
+              {Boolean(error) && (() => {
+                const errorStr = stringifyError(error);
+                const errorLower = errorStr.toLowerCase();
+                return (
+                  <div className="text-xs mt-3 font-semibold p-3 rounded-xl bg-red-50 text-red-800 border border-red-200 flex flex-col items-center justify-center gap-2 animate-fadeIn">
+                    <div className="flex items-center gap-1.5 text-center">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-600" />
+                      <span>{errorStr}</span>
+                    </div>
+
+                    {/* If user tries to create an account that already exists */}
+                    {(errorLower.includes("already exist") || errorLower.includes("already registered")) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          switchView("login");
+                          if (signupMethod === "email") setLoginMethod("email");
+                          if (signupMethod === "phone") setLoginMethod("phone");
+                        }}
+                        className="mt-1 px-4 py-1.5 bg-[#8B0000] hover:bg-[#700000] text-white font-bold rounded-lg text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <LogIn className="w-3.5 h-3.5" />
+                        <span>Switch to Login</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    )}
+
+                    {/* If user tries to login with an account that doesn't exist */}
+                    {(errorLower.includes("no account found") || errorLower.includes("user not found") || errorLower.includes("create an account")) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          switchView("signup");
+                          if (loginMethod === "email") setSignupMethod("email");
+                          if (loginMethod === "phone") setSignupMethod("phone");
+                        }}
+                        className="mt-1 px-4 py-1.5 bg-[#8B0000] hover:bg-[#700000] text-white font-bold rounded-lg text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <UserPlus className="w-3.5 h-3.5" />
+                        <span>Create New Account</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
-
-                  {/* If user tries to create an account that already exists */}
-                  {(error.toLowerCase().includes("already exist") || error.toLowerCase().includes("already registered")) && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        switchView("login");
-                        if (signupMethod === "email") setLoginMethod("email");
-                        if (signupMethod === "phone") setLoginMethod("phone");
-                      }}
-                      className="mt-1 px-4 py-1.5 bg-[#8B0000] hover:bg-[#700000] text-white font-bold rounded-lg text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <LogIn className="w-3.5 h-3.5" />
-                      <span>Switch to Login</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </button>
-                  )}
-
-                  {/* If user tries to login with an account that doesn't exist */}
-                  {(error.toLowerCase().includes("no account found") || error.toLowerCase().includes("user not found") || error.toLowerCase().includes("create an account")) && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        switchView("signup");
-                        if (loginMethod === "email") setSignupMethod("email");
-                        if (loginMethod === "phone") setSignupMethod("phone");
-                      }}
-                      className="mt-1 px-4 py-1.5 bg-[#8B0000] hover:bg-[#700000] text-white font-bold rounded-lg text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <UserPlus className="w-3.5 h-3.5" />
-                      <span>Create New Account</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-              )}
+                );
+              })()}
 
               {successMsg && !error && (
                 <div className="text-xs mt-3 font-semibold p-2.5 rounded-xl text-center bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center gap-1.5 animate-fadeIn">

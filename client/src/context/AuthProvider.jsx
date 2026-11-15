@@ -282,21 +282,45 @@ export const AuthProvider = ({ children }) => {
         };
     }, [pendingCheckout, navigate]);
 
-    const login = async (email, password) => {
+    const parseErrorDetail = (errData, fallback = "An error occurred") => {
+        if (!errData) return fallback;
+        if (typeof errData === "string") return errData;
+        if (typeof errData.detail === "string") return errData.detail;
+        if (Array.isArray(errData.detail)) {
+            return errData.detail
+                .map((d) => (typeof d === "string" ? d : d.msg || d.message || JSON.stringify(d)))
+                .join(", ");
+        }
+        if (typeof errData.message === "string") return errData.message;
+        if (typeof errData.error === "string") return errData.error;
+        return fallback;
+    };
+
+    const login = async (emailOrPayload, maybePassword) => {
         const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
+
+        let cleanEmail = "";
+        let cleanPassword = "";
+        if (typeof emailOrPayload === "object" && emailOrPayload !== null) {
+            cleanEmail = String(emailOrPayload.email || emailOrPayload.username || "").trim();
+            cleanPassword = String(emailOrPayload.password || "");
+        } else {
+            cleanEmail = String(emailOrPayload || "").trim();
+            cleanPassword = String(maybePassword || "");
+        }
 
         try {
             const res = await fetch(`${API_URL}/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
             });
 
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({}));
                 return {
                     ok: false,
-                    message: errData.detail || "Invalid email or password",
+                    message: parseErrorDetail(errData, "Invalid email or password"),
                 };
             }
 
@@ -441,15 +465,22 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const sendPhoneOtp = async (phone) => {
+    const sendPhoneOtp = async (phoneOrPayload) => {
         const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
         try {
+            let phone = "";
+            if (typeof phoneOrPayload === "object" && phoneOrPayload !== null) {
+                phone = String(phoneOrPayload.phone || "").trim();
+            } else {
+                phone = String(phoneOrPayload || "").trim();
+            }
+
             const res = await fetch(`${API_URL}/auth/phone/send-otp`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ phone }),
             });
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
             if (res.ok) {
                 return {
                     ok: true,
@@ -458,17 +489,62 @@ export const AuthProvider = ({ children }) => {
                     user_name: data.name || "",
                 };
             }
-            return { ok: false, message: data.detail || "Failed to send SMS code" };
+            return { ok: false, message: parseErrorDetail(data, "Failed to send SMS code") };
         } catch (err) {
-            return { ok: false, message: err.message };
+            return { ok: false, message: err.message || "Network error" };
         }
     };
 
-    const verifyPhoneOtp = async (phone, otp, name = null) => {
+    const resendPhoneOtp = async (phoneOrPayload) => {
         const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
         try {
+            let phone = "";
+            if (typeof phoneOrPayload === "object" && phoneOrPayload !== null) {
+                phone = String(phoneOrPayload.phone || "").trim();
+            } else {
+                phone = String(phoneOrPayload || "").trim();
+            }
+
+            const res = await fetch(`${API_URL}/auth/phone/resend-otp`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                return {
+                    ok: true,
+                    message: data.message || "Fresh OTP code sent to your phone",
+                };
+            }
+            return { ok: false, message: parseErrorDetail(data, "Failed to resend SMS code") };
+        } catch (err) {
+            return { ok: false, message: err.message || "Network error" };
+        }
+    };
+
+    const verifyPhoneOtp = async (phoneOrPayload, maybeOtp, maybeName = null, maybeEmail = null) => {
+        const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
+        try {
+            let phone = "";
+            let otp = "";
+            let name = null;
+            let email = null;
+            if (typeof phoneOrPayload === "object" && phoneOrPayload !== null) {
+                phone = String(phoneOrPayload.phone || "").trim();
+                otp = String(phoneOrPayload.otp || "").trim();
+                name = phoneOrPayload.name ? String(phoneOrPayload.name).trim() : null;
+                email = phoneOrPayload.email ? String(phoneOrPayload.email).trim() : null;
+            } else {
+                phone = String(phoneOrPayload || "").trim();
+                otp = String(maybeOtp || "").trim();
+                name = maybeName ? String(maybeName).trim() : null;
+                email = maybeEmail ? String(maybeEmail).trim() : null;
+            }
+
             const body = { phone, otp };
-            if (name && name.trim()) body.name = name.trim();
+            if (name) body.name = name;
+            if (email) body.email = email;
 
             const res = await fetch(`${API_URL}/auth/phone/verify-otp`, {
                 method: "POST",
@@ -476,9 +552,9 @@ export const AuthProvider = ({ children }) => {
                 body: JSON.stringify(body),
             });
 
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
             if (!res.ok) {
-                return { ok: false, message: data.detail || "Invalid verification code" };
+                return { ok: false, message: parseErrorDetail(data, "Invalid verification code") };
             }
 
             const token = data.access_token;
@@ -587,6 +663,7 @@ export const AuthProvider = ({ children }) => {
                 login,
                 loginWithToken,
                 sendPhoneOtp,
+                resendPhoneOtp,
                 verifyPhoneOtp,
                 logout,
                 updateUserProfile,
