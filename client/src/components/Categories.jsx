@@ -74,23 +74,26 @@ const Categories = () => {
   };
 
   const getCategoryBadge = (cat) => {
-    const raw = (cat.badge || cat.tagline || "").trim();
+    if (cat.badge && cat.badge.trim()) {
+      const b = cat.badge.trim();
+      return b.length > 14 ? `${b.slice(0, 12).toUpperCase()}...` : b.toUpperCase();
+    }
+    const raw = (cat.tagline || "").trim();
     if (raw) {
       const lower = raw.toLowerCase();
-      // Smartly format discounts like "50% off", "up to 60% off", etc.
       const matchPercent = raw.match(/(\d+%\s*off|\d+%\s*discount)/i);
       if (matchPercent) return `UP TO ${matchPercent[1].toUpperCase()}`;
       if (lower.includes("mega sale")) return "MEGA SALE";
-      if (lower.includes("exclusive") && lower.includes("sale")) return "EXCLUSIVE SALE";
+      if (lower.includes("sale")) return "SALE";
       if (lower.includes("festive")) return "FESTIVE DEAL";
+      if (
+        lower.includes("new arrival") ||
+        lower.includes("new arrivals") ||
+        (cat.name && cat.name.toLowerCase().includes("new"))
+      )
+        return "NEW ARRIVAL";
       if (lower.includes("trending")) return "TRENDING";
-      if (lower.includes("new arrival") || lower.includes("new arrivals")) return "NEW ARRIVAL";
-      if (lower.includes("popular")) return "POPULAR";
       if (lower.includes("hot")) return "HOT DEAL";
-
-      const cleaned = raw.replace(/[!🌸🖤✨🔥]/g, "").trim();
-      if (cleaned.length <= 14) return cleaned.toUpperCase();
-      return `${cleaned.slice(0, 12).toUpperCase()}...`;
     }
     return "POPULAR";
   };
