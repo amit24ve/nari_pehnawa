@@ -126,14 +126,29 @@ def get_category_subcategories(category_id: str):
 
 @router.post("/{category_id}/subcategories")
 def add_subcategory(category_id: str, payload: dict, current_user: dict = Depends(require_admin)):
-    """Add a sub-category to an existing category"""
+    """Add one or more sub-categories to an existing category"""
     db = get_database()
-    sub_name = str(payload.get("name", "")).strip()
-    if not sub_name:
+    raw_name = payload.get("name")
+    raw_list = payload.get("names") or payload.get("sub_categories")
+
+    clean_names = []
+    if raw_list and isinstance(raw_list, list):
+        for item in raw_list:
+            clean = str(item).strip()
+            if clean and clean not in clean_names:
+                clean_names.append(clean)
+    elif raw_name:
+        parts = [p.strip() for p in str(raw_name).split(",") if p.strip()]
+        for p in parts:
+            if p not in clean_names:
+                clean_names.append(p)
+
+    if not clean_names:
         raise HTTPException(status_code=400, detail="Sub-category name is required")
+
     res = db["categories"].find_one_and_update(
         {"_id": ObjectId(category_id)},
-        {"$addToSet": {"sub_categories": sub_name}},
+        {"$addToSet": {"sub_categories": {"$each": clean_names}}},
         return_document=True
     )
     if not res:

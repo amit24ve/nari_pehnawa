@@ -14,6 +14,7 @@ class ProductBase(BaseModel):
     category: str
     department: Optional[str] = None
     sub_category: Optional[str] = None
+    sub_categories: Optional[List[str]] = []
     description: Optional[str] = None
     highlights: Optional[List[str]] = []
     style_tip: Optional[str] = None
@@ -49,7 +50,7 @@ class ProductBase(BaseModel):
     is_returnable: bool = True
     return_policy: Optional[str] = "Easy 15-Day Returns"
     occasion: Optional[str] = "Festive, Casual, Office Wear"
-    country_of_origin: Optional[str] = "India 🇮🇳"
+    country_of_origin: Optional[str] = "India"
     wash_care: Optional[str] = "Hand Wash or Gentle Machine Wash in Cold Water"
     specifications: Optional[Dict[str, str]] = {}
     offer_code: Optional[str] = None
@@ -79,6 +80,7 @@ class ProductUpdate(BaseModel):
     category: Optional[str] = None
     department: Optional[str] = None
     sub_category: Optional[str] = None
+    sub_categories: Optional[List[str]] = None
     description: Optional[str] = None
     highlights: Optional[List[str]] = None
     style_tip: Optional[str] = None

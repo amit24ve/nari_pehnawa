@@ -358,10 +358,21 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
       ...new Set(products.map((p) => p.pattern).filter(Boolean)),
     ].sort();
 
+    const getProductSubCategories = (p) => {
+      const subs = new Set();
+      if (Array.isArray(p.sub_categories)) {
+        p.sub_categories.forEach(s => s && subs.add(s.trim()));
+      }
+      if (p.sub_category) {
+        p.sub_category.split(",").forEach(s => s && subs.add(s.trim()));
+      }
+      return Array.from(subs);
+    };
+
     const allSubCats = [
       ...new Set([
         ...(categoryInfo?.sub_categories || []),
-        ...products.map((p) => p.sub_category).filter(Boolean),
+        ...products.flatMap(p => getProductSubCategories(p)),
       ]),
     ].filter(Boolean).sort();
 
@@ -460,7 +471,10 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
 
     const subCatF = activeFilters["sub_category"];
     if (subCatF?.size > 0)
-      list = list.filter((p) => subCatF.has(p.sub_category));
+      list = list.filter((p) => {
+        const prodSubs = getProductSubCategories(p);
+        return prodSubs.some((s) => subCatF.has(s));
+      });
 
     const sizeF = activeFilters["size"];
     if (sizeF?.size > 0)

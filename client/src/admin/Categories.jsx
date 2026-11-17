@@ -598,6 +598,19 @@ const Categories = () => {
                         <Settings className="w-3.5 h-3.5 text-[#0891b2]" /> Manage Departments
                     </button>
                     <button
+                        onClick={() => {
+                            const defaultCat = categories.find(c => filterDepartment === "all" || (c.department || "Women").toLowerCase() === filterDepartment.toLowerCase()) || categories[0];
+                            if (!defaultCat) {
+                                alert("Please create at least one category first before managing sub-categories.");
+                                return;
+                            }
+                            setSubCatModalCategory(defaultCat);
+                        }}
+                        className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 px-3.5 py-2.5 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer hover:border-cyan-400"
+                    >
+                        <Tag className="w-3.5 h-3.5 text-[#0891b2]" /> + Add Sub-Category
+                    </button>
+                    <button
                         onClick={() => openAdd()}
                         className="flex items-center gap-2 bg-[#0891b2] hover:bg-[#06b6d4] text-white px-4 py-2.5 rounded-xl text-sm font-extrabold shadow-sm transition-all duration-200 cursor-pointer"
                     >
@@ -1364,15 +1377,15 @@ const Categories = () => {
             {/* ── MODAL: QUICK SUB-CATEGORIES MANAGER FOR A CATEGORY ── */}
             {subCatModalCategory && (
                 <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
-                    <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+                    <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50">
                             <div>
                                 <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
-                                    <Tag className="w-4 h-4 text-cyan-600" />
-                                    <span>Manage Sub-Categories: {subCatModalCategory.name}</span>
+                                    <Tag className="w-4 h-4 text-[#0891b2]" />
+                                    <span>Manage Sub-Categories &amp; Styles</span>
                                 </h3>
                                 <p className="text-[11px] text-slate-500 mt-0.5">
-                                    Add or remove styles for products listed under this category.
+                                    Create and organize styles across Women, Men, Jewellery, Footwear &amp; all categories.
                                 </p>
                             </div>
                             <button
@@ -1384,52 +1397,151 @@ const Categories = () => {
                             </button>
                         </div>
 
-                        <div className="p-5 space-y-4">
-                            {/* Input to add subcategory */}
-                            <form onSubmit={handleQuickAddSub} className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={quickSubInput}
-                                    onChange={(e) => setQuickSubInput(e.target.value)}
-                                    placeholder="New style name (e.g. Sleeveless, Cotton, Anarkali)..."
-                                    className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-500 font-medium"
-                                />
-                                <button
-                                    type="submit"
-                                    disabled={quickSubSaving || !quickSubInput.trim()}
-                                    className="px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl text-xs font-extrabold transition cursor-pointer disabled:opacity-50"
+                        <div className="p-5 space-y-4 overflow-y-auto">
+                            {/* Category Selector Dropdown (Grouped by Department dynamically) */}
+                            <div className="space-y-1.5 bg-slate-50/80 p-3 rounded-xl border border-slate-200">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                                        <Layers className="w-3.5 h-3.5 text-[#0891b2]" />
+                                        Target Category
+                                    </label>
+                                    <span className="text-[10px] font-bold text-[#0891b2] bg-cyan-50 px-2 py-0.5 rounded-full border border-cyan-200">
+                                        {subCatModalCategory.department || "Women"} Department
+                                    </span>
+                                </div>
+                                <select
+                                    value={subCatModalCategory._id || subCatModalCategory.id || ""}
+                                    onChange={(e) => {
+                                        const found = categories.find(c => (c._id || c.id) === e.target.value);
+                                        if (found) {
+                                            setSubCatModalCategory(found);
+                                            setQuickSubInput("");
+                                        }
+                                    }}
+                                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-cyan-500 cursor-pointer shadow-xs"
                                 >
-                                    {quickSubSaving ? "Adding..." : "+ Add"}
-                                </button>
+                                    {availableDepartments.map(deptName => {
+                                        const catsInDept = categories.filter(c => {
+                                            const cd = (c.department || "Women").toLowerCase();
+                                            const dn = deptName.toLowerCase();
+                                            if (dn === "women" || dn === "clothing") return cd === "women" || cd === "clothing";
+                                            return cd === dn;
+                                        });
+                                        if (catsInDept.length === 0) return null;
+                                        return (
+                                            <optgroup key={deptName} label={`── Department: ${deptName.toUpperCase()} ──`}>
+                                                {catsInDept.map(cat => (
+                                                    <option key={cat._id || cat.id} value={cat._id || cat.id}>
+                                                        {cat.name} ({(cat.sub_categories || []).length} sub-categories)
+                                                    </option>
+                                                ))}
+                                            </optgroup>
+                                        );
+                                    })}
+                                </select>
+                            </div>
+
+                            {/* Input to add subcategory (Supports single or batch comma-separated) */}
+                            <form onSubmit={handleQuickAddSub} className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                                    <span className="flex items-center gap-1">
+                                        <PlusCircle className="w-3.5 h-3.5 text-[#0891b2]" />
+                                        Add New Sub-Category / Style:
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-normal">
+                                        Type single or comma-separated batch
+                                    </span>
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={quickSubInput}
+                                        onChange={(e) => setQuickSubInput(e.target.value)}
+                                        placeholder="e.g. Floral Halter, Partywear, Casual Crop..."
+                                        className="flex-1 bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-500 font-medium"
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={quickSubSaving || !quickSubInput.trim()}
+                                        className="px-4 py-2 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-xs font-extrabold transition cursor-pointer disabled:opacity-50 flex items-center gap-1 shadow-xs"
+                                    >
+                                        {quickSubSaving ? (
+                                            <>
+                                                <Loader2 className="w-3 h-3 animate-spin" /> Adding...
+                                            </>
+                                        ) : (
+                                            "+ Add"
+                                        )}
+                                    </button>
+                                </div>
                             </form>
 
-                            {/* Subcategories list */}
-                            <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 max-h-60 overflow-y-auto">
-                                {(subCatModalCategory.sub_categories || []).length > 0 ? (
-                                    subCatModalCategory.sub_categories.map((sub, idx) => (
-                                        <div key={`${sub}-${idx}`} className="flex items-center justify-between p-2.5 bg-white hover:bg-slate-50 transition">
-                                            <span className="text-xs font-bold text-slate-800">{sub}</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleQuickDeleteSub(sub)}
-                                                className="p-1 text-slate-400 hover:text-red-600 rounded hover:bg-red-50 transition cursor-pointer"
-                                                title={`Remove ${sub}`}
+                            {/* Subcategories Header and Tags */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                        <Tag className="w-3.5 h-3.5 text-[#0891b2]" />
+                                        Active Sub-Categories in &ldquo;{subCatModalCategory.name}&rdquo;
+                                    </span>
+                                    <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                                        {(subCatModalCategory.sub_categories || []).length} Total
+                                    </span>
+                                </div>
+
+                                {/* Chips Preview */}
+                                {(subCatModalCategory.sub_categories || []).length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 p-2 bg-slate-50 rounded-xl border border-slate-200">
+                                        {subCatModalCategory.sub_categories.map((sub, idx) => (
+                                            <span
+                                                key={`pill-${sub}-${idx}`}
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-slate-800 border border-slate-200 shadow-2xs"
                                             >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="p-4 text-center text-xs text-slate-400 italic">
-                                        No sub-categories yet. Type a style above to add it.
+                                                <span>{sub}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleQuickDeleteSub(sub)}
+                                                    className="text-slate-400 hover:text-red-600 transition cursor-pointer"
+                                                    title={`Remove ${sub}`}
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </span>
+                                        ))}
                                     </div>
                                 )}
+
+                                {/* Subcategories List View with quick removal */}
+                                <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 max-h-52 overflow-y-auto">
+                                    {(subCatModalCategory.sub_categories || []).length > 0 ? (
+                                        subCatModalCategory.sub_categories.map((sub, idx) => (
+                                            <div key={`${sub}-${idx}`} className="flex items-center justify-between p-2.5 bg-white hover:bg-slate-50 transition">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-[#0891b2]" />
+                                                    <span className="text-xs font-bold text-slate-800">{sub}</span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleQuickDeleteSub(sub)}
+                                                    className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 transition cursor-pointer"
+                                                    title={`Remove ${sub}`}
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                    <span>Delete</span>
+                                                </button>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="p-6 text-center text-xs text-slate-400 italic">
+                                            No sub-categories yet for {subCatModalCategory.name}. Type style names above to add them.
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <button
                                 type="button"
                                 onClick={() => setSubCatModalCategory(null)}
-                                className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition cursor-pointer"
+                                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition cursor-pointer"
                             >
                                 Done
                             </button>

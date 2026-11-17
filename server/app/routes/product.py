@@ -101,6 +101,17 @@ def create_product(product: ProductCreate, background_tasks: BackgroundTasks, cu
         elif product_data.get("department") == "Clothing":
             product_data["department"] = "Women"
 
+        # Synchronize sub_categories (list) and sub_category (comma-separated string)
+        raw_subs = product_data.get("sub_categories")
+        raw_sub = product_data.get("sub_category")
+        clean_subs = []
+        if isinstance(raw_subs, list) and len(raw_subs) > 0:
+            clean_subs = [str(s).strip() for s in raw_subs if str(s).strip()]
+        elif raw_sub:
+            clean_subs = [str(s).strip() for s in str(raw_sub).split(",") if str(s).strip()]
+        product_data["sub_categories"] = clean_subs
+        product_data["sub_category"] = ", ".join(clean_subs) if clean_subs else (raw_sub or None)
+
         result = products_collection.insert_one(product_data)
         new_id_str = str(result.inserted_id)
         product_data["_id"] = new_id_str
@@ -190,7 +201,20 @@ def get_products(
 
         if sub_category:
             sub_clean = sub_category.strip()
-            query["sub_category"] = {"$regex": f"^{re.escape(sub_clean)}$", "$options": "i"}
+            escaped = re.escape(sub_clean)
+            sub_cond = {
+                "$or": [
+                    {"sub_categories": {"$regex": f"^{escaped}$", "$options": "i"}},
+                    {"sub_category": {"$regex": f"(^|[,\\s]){escaped}([\\s,]|$)", "$options": "i"}},
+                ]
+            }
+            if "$and" in query:
+                query["$and"].append(sub_cond)
+            elif "$or" in query:
+                existing_or = query.pop("$or")
+                query["$and"] = [{"$or": existing_or}, sub_cond]
+            else:
+                query["$and"] = [sub_cond]
 
         if on_sale is not None:
             if on_sale:
@@ -469,6 +493,18 @@ def update_product(product_id: str, product: ProductUpdate, current_user: dict =
             matched_cat = db["categories"].find_one({"name": {"$regex": f"^{re.escape(update_data['category'])}$", "$options": "i"}})
             if matched_cat and matched_cat.get("department"):
                 update_data["department"] = matched_cat["department"]
+
+        # Synchronize sub_categories (list) and sub_category (comma-separated string)
+        if "sub_categories" in update_data or "sub_category" in update_data:
+            raw_subs = update_data.get("sub_categories")
+            raw_sub = update_data.get("sub_category")
+            clean_subs = []
+            if isinstance(raw_subs, list):
+                clean_subs = [str(s).strip() for s in raw_subs if str(s).strip()]
+            elif raw_sub:
+                clean_subs = [str(s).strip() for s in str(raw_sub).split(",") if str(s).strip()]
+            update_data["sub_categories"] = clean_subs
+            update_data["sub_category"] = ", ".join(clean_subs) if clean_subs else (raw_sub if raw_sub is not None else None)
 
         result = products_collection.find_one_and_update(
             _build_product_query(product_id),

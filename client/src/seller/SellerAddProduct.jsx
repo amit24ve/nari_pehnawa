@@ -13,6 +13,8 @@ import {
   CheckCircle2,
   Image as ImageIcon,
   HelpCircle,
+  Check,
+  Tag,
 } from "lucide-react";
 import sellerApi from "./sellerApi";
 import { useSellerAuth } from "./SellerAuthContext";
@@ -35,6 +37,7 @@ const SellerAddProduct = () => {
     name: "",
     category: "",
     sub_category: "",
+    sub_categories: [],
     brand: seller?.shop_name || "Nari Pehnawa",
     seller_price: "499",
     delivery_charge: "50",
@@ -101,6 +104,9 @@ const SellerAddProduct = () => {
             name: data.name || "",
             category: data.category || "",
             sub_category: data.sub_category || "",
+            sub_categories: Array.isArray(data.sub_categories) && data.sub_categories.length > 0
+              ? data.sub_categories
+              : (data.sub_category ? data.sub_category.split(",").map(s => s.trim()).filter(Boolean) : []),
             brand: data.brand || seller?.shop_name || "",
             price: data.price || "",
             discount_price: data.discount_price || "",
@@ -298,6 +304,9 @@ const SellerAddProduct = () => {
         name: formData.name.trim(),
         category: formData.category,
         sub_category: formData.sub_category?.trim() || undefined,
+        sub_categories: Array.isArray(formData.sub_categories) && formData.sub_categories.length > 0
+          ? formData.sub_categories
+          : (formData.sub_category ? formData.sub_category.split(",").map(s => s.trim()).filter(Boolean) : undefined),
         brand: formData.brand.trim() || seller?.shop_name || "Nari Pehnawa",
         seller_price: parseFloat(formData.seller_price) || priceNum,
         delivery_charge: parseFloat(formData.delivery_charge) || 50,
@@ -435,11 +444,11 @@ const SellerAddProduct = () => {
                   value={formData.category}
                   onChange={(e) => {
                     const selectedCat = e.target.value;
-                    const matched = categories.find((c) => c.name === selectedCat);
                     setFormData((prev) => ({
                       ...prev,
                       category: selectedCat,
-                      sub_category: (matched?.sub_categories && matched.sub_categories.length > 0) ? matched.sub_categories[0] : prev.sub_category
+                      sub_category: "",
+                      sub_categories: [],
                     }));
                   }}
                   className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2] bg-white text-slate-800"
@@ -453,60 +462,158 @@ const SellerAddProduct = () => {
                 </select>
               </div>
 
-              {/* Sub-Category / Product Type */}
-              <div>
+              {/* Sub-Category / Product Type (Multi-Select Styles) */}
+              <div className="md:col-span-2">
                 {(() => {
                   const matched = categories.find((c) => c.name === formData.category);
                   const subList = matched?.sub_categories || [];
+                  const selectedSubs = Array.isArray(formData.sub_categories) && formData.sub_categories.length > 0
+                    ? formData.sub_categories
+                    : (formData.sub_category ? formData.sub_category.split(",").map(s => s.trim()).filter(Boolean) : []);
+
+                  const toggleSub = (subName) => {
+                    const clean = subName.trim();
+                    if (!clean) return;
+                    let next;
+                    if (selectedSubs.includes(clean)) {
+                      next = selectedSubs.filter(s => s !== clean);
+                    } else {
+                      next = [...selectedSubs, clean];
+                    }
+                    setFormData(prev => ({
+                      ...prev,
+                      sub_categories: next,
+                      sub_category: next.join(", ")
+                    }));
+                  };
+
+                  const addCustomSub = (customVal) => {
+                    const parts = customVal.split(",").map(s => s.trim()).filter(Boolean);
+                    if (parts.length === 0) return;
+                    const next = [...selectedSubs];
+                    parts.forEach(p => {
+                      if (!next.includes(p)) next.push(p);
+                    });
+                    setFormData(prev => ({
+                      ...prev,
+                      sub_categories: next,
+                      sub_category: next.join(", ")
+                    }));
+                  };
 
                   return (
-                    <>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-xs font-semibold text-slate-700">
-                          Sub-Category / Ethnic Style
-                        </label>
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <Tag className="w-3.5 h-3.5 text-[#0891b2]" />
+                          <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide">
+                            Sub-Categories / Styles (Multi-Select)
+                          </label>
+                          {selectedSubs.length > 0 && (
+                            <span className="text-[10px] text-cyan-800 font-extrabold bg-cyan-100 px-2 py-0.5 rounded-full border border-cyan-300">
+                              {selectedSubs.length} Selected
+                            </span>
+                          )}
+                        </div>
                         {subList.length > 0 && (
                           <span className="text-[10px] text-[#0891b2] font-bold bg-cyan-50 px-2 py-0.5 rounded-full border border-cyan-200">
-                            {subList.length} styles defined
+                            {subList.length} styles defined in {formData.category || "category"}
                           </span>
                         )}
                       </div>
 
-                      {subList.length > 0 ? (
+                      {/* Active Selected Tags Display */}
+                      <div className="min-h-[34px] p-2 bg-white rounded-lg border border-slate-200 flex flex-wrap items-center gap-1.5">
+                        {selectedSubs.length > 0 ? (
+                          selectedSubs.map((sub, idx) => (
+                            <span
+                              key={`seller-sel-${sub}-${idx}`}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-cyan-50 text-cyan-950 border border-cyan-300 shadow-2xs group"
+                            >
+                              <Check className="w-3 h-3 text-[#0891b2]" />
+                              <span>{sub}</span>
+                              <button
+                                type="button"
+                                onClick={() => toggleSub(sub)}
+                                className="text-cyan-700 hover:text-red-600 transition cursor-pointer p-0.5"
+                                title={`Remove ${sub}`}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-slate-400 italic">
+                            Select multiple styles below or add custom tags for this listing
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Available Sub-Categories Pill Buttons */}
+                      {subList.length > 0 && (
                         <div className="space-y-1.5">
-                          <select
-                            name="sub_category"
-                            value={formData.sub_category}
-                            onChange={handleChange}
-                            className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2] bg-white text-slate-800"
-                          >
-                            <option value="">Select Style / Sub-Category</option>
-                            {subList.map((s, idx) => (
-                              <option key={`${s}-${idx}`} value={s}>
-                                {s}
-                              </option>
-                            ))}
-                          </select>
-                          <input
-                            type="text"
-                            name="sub_category"
-                            value={formData.sub_category}
-                            onChange={handleChange}
-                            placeholder="Or type custom style / sub-category..."
-                            className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#0891b2]"
-                          />
+                          <span className="text-[11px] font-bold text-slate-600 flex items-center justify-between">
+                            <span>Available Styles for &ldquo;{formData.category}&rdquo;:</span>
+                            <span className="text-slate-400 font-normal">Click to toggle</span>
+                          </span>
+                          <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-0.5">
+                            {subList.map((s, idx) => {
+                              const isSelected = selectedSubs.includes(s);
+                              return (
+                                <button
+                                  key={`seller-sub-${s}-${idx}`}
+                                  type="button"
+                                  onClick={() => toggleSub(s)}
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                                    isSelected
+                                      ? "bg-cyan-100 text-cyan-950 border-cyan-400 shadow-xs"
+                                      : "bg-white text-slate-700 border-slate-200 hover:border-cyan-300 hover:bg-cyan-50/50"
+                                  }`}
+                                >
+                                  {isSelected ? (
+                                    <Check className="w-3 h-3 text-[#0891b2]" />
+                                  ) : (
+                                    <Plus className="w-3 h-3 text-slate-400" />
+                                  )}
+                                  <span>{s}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
-                      ) : (
+                      )}
+
+                      {/* Custom Style Input */}
+                      <div className="flex items-center gap-2 pt-1 border-t border-slate-200/60">
                         <input
                           type="text"
-                          name="sub_category"
-                          value={formData.sub_category}
-                          onChange={handleChange}
-                          placeholder="e.g. Anarkali, Kurta Set, Saree, Lehenga"
-                          className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2]"
+                          id="seller-custom-sub-input"
+                          placeholder="Add custom style / sub-category..."
+                          className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-[#0891b2]"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              addCustomSub(e.target.value);
+                              e.target.value = "";
+                            }
+                          }}
                         />
-                      )}
-                    </>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const el = document.getElementById("seller-custom-sub-input");
+                            if (el && el.value.trim()) {
+                              addCustomSub(el.value);
+                              el.value = "";
+                            }
+                          }}
+                          className="px-3 py-1.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Add</span>
+                        </button>
+                      </div>
+                    </div>
                   );
                 })()}
               </div>

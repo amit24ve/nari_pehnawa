@@ -152,6 +152,7 @@ class SellerProductCreateRequest(BaseModel):
     images: Optional[List[str]] = []
     category: str
     sub_category: Optional[str] = None
+    sub_categories: Optional[List[str]] = []
     description: Optional[str] = None
     stock: Optional[int] = None
     stock_quantity: Optional[int] = 10
@@ -183,6 +184,7 @@ class SellerProductUpdateRequest(BaseModel):
     images: Optional[List[str]] = None
     category: Optional[str] = None
     sub_category: Optional[str] = None
+    sub_categories: Optional[List[str]] = None
     description: Optional[str] = None
     stock: Optional[int] = None
     stock_quantity: Optional[int] = None
@@ -1621,6 +1623,14 @@ def create_seller_product(
     if not discount and orig_price > curr_price:
         discount = int(round(((orig_price - curr_price) / orig_price) * 100))
 
+    raw_subs = payload.sub_categories
+    raw_sub = payload.sub_category
+    clean_subs = []
+    if isinstance(raw_subs, list) and len(raw_subs) > 0:
+        clean_subs = [str(s).strip() for s in raw_subs if str(s).strip()]
+    elif raw_sub:
+        clean_subs = [str(s).strip() for s in str(raw_sub).split(",") if str(s).strip()]
+
     prod_doc = {
         "name": payload.name.strip(),
         "brand": payload.brand.strip() if payload.brand else (seller.get("shop_name") or "Nari Pehnawa"),
@@ -1643,7 +1653,8 @@ def create_seller_product(
         "image_url": main_image,
         "images": all_images,
         "category": payload.category.strip(),
-        "sub_category": payload.sub_category.strip() if payload.sub_category else "",
+        "sub_category": ", ".join(clean_subs) if clean_subs else (raw_sub.strip() if raw_sub else ""),
+        "sub_categories": clean_subs,
         "description": payload.description or "",
         "highlights": [
             f"100% Genuine Ethnic Wear from {seller.get('shop_name')}",
@@ -1731,6 +1742,17 @@ def update_seller_product(
                 update_fields["stock"] = sum(size_stock_map.values())
                 update_fields["stock_quantity"] = sum(size_stock_map.values())
                 update_fields["in_stock"] = update_fields["stock"] > 0
+
+    if "sub_categories" in update_fields or "sub_category" in update_fields:
+        raw_subs = update_fields.get("sub_categories")
+        raw_sub = update_fields.get("sub_category")
+        clean_subs = []
+        if isinstance(raw_subs, list):
+            clean_subs = [str(s).strip() for s in raw_subs if str(s).strip()]
+        elif raw_sub:
+            clean_subs = [str(s).strip() for s in str(raw_sub).split(",") if str(s).strip()]
+        update_fields["sub_categories"] = clean_subs
+        update_fields["sub_category"] = ", ".join(clean_subs) if clean_subs else (raw_sub if raw_sub is not None else "")
 
     if "stock_quantity" in update_fields:
         update_fields["in_stock"] = int(update_fields["stock_quantity"]) > 0

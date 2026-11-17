@@ -214,6 +214,7 @@ const Products = () => {
         stock: "0",
         category: "",
         sub_category: "",
+        sub_categories: [],
         department: "Women",
         image: "",
         images: [],
@@ -614,6 +615,9 @@ const Products = () => {
                 stock_quantity: totalStock,
                 category: formData.category || "",
                 sub_category: formData.sub_category || null,
+                sub_categories: Array.isArray(formData.sub_categories) && formData.sub_categories.length > 0
+                    ? formData.sub_categories
+                    : (formData.sub_category ? formData.sub_category.split(",").map(s => s.trim()).filter(Boolean) : []),
                 department: formData.department || (categoriesList.find(c => c.name === formData.category)?.department || "Women"),
                 image: primaryImage,
                 images: orderedImages,
@@ -822,6 +826,9 @@ const Products = () => {
             stock: (product.stock ?? product.stock_quantity ?? 0).toString(),
             category: product.category || "",
             sub_category: product.sub_category || "",
+            sub_categories: Array.isArray(product.sub_categories) && product.sub_categories.length > 0
+                ? product.sub_categories
+                : (product.sub_category ? product.sub_category.split(",").map(s => s.trim()).filter(Boolean) : []),
             department: product.department || (categoriesList.find(c => c.name === product.category)?.department || "Women"),
             image: primaryImg,
             images: allImgs,
@@ -1547,6 +1554,26 @@ const Products = () => {
                                                     <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 whitespace-nowrap">
                                                         {p.department || (categoriesList.find(c => c.name?.toLowerCase() === p.category?.toLowerCase())?.department || "Clothing")}
                                                     </span>
+                                                    {(() => {
+                                                        const subs = (Array.isArray(p.sub_categories) && p.sub_categories.length > 0)
+                                                            ? p.sub_categories
+                                                            : (p.sub_category ? p.sub_category.split(",").map(s => s.trim()).filter(Boolean) : []);
+                                                        if (subs.length === 0) return null;
+                                                        return (
+                                                            <div className="flex flex-wrap gap-1 mt-0.5 max-w-[180px]">
+                                                                {subs.slice(0, 2).map((sub, sIdx) => (
+                                                                    <span key={sIdx} className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-cyan-50 text-cyan-800 border border-cyan-200 truncate max-w-[110px]">
+                                                                        {sub}
+                                                                    </span>
+                                                                ))}
+                                                                {subs.length > 2 && (
+                                                                    <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-slate-100 text-slate-600">
+                                                                        +{subs.length - 2}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </div>
                                             </td>
 
@@ -2459,59 +2486,187 @@ const Products = () => {
                                         )}
                                     </select>
 
-                                    {/* Dynamic Sub-Category / Ethnic Style Selector */}
+                                    {/* Dynamic Sub-Category / Ethnic Style Multi-Select Selector */}
                                     {(() => {
                                         const matchedCat = categoriesList.find(c => c.name?.toLowerCase() === formData.category?.toLowerCase());
                                         const availableSubs = matchedCat?.sub_categories || [];
+                                        const selectedSubs = Array.isArray(formData.sub_categories) && formData.sub_categories.length > 0
+                                            ? formData.sub_categories
+                                            : (formData.sub_category ? formData.sub_category.split(",").map(s => s.trim()).filter(Boolean) : []);
+
+                                        const toggleSub = (subName) => {
+                                            const clean = subName.trim();
+                                            if (!clean) return;
+                                            let next;
+                                            if (selectedSubs.includes(clean)) {
+                                                next = selectedSubs.filter(s => s !== clean);
+                                            } else {
+                                                next = [...selectedSubs, clean];
+                                            }
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                sub_categories: next,
+                                                sub_category: next.join(", ")
+                                            }));
+                                        };
+
+                                        const addCustomSub = (customVal) => {
+                                            const parts = customVal.split(",").map(s => s.trim()).filter(Boolean);
+                                            if (parts.length === 0) return;
+                                            const next = [...selectedSubs];
+                                            parts.forEach(p => {
+                                                if (!next.includes(p)) next.push(p);
+                                            });
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                sub_categories: next,
+                                                sub_category: next.join(", ")
+                                            }));
+                                        };
+
+                                        const selectAllSubs = () => {
+                                            const combined = Array.from(new Set([...selectedSubs, ...availableSubs]));
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                sub_categories: combined,
+                                                sub_category: combined.join(", ")
+                                            }));
+                                        };
+
+                                        const clearAllSubs = () => {
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                sub_categories: [],
+                                                sub_category: ""
+                                            }));
+                                        };
 
                                         return (
-                                            <div className="mt-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
-                                                <div className="flex items-center justify-between mb-1.5">
-                                                    <label className="block text-slate-800 font-bold text-xs flex items-center gap-1.5">
-                                                        <Tag className="w-3.5 h-3.5 text-cyan-600" />
-                                                        Sub-Category / Style
-                                                    </label>
-                                                    {availableSubs.length > 0 && (
-                                                        <span className="text-[10px] text-cyan-700 font-bold bg-cyan-100 px-2 py-0.5 rounded-full border border-cyan-200">
-                                                            {availableSubs.length} styles available
+                                            <div className="mt-3 bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
+                                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Tag className="w-3.5 h-3.5 text-[#0891b2]" />
+                                                        <span className="block text-slate-800 font-bold text-xs uppercase tracking-wide">
+                                                            Sub-Categories / Styles (Multi-Select)
+                                                        </span>
+                                                        {selectedSubs.length > 0 && (
+                                                            <span className="text-[10px] text-cyan-800 font-extrabold bg-cyan-100 px-2 py-0.5 rounded-full border border-cyan-300">
+                                                                {selectedSubs.length} Selected
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {availableSubs.length > 1 && (
+                                                        <div className="flex items-center gap-2 text-[11px]">
+                                                            <button
+                                                                type="button"
+                                                                onClick={selectAllSubs}
+                                                                className="text-[#0891b2] font-bold hover:underline cursor-pointer"
+                                                            >
+                                                                Select All
+                                                            </button>
+                                                            <span className="text-slate-300">•</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={clearAllSubs}
+                                                                className="text-slate-500 hover:text-red-600 font-bold cursor-pointer"
+                                                            >
+                                                                Clear
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Active Selected Tags Display */}
+                                                <div className="min-h-[34px] p-2 bg-white rounded-lg border border-slate-200 flex flex-wrap items-center gap-1.5">
+                                                    {selectedSubs.length > 0 ? (
+                                                        selectedSubs.map((sub, idx) => (
+                                                            <span
+                                                                key={`sel-${sub}-${idx}`}
+                                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-cyan-50 text-cyan-950 border border-cyan-300 shadow-2xs group"
+                                                            >
+                                                                <Check className="w-3 h-3 text-[#0891b2]" />
+                                                                <span>{sub}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => toggleSub(sub)}
+                                                                    className="text-cyan-700 hover:text-red-600 transition cursor-pointer p-0.5"
+                                                                    title={`Remove ${sub}`}
+                                                                >
+                                                                    <X className="w-3 h-3" />
+                                                                </button>
+                                                            </span>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-xs text-slate-400 italic">
+                                                            Click styles below or add custom tags to assign multiple sub-categories
                                                         </span>
                                                     )}
                                                 </div>
 
-                                                {availableSubs.length > 0 ? (
-                                                    <div className="space-y-2">
-                                                        <select
-                                                            value={formData.sub_category || ""}
-                                                            onChange={(e) => setFormData({ ...formData, sub_category: e.target.value })}
-                                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs focus:outline-none focus:border-cyan-400 cursor-pointer font-medium"
-                                                        >
-                                                            <option value="">── Select Sub-Category Style ──</option>
-                                                            {availableSubs.map((sub, sIdx) => (
-                                                                <option key={`${sub}-${sIdx}`} value={sub}>
-                                                                    {sub}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-[11px] text-slate-400 font-medium">Or type custom:</span>
-                                                            <input
-                                                                type="text"
-                                                                value={formData.sub_category || ""}
-                                                                onChange={(e) => setFormData({ ...formData, sub_category: e.target.value })}
-                                                                placeholder="e.g. Designer Anarkali, Summer Cotton..."
-                                                                className="flex-1 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs text-slate-900 focus:outline-none focus:border-cyan-400"
-                                                            />
+                                                {/* Available Sub-Categories Pill Buttons */}
+                                                {availableSubs.length > 0 && (
+                                                    <div className="space-y-1.5">
+                                                        <span className="text-[11px] font-bold text-slate-600 flex items-center justify-between">
+                                                            <span>Available Styles for &ldquo;{matchedCat?.name}&rdquo;:</span>
+                                                            <span className="text-slate-400 font-normal">Click to toggle on/off</span>
+                                                        </span>
+                                                        <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-0.5">
+                                                            {availableSubs.map((sub, sIdx) => {
+                                                                const isSelected = selectedSubs.includes(sub);
+                                                                return (
+                                                                    <button
+                                                                        key={`avail-${sub}-${sIdx}`}
+                                                                        type="button"
+                                                                        onClick={() => toggleSub(sub)}
+                                                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                                                                            isSelected
+                                                                                ? "bg-cyan-100 text-cyan-950 border-cyan-400 shadow-xs"
+                                                                                : "bg-white text-slate-700 border-slate-200 hover:border-cyan-300 hover:bg-cyan-50/50"
+                                                                        }`}
+                                                                    >
+                                                                        {isSelected ? (
+                                                                            <Check className="w-3 h-3 text-[#0891b2]" />
+                                                                        ) : (
+                                                                            <Plus className="w-3 h-3 text-slate-400" />
+                                                                        )}
+                                                                        <span>{sub}</span>
+                                                                    </button>
+                                                                );
+                                                            })}
                                                         </div>
                                                     </div>
-                                                ) : (
+                                                )}
+
+                                                {/* Custom Subcategory Adder */}
+                                                <div className="flex items-center gap-2 pt-1 border-t border-slate-200/60">
                                                     <input
                                                         type="text"
-                                                        value={formData.sub_category || ""}
-                                                        onChange={(e) => setFormData({ ...formData, sub_category: e.target.value })}
-                                                        placeholder="e.g. Cotton Sleeveless, Halter Party, V-Neck Daily..."
-                                                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs focus:outline-none focus:border-cyan-400 font-medium"
+                                                        id="admin-custom-sub-input"
+                                                        placeholder="Add custom style / sub-category (e.g. Party Wear, Embroidered)..."
+                                                        className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-[#0891b2]"
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === "Enter") {
+                                                                e.preventDefault();
+                                                                addCustomSub(e.target.value);
+                                                                e.target.value = "";
+                                                            }
+                                                        }}
                                                     />
-                                                )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const el = document.getElementById("admin-custom-sub-input");
+                                                            if (el && el.value.trim()) {
+                                                                addCustomSub(el.value);
+                                                                el.value = "";
+                                                            }
+                                                        }}
+                                                        className="px-3 py-1.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1"
+                                                    >
+                                                        <Plus className="w-3 h-3" />
+                                                        <span>Add</span>
+                                                    </button>
+                                                </div>
                                             </div>
                                         );
                                     })()}
