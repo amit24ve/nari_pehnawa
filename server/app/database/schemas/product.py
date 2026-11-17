@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 
@@ -48,7 +48,9 @@ class ProductBase(BaseModel):
     get_free_qty: Optional[int] = None
     mega_sale_price: Optional[float] = None
     is_returnable: bool = True
-    return_policy: Optional[str] = "Easy 15-Day Returns"
+    return_policy: Optional[str] = "Easy 3-Day Returns"
+    return_days: Optional[int] = 3
+    color_variants: Optional[List[Dict[str, Any]]] = []
     occasion: Optional[str] = "Festive, Casual, Office Wear"
     country_of_origin: Optional[str] = "India"
     wash_care: Optional[str] = "Hand Wash or Gentle Machine Wash in Cold Water"
@@ -113,6 +115,8 @@ class ProductUpdate(BaseModel):
     mega_sale_price: Optional[float] = None
     is_returnable: Optional[bool] = None
     return_policy: Optional[str] = None
+    return_days: Optional[int] = None
+    color_variants: Optional[List[Dict[str, Any]]] = None
     occasion: Optional[str] = None
     country_of_origin: Optional[str] = None
     wash_care: Optional[str] = None

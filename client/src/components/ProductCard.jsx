@@ -39,6 +39,7 @@ const ProductCard = ({
     ].filter(Boolean);
     const allImages = Array.from(new Set(rawImages));
     const [currentImgIndex, setCurrentImgIndex] = useState(0);
+    const [selectedColorVariantImg, setSelectedColorVariantImg] = useState(null);
 
     // Auto-slide through images when card is hovered/touched
     useEffect(() => {
@@ -141,7 +142,7 @@ const ProductCard = ({
 
                 {/* Product Photo with Smooth Image Slider */}
                 <img
-                    src={resolveImageUrl(allImages[currentImgIndex] || product.image, DEFAULT_FALLBACK_IMAGE)}
+                    src={resolveImageUrl(selectedColorVariantImg || allImages[currentImgIndex] || product.image, DEFAULT_FALLBACK_IMAGE)}
                     alt={product.name}
                     onError={(e) => {
                         e.target.onerror = null;
@@ -193,6 +194,35 @@ const ProductCard = ({
                         ({(Number(product.review_count) || 0).toLocaleString("en-IN")})
                     </span>
                 </div>
+
+                {/* Color Variants Dots Preview */}
+                {Array.isArray(product.color_variants) && product.color_variants.length > 1 && (
+                    <div className="flex items-center justify-center gap-1.5 mb-2">
+                        {product.color_variants.slice(0, 5).map((v, i) => (
+                            <button
+                                key={i}
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (v.image || v.images?.[0]) {
+                                        setSelectedColorVariantImg(v.image || v.images[0]);
+                                    }
+                                }}
+                                onMouseEnter={() => {
+                                    if (v.image || v.images?.[0]) {
+                                        setSelectedColorVariantImg(v.image || v.images[0]);
+                                    }
+                                }}
+                                className="w-3 h-3 rounded-full border border-black/20 hover:scale-125 transition-transform shadow-xs cursor-pointer"
+                                style={{ backgroundColor: v.color_code || "#800000" }}
+                                title={v.color_name}
+                            />
+                        ))}
+                        {product.color_variants.length > 5 && (
+                            <span className="text-[9px] font-bold text-gray-500">+{product.color_variants.length - 5}</span>
+                        )}
+                    </div>
+                )}
                 <div className="flex items-center justify-center gap-2 flex-wrap">
                     <span className="text-sm sm:text-base font-bold text-gray-900 font-sans">
                         ₹{(displayPrice || 0).toLocaleString("en-IN")}

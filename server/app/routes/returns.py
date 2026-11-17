@@ -101,9 +101,15 @@ def create_return_request(payload: ReturnCreate, current_user: dict = Depends(ge
             detail="Returns can only be requested for delivered orders.",
         )
 
-    # Check return window (e.g. 4 days from delivery / completion)
+    # Check return window (e.g. 3 days from delivery / completion, or admin lock)
+    if order.get("return_window_locked"):
+        raise HTTPException(
+            status_code=400,
+            detail="The return window for this order has been closed by store administration."
+        )
+
     delivery_time = order.get("delivered_at") or order.get("updated_at")
-    return_days = int(order.get("return_days") or 4)
+    return_days = int(order.get("return_days") or 3)
     if delivery_time:
         if isinstance(delivery_time, str):
             try:

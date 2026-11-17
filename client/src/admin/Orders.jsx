@@ -37,7 +37,9 @@ import {
   MessageSquare,
   RefreshCw,
   RotateCcw,
-  Trash2
+  Trash2,
+  Lock,
+  Unlock
 } from "lucide-react";
 
 import shippingApi from "../services/shippingApi";
@@ -1001,6 +1003,38 @@ const Orders = () => {
       alert(`Save modification failed: ${e.message}`);
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const [returnLockLoading, setReturnLockLoading] = useState(false);
+
+  const handleToggleReturnLock = async () => {
+    if (!selectedOrder) return;
+    const orderId = selectedOrder.orderId || selectedOrder.id || selectedOrder._id;
+    try {
+      setReturnLockLoading(true);
+      const res = await fetch(`${API_BASE_URL}/orders/${orderId}/toggle-return-window`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+          "Content-Type": "application/json"
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedOrder(prev => ({
+          ...prev,
+          return_window_locked: data.return_window_locked
+        }));
+        setOrders(prev => prev.map(o => (o.id === orderId || o._id === orderId || o.orderId === orderId) ? { ...o, return_window_locked: data.return_window_locked } : o));
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || "Failed to update return window");
+      }
+    } catch (e) {
+      alert("Error: " + e.message);
+    } finally {
+      setReturnLockLoading(false);
     }
   };
 
@@ -2540,6 +2574,49 @@ const Orders = () => {
                         )}
                       </div>
                     </div>
+                  </div>
+
+                  {/* Return Window Lock / Unlock Control */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm text-xs space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h5 className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <RotateCcw className="w-4 h-4 text-[#0891b2]" /> Customer Return Window
+                      </h5>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        selectedOrder.return_window_locked
+                          ? "bg-rose-50 text-rose-700 border border-rose-200"
+                          : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                      }`}>
+                        {selectedOrder.return_window_locked ? "Locked / Closed" : "Active / Open"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                      {selectedOrder.return_window_locked
+                        ? "Return window has been manually locked by Admin. The customer cannot request a return or exchange for this order on the storefront."
+                        : "Return window defaults to product policy (standard 3 days after delivery). You can manually lock or close it anytime."}
+                    </p>
+                    <button
+                      type="button"
+                      disabled={returnLockLoading}
+                      onClick={handleToggleReturnLock}
+                      className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-xs ${
+                        selectedOrder.return_window_locked
+                          ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                          : "bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200"
+                      }`}
+                    >
+                      {returnLockLoading ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : selectedOrder.return_window_locked ? (
+                        <>
+                          <Unlock className="w-3.5 h-3.5" /> Re-open Customer Return Window
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-3.5 h-3.5" /> Close &amp; Lock Return Window
+                        </>
+                      )}
+                    </button>
                   </div>
 
                   {/* Print Document Center */}

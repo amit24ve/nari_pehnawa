@@ -38,6 +38,7 @@ import {
     Store,
     Scissors,
     Folder,
+    Palette,
     ChevronDown,
 } from "lucide-react";
 import shippingApi from "../services/shippingApi";
@@ -230,8 +231,10 @@ const Products = () => {
         warehouse_stock: {},
         warehouse_size_stock: {},
         is_returnable: true,
-        return_policy: "Easy 4-Day Returns",
-        return_days: 4,
+        return_policy: "Easy 3-Day Returns",
+        return_days: 3,
+        color_variants: [],
+        active_color_idx: 0,
         pattern: "",
         sleeve_type: "",
         fit_type: "Regular Fit",
@@ -294,6 +297,10 @@ const Products = () => {
         fetchPickupLocations();
         setFormData({
             ...emptyForm,
+            return_policy: "Easy 3-Day Returns",
+            return_days: 3,
+            color_variants: [],
+            active_color_idx: 0,
             size_stock: { "S": 0, "M": 0, "L": 0, "XL": 0 },
             stock: "0"
         });
@@ -610,16 +617,38 @@ const Products = () => {
                 });
             }
 
+            const colorVariants = Array.isArray(formData.color_variants) ? formData.color_variants : [];
+            let variantTotalStock = 0;
+            const variantSizeStockAgg = {};
+            if (colorVariants.length > 0) {
+                colorVariants.forEach(v => {
+                    if (v.size_stock) {
+                        Object.entries(v.size_stock).forEach(([sz, q]) => {
+                            const num = Math.max(0, parseInt(q) || 0);
+                            variantSizeStockAgg[sz] = (variantSizeStockAgg[sz] || 0) + num;
+                            variantTotalStock += num;
+                        });
+                    }
+                });
+            }
+
             const sizeStockSum = Object.values(cleanSizeStock).reduce((a, b) => a + Number(b), 0);
-            const totalStock = sizeStockSum > 0 ? sizeStockSum : (formData.stock ? Math.max(0, parseInt(formData.stock)) : 0);
+            const totalStock = variantTotalStock > 0 
+                ? variantTotalStock 
+                : (sizeStockSum > 0 ? sizeStockSum : (formData.stock ? Math.max(0, parseInt(formData.stock)) : 0));
+
+            const finalSizeStock = variantTotalStock > 0 ? variantSizeStockAgg : cleanSizeStock;
 
             const allImages = (formData.images && formData.images.length > 0)
                 ? formData.images.filter(Boolean)
                 : (formData.image ? [formData.image] : []);
-            const primaryImage = formData.image || allImages[0] || "";
+            const primaryImage = formData.image || colorVariants[0]?.image || allImages[0] || "";
             const orderedImages = primaryImage 
                 ? [primaryImage, ...allImages.filter(img => img !== primaryImage)] 
                 : allImages;
+
+            const variantColorNames = colorVariants.map(v => v.color_name).filter(Boolean);
+            const finalColors = variantColorNames.length > 0 ? variantColorNames : parsedColors;
 
             const productData = {
                 name: formData.title || "",
@@ -636,13 +665,14 @@ const Products = () => {
                 department: formData.department || (categoriesList.find(c => c.name === formData.category)?.department || "Women"),
                 image: primaryImage,
                 images: orderedImages,
+                color_variants: colorVariants,
                 brand: formData.brand || "Nari Pehnawa",
                 on_sale: formData.offer_type === "flash_sale" || Boolean(formData.on_sale) || (formData.discount ? parseInt(formData.discount) > 0 : false),
                 is_new: true,
                 in_stock: totalStock > 0,
                 sizes: parsedSizes.length > 0 ? parsedSizes : ["Free Size"],
-                size_stock: cleanSizeStock,
-                colors: parsedColors,
+                size_stock: finalSizeStock,
+                colors: finalColors,
                 fabric: formData.fabric || null,
                 pattern: formData.pattern || null,
                 sleeve_type: formData.sleeve_type || null,
@@ -652,8 +682,8 @@ const Products = () => {
                 hsn_code: formData.hsn_code || "",
                 wash_care: formData.wash_care || null,
                 is_returnable: formData.is_returnable !== false,
-                return_policy: formData.return_policy || "Easy 4-Day Returns",
-                return_days: Number(formData.return_days) || 4,
+                return_policy: formData.return_policy || "Easy 3-Day Returns",
+                return_days: Number(formData.return_days) || 3,
                 offer_type: formData.offer_type || "none",
                 sale_title: formData.offer_type === "flash_sale" ? (formData.sale_title || "Mega Festive Sale") : null,
                 deal_type: formData.offer_type === "flash_sale" ? (formData.deal_type || "buy5get1") : null,
@@ -802,6 +832,211 @@ const Products = () => {
         });
     };
 
+    // ── Color Variants Management Helpers ──
+    const PRESET_COLOR_OPTIONS = [
+        { name: "Maroon", hex: "#800000" },
+        { name: "Emerald Green", hex: "#046A38" },
+        { name: "Royal Blue", hex: "#4169E1" },
+        { name: "Blush Pink", hex: "#FFB6C1" },
+        { name: "Mustard Yellow", hex: "#E1AD01" },
+        { name: "Wine Red", hex: "#722F37" },
+        { name: "Navy Blue", hex: "#000080" },
+        { name: "Teal", hex: "#008080" },
+        { name: "Black", hex: "#1A1A1A" },
+        { name: "White", hex: "#FFFFFF" }
+    ];
+
+    const handleAddColorVariant = (colorName, colorHex = "#800000") => {
+        const cleanName = (colorName || "").trim();
+        if (!cleanName) return;
+        setFormData(prev => {
+            let currentVariants = Array.isArray(prev.color_variants) ? [...prev.color_variants] : [];
+            
+            // If converting from single-color to multi-color variants for the first time
+            if (currentVariants.length === 0 && ((prev.images && prev.images.length > 0) || prev.image)) {
+                currentVariants.push({
+                    color_name: prev.colors?.split(",")[0]?.trim() || "Main Color",
+                    color_code: "#800000",
+                    image: prev.image || (prev.images && prev.images[0]) || "",
+                    images: prev.images && prev.images.length > 0 ? [...prev.images] : (prev.image ? [prev.image] : []),
+                    size_stock: { ...(prev.size_stock || {}) },
+                    sku: ""
+                });
+            }
+
+            const exists = currentVariants.find(v => v.color_name?.toLowerCase() === cleanName.toLowerCase());
+            if (exists) {
+                const idx = currentVariants.indexOf(exists);
+                return { ...prev, active_color_idx: idx };
+            }
+
+            const parsedSizes = prev.sizes ? prev.sizes.split(",").map(s => s.trim()).filter(Boolean) : ["XS", "S", "M", "L", "XL", "XXL", "Free Size"];
+            const initialSizeStock = {};
+            parsedSizes.forEach(s => { initialSizeStock[s] = 0; });
+
+            const newVariant = {
+                color_name: cleanName,
+                color_code: colorHex,
+                image: "",
+                images: [],
+                size_stock: initialSizeStock,
+                sku: `${cleanName.slice(0, 3).toUpperCase()}`
+            };
+            const updated = [...currentVariants, newVariant];
+            const updatedColors = updated.map(v => v.color_name).filter(Boolean).join(", ");
+            return {
+                ...prev,
+                color_variants: updated,
+                colors: updatedColors,
+                active_color_idx: updated.length - 1
+            };
+        });
+    };
+
+    const handleRemoveColorVariant = (indexToRemove) => {
+        setFormData(prev => {
+            const currentVariants = Array.isArray(prev.color_variants) ? prev.color_variants.filter((_, idx) => idx !== indexToRemove) : [];
+            const newActive = Math.max(0, (prev.active_color_idx || 0) >= currentVariants.length ? currentVariants.length - 1 : (prev.active_color_idx || 0));
+            const updatedColors = currentVariants.map(v => v.color_name).filter(Boolean).join(", ");
+            return {
+                ...prev,
+                color_variants: currentVariants,
+                colors: updatedColors,
+                active_color_idx: newActive
+            };
+        });
+    };
+
+    const handleVariantImageUpload = async (e, variantIdx) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+        setUploadingImage(true);
+        try {
+            const token = getAuthToken();
+            const fd = new FormData();
+            files.forEach(f => fd.append("files", f));
+
+            let uploadedUrls = [];
+            try {
+                const res = await fetch(`${API_BASE_URL}/upload/images`, {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` },
+                    body: fd,
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    uploadedUrls = (data.urls || []).map(u => u.startsWith("http") ? u : `${API_BASE_URL}${u}`);
+                }
+            } catch (err) {
+                console.warn("Batch upload fallback:", err);
+            }
+
+            if (uploadedUrls.length === 0) {
+                for (const file of files) {
+                    const singleFd = new FormData();
+                    singleFd.append("file", file);
+                    const singleRes = await fetch(`${API_BASE_URL}/upload/image`, {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${token}` },
+                        body: singleFd,
+                    });
+                    if (singleRes.ok) {
+                        const sData = await singleRes.json();
+                        uploadedUrls.push(sData.url.startsWith("http") ? sData.url : `${API_BASE_URL}${sData.url}`);
+                    }
+                }
+            }
+
+            if (uploadedUrls.length === 0) throw new Error("No images were uploaded.");
+
+            setFormData(prev => {
+                const variants = [...(prev.color_variants || [])];
+                if (!variants[variantIdx]) return prev;
+                const v = { ...variants[variantIdx] };
+                const currentImgs = Array.isArray(v.images) ? v.images : (v.image ? [v.image] : []);
+                const combined = [...currentImgs, ...uploadedUrls];
+                v.images = combined;
+                v.image = v.image || combined[0] || "";
+                variants[variantIdx] = v;
+
+                return {
+                    ...prev,
+                    image: prev.image || (variantIdx === 0 ? v.image : prev.image),
+                    color_variants: variants
+                };
+            });
+        } catch (err) {
+            alert(`Image upload error: ${err.message}`);
+        } finally {
+            setUploadingImage(false);
+            if (e.target) e.target.value = "";
+        }
+    };
+
+    const handleSetVariantPrimaryImage = (variantIdx, imgUrl) => {
+        setFormData(prev => {
+            const variants = [...(prev.color_variants || [])];
+            if (!variants[variantIdx]) return prev;
+            const v = { ...variants[variantIdx] };
+            const currentImgs = Array.isArray(v.images) ? v.images : [];
+            const reordered = [imgUrl, ...currentImgs.filter(i => i !== imgUrl)];
+            v.image = imgUrl;
+            v.images = reordered;
+            variants[variantIdx] = v;
+            return {
+                ...prev,
+                color_variants: variants,
+                ...(variantIdx === 0 ? { image: imgUrl } : {})
+            };
+        });
+    };
+
+    const handleRemoveVariantImage = (variantIdx, imgIdx) => {
+        setFormData(prev => {
+            const variants = [...(prev.color_variants || [])];
+            if (!variants[variantIdx]) return prev;
+            const v = { ...variants[variantIdx] };
+            const currentImgs = Array.isArray(v.images) ? v.images.filter((_, i) => i !== imgIdx) : [];
+            v.images = currentImgs;
+            v.image = currentImgs.includes(v.image) ? v.image : (currentImgs[0] || "");
+            variants[variantIdx] = v;
+            return {
+                ...prev,
+                color_variants: variants
+            };
+        });
+    };
+
+    const handleVariantSizeStockChange = (variantIdx, size, qty) => {
+        const val = qty === "" ? "" : Math.max(0, parseInt(qty) || 0);
+        setFormData(prev => {
+            const variants = [...(prev.color_variants || [])];
+            if (!variants[variantIdx]) return prev;
+            const v = { ...variants[variantIdx] };
+            v.size_stock = { ...(v.size_stock || {}), [size]: val };
+            variants[variantIdx] = v;
+
+            let total = 0;
+            const globalSizeStock = {};
+            variants.forEach(vr => {
+                if (vr.size_stock) {
+                    Object.entries(vr.size_stock).forEach(([s, q]) => {
+                        const num = Number(q) || 0;
+                        globalSizeStock[s] = (globalSizeStock[s] || 0) + num;
+                        total += num;
+                    });
+                }
+            });
+
+            return {
+                ...prev,
+                color_variants: variants,
+                size_stock: globalSizeStock,
+                stock: total.toString()
+            };
+        });
+    };
+
     const handleEdit = (product) => {
         fetchCategories();
         fetchPickupLocations();
@@ -866,8 +1101,10 @@ const Products = () => {
             warehouse_stock: product.warehouse_stock || {},
             warehouse_size_stock: product.warehouse_size_stock || {},
             is_returnable: product.is_returnable !== false,
-            return_policy: product.return_policy || "Easy 4-Day Returns",
-            return_days: product.return_days || 4,
+            return_policy: product.return_policy || "Easy 3-Day Returns",
+            return_days: product.return_days || 3,
+            color_variants: Array.isArray(product.color_variants) ? product.color_variants : [],
+            active_color_idx: 0,
             pattern: product.pattern || "",
             sleeve_type: product.sleeve_type || "",
             fit_type: product.fit_type || "Regular Fit",
@@ -3129,6 +3366,354 @@ const Products = () => {
                                         </div>
                                     </div>
                                 )}
+                            </div>
+
+                            {/* ── Product Photos & Color Variants (100% FULL WIDTH - BELOW CUSTOMIZATION) ── */}
+                            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
+                                    <div>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-slate-900 font-extrabold text-sm uppercase tracking-wide flex items-center gap-1.5">
+                                                <ImageIcon className="w-4 h-4 text-[#0891b2]" /> Product Photos &amp; Color Variants
+                                            </span>
+                                            <span className="text-[10px] bg-cyan-100 text-cyan-800 font-bold px-2.5 py-0.5 rounded-full border border-cyan-200">
+                                                100% Full Width
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-slate-500 mt-0.5">
+                                            Upload high-resolution photos. Add multiple color variants (e.g. Maroon, Emerald Green) with dedicated photo sets and size inventory.
+                                        </p>
+                                    </div>
+
+                                    {/* Quick Color Variant Pills */}
+                                    <div className="flex items-center gap-1 flex-wrap">
+                                        <span className="text-[11px] text-slate-500 font-bold mr-1 flex items-center gap-1">
+                                            <Palette className="w-3.5 h-3.5 text-[#0891b2]" /> + Color:
+                                        </span>
+                                        {PRESET_COLOR_OPTIONS.slice(0, 6).map((c) => (
+                                            <button
+                                                key={c.name}
+                                                type="button"
+                                                onClick={() => handleAddColorVariant(c.name, c.hex)}
+                                                className="px-2 py-0.5 bg-white hover:bg-cyan-50 border border-slate-200 hover:border-cyan-300 text-slate-700 rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer shadow-2xs active:scale-95"
+                                                title={`Add ${c.name} color variant`}
+                                            >
+                                                <span className="w-2 h-2 rounded-full border border-black/20" style={{ backgroundColor: c.hex }} />
+                                                <span>{c.name}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Color Tabs Bar (If color variants exist) */}
+                                {Array.isArray(formData.color_variants) && formData.color_variants.length > 0 && (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                                Active Color Variants ({formData.color_variants.length})
+                                            </span>
+                                            <span className="text-[11px] text-[#0891b2] font-semibold">
+                                                Click a tab to upload photos &amp; manage size stock for that color
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                                            {formData.color_variants.map((v, vIdx) => {
+                                                const isActive = (formData.active_color_idx || 0) === vIdx;
+                                                const vStock = v.size_stock ? Object.values(v.size_stock).reduce((a, b) => a + Number(b || 0), 0) : 0;
+                                                return (
+                                                    <div
+                                                        key={vIdx}
+                                                        onClick={() => setFormData(prev => ({ ...prev, active_color_idx: vIdx }))}
+                                                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition cursor-pointer select-none shrink-0 ${
+                                                            isActive
+                                                                ? "bg-white border-[#0891b2] text-[#0891b2] shadow-sm ring-2 ring-[#0891b2]/20"
+                                                                : "bg-white/70 hover:bg-white border-slate-200 text-slate-700"
+                                                        }`}
+                                                    >
+                                                        <span
+                                                            className="w-3.5 h-3.5 rounded-full border border-black/25 shrink-0 shadow-xs"
+                                                            style={{ backgroundColor: v.color_code || "#800000" }}
+                                                        />
+                                                        <span>{v.color_name}</span>
+                                                        <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded-full font-mono">
+                                                            {v.images?.length || 0} pics • {vStock} left
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleRemoveColorVariant(vIdx);
+                                                            }}
+                                                            className="text-slate-400 hover:text-red-500 ml-1 p-0.5 cursor-pointer"
+                                                            title="Delete this color variant"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })}
+
+                                            {/* Add Custom Color Input */}
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                <input
+                                                    type="text"
+                                                    id="admin-add-custom-color"
+                                                    placeholder="+ Other color..."
+                                                    className="w-28 bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-cyan-500"
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter") {
+                                                            e.preventDefault();
+                                                            handleAddColorVariant(e.target.value);
+                                                            e.target.value = "";
+                                                        }
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const el = document.getElementById("admin-add-custom-color");
+                                                        if (el && el.value.trim()) {
+                                                            handleAddColorVariant(el.value);
+                                                            el.value = "";
+                                                        }
+                                                    }}
+                                                    className="px-2.5 py-1.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-xs font-bold transition cursor-pointer"
+                                                >
+                                                    Add
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ACTIVE COLOR VARIANT PANEL OR SINGLE-VARIANT UPLOADER */}
+                                {(() => {
+                                    const hasVariants = Array.isArray(formData.color_variants) && formData.color_variants.length > 0;
+                                    const activeIdx = Math.min(formData.active_color_idx || 0, Math.max(0, (formData.color_variants?.length || 1) - 1));
+                                    const curVariant = hasVariants ? formData.color_variants[activeIdx] : null;
+
+                                    const curImages = hasVariants
+                                        ? (curVariant?.images || (curVariant?.image ? [curVariant.image] : []))
+                                        : (formData.images && formData.images.length > 0 ? formData.images : (formData.image ? [formData.image] : []));
+                                    const curPrimary = hasVariants
+                                        ? (curVariant?.image || curImages[0] || "")
+                                        : (formData.image || curImages[0] || "");
+
+                                    return (
+                                        <div className="space-y-4 pt-1">
+                                            {/* Active Color Info Header (When variants exist) */}
+                                            {hasVariants && curVariant && (
+                                                <div className="flex items-center justify-between p-3 rounded-xl bg-cyan-50/70 border border-cyan-200 text-xs">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <span
+                                                            className="w-5 h-5 rounded-full border-2 border-white shadow-sm"
+                                                            style={{ backgroundColor: curVariant.color_code || "#800000" }}
+                                                        />
+                                                        <div>
+                                                            <span className="font-extrabold text-cyan-950">
+                                                                Managing Photos &amp; Stock for: <span className="underline">{curVariant.color_name}</span>
+                                                            </span>
+                                                            <p className="text-[11px] text-cyan-800">
+                                                                Photos uploaded below will only be shown to customers when they select the {curVariant.color_name} swatch.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="color"
+                                                            value={curVariant.color_code || "#800000"}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value;
+                                                                setFormData(prev => {
+                                                                    const vList = [...(prev.color_variants || [])];
+                                                                    if (vList[activeIdx]) {
+                                                                        vList[activeIdx] = { ...vList[activeIdx], color_code: val };
+                                                                    }
+                                                                    return { ...prev, color_variants: vList };
+                                                                });
+                                                            }}
+                                                            className="w-7 h-7 rounded border border-slate-300 cursor-pointer p-0 bg-transparent"
+                                                            title="Pick swatch color"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Full Width Drag & Drop Upload Area */}
+                                            <label className="border-2 border-dashed border-slate-300 hover:border-cyan-400 bg-white hover:bg-cyan-50/30 rounded-2xl p-6 text-center cursor-pointer transition flex flex-col sm:flex-row items-center justify-center gap-3.5 group shadow-2xs">
+                                                {uploadingImage ? (
+                                                    <Loader2 className="w-7 h-7 text-[#0891b2] animate-spin flex-shrink-0" />
+                                                ) : (
+                                                    <div className="w-12 h-12 rounded-2xl bg-cyan-100 flex items-center justify-center text-[#0891b2] group-hover:scale-105 transition-transform flex-shrink-0">
+                                                        <Upload className="w-6 h-6" />
+                                                    </div>
+                                                )}
+                                                <div className="text-center sm:text-left">
+                                                    <div className="text-xs text-slate-900 font-extrabold">
+                                                        {uploadingImage
+                                                            ? "Uploading images to high-speed CDN..."
+                                                            : hasVariants
+                                                            ? `Click or Drag to Upload Photos for ${curVariant?.color_name || 'this color'}`
+                                                            : "Click or Drag to Upload Multiple Product Photos"}
+                                                    </div>
+                                                    <div className="text-[11px] text-slate-500 mt-0.5">
+                                                        PNG, JPG, WebP (Max 10MB each) • Select multiple files • First photo is Primary Cover
+                                                    </div>
+                                                </div>
+                                                <input
+                                                    type="file"
+                                                    multiple
+                                                    accept="image/*"
+                                                    onChange={hasVariants ? (e) => handleVariantImageUpload(e, activeIdx) : handleImageFileUpload}
+                                                    className="hidden"
+                                                    disabled={uploadingImage}
+                                                />
+                                            </label>
+
+                                            {/* Uploaded Gallery Grid with Primary Cover Selector */}
+                                            {curImages.length > 0 && (
+                                                <div className="space-y-2 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+                                                    <div className="flex items-center justify-between text-xs">
+                                                        <span className="font-bold text-slate-800">
+                                                            {hasVariants ? `${curVariant.color_name} Photos` : "Uploaded Photos"} ({curImages.length})
+                                                        </span>
+                                                        <span className="text-[11px] text-[#0891b2] font-semibold">
+                                                            ★ Click "Make Primary" to set the main cover image
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 pt-1">
+                                                        {curImages.map((imgUrl, idx) => {
+                                                            const isPrimary = (curPrimary === imgUrl) || (!curPrimary && idx === 0);
+                                                            return (
+                                                                <div
+                                                                    key={idx}
+                                                                    className={`relative rounded-xl overflow-hidden group bg-white border-2 transition shadow-xs flex flex-col ${
+                                                                        isPrimary
+                                                                            ? "border-[#0891b2] ring-2 ring-[#0891b2]/30"
+                                                                            : "border-slate-200 hover:border-slate-300"
+                                                                    }`}
+                                                                >
+                                                                    <div className="w-full h-28 bg-slate-100 overflow-hidden relative">
+                                                                        <img
+                                                                            src={imgUrl}
+                                                                            alt={`Product photo ${idx + 1}`}
+                                                                            className="w-full h-full object-cover"
+                                                                        />
+
+                                                                        {/* Primary Badge */}
+                                                                        {isPrimary && (
+                                                                            <span className="absolute top-1.5 left-1.5 bg-[#0891b2] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-sm flex items-center gap-0.5">
+                                                                                <Star className="w-2.5 h-2.5 fill-white" /> Primary
+                                                                            </span>
+                                                                        )}
+
+                                                                        {/* Delete Button */}
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                if (hasVariants) handleRemoveVariantImage(activeIdx, idx);
+                                                                                else handleRemoveImage(idx);
+                                                                            }}
+                                                                            className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 hover:bg-slate-700 text-white flex items-center justify-center transition opacity-80 hover:opacity-100 cursor-pointer shadow-sm"
+                                                                            title="Remove photo"
+                                                                        >
+                                                                            <Trash2 className="w-3 h-3" />
+                                                                        </button>
+                                                                    </div>
+
+                                                                    {/* Card Footer: Make Primary */}
+                                                                    <div className="p-1.5 text-center bg-white border-t border-slate-100">
+                                                                        {isPrimary ? (
+                                                                            <span className="text-[10px] font-bold text-cyan-700">
+                                                                                Cover Photo
+                                                                            </span>
+                                                                        ) : (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    if (hasVariants) handleSetVariantPrimaryImage(activeIdx, imgUrl);
+                                                                                    else handleSetPrimaryImage(imgUrl);
+                                                                                }}
+                                                                                className="w-full py-0.5 text-[10px] font-bold text-slate-700 hover:text-black hover:bg-cyan-50 rounded transition cursor-pointer"
+                                                                            >
+                                                                                Make Primary
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+
+                                                        {/* Add More Tile */}
+                                                        <label className="h-36 rounded-xl border-2 border-dashed border-slate-300 hover:border-cyan-400 bg-slate-50 hover:bg-cyan-50/30 flex flex-col items-center justify-center cursor-pointer transition text-slate-500 hover:text-cyan-600">
+                                                            <Plus className="w-5 h-5" />
+                                                            <span className="text-[10px] font-bold mt-1">Add More</span>
+                                                            <input
+                                                                type="file"
+                                                                multiple
+                                                                accept="image/*"
+                                                                onChange={hasVariants ? (e) => handleVariantImageUpload(e, activeIdx) : handleImageFileUpload}
+                                                                className="hidden"
+                                                                disabled={uploadingImage}
+                                                            />
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Size-wise Stock Breakdown for this Color Variant (When variants exist) */}
+                                            {hasVariants && curVariant && (
+                                                <div className="bg-white p-3.5 rounded-2xl border border-slate-200 space-y-2.5">
+                                                    <div className="flex items-center justify-between flex-wrap gap-2">
+                                                        <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                                            <Package className="w-3.5 h-3.5 text-[#0891b2]" /> Stock Quantity for {curVariant.color_name} by Size:
+                                                        </span>
+                                                        <span className="text-[11px] font-mono text-cyan-800 font-bold bg-cyan-50 px-2 py-0.5 rounded-lg border border-cyan-200">
+                                                            Variant Total: {Object.values(curVariant.size_stock || {}).reduce((a, b) => a + Number(b || 0), 0)} units
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                                                        {(formData.sizes ? formData.sizes.split(",").map(s => s.trim()).filter(Boolean) : ["XS", "S", "M", "L", "XL", "XXL", "Free Size"]).map((sz) => {
+                                                            const qty = curVariant.size_stock?.[sz] ?? 0;
+                                                            return (
+                                                                <div key={sz} className="bg-slate-50 p-2 rounded-xl border border-slate-200 text-center">
+                                                                    <span className="text-[11px] font-bold text-slate-700 block mb-1">{sz}</span>
+                                                                    <div className="flex items-center justify-center gap-1">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleVariantSizeStockChange(activeIdx, sz, Math.max(0, Number(qty || 0) - 1))}
+                                                                            className="w-6 h-6 flex items-center justify-center bg-white hover:bg-slate-200 border border-slate-200 rounded text-slate-700 font-bold text-xs cursor-pointer select-none"
+                                                                        >
+                                                                            -
+                                                                        </button>
+                                                                        <input
+                                                                            type="number"
+                                                                            min="0"
+                                                                            value={qty}
+                                                                            onChange={(e) => handleVariantSizeStockChange(activeIdx, sz, e.target.value)}
+                                                                            className="w-12 bg-white border border-slate-300 rounded py-0.5 text-center text-xs font-mono font-bold text-slate-900 focus:outline-none"
+                                                                        />
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleVariantSizeStockChange(activeIdx, sz, Number(qty || 0) + 1)}
+                                                                            className="w-6 h-6 flex items-center justify-center bg-white hover:bg-slate-200 border border-slate-200 rounded text-slate-700 font-bold text-xs cursor-pointer select-none"
+                                                                        >
+                                                                            +
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
                             </div>
 
                             {/* ── Product Specifications Matrix ── */}

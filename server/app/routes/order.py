@@ -1102,3 +1102,31 @@ def delete_order(order_id: str, current_user: dict = Depends(require_admin)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{order_id}/toggle-return-window")
+def toggle_order_return_window(order_id: str, current_user: dict = Depends(require_admin)):
+    """Allow Admin to force-close or re-open the return window for an order"""
+    db = get_database()
+    clean_id = str(order_id).replace("#", "").strip()
+    query = {"$or": [{"order_number": clean_id}, {"order_id": clean_id}, {"order_number": order_id}]}
+    if ObjectId.is_valid(clean_id):
+        query["$or"].append({"_id": ObjectId(clean_id)})
+    elif ObjectId.is_valid(order_id):
+        query["$or"].append({"_id": ObjectId(order_id)})
+
+    order = db["orders"].find_one(query)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    current_locked = bool(order.get("return_window_locked", False))
+    new_locked = not current_locked
+    db["orders"].update_one(
+        {"_id": order["_id"]},
+        {"$set": {"return_window_locked": new_locked, "updated_at": datetime.now(timezone.utc)}}
+    )
+    return {
+        "order_id": order_id,
+        "return_window_locked": new_locked,
+        "message": f"Return window is now {'closed/hidden' if new_locked else 'open'}"
+    }

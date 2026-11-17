@@ -522,7 +522,9 @@ const ProductPage = () => {
           );
           setSelectedSize(firstAvailable || normalized.sizes[0]);
         }
-        if (normalized.colors?.length > 0) {
+        if (normalized.color_variants && normalized.color_variants.length > 0) {
+          setSelectedColor(normalized.color_variants[0].color_name);
+        } else if (normalized.colors?.length > 0) {
           setSelectedColor(normalized.colors[0]);
         }
 
@@ -792,13 +794,15 @@ const ProductPage = () => {
     async (goToCart = false) => {
       if (!product) return;
       const dealLabel = isSaleMode ? (product.deal_text || "Mega Sale Deal") : null;
+      const matchedVariant = product.color_variants?.find(v => v.color_name?.toLowerCase() === selectedColor?.toLowerCase());
+      const variantImg = matchedVariant?.image || matchedVariant?.images?.[0] || product.image;
       const ok = await addToCart({
         product_id: product.id,
         name: isSaleMode && dealLabel ? `${product.name} [${dealLabel}]` : product.name,
         price: currentPrice,
-        image: product.image,
+        image: variantImg,
         size: selectedSize,
-        color: selectedColor,
+        color: selectedColor || matchedVariant?.color_name || "",
         quantity,
         deal_text: dealLabel,
         offer_type: isSaleMode ? "megasale" : "standard",
@@ -815,14 +819,16 @@ const ProductPage = () => {
   const handleBuyNow = useCallback(() => {
     if (!product) return;
     const dealLabel = isSaleMode ? (product.deal_text || "Mega Sale Deal") : null;
+    const matchedVariant = product.color_variants?.find(v => v.color_name?.toLowerCase() === selectedColor?.toLowerCase());
+    const variantImg = matchedVariant?.image || matchedVariant?.images?.[0] || product.image;
     const buyItem = {
       product_id: product.id,
       name: isSaleMode && dealLabel ? `${product.name} [${dealLabel}]` : product.name,
-      image: product.image,
+      image: variantImg,
       price: currentPrice,
       quantity,
       size: selectedSize || "",
-      color: selectedColor || "",
+      color: selectedColor || matchedVariant?.color_name || "",
       productUrl: window.location.pathname,
       deal_text: dealLabel,
       offer_type: isSaleMode ? "megasale" : "standard",
@@ -838,6 +844,8 @@ const ProductPage = () => {
   }, [product, isSaleMode, currentPrice, user, quantity, selectedSize, selectedColor, openLoginModal]);
 
   const dealLabel = isSaleMode ? (product?.deal_text || "Mega Sale Deal") : null;
+  const currentMatchedVariant = product?.color_variants?.find(v => v.color_name?.toLowerCase() === selectedColor?.toLowerCase());
+  const currentVariantImg = currentMatchedVariant?.image || currentMatchedVariant?.images?.[0] || product?.image;
   const buyNowItem = pendingCheckout?.item
     ? [pendingCheckout.item]
     : product
@@ -845,11 +853,11 @@ const ProductPage = () => {
         {
           product_id: product.id,
           name: isSaleMode && dealLabel ? `${product.name} [${dealLabel}]` : product.name,
-          image: product.image,
+          image: currentVariantImg,
           price: currentPrice,
           quantity,
           size: selectedSize || "",
-          color: selectedColor || "",
+          color: selectedColor || currentMatchedVariant?.color_name || "",
           deal_text: dealLabel,
           offer_type: isSaleMode ? "megasale" : "standard",
         },
@@ -909,8 +917,15 @@ const ProductPage = () => {
     }));
   };
 
-  const rawImages = product?.images?.length > 0 ? product.images : [product?.image].filter(Boolean);
+  const activeVariant = (product?.color_variants && product.color_variants.length > 0)
+    ? (product.color_variants.find(v => v.color_name?.toLowerCase() === selectedColor?.toLowerCase()) || product.color_variants[0])
+    : null;
+
+  const rawImages = (activeVariant?.images && activeVariant.images.length > 0)
+    ? activeVariant.images
+    : (activeVariant?.image ? [activeVariant.image] : (product?.images?.length > 0 ? product.images : [product?.image].filter(Boolean)));
   const images = rawImages.map(img => resolveImageUrl(img, FALLBACK_IMG));
+  const activeSizeStock = activeVariant?.size_stock || product?.size_stock || {};
   const catSlug = slugify(product?.category || "");
   const discount = product?.discount || 0;
   const sku = `NP-${(product?.category || "KRT").slice(0, 3).toUpperCase()}-${(product?.id || "101").slice(-5).toUpperCase()}`;
@@ -1317,6 +1332,76 @@ const ProductPage = () => {
               })()}
             </div>
 
+            {/* Color Variants Swatches (When multiple colors are available) */}
+            {((product.color_variants && product.color_variants.length > 0) || (product.colors && product.colors.length > 1)) && (
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
+                    <span className="text-[#8B0000]">●</span> Color: <span className="font-extrabold text-[#8B0000] normal-case">{selectedColor || "Select"}</span>
+                  </span>
+                  {activeVariant && (
+                    <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      ✓ Available in Stock
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  {(product.color_variants && product.color_variants.length > 0
+                    ? product.color_variants
+                    : (product.colors || []).map(c => ({ color_name: c, color_code: "#800000" }))
+                  ).map((variant, vIdx) => {
+                    const isSelected = (selectedColor?.toLowerCase() === variant.color_name?.toLowerCase()) || (!selectedColor && vIdx === 0);
+                    const swatchImg = variant.image || (variant.images && variant.images[0]);
+                    return (
+                      <button
+                        key={vIdx}
+                        type="button"
+                        onClick={() => {
+                          setSelectedColor(variant.color_name);
+                          setActiveImg(0);
+                          // Auto pick in-stock size for this variant
+                          if (product.sizes?.length > 0) {
+                            const vStock = variant.size_stock || product.size_stock || {};
+                            const currentSizeValid = (vStock[selectedSize] !== undefined ? vStock[selectedSize] : 10) > 0;
+                            if (!currentSizeValid) {
+                              const firstAvailable = product.sizes.find(sz => (vStock[sz] !== undefined ? vStock[sz] : 10) > 0);
+                              if (firstAvailable) setSelectedSize(firstAvailable);
+                            }
+                          }
+                        }}
+                        className={`group relative flex items-center gap-2 p-1.5 pr-3 rounded-xl border-2 transition-all cursor-pointer ${
+                          isSelected
+                            ? "border-[#8B0000] bg-rose-50/60 shadow-sm ring-2 ring-[#8B0000]/20 scale-102"
+                            : "border-gray-200 hover:border-gray-300 bg-white"
+                        }`}
+                        title={variant.color_name}
+                      >
+                        {swatchImg ? (
+                          <img
+                            src={resolveImageUrl(swatchImg, FALLBACK_IMG)}
+                            alt={variant.color_name}
+                            className="w-7 h-7 rounded-lg object-cover border border-black/10 shrink-0"
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <span
+                            className="w-5 h-5 rounded-full border border-black/20 shrink-0 shadow-xs"
+                            style={{ backgroundColor: variant.color_code || "#800000" }}
+                          />
+                        )}
+                        <span className={`text-xs font-bold ${isSelected ? "text-[#8B0000]" : "text-gray-800"}`}>
+                          {variant.color_name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Size Selector with Stock Badges */}
             {product.sizes?.length > 0 && (
               <div className="space-y-3">
@@ -1336,7 +1421,7 @@ const ProductPage = () => {
 
                 <div className="flex gap-2.5 flex-wrap items-center">
                   {product.sizes.map((s) => {
-                    const st = product.size_stock?.[s] !== undefined ? product.size_stock[s] : 10;
+                    const st = activeSizeStock?.[s] !== undefined ? activeSizeStock[s] : (product.size_stock?.[s] !== undefined ? product.size_stock[s] : 10);
                     const isOutOfStock = st <= 0;
                     const isLowStock = st > 0 && st <= 5;
                     return (
@@ -1624,7 +1709,7 @@ const ProductPage = () => {
                   <span className="font-semibold text-gray-900 text-right">
                     {product.is_returnable === false
                       ? (product.return_policy || "Non-Returnable (Final Sale)")
-                      : (product.return_policy || "Easy 4-Day Returns")}
+                      : (product.return_policy || "Easy 3-Day Returns")}
                   </span>
                 </div>
                 {Array.isArray(product.specifications) && product.specifications.map((spec, idx) => (
