@@ -313,6 +313,43 @@ const Products = () => {
         "teal": "#0d9488"
     };
 
+    const REVERSE_COLOR_MAP = {
+        "#15803d": "Green",
+        "#059669": "Emerald Green",
+        "#14532d": "Dark Green",
+        "#65a30d": "Olive Green",
+        "#800000": "Maroon",
+        "#581c87": "Wine",
+        "#701a75": "Wine Maroon",
+        "#831843": "Burgundy",
+        "#dc2626": "Red",
+        "#be123c": "Ruby Red",
+        "#991b1b": "Crimson",
+        "#2563eb": "Royal Blue",
+        "#1e3a8a": "Navy Blue",
+        "#1d4ed8": "Blue",
+        "#0ea5e9": "Sky Blue",
+        "#0891b2": "Cyan",
+        "#db2777": "Pink",
+        "#f472b6": "Baby Pink",
+        "#e11d48": "Hot Pink",
+        "#c026d3": "Magenta",
+        "#eab308": "Yellow",
+        "#ca8a04": "Mustard",
+        "#ea580c": "Orange",
+        "#c2410c": "Rust",
+        "#1a1a1a": "Black",
+        "#ffffff": "White",
+        "#fef3c7": "Cream",
+        "#f5f5dc": "Beige",
+        "#9333ea": "Purple",
+        "#a855f7": "Lavender",
+        "#64748b": "Grey",
+        "#d97706": "Gold",
+        "#fb923c": "Peach",
+        "#0d9488": "Teal"
+    };
+
     const handleColorNameInputChange = (val) => {
         setNewColorInputName(val);
         const key = val.trim().toLowerCase();
@@ -321,10 +358,40 @@ const Products = () => {
         }
     };
 
+    const handleColorCodeInputChange = (codeVal) => {
+        setNewColorInputHex(codeVal);
+        const clean = codeVal.trim().toLowerCase();
+        const hex = clean.startsWith("#") ? clean : `#${clean}`;
+        if (REVERSE_COLOR_MAP[hex] && !newColorInputName.trim()) {
+            setNewColorInputName(REVERSE_COLOR_MAP[hex]);
+        }
+    };
+
+    const handleUpdateVariantName = (variantIdx, newName) => {
+        setFormData(prev => {
+            const variants = [...(prev.color_variants || [])];
+            if (!variants[variantIdx]) return prev;
+            variants[variantIdx] = { ...variants[variantIdx], color_name: newName };
+            const updatedColors = variants.map(v => v.color_name).filter(Boolean).join(", ");
+            return { ...prev, color_variants: variants, colors: updatedColors };
+        });
+    };
+
+    const handleUpdateVariantCode = (variantIdx, newCode) => {
+        setFormData(prev => {
+            const variants = [...(prev.color_variants || [])];
+            if (!variants[variantIdx]) return prev;
+            variants[variantIdx] = { ...variants[variantIdx], color_code: newCode };
+            return { ...prev, color_variants: variants };
+        });
+    };
+
     const handleAddNewColorVariant = () => {
-        const name = newColorInputName.trim();
+        const name = newColorInputName.trim() || (newColorInputHex ? `Color ${newColorInputHex}` : "");
         if (!name) return;
-        handleAddColorVariant(name, newColorInputHex);
+        let hex = newColorInputHex.trim();
+        if (hex && !hex.startsWith("#")) hex = "#" + hex;
+        handleAddColorVariant(name, hex || "#800000");
         setNewColorInputName("");
         setNewColorInputHex("#800000");
     };
@@ -765,9 +832,10 @@ const Products = () => {
 
             const finalSizeStock = variantTotalStock > 0 ? variantSizeStockAgg : cleanSizeStock;
 
+            const variantImages = colorVariants.flatMap(v => v.images || (v.image ? [v.image] : [])).filter(Boolean);
             const allImages = (formData.images && formData.images.length > 0)
-                ? formData.images.filter(Boolean)
-                : (formData.image ? [formData.image] : []);
+                ? Array.from(new Set([...formData.images.filter(Boolean), ...variantImages]))
+                : Array.from(new Set([...(formData.image ? [formData.image] : []), ...variantImages]));
             const primaryImage = formData.image || colorVariants[0]?.image || allImages[0] || "";
             const orderedImages = primaryImage 
                 ? [primaryImage, ...allImages.filter(img => img !== primaryImage)] 
@@ -3166,6 +3234,32 @@ const Products = () => {
                                             />
                                         </div>
 
+                                        {/* Notice when no color variants exist yet */}
+                                        {!hasColorVariants && (
+                                            <div className="flex items-center justify-between p-3 rounded-xl bg-cyan-50/70 border border-cyan-200 flex-wrap gap-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Palette className="w-4 h-4 text-[#0891b2]" />
+                                                    <span className="text-xs text-slate-700 font-medium">
+                                                        Selling multiple colors (e.g. Maroon, Green) with separate inventory?
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const el = document.getElementById("admin-color-name-input");
+                                                        if (el) {
+                                                            el.focus();
+                                                            el.scrollIntoView({ behavior: "smooth", block: "center" });
+                                                        }
+                                                    }}
+                                                    className="px-3 py-1.5 bg-white hover:bg-cyan-50 border border-cyan-300 text-[#0891b2] font-bold text-xs rounded-xl transition shadow-2xs cursor-pointer flex items-center gap-1 active:scale-95"
+                                                >
+                                                    <Plus className="w-3.5 h-3.5" />
+                                                    <span>Add Color Variants &amp; Photos Below</span>
+                                                </button>
+                                            </div>
+                                        )}
+
                                         {/* Color Variant Selector (When multiple colors exist) */}
                                         {hasColorVariants && (
                                             <div className="bg-white p-3.5 rounded-2xl border border-cyan-200 shadow-2xs space-y-2.5">
@@ -3369,7 +3463,7 @@ const Products = () => {
                                                         <div className="flex items-center justify-between text-xs">
                                                             <span className="font-bold text-slate-800 flex items-center gap-1.5">
                                                                 <Layers className="w-3.5 h-3.5 text-cyan-600" />
-                                                                <span>All Color Variants &amp; Sizes Stock Summary</span>
+                                                                <span>All Color Variants &amp; Sizes Stock Summary <span className="text-[11px] font-normal text-slate-500">(Directly edit stock in table)</span></span>
                                                             </span>
                                                             <span className="text-[11px] text-slate-500 font-mono">
                                                                 {formData.color_variants.length} colors • {formData.stock || 0} total units
@@ -3394,9 +3488,9 @@ const Products = () => {
                                                                             <tr
                                                                                 key={vIdx}
                                                                                 onClick={() => setFormData(prev => ({ ...prev, active_color_idx: vIdx }))}
-                                                                                className={`cursor-pointer transition ${isCur ? "bg-cyan-50/70 font-bold" : "hover:bg-slate-50"}`}
+                                                                                className={`transition ${isCur ? "bg-cyan-50/70 font-bold" : "hover:bg-slate-50"}`}
                                                                             >
-                                                                                <td className="p-2.5 sm:px-3 font-sans font-semibold flex items-center gap-2">
+                                                                                <td className="p-2.5 sm:px-3 font-sans font-semibold flex items-center gap-2 cursor-pointer">
                                                                                     <span
                                                                                         className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0 shadow-2xs"
                                                                                         style={{ backgroundColor: v.color_code || "#800000" }}
@@ -3405,8 +3499,18 @@ const Products = () => {
                                                                                     {isCur && <span className="text-[10px] text-[#0891b2] font-bold">(active)</span>}
                                                                                 </td>
                                                                                 {parsedSizeList.map(sz => (
-                                                                                    <td key={sz} className="p-2 text-center text-slate-800">
-                                                                                        {v.size_stock?.[sz] ?? 0}
+                                                                                    <td key={sz} className="p-1.5 text-center">
+                                                                                        <input
+                                                                                            type="number"
+                                                                                            min="0"
+                                                                                            value={v.size_stock?.[sz] ?? 0}
+                                                                                            onChange={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                handleVariantSizeStockChange(vIdx, sz, e.target.value);
+                                                                                            }}
+                                                                                            onClick={(e) => e.stopPropagation()}
+                                                                                            className="w-14 bg-white border border-slate-300 focus:border-cyan-500 rounded px-1.5 py-0.5 text-center font-mono font-bold text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-cyan-500 shadow-2xs"
+                                                                                        />
                                                                                     </td>
                                                                                 ))}
                                                                                 <td className="p-2.5 sm:px-3 text-right font-bold text-[#0891b2]">
@@ -3587,15 +3691,18 @@ const Products = () => {
                                     <div className="flex items-center justify-between">
                                         <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                                             <Palette className="w-4 h-4 text-[#0891b2]" />
-                                            <span>Add Color Variant (Type Name &amp; Pick Tone)</span>
+                                            <span>Add Color Variant (Type Name &amp; Color Code)</span>
                                         </label>
                                         <span className="text-[11px] text-slate-500 font-medium">
-                                            Type name and press Enter or click Add
+                                            Type name and code, then press Enter or click Add
                                         </span>
                                     </div>
 
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-                                        <div className="flex-1 relative">
+                                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+                                        <div className="sm:col-span-6">
+                                            <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                                Color Name <span className="text-cyan-600 font-normal">(Type e.g. Maroon, Green)</span>
+                                            </label>
                                             <input
                                                 type="text"
                                                 id="admin-color-name-input"
@@ -3607,32 +3714,56 @@ const Products = () => {
                                                         handleAddNewColorVariant();
                                                     }
                                                 }}
-                                                placeholder="Type Color Name (e.g. Green, Maroon, Red, Navy Blue)..."
-                                                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 font-bold placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:bg-white transition"
+                                                placeholder="e.g. Maroon, Green, Red, Navy Blue..."
+                                                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 font-bold placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:bg-white transition"
                                             />
                                         </div>
 
-                                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 shrink-0">
-                                            <input
-                                                type="color"
-                                                value={newColorInputHex}
-                                                onChange={(e) => setNewColorInputHex(e.target.value)}
-                                                className="w-7 h-7 rounded-lg border border-slate-300 cursor-pointer p-0 bg-transparent"
-                                                title="Pick custom swatch color"
-                                            />
-                                            <span className="text-[11px] font-mono font-bold text-slate-700 uppercase">
-                                                {newColorInputHex}
-                                            </span>
+                                        <div className="sm:col-span-4">
+                                            <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                                Color Code <span className="text-cyan-600 font-normal">(Type Hex or Pick Tone)</span>
+                                            </label>
+                                            <div className="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5">
+                                                <input
+                                                    type="color"
+                                                    value={newColorInputHex?.startsWith("#") && newColorInputHex.length === 7 ? newColorInputHex : "#800000"}
+                                                    onChange={(e) => {
+                                                        setNewColorInputHex(e.target.value);
+                                                        const clean = e.target.value.toLowerCase();
+                                                        if (REVERSE_COLOR_MAP[clean] && !newColorInputName.trim()) {
+                                                            setNewColorInputName(REVERSE_COLOR_MAP[clean]);
+                                                        }
+                                                    }}
+                                                    className="w-7 h-7 rounded-lg border border-slate-300 cursor-pointer p-0 bg-transparent shrink-0"
+                                                    title="Pick color swatch"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={newColorInputHex}
+                                                    onChange={(e) => handleColorCodeInputChange(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter") {
+                                                            e.preventDefault();
+                                                            handleAddNewColorVariant();
+                                                        }
+                                                    }}
+                                                    placeholder="#800000"
+                                                    className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-mono font-bold text-slate-800 uppercase focus:outline-none focus:border-cyan-500"
+                                                    title="Type Hex Code (e.g. #800000, #15803d)"
+                                                />
+                                            </div>
                                         </div>
 
-                                        <button
-                                            type="button"
-                                            onClick={handleAddNewColorVariant}
-                                            className="px-4 py-2.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 shrink-0"
-                                        >
-                                            <Plus className="w-4 h-4" />
-                                            <span>+ Add Color Variant</span>
-                                        </button>
+                                        <div className="sm:col-span-2">
+                                            <button
+                                                type="button"
+                                                onClick={handleAddNewColorVariant}
+                                                className="w-full py-2 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 shadow-xs cursor-pointer active:scale-95 h-[38px]"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                                <span>Add Color</span>
+                                            </button>
+                                        </div>
                                     </div>
 
                                     {/* Popular Ethnic Wear Color Presets */}
@@ -3736,39 +3867,58 @@ const Products = () => {
                                         <div className="space-y-4 pt-1">
                                             {/* Active Color Info Header (When variants exist) */}
                                             {hasVariants && curVariant && (
-                                                <div className="flex items-center justify-between p-3 rounded-xl bg-cyan-50/70 border border-cyan-200 text-xs">
-                                                    <div className="flex items-center gap-2.5">
-                                                        <span
-                                                            className="w-5 h-5 rounded-full border-2 border-white shadow-sm"
-                                                            style={{ backgroundColor: curVariant.color_code || "#800000" }}
-                                                        />
-                                                        <div>
-                                                            <span className="font-extrabold text-cyan-950">
-                                                                Managing Photos &amp; Stock for: <span className="underline">{curVariant.color_name}</span>
+                                                <div className="p-3.5 rounded-2xl bg-cyan-50/80 border border-cyan-200 space-y-2.5 shadow-2xs">
+                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <span
+                                                                className="w-9 h-9 rounded-full border-2 border-white shadow-sm shrink-0"
+                                                                style={{ backgroundColor: curVariant.color_code || "#800000" }}
+                                                            />
+                                                            <div className="flex flex-wrap items-center gap-2.5">
+                                                                <div>
+                                                                    <span className="block text-[10px] font-bold text-cyan-900 uppercase tracking-wider">Color Variant Name</span>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={curVariant.color_name || ""}
+                                                                        onChange={(e) => handleUpdateVariantName(activeIdx, e.target.value)}
+                                                                        className="bg-white border border-cyan-300 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-900 focus:outline-none focus:border-cyan-600 shadow-2xs w-36 sm:w-44"
+                                                                        placeholder="Color Name (e.g. Green)"
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <span className="block text-[10px] font-bold text-cyan-900 uppercase tracking-wider">Color Code (Hex)</span>
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <input
+                                                                            type="color"
+                                                                            value={curVariant.color_code?.startsWith("#") && curVariant.color_code.length === 7 ? curVariant.color_code : "#800000"}
+                                                                            onChange={(e) => handleUpdateVariantCode(activeIdx, e.target.value)}
+                                                                            className="w-7 h-7 rounded-lg border border-slate-300 cursor-pointer p-0 bg-transparent shrink-0"
+                                                                            title="Pick visual color tone"
+                                                                        />
+                                                                        <input
+                                                                            type="text"
+                                                                            value={curVariant.color_code || ""}
+                                                                            onChange={(e) => handleUpdateVariantCode(activeIdx, e.target.value)}
+                                                                            className="w-24 bg-white border border-cyan-300 rounded-lg px-2 py-1 text-xs font-mono font-bold text-slate-900 uppercase focus:outline-none focus:border-cyan-600 shadow-2xs"
+                                                                            placeholder="#800000"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2 self-end sm:self-center">
+                                                            <span className="text-[11px] font-bold text-cyan-900 bg-white px-2.5 py-1 rounded-xl border border-cyan-200 shadow-2xs">
+                                                                📸 {curImages.length} photo(s)
                                                             </span>
-                                                            <p className="text-[11px] text-cyan-800">
-                                                                Photos uploaded below will only be shown to customers when they select the {curVariant.color_name} swatch.
-                                                            </p>
+                                                            <span className="text-[11px] font-bold text-cyan-900 bg-white px-2.5 py-1 rounded-xl border border-cyan-200 shadow-2xs">
+                                                                📦 {Object.values(curVariant.size_stock || {}).reduce((a, b) => a + Number(b || 0), 0)} in stock
+                                                            </span>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <input
-                                                            type="color"
-                                                            value={curVariant.color_code || "#800000"}
-                                                            onChange={(e) => {
-                                                                const val = e.target.value;
-                                                                setFormData(prev => {
-                                                                    const vList = [...(prev.color_variants || [])];
-                                                                    if (vList[activeIdx]) {
-                                                                        vList[activeIdx] = { ...vList[activeIdx], color_code: val };
-                                                                    }
-                                                                    return { ...prev, color_variants: vList };
-                                                                });
-                                                            }}
-                                                            className="w-7 h-7 rounded border border-slate-300 cursor-pointer p-0 bg-transparent"
-                                                            title="Pick swatch color"
-                                                        />
-                                                    </div>
+                                                    <p className="text-[11px] text-cyan-800">
+                                                        Customers will see these exact photos and size stock when clicking the <strong>{curVariant.color_name}</strong> swatch on the storefront.
+                                                    </p>
                                                 </div>
                                             )}
 
@@ -3922,27 +4072,57 @@ const Products = () => {
 
                                             {/* Size-wise Stock Breakdown for this Color Variant (When variants exist) */}
                                             {hasVariants && curVariant && (
-                                                <div className="bg-white p-3.5 rounded-2xl border border-slate-200 space-y-2.5">
+                                                <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3 shadow-2xs">
                                                     <div className="flex items-center justify-between flex-wrap gap-2">
                                                         <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                                                            <Package className="w-3.5 h-3.5 text-[#0891b2]" /> Stock Quantity for {curVariant.color_name} by Size:
+                                                            <Package className="w-3.5 h-3.5 text-[#0891b2]" /> Stock Quantity for <span className="text-[#0891b2] font-extrabold">{curVariant.color_name}</span> by Size:
                                                         </span>
-                                                        <span className="text-[11px] font-mono text-cyan-800 font-bold bg-cyan-50 px-2 py-0.5 rounded-lg border border-cyan-200">
-                                                            Variant Total: {Object.values(curVariant.size_stock || {}).reduce((a, b) => a + Number(b || 0), 0)} units
-                                                        </span>
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            <span className="text-slate-400 text-[11px] font-medium mr-1">Quick fill:</span>
+                                                            {[2, 5, 10].map(amt => (
+                                                                <button
+                                                                    key={amt}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const sizes = formData.sizes ? formData.sizes.split(",").map(s => s.trim()).filter(Boolean) : ["XS", "S", "M", "L", "XL", "XXL"];
+                                                                        sizes.forEach(sz => {
+                                                                            handleVariantSizeStockChange(activeIdx, sz, Number(curVariant.size_stock?.[sz] || 0) + amt);
+                                                                        });
+                                                                    }}
+                                                                    className="px-2 py-0.5 bg-slate-50 hover:bg-cyan-50 border border-slate-200 hover:border-cyan-300 text-slate-700 font-bold text-[11px] rounded-lg transition cursor-pointer"
+                                                                >
+                                                                    +{amt} all
+                                                                </button>
+                                                            ))}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const sizes = formData.sizes ? formData.sizes.split(",").map(s => s.trim()).filter(Boolean) : ["XS", "S", "M", "L", "XL", "XXL"];
+                                                                    sizes.forEach(sz => {
+                                                                        handleVariantSizeStockChange(activeIdx, sz, 0);
+                                                                    });
+                                                                }}
+                                                                className="px-2 py-0.5 bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-300 text-rose-600 font-bold text-[11px] rounded-lg transition cursor-pointer"
+                                                            >
+                                                                Reset 0
+                                                            </button>
+                                                            <span className="text-[11px] font-mono text-cyan-800 font-bold bg-cyan-50 px-2.5 py-0.5 rounded-lg border border-cyan-200 ml-1">
+                                                                Total: {Object.values(curVariant.size_stock || {}).reduce((a, b) => a + Number(b || 0), 0)} units
+                                                            </span>
+                                                        </div>
                                                     </div>
 
                                                     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
                                                         {(formData.sizes ? formData.sizes.split(",").map(s => s.trim()).filter(Boolean) : ["XS", "S", "M", "L", "XL", "XXL", "Free Size"]).map((sz) => {
                                                             const qty = curVariant.size_stock?.[sz] ?? 0;
                                                             return (
-                                                                <div key={sz} className="bg-slate-50 p-2 rounded-xl border border-slate-200 text-center">
-                                                                    <span className="text-[11px] font-bold text-slate-700 block mb-1">{sz}</span>
+                                                                <div key={sz} className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center shadow-2xs">
+                                                                    <span className="text-[11px] font-bold text-slate-700 block mb-1.5">{sz}</span>
                                                                     <div className="flex items-center justify-center gap-1">
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => handleVariantSizeStockChange(activeIdx, sz, Math.max(0, Number(qty || 0) - 1))}
-                                                                            className="w-6 h-6 flex items-center justify-center bg-white hover:bg-slate-200 border border-slate-200 rounded text-slate-700 font-bold text-xs cursor-pointer select-none"
+                                                                            className="w-6 h-6 flex items-center justify-center bg-white hover:bg-slate-200 border border-slate-300 rounded text-slate-700 font-bold text-xs cursor-pointer select-none active:scale-95"
                                                                         >
                                                                             -
                                                                         </button>
@@ -3951,12 +4131,12 @@ const Products = () => {
                                                                             min="0"
                                                                             value={qty}
                                                                             onChange={(e) => handleVariantSizeStockChange(activeIdx, sz, e.target.value)}
-                                                                            className="w-12 bg-white border border-slate-300 rounded py-0.5 text-center text-xs font-mono font-bold text-slate-900 focus:outline-none"
+                                                                            className="w-12 bg-white border border-slate-300 focus:border-cyan-500 rounded py-0.5 text-center text-xs font-mono font-bold text-slate-900 focus:outline-none"
                                                                         />
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => handleVariantSizeStockChange(activeIdx, sz, Number(qty || 0) + 1)}
-                                                                            className="w-6 h-6 flex items-center justify-center bg-white hover:bg-slate-200 border border-slate-200 rounded text-slate-700 font-bold text-xs cursor-pointer select-none"
+                                                                            className="w-6 h-6 flex items-center justify-center bg-white hover:bg-slate-200 border border-slate-300 rounded text-slate-700 font-bold text-xs cursor-pointer select-none active:scale-95"
                                                                         >
                                                                             +
                                                                         </button>
