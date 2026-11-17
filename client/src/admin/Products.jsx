@@ -207,7 +207,8 @@ const Products = () => {
         discount: "",
         stock: "0",
         category: "",
-        department: "Clothing",
+        sub_category: "",
+        department: "Women",
         image: "",
         images: [],
         sku: "",
@@ -606,7 +607,8 @@ const Products = () => {
                 discount: formData.discount ? parseInt(formData.discount) : null,
                 stock_quantity: totalStock,
                 category: formData.category || "",
-                department: formData.department || (categoriesList.find(c => c.name === formData.category)?.department || "Clothing"),
+                sub_category: formData.sub_category || null,
+                department: formData.department || (categoriesList.find(c => c.name === formData.category)?.department || "Women"),
                 image: primaryImage,
                 images: orderedImages,
                 brand: formData.brand || "Nari Pehnawa",
@@ -813,7 +815,8 @@ const Products = () => {
             discount: product.discount || "",
             stock: (product.stock ?? product.stock_quantity ?? 0).toString(),
             category: product.category || "",
-            department: product.department || (categoriesList.find(c => c.name === product.category)?.department || "Clothing"),
+            sub_category: product.sub_category || "",
+            department: product.department || (categoriesList.find(c => c.name === product.category)?.department || "Women"),
             image: primaryImg,
             images: allImgs,
             sku: product.sku || "",
@@ -2390,7 +2393,8 @@ const Products = () => {
                                             setFormData({
                                                 ...formData,
                                                 category: selectedCatName,
-                                                department: matchedCat?.department || formData.department || "Clothing"
+                                                sub_category: "",
+                                                department: matchedCat?.department || formData.department || "Women"
                                             });
                                         }}
                                         className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 cursor-pointer"
@@ -2398,13 +2402,21 @@ const Products = () => {
                                         <option value="" className="bg-white text-slate-500">── Select Category ──</option>
                                         {categoriesList && categoriesList.length > 0 ? (
                                             (() => {
-                                                const currentDept = (formData.department || "Clothing").toLowerCase();
-                                                const deptCats = categoriesList.filter(c => (c.department || "Clothing").toLowerCase() === currentDept);
-                                                const otherCats = categoriesList.filter(c => (c.department || "Clothing").toLowerCase() !== currentDept);
+                                                const currentDept = (formData.department || "Women").toLowerCase();
+                                                const deptCats = categoriesList.filter(c => {
+                                                    const cd = (c.department || "Women").toLowerCase();
+                                                    if (currentDept === "women" || currentDept === "clothing") return cd === "women" || cd === "clothing";
+                                                    return cd === currentDept;
+                                                });
+                                                const otherCats = categoriesList.filter(c => {
+                                                    const cd = (c.department || "Women").toLowerCase();
+                                                    if (currentDept === "women" || currentDept === "clothing") return cd !== "women" && cd !== "clothing";
+                                                    return cd !== currentDept;
+                                                });
                                                 
                                                 return (
                                                     <>
-                                                        <optgroup label={`📁 ${formData.department?.toUpperCase() || 'CLOTHING'} CATEGORIES`} className="bg-slate-100 text-cyan-900 font-bold">
+                                                        <optgroup label={`${formData.department?.toUpperCase() || 'WOMEN'} CATEGORIES`} className="bg-slate-100 text-cyan-900 font-bold">
                                                             {deptCats.length > 0 ? (
                                                                 deptCats.map((cat) => (
                                                                     <option key={cat._id || cat.id} value={cat.name} className="bg-white text-slate-800 font-medium">
@@ -2416,10 +2428,10 @@ const Products = () => {
                                                             )}
                                                         </optgroup>
                                                         {otherCats.length > 0 && (
-                                                            <optgroup label="📂 OTHER DEPARTMENTS" className="bg-slate-100 text-slate-500 font-bold">
+                                                            <optgroup label="OTHER DEPARTMENTS" className="bg-slate-100 text-slate-500 font-bold">
                                                                 {otherCats.map((cat) => (
                                                                     <option key={cat._id || cat.id} value={cat.name} className="bg-white text-slate-600 font-normal">
-                                                                        {cat.name} ({cat.department || "Clothing"})
+                                                                        {cat.name} ({cat.department || "Women"})
                                                                     </option>
                                                                 ))}
                                                             </optgroup>
@@ -2437,6 +2449,63 @@ const Products = () => {
                                             </option>
                                         )}
                                     </select>
+
+                                    {/* Dynamic Sub-Category / Ethnic Style Selector */}
+                                    {(() => {
+                                        const matchedCat = categoriesList.find(c => c.name?.toLowerCase() === formData.category?.toLowerCase());
+                                        const availableSubs = matchedCat?.sub_categories || [];
+
+                                        return (
+                                            <div className="mt-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                                                <div className="flex items-center justify-between mb-1.5">
+                                                    <label className="block text-slate-800 font-bold text-xs flex items-center gap-1.5">
+                                                        <Tag className="w-3.5 h-3.5 text-cyan-600" />
+                                                        Sub-Category / Style
+                                                    </label>
+                                                    {availableSubs.length > 0 && (
+                                                        <span className="text-[10px] text-cyan-700 font-bold bg-cyan-100 px-2 py-0.5 rounded-full border border-cyan-200">
+                                                            {availableSubs.length} styles available
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {availableSubs.length > 0 ? (
+                                                    <div className="space-y-2">
+                                                        <select
+                                                            value={formData.sub_category || ""}
+                                                            onChange={(e) => setFormData({ ...formData, sub_category: e.target.value })}
+                                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs focus:outline-none focus:border-cyan-400 cursor-pointer font-medium"
+                                                        >
+                                                            <option value="">── Select Sub-Category Style ──</option>
+                                                            {availableSubs.map((sub, sIdx) => (
+                                                                <option key={`${sub}-${sIdx}`} value={sub}>
+                                                                    {sub}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[11px] text-slate-400 font-medium">Or type custom:</span>
+                                                            <input
+                                                                type="text"
+                                                                value={formData.sub_category || ""}
+                                                                onChange={(e) => setFormData({ ...formData, sub_category: e.target.value })}
+                                                                placeholder="e.g. Designer Anarkali, Summer Cotton..."
+                                                                className="flex-1 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs text-slate-900 focus:outline-none focus:border-cyan-400"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <input
+                                                        type="text"
+                                                        value={formData.sub_category || ""}
+                                                        onChange={(e) => setFormData({ ...formData, sub_category: e.target.value })}
+                                                        placeholder="e.g. Cotton Sleeveless, Halter Party, V-Neck Daily..."
+                                                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs focus:outline-none focus:border-cyan-400 font-medium"
+                                                    />
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
 
                                 <div className="space-y-3">

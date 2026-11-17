@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import List, Optional
 from datetime import datetime
@@ -10,10 +11,12 @@ from app.utils.cache import cache_response, clear_api_cache
 router = APIRouter(prefix="/departments", tags=["Departments"])
 
 DEFAULT_DEPARTMENTS = [
-    {"name": "Clothing", "icon": "👗", "slug": "clothing", "description": "Women's Ethnic & Western Wear", "display_order": 1, "is_active": True},
-    {"name": "Jewellery", "icon": "✨", "slug": "jewellery", "description": "Necklaces, Earrings, Bangles & Accessories", "display_order": 2, "is_active": True},
-    {"name": "Footwear", "icon": "👠", "slug": "footwear", "description": "Juttis, Heels, Flats & Daily Footwear", "display_order": 3, "is_active": True},
-    {"name": "Accessories", "icon": "👜", "slug": "accessories", "description": "Bags, Clutches & Fashion Accents", "display_order": 4, "is_active": True},
+    {"name": "Women", "icon": "Sparkles", "slug": "women", "description": "Kurtis, Tops, Sarees, Lehengas & Ethnic Wear", "display_order": 1, "is_active": True},
+    {"name": "Men", "icon": "Shirt", "slug": "men", "description": "Kurtas, Shirts, Ethnic & Festive Wear", "display_order": 2, "is_active": True},
+    {"name": "Jewellery", "icon": "Gem", "slug": "jewellery", "description": "Necklaces, Earrings, Bangles & Accessories", "display_order": 3, "is_active": True},
+    {"name": "Footwear", "icon": "Footprints", "slug": "footwear", "description": "Juttis, Mojaris, Heels & Ethnic Footwear", "display_order": 4, "is_active": True},
+    {"name": "Accessories", "icon": "ShoppingBag", "slug": "accessories", "description": "Bags, Clutches, Dupattas & Fashion Accents", "display_order": 5, "is_active": True},
+    {"name": "Special Collections", "icon": "Flame", "slug": "special-collections", "description": "Mega Sale, New Arrivals & Festive Deals", "display_order": 6, "is_active": True},
 ]
 
 
@@ -24,6 +27,14 @@ def _ensure_default_departments(db):
         for d in DEFAULT_DEPARTMENTS:
             doc = {**d, "created_at": now, "updated_at": now}
             dept_col.insert_one(doc)
+    else:
+        # Check if legacy "Clothing" exists, auto-update to "Women"
+        clothing_dept = dept_col.find_one({"name": {"$regex": "^Clothing$", "$options": "i"}})
+        if clothing_dept and not dept_col.find_one({"name": {"$regex": "^Women$", "$options": "i"}}):
+            dept_col.update_one(
+                {"_id": clothing_dept["_id"]},
+                {"$set": {"name": "Women", "slug": "women", "description": "Kurtis, Tops, Sarees, Lehengas & Ethnic Wear", "icon": "Sparkles"}}
+            )
 
 
 def _fmt(doc: dict, db=None) -> dict:
@@ -32,13 +43,17 @@ def _fmt(doc: dict, db=None) -> dict:
     doc["_id"] = d_id
     dept_name = doc.get("name", "")
     if db is not None and dept_name:
+        if dept_name.lower() in ["women", "clothing"]:
+            dept_matcher = {"$in": ["Women", "women", "Clothing", "clothing", "Women's Wear"]}
+        else:
+            dept_matcher = {"$regex": f"^{re.escape(dept_name)}$", "$options": "i"}
         # Compute category count
         doc["category_count"] = db["categories"].count_documents({
-            "department": {"$regex": f"^{dept_name}$", "$options": "i"}
+            "department": dept_matcher
         })
         # Compute product count (either by product.department or category's department)
         doc["product_count"] = db["products"].count_documents({
-            "department": {"$regex": f"^{dept_name}$", "$options": "i"}
+            "department": dept_matcher
         })
     else:
         doc.setdefault("category_count", 0)
@@ -165,14 +180,14 @@ def delete_department(dept_id: str, _admin=Depends(require_admin)):
         raise HTTPException(status_code=404, detail="Department not found")
 
     dept_name = curr.get("name")
-    # Reassign existing categories to Clothing if deleted
+    # Reassign existing categories to Women if deleted
     db["categories"].update_many(
         {"department": dept_name},
-        {"$set": {"department": "Clothing"}}
+        {"$set": {"department": "Women"}}
     )
     db["products"].update_many(
         {"department": dept_name},
-        {"$set": {"department": "Clothing"}}
+        {"$set": {"department": "Women"}}
     )
 
     dept_col.delete_one(filter_q)

@@ -10,6 +10,17 @@ from app.utils.cache import cache_response, clear_api_cache
 router = APIRouter(prefix="/categories", tags=["Categories"])
 
 
+def _format_category(cat: dict) -> dict:
+    cat["_id"] = str(cat["_id"])
+    cat.setdefault("department", "Women")
+    if not cat.get("department") or cat.get("department") == "Clothing":
+        cat["department"] = "Women"
+    if "sub_categories" not in cat or not isinstance(cat["sub_categories"], list):
+        cat["sub_categories"] = []
+    cat.setdefault("category_type", "regular")
+    return cat
+
+
 @router.post("/", response_model=Category, status_code=201)
 def create_category(category: CategoryCreate, current_user: dict = Depends(require_admin)):
     """Create a new category (Admin only)"""
@@ -17,11 +28,15 @@ def create_category(category: CategoryCreate, current_user: dict = Depends(requi
     categories_collection = db["categories"]
     try:
         category_data = category.model_dump()
-        category_data["department"] = category_data.get("department") or "Clothing"
+        category_data["department"] = category_data.get("department") or "Women"
+        if not category_data.get("sub_categories"):
+            category_data["sub_categories"] = []
+        if not category_data.get("category_type"):
+            category_data["category_type"] = "regular"
         result = categories_collection.insert_one(category_data)
         category_data["_id"] = str(result.inserted_id)
         clear_api_cache()
-        return category_data
+        return _format_category(category_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -36,10 +51,10 @@ def get_categories(request: Request, is_active: Optional[bool] = None, departmen
         if is_active is not None:
             query["is_active"] = is_active
         if department:
-            dept_regex = {"$regex": f"^{re.escape(department)}$", "$options": "i"}
-            if department.strip().lower() == "clothing":
+            dept_lower = department.strip().lower()
+            if dept_lower in ["clothing", "women"]:
                 dept_clause = [
-                    {"department": dept_regex},
+                    {"department": {"$in": ["Women", "women", "Clothing", "clothing", "Women's Wear"]}},
                     {"department": {"$exists": False}},
                     {"department": None},
                     {"department": ""}
@@ -49,15 +64,11 @@ def get_categories(request: Request, is_active: Optional[bool] = None, departmen
                 else:
                     query["$or"] = dept_clause
             else:
+                dept_regex = {"$regex": f"^{re.escape(department)}$", "$options": "i"}
                 query["department"] = dept_regex
         cursor = categories_collection.find(query).sort("display_order", 1)
         categories = list(cursor)
-        for category in categories:
-            category["_id"] = str(category["_id"])
-            category.setdefault("department", "Clothing")
-            if not category.get("department"):
-                category["department"] = "Clothing"
-        return categories
+        return [_format_category(c) for c in categories]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -72,11 +83,7 @@ def get_category(category_id: str, request: Request):
         category = categories_collection.find_one({"_id": ObjectId(category_id)})
         if not category:
             raise HTTPException(status_code=404, detail="Category not found")
-        category["_id"] = str(category["_id"])
-        category.setdefault("department", "Clothing")
-        if not category.get("department"):
-            category["department"] = "Clothing"
-        return category
+        return _format_category(category)
     except HTTPException:
         raise
     except Exception as e:
@@ -99,16 +106,75 @@ def update_category(category_id: str, category: CategoryUpdate, current_user: di
         )
         if not result:
             raise HTTPException(status_code=404, detail="Category not found")
-        result["_id"] = str(result["_id"])
-        result.setdefault("department", "Clothing")
-        if not result.get("department"):
-            result["department"] = "Clothing"
         clear_api_cache()
-        return result
+        return _format_category(result)
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{category_id}/subcategories")
+def get_category_subcategories(category_id: str):
+    """Get sub-categories for a specific category"""
+    db = get_database()
+    cat = db["categories"].find_one({"_id": ObjectId(category_id)})
+    if not cat:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return {"category": cat.get("name"), "sub_categories": cat.get("sub_categories", [])}
+
+
+@router.post("/{category_id}/subcategories")
+def add_subcategory(category_id: str, payload: dict, current_user: dict = Depends(require_admin)):
+    """Add a sub-category to an existing category"""
+    db = get_database()
+    sub_name = str(payload.get("name", "")).strip()
+    if not sub_name:
+        raise HTTPException(status_code=400, detail="Sub-category name is required")
+    res = db["categories"].find_one_and_update(
+        {"_id": ObjectId(category_id)},
+        {"$addToSet": {"sub_categories": sub_name}},
+        return_document=True
+    )
+    if not res:
+        raise HTTPException(status_code=404, detail="Category not found")
+    clear_api_cache()
+    return _format_category(res)
+
+
+@router.delete("/{category_id}/subcategories/{sub_name}")
+def delete_subcategory(category_id: str, sub_name: str, current_user: dict = Depends(require_admin)):
+    """Remove a sub-category from an existing category"""
+    db = get_database()
+    clean_name = sub_name.strip()
+    res = db["categories"].find_one_and_update(
+        {"_id": ObjectId(category_id)},
+        {"$pull": {"sub_categories": clean_name}},
+        return_document=True
+    )
+    if not res:
+        raise HTTPException(status_code=404, detail="Category not found")
+    clear_api_cache()
+    return _format_category(res)
+
+
+@router.put("/{category_id}/subcategories")
+def set_subcategories(category_id: str, payload: dict, current_user: dict = Depends(require_admin)):
+    """Replace all sub-categories for a category"""
+    db = get_database()
+    sub_list = payload.get("sub_categories", [])
+    if not isinstance(sub_list, list):
+        raise HTTPException(status_code=400, detail="sub_categories must be a list of strings")
+    clean_list = [str(s).strip() for s in sub_list if str(s).strip()]
+    res = db["categories"].find_one_and_update(
+        {"_id": ObjectId(category_id)},
+        {"$set": {"sub_categories": clean_list}},
+        return_document=True
+    )
+    if not res:
+        raise HTTPException(status_code=404, detail="Category not found")
+    clear_api_cache()
+    return _format_category(res)
 
 
 @router.delete("/{category_id}")

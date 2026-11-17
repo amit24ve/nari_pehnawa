@@ -1,17 +1,21 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 
 class CategoryBase(BaseModel):
     name: str
-    department: Optional[str] = "Clothing"
+    department: Optional[str] = "Women"
     tagline: Optional[str] = None
     image: str
     link: str
-    border_color: str = "#dc2626"
+    border_color: str = "#8B0000"
     display_order: int = 0
     is_active: bool = True
+    sub_categories: Optional[List[str]] = []
+    category_type: Optional[str] = "regular"  # "regular" | "special_collection" | "sale" | "new_arrival"
+    icon: Optional[str] = None
+    badge: Optional[str] = None
 
 
 class CategoryCreate(CategoryBase):
@@ -27,6 +31,10 @@ class CategoryUpdate(BaseModel):
     border_color: Optional[str] = None
     display_order: Optional[int] = None
     is_active: Optional[bool] = None
+    sub_categories: Optional[List[str]] = None
+    category_type: Optional[str] = None
+    icon: Optional[str] = None
+    badge: Optional[str] = None
 
 
 class Category(CategoryBase):
@@ -39,10 +47,14 @@ class Category(CategoryBase):
         json_schema_extra = {
             "example": {
                 "_id": "507f1f77bcf86cd799439011",
-                "name": "ELEGANT ANARKALI",
-                "tagline": "Anarkalis Made For Forever Moments!",
+                "name": "Sleeveless Kurtis",
+                "department": "Women",
+                "tagline": "Fresh Floral Ethnic Designs",
                 "image": "/category_card_1.jpg",
-                "link": "/category/anarkali",
-                "border_color": "#dc2626"
+                "link": "/category/sleeveless-kurtis",
+                "border_color": "#8B0000",
+                "sub_categories": ["Cotton Sleeveless", "Printed Sleeveless", "Short Sleeveless"],
+                "category_type": "regular",
+                "badge": "POPULAR"
             }
         }

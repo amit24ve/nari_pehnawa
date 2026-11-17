@@ -433,13 +433,21 @@ const SellerAddProduct = () => {
                   name="category"
                   required
                   value={formData.category}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    const selectedCat = e.target.value;
+                    const matched = categories.find((c) => c.name === selectedCat);
+                    setFormData((prev) => ({
+                      ...prev,
+                      category: selectedCat,
+                      sub_category: (matched?.sub_categories && matched.sub_categories.length > 0) ? matched.sub_categories[0] : prev.sub_category
+                    }));
+                  }}
                   className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2] bg-white text-slate-800"
                 >
                   <option value="">Select Category</option>
                   {categories.map((c) => (
                     <option key={c.id || c.name} value={c.name}>
-                      {c.name}
+                      {c.name} {c.department ? `(${c.department})` : ""}
                     </option>
                   ))}
                 </select>
@@ -447,17 +455,60 @@ const SellerAddProduct = () => {
 
               {/* Sub-Category / Product Type */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Sub-Category / Ethnic Style
-                </label>
-                <input
-                  type="text"
-                  name="sub_category"
-                  value={formData.sub_category}
-                  onChange={handleChange}
-                  placeholder="e.g. Anarkali, Kurta Set, Saree, Lehenga"
-                  className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2]"
-                />
+                {(() => {
+                  const matched = categories.find((c) => c.name === formData.category);
+                  const subList = matched?.sub_categories || [];
+
+                  return (
+                    <>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-semibold text-slate-700">
+                          Sub-Category / Ethnic Style
+                        </label>
+                        {subList.length > 0 && (
+                          <span className="text-[10px] text-[#0891b2] font-bold bg-cyan-50 px-2 py-0.5 rounded-full border border-cyan-200">
+                            {subList.length} styles defined
+                          </span>
+                        )}
+                      </div>
+
+                      {subList.length > 0 ? (
+                        <div className="space-y-1.5">
+                          <select
+                            name="sub_category"
+                            value={formData.sub_category}
+                            onChange={handleChange}
+                            className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2] bg-white text-slate-800"
+                          >
+                            <option value="">Select Style / Sub-Category</option>
+                            {subList.map((s, idx) => (
+                              <option key={`${s}-${idx}`} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="text"
+                            name="sub_category"
+                            value={formData.sub_category}
+                            onChange={handleChange}
+                            placeholder="Or type custom style / sub-category..."
+                            className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#0891b2]"
+                          />
+                        </div>
+                      ) : (
+                        <input
+                          type="text"
+                          name="sub_category"
+                          value={formData.sub_category}
+                          onChange={handleChange}
+                          placeholder="e.g. Anarkali, Kurta Set, Saree, Lehenga"
+                          className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2]"
+                        />
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Brand Selector / Custom Brand */}

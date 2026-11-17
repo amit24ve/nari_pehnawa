@@ -97,7 +97,9 @@ def create_product(product: ProductCreate, background_tasks: BackgroundTasks, cu
             if matched_cat and matched_cat.get("department"):
                 product_data["department"] = matched_cat["department"]
             else:
-                product_data["department"] = "Clothing"
+                product_data["department"] = "Women"
+        elif product_data.get("department") == "Clothing":
+            product_data["department"] = "Women"
 
         result = products_collection.insert_one(product_data)
         new_id_str = str(result.inserted_id)
@@ -148,6 +150,7 @@ def get_products(
     limit: int = Query(50, ge=1, le=5000),
     category: Optional[str] = None,
     department: Optional[str] = None,
+    sub_category: Optional[str] = None,
     on_sale: Optional[bool] = None,
     is_new: Optional[bool] = None,
     min_price: Optional[float] = None,
@@ -184,6 +187,10 @@ def get_products(
 
             combined_pattern = "|".join(f"(?:{t})" for t in set(terms))
             query["category"] = {"$regex": combined_pattern, "$options": "i"}
+
+        if sub_category:
+            sub_clean = sub_category.strip()
+            query["sub_category"] = {"$regex": f"^{re.escape(sub_clean)}$", "$options": "i"}
 
         if on_sale is not None:
             if on_sale:
@@ -223,9 +230,13 @@ def get_products(
 
         if department:
             dept_clean = department.strip()
-            dept_cats = [c["name"] for c in db["categories"].find({"department": {"$regex": f"^{re.escape(dept_clean)}$", "$options": "i"}}, {"name": 1})]
+            if dept_clean.lower() in ["women", "clothing"]:
+                dept_matcher = {"$in": ["Women", "women", "Clothing", "clothing", "Women's Wear"]}
+            else:
+                dept_matcher = {"$regex": f"^{re.escape(dept_clean)}$", "$options": "i"}
+            dept_cats = [c["name"] for c in db["categories"].find({"department": dept_matcher}, {"name": 1})]
             dept_clauses = [
-                {"department": {"$regex": f"^{re.escape(dept_clean)}$", "$options": "i"}}
+                {"department": dept_matcher}
             ]
             if dept_cats:
                 dept_clauses.append({"category": {"$in": dept_cats}})
@@ -318,9 +329,13 @@ def get_product_count(
 
         if department:
             dept_clean = department.strip()
-            dept_cats = [c["name"] for c in db["categories"].find({"department": {"$regex": f"^{re.escape(dept_clean)}$", "$options": "i"}}, {"name": 1})]
+            if dept_clean.lower() in ["women", "clothing"]:
+                dept_matcher = {"$in": ["Women", "women", "Clothing", "clothing", "Women's Wear"]}
+            else:
+                dept_matcher = {"$regex": f"^{re.escape(dept_clean)}$", "$options": "i"}
+            dept_cats = [c["name"] for c in db["categories"].find({"department": dept_matcher}, {"name": 1})]
             dept_clauses = [
-                {"department": {"$regex": f"^{re.escape(dept_clean)}$", "$options": "i"}}
+                {"department": dept_matcher}
             ]
             if dept_cats:
                 dept_clauses.append({"category": {"$in": dept_cats}})

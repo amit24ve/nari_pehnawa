@@ -7,7 +7,8 @@ class Department(BaseModel):
     id: Optional[str] = None
     _id: Optional[str] = None
     name: str
-    icon: Optional[str] = "📁"
+    icon: Optional[str] = "Sparkles"
+    image: Optional[str] = None
     slug: Optional[str] = None
     description: Optional[str] = None
     display_order: Optional[int] = 0
@@ -20,7 +21,8 @@ class Department(BaseModel):
 
 class DepartmentCreate(BaseModel):
     name: str
-    icon: Optional[str] = "📁"
+    icon: Optional[str] = "Sparkles"
+    image: Optional[str] = None
     slug: Optional[str] = None
     description: Optional[str] = None
     display_order: Optional[int] = 0
@@ -30,6 +32,7 @@ class DepartmentCreate(BaseModel):
 class DepartmentUpdate(BaseModel):
     name: Optional[str] = None
     icon: Optional[str] = None
+    image: Optional[str] = None
     slug: Optional[str] = None
     description: Optional[str] = None
     display_order: Optional[int] = None

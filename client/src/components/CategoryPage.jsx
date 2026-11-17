@@ -18,6 +18,7 @@ import {
   Palette,
   Sparkles,
   Percent,
+  Tag,
 } from "lucide-react";
 import { useWishlist } from "../context/WishlistProvider";
 import useSEO from "../hooks/useSEO";
@@ -355,7 +356,21 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
       ...new Set(products.map((p) => p.pattern).filter(Boolean)),
     ].sort();
 
+    const allSubCats = [
+      ...new Set([
+        ...(categoryInfo?.sub_categories || []),
+        ...products.map((p) => p.sub_category).filter(Boolean),
+      ]),
+    ].filter(Boolean).sort();
+
     const sections = [];
+    if (allSubCats.length > 0)
+      sections.push({
+        id: "sub_category",
+        label: "Style / Sub-Category",
+        options: allSubCats,
+        icon: Tag,
+      });
     if (allSizes.length > 0)
       sections.push({ id: "size", label: "Size", options: allSizes, icon: Layers });
     if (allColors.length > 0)
@@ -448,6 +463,10 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
         return effPrice >= priceRange[0] && effPrice <= priceRange[1];
       });
     }
+
+    const subCatF = activeFilters["sub_category"];
+    if (subCatF?.size > 0)
+      list = list.filter((p) => subCatF.has(p.sub_category));
 
     const sizeF = activeFilters["size"];
     if (sizeF?.size > 0)

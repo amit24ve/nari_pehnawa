@@ -301,13 +301,14 @@ const Navbar = () => {
     if (d.includes("jewel")) return { icon: "✨", label: dept || "Jewellery" };
     if (d.includes("foot") || d.includes("shoe")) return { icon: "👠", label: dept || "Footwear" };
     if (d.includes("access") || d.includes("bag") || d.includes("clutch")) return { icon: "👜", label: dept || "Accessories" };
-    return { icon: "👗", label: dept || "Fashion" };
+    if (d.includes("men") && !d.includes("women")) return { icon: "✨", label: dept || "Men" };
+    return { icon: "✨", label: dept || "Women" };
   };
 
   const departmentGroups = useMemo(() => {
     const groups = {};
     fashionCats.forEach((cat) => {
-      const dept = cat.department || "Clothing";
+      const dept = cat.department || "Women";
       if (!groups[dept]) groups[dept] = [];
       groups[dept].push(cat);
     });
