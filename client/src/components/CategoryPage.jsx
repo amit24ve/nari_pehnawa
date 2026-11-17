@@ -19,6 +19,8 @@ import {
   Sparkles,
   Percent,
   Tag,
+  Clock,
+  Zap,
 } from "lucide-react";
 import { useWishlist } from "../context/WishlistProvider";
 import useSEO from "../hooks/useSEO";
@@ -67,7 +69,7 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0, is
         isHovered ? "-translate-y-1.5 shadow-2xl" : ""
       }`}
     >
-      <div className={`relative overflow-hidden bg-gradient-to-br from-pink-100/50 to-amber-50/50 ${
+      <div className={`relative overflow-hidden bg-stone-50 ${
         isHovered
             ? "rounded-2xl border-[#8B0000]"
             : `${pebbleClass} border-[#8B0000]/15`
@@ -399,16 +401,8 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
     setPriceRange(filterConfig.priceRange);
   }, [filterConfig.priceRange[0], filterConfig.priceRange[1]]);
 
-  // Fallback gradient colors based on name
-  const gradientColors = [
-    "from-[#8B0000] via-[#6B0000] to-[#3d0000]",
-    "from-[#7c3aed] via-[#5b21b6] to-[#3b0764]",
-    "from-[#0369a1] via-[#0c4a6e] to-[#082f49]",
-    "from-[#065f46] via-[#064e3b] to-[#022c22]",
-    "from-[#92400e] via-[#78350f] to-[#451a03]",
-  ];
-  const gradientIdx = (displayName?.charCodeAt(0) || 0) % gradientColors.length;
-  const fallbackGradient = gradientColors[gradientIdx];
+  // Unified signature royal maroon fallback gradient
+  const fallbackGradient = "from-[#580C1F] via-[#780016] to-[#8B0000]";
 
   const toggleFilter = (sectionId, value) => {
     setActiveFilters((prev) => {
@@ -524,7 +518,7 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
 
   // ── Render ───────────────────────────────────────────
   return (
-    <div style={{ backgroundColor: "#fdf8f5", minHeight: "100vh" }}>
+    <div className="bg-white min-h-screen text-stone-900 selection:bg-[#780016] selection:text-white">
       {/* ── HERO BANNER ── */}
       <div
         className={`cat-hero relative overflow-hidden bg-gradient-to-br ${fallbackGradient}`}
@@ -587,8 +581,8 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                 {/* Live Countdown Timer (if active sale has end time) */}
                 {countdown.isLive && (
                   <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-2xl bg-black/50 backdrop-blur-md border border-amber-300/40 shadow-lg text-white">
-                    <span className="text-amber-400 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1">
-                      <span>⏳</span> Sale Ends In:
+                    <span className="text-amber-400 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-amber-300" /> Sale Ends In:
                     </span>
                     <div className="flex items-center gap-1.5 font-mono font-bold text-xs sm:text-sm text-amber-300">
                       <span className="bg-[#8B0000] px-2 py-0.5 rounded-lg border border-amber-300/30">
@@ -646,7 +640,7 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
                           : "bg-black/60 backdrop-blur-md text-white hover:bg-black/80 border border-amber-300/40"
                       }`}
                     >
-                      <span>⚡</span>
+                      <Zap className="w-3 h-3 text-amber-400 fill-amber-400" />
                       <span>{deal.dealText}</span>
                       <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
                         selectedDealType === deal.dealText ? "bg-slate-950 text-amber-400" : "bg-amber-500/40 text-amber-200"

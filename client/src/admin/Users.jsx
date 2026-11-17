@@ -781,7 +781,9 @@ const Users = () => {
                                             Orders Count
                                         </th>
                                         <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                            🪙 Coins
+                                            <span className="inline-flex items-center gap-1">
+                                                <Coins className="w-3.5 h-3.5 text-amber-500" /> Reward Coins
+                                            </span>
                                         </th>
                                         <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                                             Actions
@@ -838,8 +840,8 @@ const Users = () => {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex flex-col">
-                                                    <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200 w-fit">
-                                                        🪙 {(user.coins_balance || 0).toLocaleString()}
+                                                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200 w-fit">
+                                                        <Coins className="w-3.5 h-3.5 text-amber-500" /> {(user.coins_balance || 0).toLocaleString()}
                                                     </span>
                                                     <span className="text-[10px] text-slate-400 mt-0.5">
                                                         ≈ ₹{((user.coins_balance || 0) / 10).toFixed(2)}
@@ -860,7 +862,7 @@ const Users = () => {
                                                         className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl hover:bg-amber-100 transition text-xs font-bold cursor-pointer"
                                                         title="Adjust Coins"
                                                     >
-                                                        🪙 Coins
+                                                        <Coins className="w-3.5 h-3.5 text-amber-600" /> Coins
                                                     </button>
                                                     <button
                                                         onClick={() => handleEdit(user)}
@@ -1286,11 +1288,11 @@ const Users = () => {
                                         </div>
                                     </div>
 
-                                    {/* 🪙 Reward Coins Card */}
+                                    {/* Reward Coins Card */}
                                     <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
                                         <div className="flex items-center gap-3">
                                             <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-700 flex items-center justify-center font-bold text-xl flex-shrink-0">
-                                                🪙
+                                                <Coins className="w-6 h-6 text-amber-600" />
                                             </div>
                                             <div>
                                                 <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
@@ -1716,7 +1718,9 @@ const Users = () => {
                     <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200 animate-fadeIn">
                         <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 p-5 flex justify-between items-center">
                             <div className="flex items-center gap-2.5">
-                                <span className="p-2 bg-white/20 rounded-xl text-lg">🪙</span>
+                                <span className="p-2 bg-white/20 rounded-xl text-lg flex items-center justify-center">
+                                    <Coins className="w-5 h-5 text-slate-950" />
+                                </span>
                                 <div>
                                     <h3 className="font-bold text-base">Adjust User Coins</h3>
                                     <p className="text-xs text-amber-950/80">{adjustUser.name || adjustUser.email}</p>

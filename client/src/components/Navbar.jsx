@@ -32,7 +32,8 @@ import {
   ArrowRight,
   Copy,
   Coins,
-  Store
+  Store,
+  Award
 } from "lucide-react";
 import LoginModal from "./LoginModal";
 import { useAuth } from "../context/AuthProvider";
@@ -297,12 +298,7 @@ const Navbar = () => {
     .sort((a, b) => (Number(a.display_order) || 0) - (Number(b.display_order) || 0));
 
   const getDeptMeta = (dept) => {
-    const d = (dept || "").toLowerCase();
-    if (d.includes("jewel")) return { icon: "✨", label: dept || "Jewellery" };
-    if (d.includes("foot") || d.includes("shoe")) return { icon: "👠", label: dept || "Footwear" };
-    if (d.includes("access") || d.includes("bag") || d.includes("clutch")) return { icon: "👜", label: dept || "Accessories" };
-    if (d.includes("men") && !d.includes("women")) return { icon: "✨", label: dept || "Men" };
-    return { icon: "✨", label: dept || "Women" };
+    return { label: dept || "Women" };
   };
 
   const departmentGroups = useMemo(() => {
@@ -376,7 +372,7 @@ const Navbar = () => {
                       className="flex items-center gap-3 p-3.5 m-2 bg-gradient-to-r from-[#580C1F] to-[#2E0F15] text-[#F7ECE1] rounded-xl border border-[#d4af37]/40 shadow-md hover:brightness-110 transition"
                     >
                       <div className="w-10 h-10 rounded-full bg-[#d4af37] text-[#580C1F] flex items-center justify-center font-bold text-base flex-shrink-0 shadow">
-                        👑
+                        <Award className="w-5 h-5 text-[#580C1F]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[10px] font-bold text-[#dfc384] uppercase tracking-wider">
@@ -473,7 +469,7 @@ const Navbar = () => {
                       className="flex items-center gap-3 p-3.5 m-2 bg-gradient-to-r from-[#580C1F] to-[#2E0F15] text-[#F7ECE1] rounded-xl border border-[#d4af37]/40 shadow-md"
                     >
                       <div className="w-10 h-10 rounded-full bg-[#d4af37] text-[#580C1F] flex items-center justify-center font-bold text-base flex-shrink-0 shadow">
-                        👑
+                        <Award className="w-5 h-5 text-[#580C1F]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[10px] font-bold text-[#dfc384] uppercase tracking-wider">
@@ -974,7 +970,6 @@ const Navbar = () => {
               return (
                 <React.Fragment key={deptName}>
                   <span className="flex-shrink-0 px-2.5 h-full flex items-center gap-1 text-[9px] font-black text-[#8B0000] uppercase tracking-[0.14em] whitespace-nowrap bg-[#8B0000]/5 border-l border-gray-100">
-                    <span>{meta.icon}</span>
                     <span>{deptName.toUpperCase()}</span>
                   </span>
                   {cats.map((cat) => (
@@ -1324,7 +1319,6 @@ const Navbar = () => {
                         return (
                           <div key={deptName} className="py-1">
                             <div className="px-4 py-2 bg-gray-50 text-[10px] font-black text-[#8B0000] uppercase tracking-wider flex items-center gap-1.5">
-                              <span>{meta.icon}</span>
                               <span>{deptName}</span>
                             </div>
                             {cats.map((cat) => (

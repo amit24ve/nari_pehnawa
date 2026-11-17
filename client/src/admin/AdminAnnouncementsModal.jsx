@@ -86,7 +86,7 @@ const AdminAnnouncementsModal = () => {
     sub_text: "",
     link: "/new-arrivals",
     badge: "",
-    icon: "✨",
+    icon: "",
     is_active: true,
     display_order: 1,
   });
@@ -141,7 +141,7 @@ const AdminAnnouncementsModal = () => {
       sub_text: "",
       link: "/new-arrivals",
       badge: "",
-      icon: "✨",
+      icon: "",
       is_active: true,
       display_order: announcements.length + 1,
     });
@@ -155,7 +155,7 @@ const AdminAnnouncementsModal = () => {
       sub_text: item.sub_text || "",
       link: item.link || "/new-arrivals",
       badge: item.badge || "",
-      icon: item.icon || "✨",
+      icon: item.icon || "",
       is_active: item.is_active !== false,
       display_order: item.display_order || 1,
     });
@@ -452,7 +452,7 @@ const AdminAnnouncementsModal = () => {
 
       // If sync to topbar is checked, update announcements
       if (flashSaleConfig.sync_to_topbar && flashSaleConfig.is_active) {
-        const promoText = `⚡ ${flashSaleConfig.title}: ${flashSaleConfig.deal_text || `${flashSaleConfig.discount_percentage}% OFF`}! ✨`;
+        const promoText = `${flashSaleConfig.title}: ${flashSaleConfig.deal_text || `${flashSaleConfig.discount_percentage}% OFF`}!`;
         const promoLink = flashSaleConfig.target_type === "category" && flashSaleConfig.target_category
           ? `/category/${flashSaleConfig.target_category.toLowerCase().replace(/\s+/g, "-")}`
           : "/new-arrivals";
@@ -463,7 +463,7 @@ const AdminAnnouncementsModal = () => {
           body: JSON.stringify({
             text: promoText,
             link: promoLink,
-            icon: "⚡",
+            icon: "",
             is_active: true,
             display_order: 1,
           }),
@@ -799,7 +799,7 @@ const AdminAnnouncementsModal = () => {
   const currentPreview =
     activeAnnouncements.length > 0
       ? activeAnnouncements[previewIndex % activeAnnouncements.length]
-      : { text: "No active announcements", icon: "✨" };
+      : { text: "No active announcements", icon: "" };
 
   return (
     <div className="space-y-6 text-slate-800 text-left">
@@ -828,10 +828,10 @@ const AdminAnnouncementsModal = () => {
       <div className="bg-white border border-slate-200 rounded-2xl p-1.5 shadow-xs">
         <div className="flex overflow-x-auto gap-1.5">
           {[
-            { id: "topbar", label: "📢 Top Bar Slider", icon: Sparkles },
-            { id: "flash_sale", label: "⚡ Flash Sale & Events", icon: Flame },
-            { id: "coupons", label: "🎟️ Coupons & Promo Codes", icon: Tag },
-            { id: "welcome_modal", label: "🎉 Welcome Popup Modal", icon: Layers },
+            { id: "topbar", label: "Top Bar Slider", icon: Sparkles },
+            { id: "flash_sale", label: "Flash Sale & Events", icon: Flame },
+            { id: "coupons", label: "Coupons & Promo Codes", icon: Tag },
+            { id: "welcome_modal", label: "Welcome Popup Modal", icon: Layers },
           ].map((tab) => {
             const Icon = tab.icon;
             const isSelected = activeTab === tab.id;
@@ -913,7 +913,7 @@ const AdminAnnouncementsModal = () => {
                 </button>
 
                 <div className="flex items-center justify-center gap-2 text-xs sm:text-sm font-medium tracking-wide text-center truncate px-2">
-                  <span className="text-base">{currentPreview.icon || "✨"}</span>
+                  {currentPreview.icon ? <span className="text-base">{currentPreview.icon}</span> : <Sparkles className="w-3.5 h-3.5 text-amber-300" />}
                   <span className="font-semibold text-white/95 truncate">{currentPreview.text}</span>
                   {currentPreview.link && (
                     <span className="text-[#ffe29a] font-bold text-[11px] underline ml-1 cursor-pointer">
@@ -983,7 +983,7 @@ const AdminAnnouncementsModal = () => {
                           </td>
                           <td className="py-3.5 px-4 font-medium text-slate-900">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm">{item.icon || "✨"}</span>
+                              {item.icon ? <span className="text-sm">{item.icon}</span> : <Sparkles className="w-3.5 h-3.5 text-[#0891b2]" />}
                               <span className="line-clamp-2">{item.text}</span>
                             </div>
                           </td>
@@ -1050,7 +1050,7 @@ const AdminAnnouncementsModal = () => {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Grand Launch Special: Free Matching Jhumka Set with Every Kurti Order! ✨"
+                      placeholder="e.g. Grand Launch Special: Free Matching Jhumka Set with Every Kurti Order!"
                       value={announcementForm.text}
                       onChange={(e) =>
                         setAnnouncementForm({ ...announcementForm, text: e.target.value })
@@ -1061,14 +1061,14 @@ const AdminAnnouncementsModal = () => {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block font-semibold text-slate-700 mb-1">Icon Emoji</label>
+                      <label className="block font-semibold text-slate-700 mb-1">Icon (Optional)</label>
                       <input
                         type="text"
                         value={announcementForm.icon}
                         onChange={(e) =>
                           setAnnouncementForm({ ...announcementForm, icon: e.target.value })
                         }
-                        placeholder="🎁, ✨, 👗, 👑"
+                        placeholder="e.g. Sparkles, Tag"
                         className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs"
                       />
                     </div>
@@ -1102,14 +1102,14 @@ const AdminAnnouncementsModal = () => {
                         }
                         className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs"
                       >
-                        <option value="/new-arrivals">🌟 All Kurtis &amp; New Arrivals (/new-arrivals)</option>
+                        <option value="/new-arrivals">All Kurtis &amp; New Arrivals (/new-arrivals)</option>
                         {availableCategories.map((c) => (
                           <option key={c._id || c.id} value={c.link || `/category/${(c.name || "").toLowerCase().replace(/\s+/g, "-")}`}>
-                            👗 Category: {c.name} ({c.link})
+                            Category: {c.name} ({c.link})
                           </option>
                         ))}
-                        <option value="/category/sale">⚡ Mega Sale (/category/sale)</option>
-                        <option value="/">🏠 Home Page (/)</option>
+                        <option value="/category/sale">Mega Sale (/category/sale)</option>
+                        <option value="/">Home Page (/)</option>
                       </select>
                       <input
                         type="text"
@@ -1430,9 +1430,9 @@ const AdminAnnouncementsModal = () => {
                     <label className="block font-semibold text-slate-700 mb-1">Apply Deal To:</label>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { id: "all", label: "🌟 All Kurtis" },
-                        { id: "category", label: "👗 Specific Category" },
-                        { id: "custom_products", label: "🏷️ Selected Products" },
+                        { id: "all", label: "All Kurtis" },
+                        { id: "category", label: "Specific Category" },
+                        { id: "custom_products", label: "Selected Products" },
                       ].map((s) => (
                         <button
                           key={s.id}
@@ -1537,7 +1537,7 @@ const AdminAnnouncementsModal = () => {
                       </div>
                     </div>
                     <p className="text-[10px] text-slate-500 font-medium">
-                      ⏰ Schedules are in Indian Standard Time (IST). Active now: {formatToReadableIST(new Date())}
+                      Schedules are in Indian Standard Time (IST). Active now: {formatToReadableIST(new Date())}
                     </p>
                   </div>
 

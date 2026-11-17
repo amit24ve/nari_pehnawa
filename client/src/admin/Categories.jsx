@@ -577,10 +577,10 @@ const Categories = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-1 flex items-center gap-2">
+                    <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-1 flex items-center gap-2">
                         <span>Categories &amp; Sub-Categories</span>
                     </h2>
-                    <p className="text-sm text-gray-400">
+                    <p className="text-sm text-slate-500">
                         Multi-tier hierarchy for Women, Men, Jewellery, Footwear &amp; Special Collections.
                     </p>
                 </div>
@@ -593,13 +593,13 @@ const Categories = () => {
                             setDeptSuccess(null);
                             setShowDeptModal(true);
                         }}
-                        className="flex items-center gap-2 bg-[#111827] hover:bg-gray-800 text-cyan-300 border border-cyan-800/60 px-3.5 py-2.5 rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
+                        className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2.5 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
                     >
-                        <Settings className="w-3.5 h-3.5 text-cyan-400" /> Manage Departments
+                        <Settings className="w-3.5 h-3.5 text-[#0891b2]" /> Manage Departments
                     </button>
                     <button
                         onClick={() => openAdd()}
-                        className="flex items-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-black px-4 py-2.5 rounded-xl text-sm font-extrabold shadow-md transition-all duration-200 cursor-pointer"
+                        className="flex items-center gap-2 bg-[#0891b2] hover:bg-[#06b6d4] text-white px-4 py-2.5 rounded-xl text-sm font-extrabold shadow-sm transition-all duration-200 cursor-pointer"
                     >
                         <Plus className="w-4 h-4 stroke-[2.5]" /> Add Category
                     </button>
@@ -613,8 +613,8 @@ const Categories = () => {
                     onClick={() => { setFilterDepartment("all"); setCurrentPage(1); }}
                     className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                         filterDepartment === "all"
-                            ? "bg-cyan-400 text-black shadow-sm font-black"
-                            : "bg-[#111827] text-gray-400 hover:text-white border border-gray-800"
+                            ? "bg-[#0891b2] text-white shadow-md shadow-[#0891b2]/20 font-black"
+                            : "bg-white text-slate-700 hover:text-[#0891b2] border border-slate-200"
                     }`}
                 >
                     <Grid className="w-3.5 h-3.5" />
@@ -636,14 +636,14 @@ const Categories = () => {
                                 onClick={() => { setFilterDepartment(deptName); setCurrentPage(1); }}
                                 className={`px-3.5 py-2 rounded-l-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
                                     isSelected
-                                        ? "bg-cyan-400 text-black shadow-sm font-black"
-                                        : "bg-[#111827] text-gray-400 hover:text-white border-y border-l border-gray-800"
+                                        ? "bg-[#0891b2] text-white shadow-md shadow-[#0891b2]/20 font-black"
+                                        : "bg-white text-slate-700 hover:text-[#0891b2] border-y border-l border-slate-200"
                                 }`}
                             >
-                                {renderDepartmentIcon(dept, isSelected ? "w-3.5 h-3.5 text-black" : "w-3.5 h-3.5 text-cyan-400")}
+                                {renderDepartmentIcon(dept, isSelected ? "w-3.5 h-3.5 text-white" : "w-3.5 h-3.5 text-[#0891b2]")}
                                 <span>{deptName}</span>
                                 <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                                    isSelected ? "bg-black/20 text-black" : "bg-gray-800 text-gray-400"
+                                    isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
                                 }`}>
                                     {count}
                                 </span>
@@ -671,8 +671,8 @@ const Categories = () => {
                                 title={`Edit / Rename ${deptName}`}
                                 className={`px-2 py-2 rounded-r-xl border-y border-r transition-all cursor-pointer ${
                                     isSelected
-                                        ? "bg-cyan-400 text-black border-cyan-400 hover:bg-cyan-300"
-                                        : "bg-[#111827] text-gray-500 hover:text-cyan-400 border-gray-800 hover:bg-gray-800"
+                                        ? "bg-[#0891b2] text-white border-y border-r border-[#0891b2] hover:bg-[#06b6d4]"
+                                        : "bg-white text-slate-400 hover:text-[#0891b2] border-slate-200 hover:bg-slate-50"
                                 }`}
                             >
                                 <Edit2 className="w-3 h-3" />
@@ -689,22 +689,22 @@ const Categories = () => {
                         setDeptSuccess(null);
                         setShowDeptModal(true);
                     }}
-                    className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer bg-cyan-950/40 text-cyan-300 border border-cyan-800/60 hover:bg-cyan-900/50 flex-shrink-0"
+                    className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer bg-cyan-50 text-[#0891b2] border border-cyan-200 hover:bg-cyan-100 flex-shrink-0"
                 >
                     <Plus className="w-3.5 h-3.5 stroke-[2.5]" /> New Department
                 </button>
             </div>
 
             {/* Controls */}
-            <div className="bg-[#111827] border border-gray-800 p-4 rounded-xl flex flex-col md:flex-row gap-4 items-center justify-between shadow-md">
+            <div className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between shadow-xs">
                 <div className="relative w-full md:w-80">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                         type="text"
                         placeholder="Search category or sub-category..."
                         value={searchTerm}
                         onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                        className="w-full pl-10 pr-4 py-2 bg-[#0b1220] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-400"
+                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0891b2] focus:bg-white transition"
                     />
                 </div>
                 
@@ -712,7 +712,7 @@ const Categories = () => {
                     <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
-                        className="bg-[#0b1220] border border-gray-800 rounded-xl px-4 py-2 text-xs text-gray-300 focus:outline-none cursor-pointer"
+                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs text-slate-700 focus:outline-none focus:border-[#0891b2] focus:bg-white cursor-pointer"
                     >
                         <option value="name">Sort by Name</option>
                         <option value="order">Sort by Sequence</option>
@@ -720,21 +720,21 @@ const Categories = () => {
 
                     <button
                         onClick={handleExportCSV}
-                        className="px-4 py-2 bg-[#0f1724] border border-gray-850 rounded-xl text-xs font-bold text-white flex items-center gap-1.5 hover:bg-gray-800 transition cursor-pointer"
+                        className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-1.5 hover:bg-slate-100 transition cursor-pointer"
                     >
-                        <Download className="w-4 h-4 text-cyan-400" /> Export CSV
+                        <Download className="w-4 h-4 text-[#0891b2]" /> Export CSV
                     </button>
                 </div>
             </div>
 
             {/* Error */}
             {error && (
-                <div className="bg-red-950/40 border border-red-800/60 rounded-xl p-4 flex items-center gap-3">
-                    <X className="w-4 h-4 text-red-400 flex-shrink-0" />
-                    <p className="text-red-300 text-xs font-semibold flex-1">{error}</p>
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+                    <X className="w-4 h-4 text-red-500 flex-shrink-0" />
+                    <p className="text-red-700 text-xs font-semibold flex-1">{error}</p>
                     <button
                         onClick={() => setError(null)}
-                        className="text-red-400 hover:text-white"
+                        className="text-red-500 hover:text-red-700"
                     >
                         <X className="w-4 h-4" />
                     </button>
@@ -744,22 +744,22 @@ const Categories = () => {
             {/* Loading */}
             {loading ? (
                 <div className="flex items-center justify-center py-16">
-                    <Loader2 className="w-8 h-8 text-[#8B0000] animate-spin" />
+                    <Loader2 className="w-8 h-8 text-[#0891b2] animate-spin" />
                 </div>
             ) : filteredCategories.length === 0 ? (
-                <div className="text-center py-16 bg-[#111827] border border-gray-800/60 rounded-2xl p-8">
+                <div className="text-center py-16 bg-white border border-slate-200 rounded-2xl p-8 shadow-xs">
                     <FolderOpen className="w-16 h-16 text-cyan-500/40 mx-auto mb-4" />
-                    <p className="text-white text-lg font-bold mb-1">
+                    <p className="text-slate-900 text-lg font-bold mb-1">
                         {filterDepartment === "all" ? "No categories found" : `No categories in "${filterDepartment}" yet`}
                     </p>
-                    <p className="text-gray-400 text-xs max-w-md mx-auto mb-5">
+                    <p className="text-slate-500 text-xs max-w-md mx-auto mb-5">
                         {filterDepartment === "all" 
                             ? "Create your first category and add sub-categories like Anarkali, Straight Cut, Sleeveless, etc."
                             : `Add your first category and ethnic styles under ${filterDepartment}.`}
                     </p>
                     <button
                         onClick={() => openAdd(filterDepartment !== "all" ? filterDepartment : "Women")}
-                        className="px-5 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold rounded-xl text-xs flex items-center gap-2 mx-auto transition cursor-pointer shadow-md"
+                        className="px-5 py-2.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white font-extrabold rounded-xl text-xs flex items-center gap-2 mx-auto transition cursor-pointer shadow-md"
                     >
                         <Plus className="w-4 h-4 stroke-[2.5]" />
                         {filterDepartment === "all" ? "Create First Category" : `Add Category to ${filterDepartment}`}
@@ -775,14 +775,14 @@ const Categories = () => {
                         return (
                             <div
                                 key={cat._id || cat.id}
-                                className="bg-gradient-to-br from-[#111827] to-[#1a2332] border border-gray-800/60 rounded-xl overflow-hidden shadow-lg hover:shadow-xl hover:border-gray-700/70 transition-all duration-300 flex flex-col justify-between group"
+                                className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs hover:shadow-md hover:border-slate-300 transition-all duration-300 flex flex-col justify-between group"
                             >
                                 <div>
                                     {/* Thumbnail Image */}
                                     <div
-                                        className="h-36 relative overflow-hidden bg-stone-900"
+                                        className="h-36 relative overflow-hidden bg-slate-100"
                                         style={{
-                                            borderBottom: `2px solid ${cat.border_color || "#8B0000"}`
+                                            borderBottom: `2px solid ${cat.border_color || "#780016"}`
                                         }}
                                     >
                                         {cat.image ? (
@@ -796,24 +796,24 @@ const Categories = () => {
                                             />
                                         ) : (
                                             <div className="absolute inset-0 flex items-center justify-center">
-                                                <ImageIcon className="w-10 h-10 text-gray-600" />
+                                                <ImageIcon className="w-10 h-10 text-slate-300" />
                                             </div>
                                         )}
 
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/30" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
 
                                         {/* Status & Badge Top */}
                                         <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
                                             {cat.badge && (
-                                                <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#8B0000] text-white border border-rose-400/40 shadow-sm">
+                                                <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#780016] text-white border border-rose-300/40 shadow-xs">
                                                     {cat.badge}
                                                 </span>
                                             )}
                                             <span
                                                 className={`text-[9.5px] font-bold px-2 py-0.5 rounded-full ${
                                                     cat.is_active
-                                                        ? "bg-emerald-500/90 text-white"
-                                                        : "bg-gray-600/90 text-gray-200"
+                                                        ? "bg-emerald-600 text-white shadow-xs"
+                                                        : "bg-slate-700 text-white"
                                                 }`}
                                             >
                                                 {cat.is_active ? "Active" : "Hidden"}
@@ -822,11 +822,11 @@ const Categories = () => {
 
                                         {/* Department & Order Top Left */}
                                         <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 max-w-[70%]">
-                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/70 text-gray-300 flex-shrink-0">
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/70 text-white flex-shrink-0">
                                                 #{cat.display_order || 0}
                                             </span>
-                                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-cyan-950/90 text-cyan-300 border border-cyan-500/40 backdrop-blur-md truncate flex items-center gap-1">
-                                                {renderDepartmentIcon(cat.department, "w-3 h-3 text-cyan-400")}
+                                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-white/95 text-slate-800 border border-slate-200/80 backdrop-blur-md truncate flex items-center gap-1 shadow-xs">
+                                                {renderDepartmentIcon(cat.department, "w-3 h-3 text-[#0891b2]")}
                                                 <span className="truncate">{cat.department || "Women"}</span>
                                             </span>
                                         </div>
@@ -838,13 +838,13 @@ const Categories = () => {
                                                     {cat.name}
                                                 </p>
                                                 {isSpecial && (
-                                                    <span className="text-[9px] font-bold text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-600/40 flex-shrink-0">
+                                                    <span className="text-[9px] font-bold text-amber-200 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-600/40 flex-shrink-0">
                                                         Special Collection
                                                     </span>
                                                 )}
                                             </div>
                                             {cat.tagline && (
-                                                <p className="text-white/75 text-[10px] truncate mt-0.5">
+                                                <p className="text-white/85 text-[10px] truncate mt-0.5 drop-shadow-xs">
                                                     {cat.tagline}
                                                 </p>
                                             )}
@@ -852,16 +852,16 @@ const Categories = () => {
                                     </div>
 
                                     {/* Sub-Categories Section Inside Card */}
-                                    <div className="p-3.5 border-b border-gray-800/80">
+                                    <div className="p-3.5 border-b border-slate-100 bg-slate-50/60">
                                         <div className="flex items-center justify-between mb-2">
-                                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-400 flex items-center gap-1">
-                                                <Tag className="w-3 h-3 text-cyan-400" />
+                                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                                                <Tag className="w-3 h-3 text-[#0891b2]" />
                                                 Sub-Categories ({subCats.length})
                                             </span>
                                             <button
                                                 type="button"
                                                 onClick={() => setSubCatModalCategory(cat)}
-                                                className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-0.5 cursor-pointer"
+                                                className="text-[10px] font-bold text-[#0891b2] hover:text-[#06b6d4] hover:underline flex items-center gap-0.5 cursor-pointer"
                                             >
                                                 <PlusCircle className="w-3 h-3" /> Manage
                                             </button>
@@ -872,14 +872,14 @@ const Categories = () => {
                                                 {subCats.map((sub, sIdx) => (
                                                     <span
                                                         key={`${sub}-${sIdx}`}
-                                                        className="px-2 py-0.5 text-[10px] font-semibold bg-gray-800/90 text-gray-200 border border-gray-700/60 rounded-md"
+                                                        className="px-2 py-0.5 text-[10px] font-semibold bg-white text-slate-700 border border-slate-200 rounded-md shadow-2xs"
                                                     >
                                                         {sub}
                                                     </span>
                                                 ))}
                                             </div>
                                         ) : (
-                                            <p className="text-[10px] text-gray-500 italic py-1">
+                                            <p className="text-[10px] text-slate-400 italic py-1">
                                                 No sub-categories yet. Click "Manage" to add styles.
                                             </p>
                                         )}
@@ -887,13 +887,13 @@ const Categories = () => {
                                 </div>
 
                                 {/* Card bottom footer */}
-                                <div className="p-3.5 bg-gray-900/40">
-                                    <div className="flex items-center justify-between text-[11px] text-gray-500 mb-3">
+                                <div className="p-3.5 bg-white">
+                                    <div className="flex items-center justify-between text-[11px] text-slate-500 mb-3">
                                         <a
                                             href={cat.link || "#"}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="flex items-center gap-1 hover:text-cyan-400 transition-colors truncate max-w-[80%]"
+                                            className="flex items-center gap-1 hover:text-[#0891b2] transition-colors truncate max-w-[80%]"
                                         >
                                             <ExternalLink className="w-3 h-3 flex-shrink-0" />
                                             <span className="truncate">{cat.link || "No link"}</span>
@@ -907,10 +907,10 @@ const Categories = () => {
                                                     copyToClipboard(cat.link, cat.id || cat._id);
                                                 }}
                                                 title="Copy Category URL Path"
-                                                className="p-1 rounded hover:bg-gray-700/70 text-gray-400 hover:text-cyan-400 transition"
+                                                className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-[#0891b2] transition"
                                             >
                                                 {copiedId === (cat.id || cat._id) ? (
-                                                    <Check className="w-3 h-3 text-emerald-400" />
+                                                    <Check className="w-3 h-3 text-emerald-600" />
                                                 ) : (
                                                     <Copy className="w-3 h-3" />
                                                 )}
@@ -921,13 +921,13 @@ const Categories = () => {
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => handleEdit(cat)}
-                                            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-cyan-400 hover:bg-cyan-300 text-black rounded-lg text-xs font-extrabold transition-all shadow-sm cursor-pointer"
+                                            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
                                         >
                                             <Edit2 className="w-3.5 h-3.5 stroke-[2.5]" /> Edit
                                         </button>
                                         <button
                                             onClick={() => handleDelete(cat)}
-                                            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-gray-800 hover:bg-red-950/60 text-gray-300 hover:text-red-300 rounded-lg text-xs font-bold border border-gray-700 transition-colors cursor-pointer"
+                                            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-50 hover:bg-red-50 text-slate-700 hover:text-red-600 rounded-xl text-xs font-bold border border-slate-200 transition-colors cursor-pointer"
                                         >
                                             <Trash2 className="w-3.5 h-3.5" /> Delete
                                         </button>
@@ -941,20 +941,20 @@ const Categories = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="flex justify-between items-center bg-[#111827] border border-gray-800 p-4 rounded-xl text-xs mt-6">
-                    <span className="text-gray-400">Showing page {currentPage} of {totalPages}</span>
+                <div className="flex justify-between items-center bg-white border border-slate-200 p-4 rounded-2xl text-xs mt-6 shadow-xs">
+                    <span className="text-slate-500">Showing page {currentPage} of {totalPages}</span>
                     <div className="flex gap-2">
                         <button
                             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                             disabled={currentPage === 1}
-                            className="px-3.5 py-2 bg-[#0f1724] border border-gray-850 rounded-xl text-white font-semibold disabled:opacity-40 font-bold"
+                            className="px-3.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-700 font-bold disabled:opacity-40 cursor-pointer"
                         >
                             Previous
                         </button>
                         <button
                             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                             disabled={currentPage === totalPages}
-                            className="px-3.5 py-2 bg-[#0f1724] border border-gray-850 rounded-xl text-white font-semibold disabled:opacity-40 font-bold"
+                            className="px-3.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-700 font-bold disabled:opacity-40 cursor-pointer"
                         >
                             Next
                         </button>

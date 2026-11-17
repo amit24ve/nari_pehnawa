@@ -643,7 +643,7 @@ const Dashboard = () => {
               {(dashboardStats?.total_wishlist ?? 0).toLocaleString()}
             </h4>
             <span className="text-[10px] text-indigo-600 font-bold mt-1.5 block">
-              ♥ User Favorites
+              User Favorites
             </span>
           </div>
           <MiniSparkline data={[0, 0, 0, 0, 0, 0, Math.max(1, dashboardStats?.total_wishlist || 0)]} strokeColor="#3b82f6" />
@@ -657,7 +657,7 @@ const Dashboard = () => {
               {(dashboardStats?.total_carts ?? 0).toLocaleString()}
             </h4>
             <span className="text-[10px] text-emerald-600 font-bold mt-1.5 block">
-              🛒 Cart Activity
+              Cart Activity
             </span>
           </div>
           <MiniSparkline data={[0, 0, 0, 0, 0, 0, Math.max(1, dashboardStats?.total_carts || 0)]} strokeColor="#10b981" />
@@ -673,7 +673,7 @@ const Dashboard = () => {
                 : "0.00%"}
             </h4>
             <span className="text-[10px] text-amber-600 font-bold mt-1.5 block">
-              ⚡ Orders / Visitors
+              Orders / Visitors
             </span>
           </div>
           <MiniSparkline data={[0, 0, 0, 0, 0, 0, Math.max(1, dashboardStats?.total_orders || 0)]} strokeColor="#f59e0b" />

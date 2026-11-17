@@ -220,10 +220,10 @@ const Inquiries = () => {
               onChange={(e) => setTypeFilter(e.target.value)}
               className="px-3 py-1.5 text-xs border border-gray-300 rounded-xl bg-white font-semibold focus:outline-none focus:border-[#780016] cursor-pointer"
             >
-              <option value="customization">✂️ Customization Inquiries</option>
+              <option value="customization">Customization Inquiries</option>
               <option value="all">All Inquiries</option>
-              <option value="reseller">💼 Reseller Applications</option>
-              <option value="general">💬 General Queries</option>
+              <option value="reseller">Reseller Applications</option>
+              <option value="general">General Queries</option>
             </select>
           </div>
 

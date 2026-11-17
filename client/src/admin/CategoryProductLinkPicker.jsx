@@ -30,9 +30,9 @@ const DEFAULT_SUBCATEGORIES_MAP = {
 };
 
 const COMMON_QUICK_LINKS = [
-  { label: "⚡ Live Flash Sale Page", link: "/category/sale", badge: "Offer" },
-  { label: "🏠 Home Storefront", link: "/", badge: "Main" },
-  { label: "👗 All Categories / Catalog", link: "/category/anarkali-kurtis", badge: "Catalog" }
+  { label: "Live Flash Sale Page", link: "/category/sale", badge: "Offer" },
+  { label: "Home Storefront", link: "/", badge: "Main" },
+  { label: "All Categories / Catalog", link: "/category/anarkali-kurtis", badge: "Catalog" }
 ];
 
 /**

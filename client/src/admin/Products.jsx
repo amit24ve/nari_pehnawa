@@ -32,6 +32,12 @@ import {
     CheckCircle2,
     XCircle,
     Clock,
+    Sparkles,
+    Gift,
+    MapPin,
+    Store,
+    Scissors,
+    Folder,
 } from "lucide-react";
 import shippingApi from "../services/shippingApi";
 
@@ -43,10 +49,10 @@ const DEFAULT_WAREHOUSES = [
 ];
 
 const PRESET_DEPARTMENTS = [
-    { id: "Clothing", label: "Clothing / Ethnic", icon: "👗" },
-    { id: "Jewellery", label: "Jewellery", icon: "✨" },
-    { id: "Footwear", label: "Footwear / Shoes", icon: "👠" },
-    { id: "Accessories", label: "Bags & Accessories", icon: "👜" },
+    { id: "Clothing", label: "Clothing / Ethnic", icon: "Sparkles" },
+    { id: "Jewellery", label: "Jewellery", icon: "Sparkles" },
+    { id: "Footwear", label: "Footwear / Shoes", icon: "Sparkles" },
+    { id: "Accessories", label: "Bags & Accessories", icon: "Sparkles" },
 ];
 
 const Products = () => {
@@ -227,7 +233,7 @@ const Products = () => {
         sleeve_type: "",
         fit_type: "Regular Comfort Fit",
         occasion: "Festive, Casual, Office Wear",
-        country_of_origin: "India 🇮🇳",
+        country_of_origin: "India",
         hsn_code: "621133",
         wash_care: "Hand Wash or Gentle Machine Wash in Cold Water",
         offer_type: "none",
@@ -409,7 +415,7 @@ const Products = () => {
                     body: JSON.stringify(clonePayload)
                 });
                 if (!res.ok) throw new Error("Failed to duplicate product listing");
-                setDealSuccessMsg("✅ Duplicated as new Mega Sale / BOGO listing successfully!");
+                setDealSuccessMsg("Duplicated as new Mega Sale / BOGO listing successfully!");
             } else {
                 // Update existing product: PRESERVE regular single-piece price, save deal offer separately
                 const updatePayload = {
@@ -433,7 +439,7 @@ const Products = () => {
                     body: JSON.stringify(updatePayload)
                 });
                 if (!res.ok) throw new Error("Failed to update product offer");
-                setDealSuccessMsg(`✅ Regular price kept at ₹${regPrice.toLocaleString()}! Mega Sale price set to ₹${salePrice.toLocaleString()}`);
+                setDealSuccessMsg(`Regular price kept at ₹${regPrice.toLocaleString()}! Mega Sale price set to ₹${salePrice.toLocaleString()}`);
             }
 
             await fetchProducts();
@@ -623,7 +629,7 @@ const Products = () => {
                 sleeve_type: formData.sleeve_type || null,
                 fit_type: formData.fit_type || null,
                 occasion: formData.occasion || null,
-                country_of_origin: formData.country_of_origin || "India 🇮🇳",
+                country_of_origin: formData.country_of_origin || "India",
                 hsn_code: formData.hsn_code || "621133",
                 wash_care: formData.wash_care || null,
                 is_returnable: formData.is_returnable !== false,
@@ -835,7 +841,7 @@ const Products = () => {
             sleeve_type: product.sleeve_type || "",
             fit_type: product.fit_type || "Regular Comfort Fit",
             occasion: product.occasion || "Festive, Casual, Office Wear",
-            country_of_origin: product.country_of_origin || "India 🇮🇳",
+            country_of_origin: product.country_of_origin || "India",
             hsn_code: product.hsn_code || "621133",
             wash_care: product.wash_care || "Hand Wash or Gentle Machine Wash in Cold Water",
             offer_type: product.offer_type || (product.offer_code ? "coupon" : (product.deal_type ? "megasale" : "none")),
@@ -1082,7 +1088,7 @@ const Products = () => {
                     <td style="padding: 8px; border-bottom: 1px solid #ddd; font-family: monospace;">${p.sku || 'N/A'}</td>
                     <td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">
                         ${p.title}
-                        ${p.pickup_location ? `<div style="font-size: 10px; color: #555;">📍 Warehouse: ${p.pickup_location}</div>` : ''}
+                        ${p.pickup_location ? `<div style="font-size: 10px; color: #555;">Warehouse: ${p.pickup_location}</div>` : ''}
                     </td>
                     <td style="padding: 8px; border-bottom: 1px solid #ddd;">${p.category || 'N/A'}</td>
                     <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right; font-family: monospace;">₹${(p.price || 0).toLocaleString('en-IN')}</td>
@@ -1119,7 +1125,7 @@ const Products = () => {
             <body>
                 <div class="header">
                     <div>
-                        <div class="title">✨ NARI PEHNAWA — PRODUCT CATALOG & INVENTORY</div>
+                        <div class="title">NARI PEHNAWA — PRODUCT CATALOG & INVENTORY</div>
                         <div style="font-size: 11px; color: #64748b;">Generated on ${todayStr}</div>
                     </div>
                 </div>
@@ -1197,7 +1203,7 @@ const Products = () => {
                     <div class="sku">SKU: ${p.sku || 'N/A'}</div>
                     <img src="${qrUrl}" class="qr-img" alt="QR Code" />
                     <div class="price">₹${(p.price || 0).toLocaleString('en-IN')}</div>
-                    ${p.pickup_location ? `<div class="warehouse">📦 Warehouse: <strong>${p.pickup_location}</strong></div>` : ''}
+                    ${p.pickup_location ? `<div class="warehouse">Warehouse: <strong>${p.pickup_location}</strong></div>` : ''}
                 </div>
                 <script>
                     window.onload = function() {
@@ -1381,11 +1387,11 @@ const Products = () => {
                                     }`}
                                 >
                                     <Zap className={`w-3.5 h-3.5 ${filterOnlyDeals ? "fill-white text-white" : "fill-amber-500 text-amber-600"}`} />
-                                    <span>⚡ Mega Sale & BOGO ({dealCount})</span>
+                                    <span>Mega Sale &amp; BOGO ({dealCount})</span>
                                 </button>
                             );
                         })()}
-                        {(departmentsList.length > 0 ? departmentsList : availableDepartments.map(d => ({ name: d, icon: "📁" }))).map((dept) => {
+                        {(departmentsList.length > 0 ? departmentsList : availableDepartments.map(d => ({ name: d, icon: "" }))).map((dept) => {
                             const deptName = dept.name || dept;
                             const count = products.filter((p) => {
                                 const d = p.department || (categoriesList.find(c => c.name?.toLowerCase() === p.category?.toLowerCase())?.department || "Clothing");
@@ -1403,7 +1409,7 @@ const Products = () => {
                                             : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-300"
                                     }`}
                                 >
-                                    <span>{dept.icon || "📁"}</span>
+                                    <Folder className={`w-3.5 h-3.5 ${isSelected ? "text-white" : "text-[#0891b2]"}`} />
                                     <span>{deptName}</span>
                                     <span className="text-[10px] opacity-75">({count})</span>
                                 </button>
@@ -1448,7 +1454,7 @@ const Products = () => {
                                                 groups[dept].push(cat);
                                             });
                                             return Object.entries(groups).map(([dept, cats]) => (
-                                                <optgroup key={dept} label={`📂 ${dept.toUpperCase()}`} className="font-bold text-slate-700">
+                                                <optgroup key={dept} label={dept.toUpperCase()} className="font-bold text-slate-700">
                                                     {cats.map((cat) => {
                                                         const count = products.filter(p => (p.category || "").toLowerCase() === (cat.name || "").toLowerCase()).length;
                                                         return (
@@ -1513,13 +1519,15 @@ const Products = () => {
                                                         <div className="flex items-center gap-1.5 flex-wrap mt-0.5 text-[10px]">
                                                             <span className="text-slate-500 font-medium">{p.brand || "Nari Pehnawa"}</span>
                                                             {p.deal_text && (
-                                                                <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300 text-[9px] font-bold">
-                                                                    ⚡ {p.deal_text}
+                                                                <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300 text-[9px] font-bold inline-flex items-center gap-1">
+                                                                    <Zap className="w-2.5 h-2.5 text-amber-600 fill-amber-600" />
+                                                                    {p.deal_text}
                                                                 </span>
                                                             )}
                                                             {p.offer_code && !p.deal_text && (
-                                                                <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 text-[9px] font-bold">
-                                                                    🏷️ {p.offer_code}
+                                                                <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 text-[9px] font-bold inline-flex items-center gap-1">
+                                                                    <Tag className="w-2.5 h-2.5 text-emerald-600" />
+                                                                    {p.offer_code}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -1556,7 +1564,8 @@ const Products = () => {
                                                 {p.on_sale && (p.mega_sale_price || p.deal_text) && (
                                                     <div className="mt-1 flex flex-col gap-0.5 font-sans">
                                                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold">
-                                                            ⚡ Mega: ₹{Number(p.mega_sale_price || p.price).toLocaleString()}
+                                                            <Zap className="w-2.5 h-2.5 text-amber-600 fill-amber-600" />
+                                                            Mega: ₹{Number(p.mega_sale_price || p.price).toLocaleString()}
                                                         </span>
                                                         {p.deal_text && (
                                                             <span className="text-[9px] text-amber-700 font-semibold truncate max-w-[130px]" title={p.deal_text}>
@@ -2294,7 +2303,7 @@ const Products = () => {
                                                             : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
                                                     }`}
                                                 >
-                                                    <span>{dept.icon || "📁"}</span>
+                                                    <Folder className="w-3.5 h-3.5 text-[#0891b2]" />
                                                     <span className="truncate">{deptName}</span>
                                                 </button>
                                             );
@@ -2759,7 +2768,7 @@ const Products = () => {
                                 <div className="flex items-center justify-between flex-wrap gap-2">
                                     <div className="flex items-center gap-2">
                                         <span className="text-[#8B0000] text-sm font-bold flex items-center gap-1.5">
-                                            ✂️ Bespoke Customization &amp; Tailoring Settings
+                                            <Scissors className="w-3.5 h-3.5" /> Bespoke Customization &amp; Tailoring Settings
                                         </span>
                                         <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                                             Product Page Option
@@ -2812,7 +2821,7 @@ const Products = () => {
                                         </div>
 
                                         <div className="p-3 rounded-xl bg-white/90 border border-amber-200 text-xs text-amber-950 flex flex-col justify-center space-y-1">
-                                            <span className="font-bold text-[#8B0000]">💡 Customization Type Guide:</span>
+                                            <span className="font-bold text-[#8B0000]">Customization Type Guide:</span>
                                             <p className="text-[11px] text-slate-600 leading-relaxed">
                                                 • <strong>Kurti / Top / Dress</strong> → Select <strong>Top</strong><br />
                                                 • <strong>Palazzo / Pant / Salwar</strong> → Select <strong>Bottom</strong><br />
@@ -2827,7 +2836,7 @@ const Products = () => {
                             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
                                 <div>
                                     <span className="text-cyan-700 font-extrabold text-sm uppercase tracking-wide flex items-center gap-1.5">
-                                        ✨ Specifications Matrix (Detailed Attributes)
+                                        Specifications Matrix (Detailed Attributes)
                                     </span>
                                     <p className="text-xs text-slate-500 mt-1">
                                         These attributes power the specifications table on the live product detail page.
@@ -2881,7 +2890,7 @@ const Products = () => {
                                             value={formData.country_of_origin}
                                             onChange={(e) => setFormData({ ...formData, country_of_origin: e.target.value })}
                                             className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
-                                            placeholder="e.g. India 🇮🇳"
+                                            placeholder="e.g. India"
                                         />
                                     </div>
                                     <div>
@@ -2906,7 +2915,7 @@ const Products = () => {
                                     </div>
                                     <div className="sm:col-span-2 lg:col-span-3">
                                         <label className="block text-slate-700 font-bold mb-1.5 text-xs">
-                                            ✨ Key Highlights (Optional — enter each bullet on a new line)
+                                            Key Highlights (Optional — enter each bullet on a new line)
                                         </label>
                                         <textarea
                                             rows={3}
@@ -2918,7 +2927,7 @@ const Products = () => {
                                     </div>
                                     <div className="sm:col-span-2 lg:col-span-3">
                                         <label className="block text-slate-700 font-bold mb-1.5 text-xs">
-                                            💡 Styling Tip (Optional)
+                                            Styling Tip (Optional)
                                         </label>
                                         <input
                                             type="text"
@@ -2935,7 +2944,7 @@ const Products = () => {
                             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
                                 <div>
                                     <span className="text-slate-900 font-extrabold text-sm uppercase tracking-wide flex items-center gap-1.5">
-                                        🎁 Product Offer & Promotion Scheme
+                                        Product Offer & Promotion Scheme
                                     </span>
                                     <p className="text-xs text-slate-500 mt-1">
                                         Attach a Mega Sale, Flash Sale & Event deal (e.g. Buy 5 Get 1 Free, Buy 5 Get 2 Free, BOGO) or a Special Promo Coupon to this product.
@@ -2961,7 +2970,7 @@ const Products = () => {
                                                 : "bg-white/60 border-slate-200 text-slate-600 hover:bg-white"
                                         }`}
                                     >
-                                        <span className="text-sm">🏷️ Standard Price</span>
+                                        <span className="text-sm">Standard Price</span>
                                         <span className="text-[11px] font-normal text-slate-500">Regular catalog listing without active promotion</span>
                                     </button>
 
@@ -2983,7 +2992,7 @@ const Products = () => {
                                                 : "bg-white/60 border-slate-200 text-slate-600 hover:bg-white"
                                         }`}
                                     >
-                                        <span className="text-sm">⚡ Mega / Flash Sale</span>
+                                        <span className="text-sm">Mega / Flash Sale</span>
                                         <span className="text-[11px] font-normal text-slate-500">BOGO, Buy 5 Get 1 Free, Buy X Get Y Free</span>
                                     </button>
 
@@ -2996,7 +3005,7 @@ const Products = () => {
                                                 : "bg-white/60 border-slate-200 text-slate-600 hover:bg-white"
                                         }`}
                                     >
-                                        <span className="text-sm">🎟️ Promo Coupon</span>
+                                        <span className="text-sm">Promo Coupon</span>
                                         <span className="text-[11px] font-normal text-slate-500">Specific voucher code to copy & apply at checkout</span>
                                     </button>
                                 </div>
@@ -3094,7 +3103,7 @@ const Products = () => {
 
                                         <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-3 text-xs">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-base">⚡</span>
+                                                <Zap className="w-4 h-4 text-amber-600 fill-amber-600 flex-shrink-0" />
                                                 <div>
                                                     <span className="font-extrabold text-amber-900 block">{formData.sale_title || "Mega Festive Sale"}: {formData.deal_text || "BUY 5 GET 1 FREE"}</span>
                                                     <span className="text-[11px] text-amber-700">Discounts will be automatically calculated when customers add qualifying items to their cart!</span>
@@ -3168,7 +3177,7 @@ const Products = () => {
                                             <div className="space-y-3">
                                                 <div className="flex items-center justify-between flex-wrap gap-2">
                                                     <span className="text-xs text-slate-700 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                                                        <span>📦</span> Quantities by Size:
+                                                        <Package className="w-3.5 h-3.5 text-cyan-600" /> Quantities by Size:
                                                     </span>
                                                     <div className="flex items-center gap-1.5 flex-wrap text-xs">
                                                         <span className="text-slate-400 text-[11px] font-medium mr-1">Quick add to all:</span>
@@ -3408,7 +3417,7 @@ const Products = () => {
                                             }`}
                                         >
                                             <div className="flex items-center gap-1.5">
-                                                <span>{opt.id === "none" ? "🏷️" : "⚡"}</span>
+                                                {opt.id === "none" ? <Tag className="w-3 h-3 text-slate-500" /> : <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />}
                                                 <span className="text-xs">{opt.label}</span>
                                             </div>
                                             <span className="text-[10px] text-slate-400 block mt-0.5">{opt.sub}</span>
@@ -3436,7 +3445,7 @@ const Products = () => {
 
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                                        ⚡ Mega Sale Deal Price (₹)
+                                        Mega Sale Deal Price (₹)
                                     </label>
                                     <input
                                         type="number"
@@ -3592,13 +3601,15 @@ const Products = () => {
                                                 {viewingProduct.brand || "Nari Pehnawa"}
                                             </span>
                                             {viewingProduct.deal_text && (
-                                                <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300 text-[10px] font-bold">
-                                                    ⚡ {viewingProduct.deal_text}
+                                                <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300 text-[10px] font-bold inline-flex items-center gap-1">
+                                                    <Zap className="w-2.5 h-2.5 text-amber-600 fill-amber-600" />
+                                                    {viewingProduct.deal_text}
                                                 </span>
                                             )}
                                             {viewingProduct.offer_code && !viewingProduct.deal_text && (
-                                                <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 text-[10px] font-bold">
-                                                    🏷️ {viewingProduct.offer_code}
+                                                <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 text-[10px] font-bold inline-flex items-center gap-1">
+                                                    <Tag className="w-2.5 h-2.5 text-emerald-600" />
+                                                    {viewingProduct.offer_code}
                                                 </span>
                                             )}
                                         </div>
@@ -3902,13 +3913,13 @@ const Products = () => {
                                                 });
                                                 const data = await res.json();
                                                 if (res.ok) {
-                                                    setEmailStatusMsg("✅ Email sent successfully to customer!");
+                                                    setEmailStatusMsg("Email sent successfully to customer!");
                                                     setShareEmail("");
                                                 } else {
-                                                    setEmailStatusMsg(`❌ ${data.detail || "Failed to send email"}`);
+                                                    setEmailStatusMsg(data.detail || "Failed to send email");
                                                 }
                                             } catch (err) {
-                                                setEmailStatusMsg("❌ Network error sending email");
+                                                setEmailStatusMsg("Network error sending email");
                                             } finally {
                                                 setSendingEmail(false);
                                             }
@@ -3965,7 +3976,7 @@ const Products = () => {
                         <div className="printable-catalog space-y-4 text-left">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-200 pb-3 gap-2">
                                 <div>
-                                    <h1 className="text-lg sm:text-xl font-black text-red-950 tracking-tight">✨ NARI PEHNAWA — CATALOG & INVENTORY REPORT</h1>
+                                    <h1 className="text-lg sm:text-xl font-black text-red-950 tracking-tight">NARI PEHNAWA — CATALOG & INVENTORY REPORT</h1>
                                     <p className="text-xs text-gray-500">Generated on {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                                 </div>
                             </div>
@@ -4014,7 +4025,7 @@ const Products = () => {
                                                 <td className="p-2 font-mono text-gray-600">{p.sku || 'N/A'}</td>
                                                 <td className="p-2 font-bold text-gray-900">
                                                     {p.title}
-                                                    {p.pickup_location && <div className="text-[10px] text-gray-500 font-normal">📍 Warehouse: {p.pickup_location}</div>}
+                                                    {p.pickup_location && <div className="text-[10px] text-gray-500 font-normal">Warehouse: {p.pickup_location}</div>}
                                                 </td>
                                                 <td className="p-2 text-gray-600">{p.category}</td>
                                                 <td className="p-2 text-right font-mono font-semibold">₹{(p.price || 0).toLocaleString('en-IN')}</td>
