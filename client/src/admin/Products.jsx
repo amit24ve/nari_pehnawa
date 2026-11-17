@@ -263,6 +263,72 @@ const Products = () => {
     const [subCatDropdownOpen, setSubCatDropdownOpen] = useState(false);
     const subCatDropdownRef = useRef(null);
 
+    // Color variant builder state
+    const [newColorInputName, setNewColorInputName] = useState("");
+    const [newColorInputHex, setNewColorInputHex] = useState("#15803d");
+
+    const COLOR_HEX_MAP = {
+        "green": "#15803d",
+        "emerald": "#059669",
+        "emerald green": "#059669",
+        "dark green": "#14532d",
+        "olive": "#65a30d",
+        "olive green": "#65a30d",
+        "maroon": "#800000",
+        "wine": "#581c87",
+        "wine maroon": "#701a75",
+        "burgundy": "#831843",
+        "red": "#dc2626",
+        "ruby red": "#be123c",
+        "crimson": "#991b1b",
+        "blue": "#2563eb",
+        "navy": "#1e3a8a",
+        "navy blue": "#1e3a8a",
+        "royal blue": "#1d4ed8",
+        "sky blue": "#0ea5e9",
+        "cyan": "#0891b2",
+        "pink": "#db2777",
+        "baby pink": "#f472b6",
+        "hot pink": "#e11d48",
+        "magenta": "#c026d3",
+        "yellow": "#eab308",
+        "mustard": "#ca8a04",
+        "mustard yellow": "#ca8a04",
+        "orange": "#ea580c",
+        "rust": "#c2410c",
+        "black": "#1a1a1a",
+        "white": "#ffffff",
+        "off white": "#f8fafc",
+        "cream": "#fef3c7",
+        "beige": "#f5f5dc",
+        "purple": "#9333ea",
+        "lavender": "#a855f7",
+        "violet": "#7c3aed",
+        "grey": "#64748b",
+        "gray": "#64748b",
+        "silver": "#94a3b8",
+        "gold": "#d97706",
+        "golden": "#d97706",
+        "peach": "#fb923c",
+        "teal": "#0d9488"
+    };
+
+    const handleColorNameInputChange = (val) => {
+        setNewColorInputName(val);
+        const key = val.trim().toLowerCase();
+        if (COLOR_HEX_MAP[key]) {
+            setNewColorInputHex(COLOR_HEX_MAP[key]);
+        }
+    };
+
+    const handleAddNewColorVariant = () => {
+        const name = newColorInputName.trim();
+        if (!name) return;
+        handleAddColorVariant(name, newColorInputHex);
+        setNewColorInputName("");
+        setNewColorInputHex("#800000");
+    };
+
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (subCatDropdownRef.current && !subCatDropdownRef.current.contains(e.target)) {
@@ -324,6 +390,41 @@ const Products = () => {
     const handleQuickAddAllSizes = (delta) => {
         setFormData(prev => {
             const parsedSizes = prev.sizes ? prev.sizes.split(",").map(s => s.trim()).filter(Boolean) : ["S", "M", "L", "XL"];
+            const hasVariants = Array.isArray(prev.color_variants) && prev.color_variants.length > 0;
+            
+            if (hasVariants) {
+                const activeIdx = Math.min(prev.active_color_idx || 0, prev.color_variants.length - 1);
+                const variants = [...prev.color_variants];
+                if (variants[activeIdx]) {
+                    const v = { ...variants[activeIdx] };
+                    const vStock = { ...(v.size_stock || {}) };
+                    parsedSizes.forEach(sz => {
+                        const current = parseInt(vStock[sz]) || 0;
+                        vStock[sz] = Math.max(0, current + delta);
+                    });
+                    v.size_stock = vStock;
+                    variants[activeIdx] = v;
+                    
+                    let total = 0;
+                    const globalSizeStock = {};
+                    variants.forEach(vr => {
+                        if (vr.size_stock) {
+                            Object.entries(vr.size_stock).forEach(([s, q]) => {
+                                const num = Number(q) || 0;
+                                globalSizeStock[s] = (globalSizeStock[s] || 0) + num;
+                                total += num;
+                            });
+                        }
+                    });
+                    return {
+                        ...prev,
+                        color_variants: variants,
+                        size_stock: globalSizeStock,
+                        stock: total.toString()
+                    };
+                }
+            }
+
             const updatedSizeStock = { ...(prev.size_stock || {}) };
             parsedSizes.forEach(sz => {
                 const current = parseInt(updatedSizeStock[sz]) || 0;
@@ -353,13 +454,38 @@ const Products = () => {
                     updatedSizeStock[sizeName] = 0;
                 }
             }
-            const sizeValues = Object.values(updatedSizeStock).filter(v => v !== "" && !isNaN(v));
-            const totalStock = sizeValues.length > 0 ? sizeValues.reduce((a, b) => a + Number(b), 0) : (parseInt(prev.stock) || 0);
+
+            let updatedVariants = prev.color_variants;
+            if (Array.isArray(prev.color_variants) && prev.color_variants.length > 0) {
+                updatedVariants = prev.color_variants.map(v => {
+                    const vs = { ...(v.size_stock || {}) };
+                    if (newList.includes(sizeName)) {
+                        if (vs[sizeName] === undefined) vs[sizeName] = 0;
+                    } else {
+                        delete vs[sizeName];
+                    }
+                    return { ...v, size_stock: vs };
+                });
+            }
+
+            let total = 0;
+            if (updatedVariants && updatedVariants.length > 0) {
+                updatedVariants.forEach(vr => {
+                    if (vr.size_stock) {
+                        Object.values(vr.size_stock).forEach(q => { total += Number(q) || 0; });
+                    }
+                });
+            } else {
+                const sizeValues = Object.values(updatedSizeStock).filter(v => v !== "" && !isNaN(v));
+                total = sizeValues.length > 0 ? sizeValues.reduce((a, b) => a + Number(b), 0) : (parseInt(prev.stock) || 0);
+            }
+
             return {
                 ...prev,
                 sizes: newList.join(","),
                 size_stock: updatedSizeStock,
-                stock: totalStock.toString()
+                color_variants: updatedVariants,
+                stock: total.toString()
             };
         });
     };
@@ -851,19 +977,8 @@ const Products = () => {
         if (!cleanName) return;
         setFormData(prev => {
             let currentVariants = Array.isArray(prev.color_variants) ? [...prev.color_variants] : [];
-            
-            // If converting from single-color to multi-color variants for the first time
-            if (currentVariants.length === 0 && ((prev.images && prev.images.length > 0) || prev.image)) {
-                currentVariants.push({
-                    color_name: prev.colors?.split(",")[0]?.trim() || "Main Color",
-                    color_code: "#800000",
-                    image: prev.image || (prev.images && prev.images[0]) || "",
-                    images: prev.images && prev.images.length > 0 ? [...prev.images] : (prev.image ? [prev.image] : []),
-                    size_stock: { ...(prev.size_stock || {}) },
-                    sku: ""
-                });
-            }
 
+            // If variant already exists (case-insensitive), just switch active tab to it
             const exists = currentVariants.find(v => v.color_name?.toLowerCase() === cleanName.toLowerCase());
             if (exists) {
                 const idx = currentVariants.indexOf(exists);
@@ -874,11 +989,20 @@ const Products = () => {
             const initialSizeStock = {};
             parsedSizes.forEach(s => { initialSizeStock[s] = 0; });
 
+            // If this is the FIRST color variant and there were already generic photos uploaded in single mode,
+            // migrate those photos into this first color variant so no user uploads are lost
+            let initialImages = [];
+            let initialImage = "";
+            if (currentVariants.length === 0 && ((prev.images && prev.images.length > 0) || prev.image)) {
+                initialImages = prev.images && prev.images.length > 0 ? [...prev.images] : (prev.image ? [prev.image] : []);
+                initialImage = prev.image || initialImages[0] || "";
+            }
+
             const newVariant = {
                 color_name: cleanName,
                 color_code: colorHex,
-                image: "",
-                images: [],
+                image: initialImage,
+                images: initialImages,
                 size_stock: initialSizeStock,
                 sku: `${cleanName.slice(0, 3).toUpperCase()}`
             };
@@ -898,11 +1022,26 @@ const Products = () => {
             const currentVariants = Array.isArray(prev.color_variants) ? prev.color_variants.filter((_, idx) => idx !== indexToRemove) : [];
             const newActive = Math.max(0, (prev.active_color_idx || 0) >= currentVariants.length ? currentVariants.length - 1 : (prev.active_color_idx || 0));
             const updatedColors = currentVariants.map(v => v.color_name).filter(Boolean).join(", ");
+
+            let total = 0;
+            const globalSizeStock = {};
+            currentVariants.forEach(vr => {
+                if (vr.size_stock) {
+                    Object.entries(vr.size_stock).forEach(([s, q]) => {
+                        const num = Number(q) || 0;
+                        globalSizeStock[s] = (globalSizeStock[s] || 0) + num;
+                        total += num;
+                    });
+                }
+            });
+
             return {
                 ...prev,
                 color_variants: currentVariants,
                 colors: updatedColors,
-                active_color_idx: newActive
+                active_color_idx: newActive,
+                size_stock: currentVariants.length > 0 ? globalSizeStock : prev.size_stock,
+                stock: currentVariants.length > 0 ? total.toString() : prev.stock
             };
         });
     };
@@ -2803,225 +2942,98 @@ const Products = () => {
                                         );
                                     })()}
                                 </div>
+                            </div>
 
-                                {/* ── Product Photos (Select Multiple) - FULL WIDTH across both columns ── */}
-                                <div className="md:col-span-2 space-y-3">
-                                    <div className="flex items-center justify-between flex-wrap gap-2">
-                                        <label className="block text-slate-800 font-bold text-xs flex items-center gap-1.5">
-                                            <ImageIcon className="w-4 h-4 text-[#0891b2]" />
-                                            <span>Product Photos (Select Multiple) <span className="text-cyan-600 font-extrabold">*</span></span>
-                                        </label>
-                                        <span className="text-[11px] text-slate-500 font-medium">
-                                            Hold Shift/Ctrl to select multiple files • First photo is Primary Cover
-                                        </span>
-                                    </div>
-
-                                    {/* Upload Trigger Area */}
-                                    <label className="border-2 border-dashed border-slate-300 hover:border-cyan-400 bg-slate-50 hover:bg-cyan-50/30 rounded-2xl p-5 text-center cursor-pointer transition flex flex-col sm:flex-row items-center justify-center gap-3 group">
-                                        {uploadingImage ? (
-                                            <Loader2 className="w-6 h-6 text-[#0891b2] animate-spin flex-shrink-0" />
-                                        ) : (
-                                            <div className="w-10 h-10 rounded-xl bg-cyan-100 flex items-center justify-center text-[#0891b2] group-hover:scale-105 transition-transform flex-shrink-0">
-                                                <Upload className="w-5 h-5" />
-                                            </div>
-                                        )}
-                                        <div className="text-center sm:text-left">
-                                            <div className="text-xs text-slate-800 font-bold">
-                                                {uploadingImage ? "Uploading product photos..." : "Click or Drag to Upload Multiple Images"}
-                                            </div>
-                                            <div className="text-[11px] text-slate-500 mt-0.5">
-                                                PNG, JPG, WebP (Max 10MB each) • You can select multiple images at once
-                                            </div>
-                                        </div>
-                                        <input
-                                            type="file"
-                                            multiple
-                                            accept="image/*"
-                                            onChange={handleImageFileUpload}
-                                            className="hidden"
-                                            disabled={uploadingImage}
-                                        />
+                            {/* ── Pricing & Material 4-Column Grid ── */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50/80 border border-slate-200 p-3.5 rounded-2xl shadow-2xs">
+                                <div>
+                                    <label className="block text-slate-700 font-bold mb-1 text-xs">
+                                        Selling Price (₹) <span className="text-cyan-600 font-extrabold">*</span>
                                     </label>
-
-                                    {/* Gallery & Primary Preview */}
-                                    {((formData.images && formData.images.length > 0) || formData.image) && (
-                                        <div className="space-y-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
-                                            <div className="flex items-center justify-between text-xs">
-                                                <span className="font-bold text-slate-800">
-                                                    Uploaded Photos ({formData.images?.length || (formData.image ? 1 : 0)})
-                                                </span>
-                                                <span className="text-[11px] text-[#0891b2] font-semibold">
-                                                    Click "Make Primary" to set the main cover image
-                                                </span>
-                                            </div>
-
-                                            {/* Thumbnail cards grid */}
-                                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2.5 pt-1">
-                                                {(formData.images && formData.images.length > 0 ? formData.images : [formData.image]).map((imgUrl, idx) => {
-                                                    const isPrimary = (formData.image === imgUrl) || (!formData.image && idx === 0);
-                                                    return (
-                                                        <div
-                                                            key={idx}
-                                                            className={`relative rounded-xl overflow-hidden group bg-white border-2 transition shadow-xs flex flex-col ${
-                                                                isPrimary
-                                                                    ? "border-cyan-400 ring-2 ring-cyan-400/30"
-                                                                    : "border-slate-200 hover:border-slate-300"
-                                                            }`}
-                                                        >
-                                                            <div className="w-full h-24 bg-slate-100 overflow-hidden relative">
-                                                                <img
-                                                                    src={imgUrl}
-                                                                    alt={`Product image ${idx + 1}`}
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                                
-                                                                {/* Primary Badge */}
-                                                                {isPrimary && (
-                                                                    <span className="absolute top-1.5 left-1.5 bg-[#0891b2] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-sm flex items-center gap-0.5">
-                                                                        <Star className="w-2.5 h-2.5 fill-white" /> Primary
-                                                                    </span>
-                                                                )}
-
-                                                                {/* Delete Button */}
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleRemoveImage(idx);
-                                                                    }}
-                                                                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 hover:bg-slate-700 text-white flex items-center justify-center transition opacity-80 hover:opacity-100 cursor-pointer shadow-sm"
-                                                                    title="Remove image"
-                                                                >
-                                                                    <Trash2 className="w-3 h-3" />
-                                                                </button>
-                                                            </div>
-
-                                                            {/* Card footer action */}
-                                                            <div className="p-1 text-center bg-white border-t border-slate-100">
-                                                                {isPrimary ? (
-                                                                    <span className="text-[10px] font-bold text-cyan-700">
-                                                                        Cover Photo
-                                                                    </span>
-                                                                ) : (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => handleSetPrimaryImage(imgUrl)}
-                                                                        className="w-full py-0.5 text-[10px] font-bold text-slate-700 hover:text-black hover:bg-cyan-100 rounded transition cursor-pointer"
-                                                                    >
-                                                                        Make Primary
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-
-                                                {/* Add More Tile */}
-                                                <label className="h-28 rounded-xl border-2 border-dashed border-slate-300 hover:border-cyan-400 bg-white hover:bg-cyan-50/30 flex flex-col items-center justify-center cursor-pointer transition text-slate-500 hover:text-cyan-600">
-                                                    <Plus className="w-5 h-5" />
-                                                    <span className="text-[10px] font-bold mt-1">Add More</span>
-                                                    <input
-                                                        type="file"
-                                                        multiple
-                                                        accept="image/*"
-                                                        onChange={handleImageFileUpload}
-                                                        className="hidden"
-                                                        disabled={uploadingImage}
-                                                    />
-                                                </label>
-                                            </div>
-                                        </div>
-                                    )}
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        required
+                                        value={formData.price}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            const org = parseFloat(formData.original_price);
+                                            const sp = parseFloat(val);
+                                            let disc = formData.discount;
+                                            if (org && sp && org > sp) {
+                                                disc = Math.round(((org - sp) / org) * 100);
+                                            }
+                                            setFormData({ ...formData, price: val, discount: disc });
+                                        }}
+                                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-cyan-500 text-xs font-mono font-bold transition shadow-2xs"
+                                        placeholder="1299"
+                                    />
                                 </div>
 
-                                {/* ── Shifted Pricing & Stock 4-Column Row (Right below Photos) ── */}
-                                <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50/80 border border-slate-200 p-3.5 rounded-2xl shadow-2xs">
-                                    <div>
-                                        <label className="block text-slate-700 font-bold mb-1 text-xs">
-                                            Selling Price (₹) <span className="text-cyan-600 font-extrabold">*</span>
-                                        </label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            required
-                                            value={formData.price}
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-                                                const org = parseFloat(formData.original_price);
-                                                const sp = parseFloat(val);
-                                                let disc = formData.discount;
-                                                if (org && sp && org > sp) {
-                                                    disc = Math.round(((org - sp) / org) * 100);
-                                                }
-                                                setFormData({ ...formData, price: val, discount: disc });
-                                            }}
-                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-cyan-500 text-xs font-mono font-bold transition shadow-2xs"
-                                            placeholder="1299"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-slate-700 font-bold mb-1 text-xs">
-                                            Original MRP (₹)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            value={formData.original_price}
-                                            onChange={(e) => {
-                                                const orgVal = e.target.value;
-                                                const org = parseFloat(orgVal);
-                                                const sp = parseFloat(formData.price);
-                                                let disc = formData.discount;
-                                                if (org && sp && org > sp) {
-                                                    disc = Math.round(((org - sp) / org) * 100);
-                                                }
-                                                setFormData({ ...formData, original_price: orgVal, discount: disc });
-                                            }}
-                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-cyan-500 text-xs font-mono font-bold transition shadow-2xs"
-                                            placeholder="1999"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-slate-700 font-bold mb-1 text-xs">
-                                            Discount %
-                                        </label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            max="100"
-                                            value={formData.discount}
-                                            onChange={(e) => {
-                                                const discVal = e.target.value;
-                                                const disc = parseInt(discVal);
-                                                let sp = formData.price;
-                                                const org = parseFloat(formData.original_price);
-                                                if (org && !isNaN(disc) && disc > 0 && disc < 100) {
-                                                    sp = Math.round(org * (1 - disc / 100));
-                                                }
-                                                setFormData({ ...formData, discount: discVal, price: sp });
-                                            }}
-                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-cyan-500 text-xs font-mono font-bold transition shadow-2xs"
-                                            placeholder="20"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-slate-700 font-bold mb-1 text-xs">
-                                            Fabric / Material <span className="text-cyan-600 font-extrabold">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={formData.fabric}
-                                            onChange={(e) => setFormData({ ...formData, fabric: e.target.value })}
-                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-cyan-500 text-xs font-bold transition shadow-2xs"
-                                            placeholder="e.g. Pure Cotton, Rayon"
-                                        />
-                                    </div>
+                                <div>
+                                    <label className="block text-slate-700 font-bold mb-1 text-xs">
+                                        Original MRP (₹)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={formData.original_price}
+                                        onChange={(e) => {
+                                            const orgVal = e.target.value;
+                                            const org = parseFloat(orgVal);
+                                            const sp = parseFloat(formData.price);
+                                            let disc = formData.discount;
+                                            if (org && sp && org > sp) {
+                                                disc = Math.round(((org - sp) / org) * 100);
+                                            }
+                                            setFormData({ ...formData, original_price: orgVal, discount: disc });
+                                        }}
+                                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-cyan-500 text-xs font-mono font-bold transition shadow-2xs"
+                                        placeholder="1999"
+                                    />
                                 </div>
 
+                                <div>
+                                    <label className="block text-slate-700 font-bold mb-1 text-xs">
+                                        Discount %
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        value={formData.discount}
+                                        onChange={(e) => {
+                                            const discVal = e.target.value;
+                                            const disc = parseInt(discVal);
+                                            let sp = formData.price;
+                                            const org = parseFloat(formData.original_price);
+                                            if (org && !isNaN(disc) && disc > 0 && disc < 100) {
+                                                sp = Math.round(org * (1 - disc / 100));
+                                            }
+                                            setFormData({ ...formData, discount: discVal, price: sp });
+                                        }}
+                                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-cyan-500 text-xs font-mono font-bold transition shadow-2xs"
+                                        placeholder="20"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-slate-700 font-bold mb-1 text-xs">
+                                        Fabric / Material <span className="text-cyan-600 font-extrabold">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.fabric}
+                                        onChange={(e) => setFormData({ ...formData, fabric: e.target.value })}
+                                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-cyan-500 text-xs font-bold transition shadow-2xs"
+                                        placeholder="e.g. Pure Cotton, Rayon"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* ── Delivery & Return Policy 3-Column Row ── */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50/60 border border-slate-200 p-3.5 rounded-2xl shadow-2xs">
                                 <div>
                                     <label className="block text-slate-700 font-bold mb-1.5">Delivery Charge (INR)</label>
                                     <input
@@ -3030,7 +3042,7 @@ const Products = () => {
                                         min="0"
                                         value={formData.delivery_charge}
                                         onChange={(e) => setFormData({ ...formData, delivery_charge: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891b2] text-xs transition"
+                                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891b2] text-xs transition"
                                         placeholder="0 (or leave empty for default)"
                                     />
                                 </div>
@@ -3040,7 +3052,7 @@ const Products = () => {
                                     <select
                                         value={formData.is_returnable ? "yes" : "no"}
                                         onChange={(e) => setFormData({ ...formData, is_returnable: e.target.value === "yes" })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs focus:outline-none focus:border-[#0891b2] cursor-pointer"
+                                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs focus:outline-none focus:border-[#0891b2] cursor-pointer"
                                     >
                                         <option value="yes">Yes — Returnable</option>
                                         <option value="no">No — Non-Returnable (Final Sale)</option>
@@ -3072,22 +3084,19 @@ const Products = () => {
                                         type="text"
                                         value={formData.return_policy}
                                         onChange={(e) => setFormData({ ...formData, return_policy: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891b2] text-xs transition"
+                                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891b2] text-xs transition"
                                         placeholder="e.g. Easy 4-Day Returns"
                                     />
-                                </div>
-
-                                <div className="sm:col-span-2 lg:col-span-3 space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <label className="block text-slate-700 font-bold text-xs">Sizes (comma separated or select chips below)</label>
-                                        <span className="text-[11px] text-slate-500 font-medium">Click chip to toggle size</span>
-                                    </div>
                                 </div>
                             </div>
 
                             {/* ── Unified Size & Stock Inventory Card ── */}
                             {(() => {
                                 const parsedSizeList = formData.sizes ? formData.sizes.split(",").map(s => s.trim()).filter(Boolean) : [];
+                                const hasColorVariants = Array.isArray(formData.color_variants) && formData.color_variants.length > 0;
+                                const activeColorIdx = Math.min(formData.active_color_idx || 0, Math.max(0, (formData.color_variants?.length || 1) - 1));
+                                const activeColorVariant = hasColorVariants ? formData.color_variants[activeColorIdx] : null;
+
                                 return (
                                     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
                                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
@@ -3102,25 +3111,27 @@ const Products = () => {
                                                     </span>
                                                 </div>
                                                 <p className="text-xs text-slate-500 mt-0.5">
-                                                    Select sizes and enter stock for each. Total inventory is calculated automatically.
+                                                    {hasColorVariants
+                                                        ? `Select a color below to enter stock per size. All color stocks automatically sum into Total Stock (${formData.stock || 0} units).`
+                                                        : "Select sizes and enter stock for each. Total inventory is calculated automatically."}
                                                 </p>
                                             </div>
                                             <div className="text-right bg-white px-3.5 py-1.5 rounded-xl border border-slate-200 shadow-2xs self-stretch sm:self-auto flex sm:flex-col justify-between items-center sm:items-end">
-                                                <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wider">Total Stock</span>
+                                                <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wider">Total Product Stock</span>
                                                 <span className="text-base font-extrabold text-[#0891b2] font-mono">
                                                     {Number(formData.stock || 0).toLocaleString()} <span className="text-xs font-semibold text-slate-500">units</span>
                                                 </span>
                                             </div>
                                         </div>
 
-                                        {/* Size Chips */}
+                                        {/* Size Chips (Removed 3XL) */}
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between">
                                                 <label className="block text-slate-700 font-bold text-xs">Active Sizes (Click to toggle)</label>
                                                 <span className="text-[11px] text-slate-400">Custom size? Type below</span>
                                             </div>
                                             <div className="flex items-center gap-1.5 flex-wrap">
-                                                {["XS", "S", "M", "L", "XL", "XXL", "3XL", "Free Size"].map((sz) => {
+                                                {["XS", "S", "M", "L", "XL", "XXL", "Free Size"].map((sz) => {
                                                     const isSelected = parsedSizeList.includes(sz);
                                                     return (
                                                         <button
@@ -3155,15 +3166,75 @@ const Products = () => {
                                             />
                                         </div>
 
+                                        {/* Color Variant Selector (When multiple colors exist) */}
+                                        {hasColorVariants && (
+                                            <div className="bg-white p-3.5 rounded-2xl border border-cyan-200 shadow-2xs space-y-2.5">
+                                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                                        <Palette className="w-4 h-4 text-[#0891b2]" />
+                                                        <span>Select Color Variant for Size Stock:</span>
+                                                    </span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[11px] text-slate-500 font-medium">Quick switch:</span>
+                                                        <select
+                                                            value={activeColorIdx}
+                                                            onChange={(e) => setFormData(prev => ({ ...prev, active_color_idx: Number(e.target.value) }))}
+                                                            className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-800 focus:outline-none focus:border-cyan-500 cursor-pointer shadow-2xs"
+                                                        >
+                                                            {formData.color_variants.map((v, idx) => {
+                                                                const vStock = Object.values(v.size_stock || {}).reduce((a, b) => a + Number(b || 0), 0);
+                                                                return (
+                                                                    <option key={idx} value={idx}>
+                                                                        {v.color_name} ({vStock} units)
+                                                                    </option>
+                                                                );
+                                                            })}
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                                                    {formData.color_variants.map((v, idx) => {
+                                                        const isCur = activeColorIdx === idx;
+                                                        const vStock = Object.values(v.size_stock || {}).reduce((a, b) => a + Number(b || 0), 0);
+                                                        return (
+                                                            <button
+                                                                key={idx}
+                                                                type="button"
+                                                                onClick={() => setFormData(prev => ({ ...prev, active_color_idx: idx }))}
+                                                                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer select-none shrink-0 ${
+                                                                    isCur
+                                                                        ? "bg-cyan-50 border-[#0891b2] text-[#0891b2] shadow-xs ring-2 ring-[#0891b2]/20 scale-102"
+                                                                        : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700"
+                                                                }`}
+                                                            >
+                                                                <span
+                                                                    className="w-3 h-3 rounded-full border border-black/25 shrink-0 shadow-2xs"
+                                                                    style={{ backgroundColor: v.color_code || "#800000" }}
+                                                                />
+                                                                <span>{v.color_name}</span>
+                                                                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${isCur ? "bg-[#0891b2] text-white" : "bg-white text-slate-600 border border-slate-200"}`}>
+                                                                    {vStock} pcs
+                                                                </span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {/* Quantities per Size Grid */}
                                         {parsedSizeList.length > 0 && !parsedSizeList.includes("Free Size") ? (
                                             <div className="space-y-3 pt-2 border-t border-slate-200">
                                                 <div className="flex items-center justify-between flex-wrap gap-2">
                                                     <span className="text-xs text-slate-700 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                                                        <Package className="w-3.5 h-3.5 text-cyan-600" /> Stock Quantity by Size:
+                                                        <Package className="w-3.5 h-3.5 text-cyan-600" />
+                                                        <span>
+                                                            Stock Quantity by Size {hasColorVariants && activeColorVariant ? `(for ${activeColorVariant.color_name}):` : ":"}
+                                                        </span>
                                                     </span>
                                                     <div className="flex items-center gap-1.5 flex-wrap text-xs">
-                                                        <span className="text-slate-400 text-[11px] font-medium mr-1">Quick add to all:</span>
+                                                        <span className="text-slate-400 text-[11px] font-medium mr-1">Quick add:</span>
                                                         <button
                                                             type="button"
                                                             onClick={() => handleQuickAddAllSizes(5)}
@@ -3181,14 +3252,42 @@ const Products = () => {
                                                         <button
                                                             type="button"
                                                             onClick={() => {
-                                                                const reset = {};
-                                                                parsedSizeList.forEach(s => reset[s] = 0);
-                                                                setFormData(prev => ({
-                                                                    ...prev,
-                                                                    stock: 0,
-                                                                    size_stock: reset,
-                                                                    warehouse_stock: { "All": 0 }
-                                                                }));
+                                                                if (hasColorVariants) {
+                                                                    const reset = {};
+                                                                    parsedSizeList.forEach(s => reset[s] = 0);
+                                                                    setFormData(prev => {
+                                                                        const variants = [...prev.color_variants];
+                                                                        if (variants[activeColorIdx]) {
+                                                                            variants[activeColorIdx] = { ...variants[activeColorIdx], size_stock: reset };
+                                                                        }
+                                                                        let total = 0;
+                                                                        const globalSizeStock = {};
+                                                                        variants.forEach(vr => {
+                                                                            if (vr.size_stock) {
+                                                                                Object.entries(vr.size_stock).forEach(([s, q]) => {
+                                                                                    const num = Number(q) || 0;
+                                                                                    globalSizeStock[s] = (globalSizeStock[s] || 0) + num;
+                                                                                    total += num;
+                                                                                });
+                                                                            }
+                                                                        });
+                                                                        return {
+                                                                            ...prev,
+                                                                            color_variants: variants,
+                                                                            size_stock: globalSizeStock,
+                                                                            stock: total.toString()
+                                                                        };
+                                                                    });
+                                                                } else {
+                                                                    const reset = {};
+                                                                    parsedSizeList.forEach(s => reset[s] = 0);
+                                                                    setFormData(prev => ({
+                                                                        ...prev,
+                                                                        stock: 0,
+                                                                        size_stock: reset,
+                                                                        warehouse_stock: { "All": 0 }
+                                                                    }));
+                                                                }
                                                             }}
                                                             className="px-2 py-0.5 bg-white hover:bg-rose-50 border border-rose-200 text-rose-600 rounded-lg font-bold text-[11px] transition shadow-2xs cursor-pointer active:scale-95"
                                                         >
@@ -3197,9 +3296,11 @@ const Products = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
                                                     {parsedSizeList.map((sz) => {
-                                                        const qty = formData.size_stock?.[sz] ?? 0;
+                                                        const qty = hasColorVariants && activeColorVariant
+                                                            ? (activeColorVariant.size_stock?.[sz] ?? 0)
+                                                            : (formData.size_stock?.[sz] ?? 0);
                                                         return (
                                                             <div
                                                                 key={sz}
@@ -3216,7 +3317,14 @@ const Products = () => {
                                                                 <div className="flex items-center gap-1">
                                                                     <button
                                                                         type="button"
-                                                                        onClick={() => handleSizeStockChange(sz, Math.max(0, Number(qty || 0) - 1))}
+                                                                        onClick={() => {
+                                                                            const nextVal = Math.max(0, Number(qty || 0) - 1);
+                                                                            if (hasColorVariants) {
+                                                                                handleVariantSizeStockChange(activeColorIdx, sz, nextVal);
+                                                                            } else {
+                                                                                handleSizeStockChange(sz, nextVal);
+                                                                            }
+                                                                        }}
                                                                         className="w-7 h-7 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-xs cursor-pointer select-none transition"
                                                                     >
                                                                         -
@@ -3225,12 +3333,26 @@ const Products = () => {
                                                                         type="number"
                                                                         min="0"
                                                                         value={qty}
-                                                                        onChange={(e) => handleSizeStockChange(sz, e.target.value)}
+                                                                        onChange={(e) => {
+                                                                            const val = e.target.value;
+                                                                            if (hasColorVariants) {
+                                                                                handleVariantSizeStockChange(activeColorIdx, sz, val);
+                                                                            } else {
+                                                                                handleSizeStockChange(sz, val);
+                                                                            }
+                                                                        }}
                                                                         className="w-full bg-slate-50 border border-slate-300 rounded-lg py-1 text-center text-xs text-slate-900 font-extrabold font-mono focus:outline-none focus:border-cyan-500 focus:bg-white"
                                                                     />
                                                                     <button
                                                                         type="button"
-                                                                        onClick={() => handleSizeStockChange(sz, Number(qty || 0) + 1)}
+                                                                        onClick={() => {
+                                                                            const nextVal = Number(qty || 0) + 1;
+                                                                            if (hasColorVariants) {
+                                                                                handleVariantSizeStockChange(activeColorIdx, sz, nextVal);
+                                                                            } else {
+                                                                                handleSizeStockChange(sz, nextVal);
+                                                                            }
+                                                                        }}
                                                                         className="w-7 h-7 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-xs cursor-pointer select-none transition"
                                                                     >
                                                                         +
@@ -3240,6 +3362,80 @@ const Products = () => {
                                                         );
                                                     })}
                                                 </div>
+
+                                                {/* Cross-Variant Stock Summary Matrix Table */}
+                                                {hasColorVariants && formData.color_variants.length > 0 && (
+                                                    <div className="space-y-2 pt-3 border-t border-slate-200">
+                                                        <div className="flex items-center justify-between text-xs">
+                                                            <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                                                                <Layers className="w-3.5 h-3.5 text-cyan-600" />
+                                                                <span>All Color Variants &amp; Sizes Stock Summary</span>
+                                                            </span>
+                                                            <span className="text-[11px] text-slate-500 font-mono">
+                                                                {formData.color_variants.length} colors • {formData.stock || 0} total units
+                                                            </span>
+                                                        </div>
+                                                        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
+                                                            <table className="w-full text-xs text-left">
+                                                                <thead className="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200">
+                                                                    <tr>
+                                                                        <th className="p-2.5 sm:px-3">Color Variant</th>
+                                                                        {parsedSizeList.map(sz => (
+                                                                            <th key={sz} className="p-2 text-center font-mono">{sz}</th>
+                                                                        ))}
+                                                                        <th className="p-2.5 sm:px-3 text-right">Color Total</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-slate-100 font-mono">
+                                                                    {formData.color_variants.map((v, vIdx) => {
+                                                                        const isCur = activeColorIdx === vIdx;
+                                                                        const vTotal = Object.values(v.size_stock || {}).reduce((a, b) => a + Number(b || 0), 0);
+                                                                        return (
+                                                                            <tr
+                                                                                key={vIdx}
+                                                                                onClick={() => setFormData(prev => ({ ...prev, active_color_idx: vIdx }))}
+                                                                                className={`cursor-pointer transition ${isCur ? "bg-cyan-50/70 font-bold" : "hover:bg-slate-50"}`}
+                                                                            >
+                                                                                <td className="p-2.5 sm:px-3 font-sans font-semibold flex items-center gap-2">
+                                                                                    <span
+                                                                                        className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0 shadow-2xs"
+                                                                                        style={{ backgroundColor: v.color_code || "#800000" }}
+                                                                                    />
+                                                                                    <span className="truncate">{v.color_name}</span>
+                                                                                    {isCur && <span className="text-[10px] text-[#0891b2] font-bold">(active)</span>}
+                                                                                </td>
+                                                                                {parsedSizeList.map(sz => (
+                                                                                    <td key={sz} className="p-2 text-center text-slate-800">
+                                                                                        {v.size_stock?.[sz] ?? 0}
+                                                                                    </td>
+                                                                                ))}
+                                                                                <td className="p-2.5 sm:px-3 text-right font-bold text-[#0891b2]">
+                                                                                    {vTotal} units
+                                                                                </td>
+                                                                            </tr>
+                                                                        );
+                                                                    })}
+                                                                </tbody>
+                                                                <tfoot className="bg-slate-50 font-bold text-slate-900 border-t border-slate-200">
+                                                                    <tr>
+                                                                        <td className="p-2.5 sm:px-3 font-sans uppercase text-[11px]">Total Units</td>
+                                                                        {parsedSizeList.map(sz => {
+                                                                            const sum = formData.color_variants.reduce((acc, v) => acc + (Number(v.size_stock?.[sz]) || 0), 0);
+                                                                            return (
+                                                                                <td key={sz} className="p-2 text-center font-mono text-[#0891b2]">
+                                                                                    {sum}
+                                                                                </td>
+                                                                            );
+                                                                        })}
+                                                                        <td className="p-2.5 sm:px-3 text-right font-mono text-sm text-cyan-700">
+                                                                            {formData.stock || 0} units
+                                                                        </td>
+                                                                    </tr>
+                                                                </tfoot>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : (
                                             <div className="bg-white p-3.5 rounded-xl border border-slate-200 pt-2">
@@ -3381,24 +3577,90 @@ const Products = () => {
                                             </span>
                                         </div>
                                         <p className="text-xs text-slate-500 mt-0.5">
-                                            Upload high-resolution photos. Add multiple color variants (e.g. Maroon, Emerald Green) with dedicated photo sets and size inventory.
+                                            Upload photos. Type a color name (e.g. Green, Maroon, Red) to create dedicated photo galleries and size inventory for each color.
                                         </p>
                                     </div>
+                                </div>
 
-                                    {/* Quick Color Variant Pills */}
-                                    <div className="flex items-center gap-1 flex-wrap">
-                                        <span className="text-[11px] text-slate-500 font-bold mr-1 flex items-center gap-1">
-                                            <Palette className="w-3.5 h-3.5 text-[#0891b2]" /> + Color:
+                                {/* Prominent Add Color Variant Bar */}
+                                <div className="bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-2.5">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                            <Palette className="w-4 h-4 text-[#0891b2]" />
+                                            <span>Add Color Variant (Type Name &amp; Pick Tone)</span>
+                                        </label>
+                                        <span className="text-[11px] text-slate-500 font-medium">
+                                            Type name and press Enter or click Add
                                         </span>
-                                        {PRESET_COLOR_OPTIONS.slice(0, 6).map((c) => (
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                                        <div className="flex-1 relative">
+                                            <input
+                                                type="text"
+                                                id="admin-color-name-input"
+                                                value={newColorInputName}
+                                                onChange={(e) => handleColorNameInputChange(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter") {
+                                                        e.preventDefault();
+                                                        handleAddNewColorVariant();
+                                                    }
+                                                }}
+                                                placeholder="Type Color Name (e.g. Green, Maroon, Red, Navy Blue)..."
+                                                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 font-bold placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:bg-white transition"
+                                            />
+                                        </div>
+
+                                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 shrink-0">
+                                            <input
+                                                type="color"
+                                                value={newColorInputHex}
+                                                onChange={(e) => setNewColorInputHex(e.target.value)}
+                                                className="w-7 h-7 rounded-lg border border-slate-300 cursor-pointer p-0 bg-transparent"
+                                                title="Pick custom swatch color"
+                                            />
+                                            <span className="text-[11px] font-mono font-bold text-slate-700 uppercase">
+                                                {newColorInputHex}
+                                            </span>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={handleAddNewColorVariant}
+                                            className="px-4 py-2.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 shrink-0"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            <span>+ Add Color Variant</span>
+                                        </button>
+                                    </div>
+
+                                    {/* Popular Ethnic Wear Color Presets */}
+                                    <div className="flex items-center gap-1.5 flex-wrap pt-1.5 border-t border-slate-100">
+                                        <span className="text-[11px] text-slate-400 font-medium mr-1">Quick Select:</span>
+                                        {[
+                                            { name: "Green", hex: "#15803d" },
+                                            { name: "Maroon", hex: "#800000" },
+                                            { name: "Red", hex: "#dc2626" },
+                                            { name: "Navy Blue", hex: "#1e3a8a" },
+                                            { name: "Royal Blue", hex: "#1d4ed8" },
+                                            { name: "Pink", hex: "#db2777" },
+                                            { name: "Yellow", hex: "#eab308" },
+                                            { name: "Black", hex: "#1a1a1a" },
+                                            { name: "White", hex: "#ffffff" },
+                                            { name: "Teal", hex: "#0d9488" }
+                                        ].map((c) => (
                                             <button
                                                 key={c.name}
                                                 type="button"
-                                                onClick={() => handleAddColorVariant(c.name, c.hex)}
-                                                className="px-2 py-0.5 bg-white hover:bg-cyan-50 border border-slate-200 hover:border-cyan-300 text-slate-700 rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer shadow-2xs active:scale-95"
-                                                title={`Add ${c.name} color variant`}
+                                                onClick={() => {
+                                                    setNewColorInputName(c.name);
+                                                    setNewColorInputHex(c.hex);
+                                                    handleAddColorVariant(c.name, c.hex);
+                                                }}
+                                                className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 hover:bg-cyan-50 border border-slate-200 hover:border-cyan-300 text-slate-700 transition flex items-center gap-1 cursor-pointer"
                                             >
-                                                <span className="w-2 h-2 rounded-full border border-black/20" style={{ backgroundColor: c.hex }} />
+                                                <span className="w-2.5 h-2.5 rounded-full border border-black/20" style={{ backgroundColor: c.hex }} />
                                                 <span>{c.name}</span>
                                             </button>
                                         ))}
@@ -3427,7 +3689,7 @@ const Products = () => {
                                                         onClick={() => setFormData(prev => ({ ...prev, active_color_idx: vIdx }))}
                                                         className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition cursor-pointer select-none shrink-0 ${
                                                             isActive
-                                                                ? "bg-white border-[#0891b2] text-[#0891b2] shadow-sm ring-2 ring-[#0891b2]/20"
+                                                                ? "bg-white border-[#0891b2] text-[#0891b2] shadow-sm ring-2 ring-[#0891b2]/20 scale-102"
                                                                 : "bg-white/70 hover:bg-white border-slate-200 text-slate-700"
                                                         }`}
                                                     >
@@ -3453,36 +3715,6 @@ const Products = () => {
                                                     </div>
                                                 );
                                             })}
-
-                                            {/* Add Custom Color Input */}
-                                            <div className="flex items-center gap-1 shrink-0">
-                                                <input
-                                                    type="text"
-                                                    id="admin-add-custom-color"
-                                                    placeholder="+ Other color..."
-                                                    className="w-28 bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-cyan-500"
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === "Enter") {
-                                                            e.preventDefault();
-                                                            handleAddColorVariant(e.target.value);
-                                                            e.target.value = "";
-                                                        }
-                                                    }}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const el = document.getElementById("admin-add-custom-color");
-                                                        if (el && el.value.trim()) {
-                                                            handleAddColorVariant(el.value);
-                                                            el.value = "";
-                                                        }
-                                                    }}
-                                                    className="px-2.5 py-1.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-xs font-bold transition cursor-pointer"
-                                                >
-                                                    Add
-                                                </button>
-                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -3661,6 +3893,30 @@ const Products = () => {
                                                             />
                                                         </label>
                                                     </div>
+
+                                                    {/* Saved status & add next color variant prompt */}
+                                                    {hasVariants && curVariant && (
+                                                        <div className="flex items-center justify-between flex-wrap gap-2 pt-2 border-t border-slate-100">
+                                                            <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
+                                                                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                                                <span>{curImages.length} photo(s) saved for {curVariant.color_name}</span>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const el = document.getElementById("admin-color-name-input");
+                                                                    if (el) {
+                                                                        el.focus();
+                                                                        el.scrollIntoView({ behavior: "smooth", block: "center" });
+                                                                    }
+                                                                }}
+                                                                className="px-3 py-1 bg-white hover:bg-cyan-50 border border-slate-300 hover:border-cyan-400 text-slate-700 hover:text-[#0891b2] rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                                                            >
+                                                                <Plus className="w-3.5 h-3.5" />
+                                                                <span>+ Add Another Color Variant</span>
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
 
@@ -3727,16 +3983,7 @@ const Products = () => {
                                     </p>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-slate-700 font-bold mb-1.5 text-xs">Pattern / Work</label>
-                                        <input
-                                            type="text"
-                                            value={formData.pattern}
-                                            onChange={(e) => setFormData({ ...formData, pattern: e.target.value })}
-                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
-                                            placeholder="e.g. Floral Print, Embroidered"
-                                        />
-                                    </div>
+
                                     <div>
                                         <div className="flex items-center justify-between mb-1.5">
                                             <label className="block text-slate-700 font-bold text-xs">Pattern / Work</label>
