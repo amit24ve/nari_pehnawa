@@ -141,7 +141,13 @@ const Categories = () => {
     // Sub-Categories Tag Input in Modal
     const [subCatInput, setSubCatInput] = useState("");
 
-    // Quick Sub-Categories Manager Modal
+    // Sub-Categories Manager Modal
+    const [showSubCatModal, setShowSubCatModal] = useState(false);
+    const [subCatSelectedDept, setSubCatSelectedDept] = useState("Women");
+    const [subCatNewName, setSubCatNewName] = useState("");
+    const [subCatSaving, setSubCatSaving] = useState(false);
+    const [subCatError, setSubCatError] = useState(null);
+    const [subCatSuccess, setSubCatSuccess] = useState(null);
     const [subCatModalCategory, setSubCatModalCategory] = useState(null);
     const [quickSubInput, setQuickSubInput] = useState("");
     const [quickSubSaving, setQuickSubSaving] = useState(false);
@@ -368,6 +374,74 @@ const Categories = () => {
             ...prev,
             sub_categories: (prev.sub_categories || []).filter(s => s !== subToRemove)
         }));
+    };
+
+    /* Department-wise Sub-Category Manager Handlers */
+    const handleAddSubCategoryToDept = async (e) => {
+        if (e) e.preventDefault();
+        const trimmed = subCatNewName.trim();
+        if (!trimmed) {
+            setSubCatError("Please enter a sub-category name");
+            return;
+        }
+        setSubCatSaving(true);
+        setSubCatError(null);
+        setSubCatSuccess(null);
+        try {
+            const targetDept = subCatSelectedDept || "Women";
+            const names = trimmed.split(",").map(s => s.trim()).filter(Boolean);
+            for (const name of names) {
+                const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+                const res = await fetch(`${API_BASE_URL}/categories/`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        department: targetDept,
+                        category_type: "regular",
+                        link: `/category/${slug}`,
+                        image: "/placeholder.jpg",
+                        is_active: true,
+                        display_order: categories.filter(c => (c.department || "Women").toLowerCase() === targetDept.toLowerCase()).length + 1
+                    })
+                });
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.detail || `Failed to create sub-category "${name}"`);
+                }
+            }
+            setSubCatSuccess(`Sub-categor${names.length > 1 ? 'ies' : 'y'} added successfully under "${targetDept}"!`);
+            setSubCatNewName("");
+            await fetchCategories();
+            window.dispatchEvent(new Event("categoriesUpdated"));
+            localStorage.setItem("categories_updated_at", Date.now().toString());
+        } catch (err) {
+            setSubCatError(err.message);
+        } finally {
+            setSubCatSaving(false);
+        }
+    };
+
+    const handleDeleteSubCategoryFromModal = async (catItem) => {
+        if (!window.confirm(`Delete sub-category "${catItem.name}"?`)) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/categories/${catItem._id || catItem.id}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${getToken()}` }
+            });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.detail || "Failed to delete sub-category");
+            }
+            await fetchCategories();
+            window.dispatchEvent(new Event("categoriesUpdated"));
+            localStorage.setItem("categories_updated_at", Date.now().toString());
+        } catch (err) {
+            alert(err.message);
+        }
     };
 
     /* Quick Subcategory Modal Handlers */
@@ -599,12 +673,11 @@ const Categories = () => {
                     </button>
                     <button
                         onClick={() => {
-                            const defaultCat = categories.find(c => filterDepartment === "all" || (c.department || "Women").toLowerCase() === filterDepartment.toLowerCase()) || categories[0];
-                            if (!defaultCat) {
-                                alert("Please create at least one category first before managing sub-categories.");
-                                return;
-                            }
-                            setSubCatModalCategory(defaultCat);
+                            setSubCatSelectedDept(filterDepartment !== "all" ? filterDepartment : (availableDepartments[0] || "Women"));
+                            setSubCatNewName("");
+                            setSubCatError(null);
+                            setSubCatSuccess(null);
+                            setShowSubCatModal(true);
                         }}
                         className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 px-3.5 py-2.5 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer hover:border-cyan-400"
                     >
@@ -830,9 +903,9 @@ const Categories = () => {
                                     </div>
 
                                     {/* Category Details Bar */}
-                                    <div className="p-3.5 pb-2.5 border-b border-slate-100 bg-white">
+                                    <div className="p-3.5 bg-white">
                                         <div className="flex items-start justify-between gap-2">
-                                            <div className="min-w-0">
+                                            <div className="min-w-0 flex-1">
                                                 <h3 className="font-extrabold text-slate-900 text-sm truncate font-serif" title={cat.name}>
                                                     {cat.name}
                                                 </h3>
@@ -840,42 +913,13 @@ const Categories = () => {
                                                     {renderDepartmentIcon(cat.department, "w-3 h-3 text-[#0891b2]")}
                                                     <span>{cat.department || "Women"}</span>
                                                 </div>
+                                                {cat.tagline && (
+                                                    <p className="text-[11px] text-slate-400 mt-1 line-clamp-1">
+                                                        {cat.tagline}
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
-                                    </div>
-
-                                    {/* Sub-Categories Section Inside Card */}
-                                    <div className="p-3.5 border-b border-slate-100 bg-slate-50/70">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                                                <Tag className="w-3.5 h-3.5 text-[#0891b2]" />
-                                                Sub-Categories ({subCats.length})
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={() => setSubCatModalCategory(cat)}
-                                                className="text-[11px] font-bold text-[#0891b2] hover:text-[#06b6d4] hover:underline flex items-center gap-1 cursor-pointer"
-                                            >
-                                                <PlusCircle className="w-3.5 h-3.5" /> + Manage
-                                            </button>
-                                        </div>
-
-                                        {subCats.length > 0 ? (
-                                            <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto scrollbar-none">
-                                                {subCats.map((sub, sIdx) => (
-                                                    <span
-                                                        key={`${sub}-${sIdx}`}
-                                                        className="px-2 py-0.5 text-[10px] font-semibold bg-white text-slate-800 border border-slate-200 rounded-md shadow-2xs"
-                                                    >
-                                                        {sub}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <p className="text-[10px] text-slate-400 italic py-1">
-                                                No sub-categories yet. Click &ldquo;+ Manage&rdquo; to add styles.
-                                            </p>
-                                        )}
                                     </div>
                                 </div>
 
@@ -973,11 +1017,11 @@ const Categories = () => {
                         </div>
 
                         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-                            {/* Department / Super Section */}
+                            {/* Category / Department */}
                             <div>
                                 <div className="flex items-center justify-between mb-1.5">
                                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                                        Department / Division <span className="text-cyan-600 font-extrabold">*</span>
+                                        Category <span className="text-cyan-600 font-extrabold">*</span>
                                     </label>
                                     <button
                                         type="button"
@@ -990,7 +1034,7 @@ const Categories = () => {
                                         }}
                                         className="text-xs text-cyan-700 font-bold hover:underline flex items-center gap-1 cursor-pointer"
                                     >
-                                        <Plus className="w-3 h-3 stroke-[2.5]" /> New Department
+                                        <Plus className="w-3 h-3 stroke-[2.5]" /> New Category / Department
                                     </button>
                                 </div>
 
@@ -1025,13 +1069,13 @@ const Categories = () => {
                                         setCustomDeptInput(true);
                                         setFormData({ ...formData, department: e.target.value });
                                     }}
-                                    placeholder="Or type custom department name..."
+                                    placeholder="Or type custom category name (e.g. Footwear, Watches)..."
                                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 font-medium"
                                 />
                             </div>
 
-                            {/* Category Name */}
-                            <InputField label="Category Name" required>
+                            {/* Sub-Category Name */}
+                            <InputField label="Sub-Category Name" required>
                                 <input
                                     type="text"
                                     required
@@ -1042,15 +1086,15 @@ const Categories = () => {
                                 />
                             </InputField>
 
-                            {/* Category URL Path (Auto-generated from name, but fully customizable/editable) */}
-                            <InputField label="Category URL Path (Auto-Generated &amp; Editable)" required>
+                            {/* Category URL Path (Auto-generated from name, fully customizable/editable) */}
+                            <InputField label="Category URL Path (Auto-Generated &amp; Fully Editable)" required>
                                 <div className="relative flex items-center">
                                     <input
                                         type="text"
                                         required
                                         value={formData.link}
                                         onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-3.5 pr-28 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 transition font-mono"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-3.5 pr-28 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 transition font-mono font-medium"
                                         placeholder="/category/sleeveless-kurtis"
                                     />
                                     <button
@@ -1063,69 +1107,6 @@ const Categories = () => {
                                     </button>
                                 </div>
                             </InputField>
-
-                            {/* Sub-Categories Tag Management */}
-                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2.5">
-                                <div className="flex items-center justify-between">
-                                    <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
-                                        <Tag className="w-3.5 h-3.5 text-cyan-600" />
-                                        Sub-Categories / Styles under this Category
-                                    </label>
-                                    <span className="text-[10px] text-slate-500 font-semibold">
-                                        {(formData.sub_categories || []).length} added
-                                    </span>
-                                </div>
-
-                                {/* Chips List */}
-                                <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-white rounded-lg border border-slate-200">
-                                    {(formData.sub_categories || []).length > 0 ? (
-                                        formData.sub_categories.map((sub, idx) => (
-                                            <span
-                                                key={`${sub}-${idx}`}
-                                                className="inline-flex items-center gap-1 bg-cyan-100 text-cyan-900 border border-cyan-300 px-2.5 py-1 rounded-md text-xs font-bold shadow-xs"
-                                            >
-                                                <span>{sub}</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveSubCategory(sub)}
-                                                    className="hover:text-red-600 p-0.5 rounded-full transition cursor-pointer"
-                                                    title="Remove sub-category"
-                                                >
-                                                    <X className="w-3 h-3" />
-                                                </button>
-                                            </span>
-                                        ))
-                                    ) : (
-                                        <p className="text-[11px] text-slate-400 italic py-0.5">
-                                            No sub-categories yet. Type below (single or comma-separated) and click "+ Add".
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* Add Subcategory Input */}
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={subCatInput}
-                                        onChange={(e) => setSubCatInput(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter") {
-                                                e.preventDefault();
-                                                handleAddSubCategory();
-                                            }
-                                        }}
-                                        placeholder="Type style (e.g. Cotton Sleeveless, Partywear — comma separated for batch)"
-                                        className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 font-medium"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={handleAddSubCategory}
-                                        className="px-3.5 py-1.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
-                                    >
-                                        + Add
-                                    </button>
-                                </div>
-                            </div>
 
                             {/* Category Banner Image */}
                             <div>
@@ -1279,23 +1260,23 @@ const Categories = () => {
                 </div>
             )}
 
-            {/* ── MODAL: QUICK SUB-CATEGORIES MANAGER FOR A CATEGORY ── */}
-            {subCatModalCategory && (
+            {/* ── MODAL: ADD NEW SUB-CATEGORY (CLEAN CATEGORY SELECTOR + DYNAMIC LIST) ── */}
+            {showSubCatModal && (
                 <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
                     <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50">
                             <div>
                                 <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
                                     <Tag className="w-4 h-4 text-[#0891b2]" />
-                                    <span>Manage Sub-Categories &amp; Styles</span>
+                                    <span>Add New Sub-Category</span>
                                 </h3>
                                 <p className="text-[11px] text-slate-500 mt-0.5">
-                                    Create and organize styles across Women, Men, Jewellery, Footwear &amp; all categories.
+                                    Select category, type new sub-category, and manage active sub-category listings.
                                 </p>
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setSubCatModalCategory(null)}
+                                onClick={() => setShowSubCatModal(false)}
                                 className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200 transition cursor-pointer"
                             >
                                 <X className="w-4 h-4" />
@@ -1303,74 +1284,65 @@ const Categories = () => {
                         </div>
 
                         <div className="p-5 space-y-4 overflow-y-auto">
-                            {/* Category Selector Dropdown (Grouped by Department dynamically) */}
-                            <div className="space-y-1.5 bg-slate-50/80 p-3 rounded-xl border border-slate-200">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
-                                        <Layers className="w-3.5 h-3.5 text-[#0891b2]" />
-                                        Target Category
-                                    </label>
-                                    <span className="text-[10px] font-bold text-[#0891b2] bg-cyan-50 px-2 py-0.5 rounded-full border border-cyan-200">
-                                        {subCatModalCategory.department || "Women"} Department
-                                    </span>
+                            {subCatError && (
+                                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold">
+                                    {subCatError}
                                 </div>
+                            )}
+                            {subCatSuccess && (
+                                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold">
+                                    {subCatSuccess}
+                                </div>
+                            )}
+
+                            {/* Category Selector Dropdown (Clean, ONLY Category/Department names) */}
+                            <div className="space-y-1.5 bg-slate-50/80 p-3 rounded-xl border border-slate-200">
+                                <label className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                                    <Layers className="w-3.5 h-3.5 text-[#0891b2]" />
+                                    Category
+                                </label>
                                 <select
-                                    value={subCatModalCategory._id || subCatModalCategory.id || ""}
+                                    value={subCatSelectedDept}
                                     onChange={(e) => {
-                                        const found = categories.find(c => (c._id || c.id) === e.target.value);
-                                        if (found) {
-                                            setSubCatModalCategory(found);
-                                            setQuickSubInput("");
-                                        }
+                                        setSubCatSelectedDept(e.target.value);
+                                        setSubCatError(null);
+                                        setSubCatSuccess(null);
                                     }}
                                     className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-cyan-500 cursor-pointer shadow-xs"
                                 >
-                                    {availableDepartments.map(deptName => {
-                                        const catsInDept = categories.filter(c => {
-                                            const cd = (c.department || "Women").toLowerCase();
-                                            const dn = deptName.toLowerCase();
-                                            if (dn === "women" || dn === "clothing") return cd === "women" || cd === "clothing";
-                                            return cd === dn;
-                                        });
-                                        if (catsInDept.length === 0) return null;
-                                        return (
-                                            <optgroup key={deptName} label={`── Department: ${deptName.toUpperCase()} ──`}>
-                                                {catsInDept.map(cat => (
-                                                    <option key={cat._id || cat.id} value={cat._id || cat.id}>
-                                                        {cat.name} ({(cat.sub_categories || []).length} sub-categories)
-                                                    </option>
-                                                ))}
-                                            </optgroup>
-                                        );
-                                    })}
+                                    {availableDepartments.map(deptName => (
+                                        <option key={deptName} value={deptName}>
+                                            {deptName}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
 
-                            {/* Input to add subcategory (Supports single or batch comma-separated) */}
-                            <form onSubmit={handleQuickAddSub} className="space-y-1.5">
+                            {/* Input to add subcategory */}
+                            <form onSubmit={handleAddSubCategoryToDept} className="space-y-1.5">
                                 <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
                                     <span className="flex items-center gap-1">
                                         <PlusCircle className="w-3.5 h-3.5 text-[#0891b2]" />
-                                        Add New Sub-Category / Style:
+                                        Add Sub-Category under &ldquo;{subCatSelectedDept}&rdquo;:
                                     </span>
                                     <span className="text-[10px] text-slate-400 font-normal">
-                                        Type single or comma-separated batch
+                                        Single or comma-separated
                                     </span>
                                 </label>
                                 <div className="flex gap-2">
                                     <input
                                         type="text"
-                                        value={quickSubInput}
-                                        onChange={(e) => setQuickSubInput(e.target.value)}
-                                        placeholder="e.g. Floral Halter, Partywear, Casual Crop..."
+                                        value={subCatNewName}
+                                        onChange={(e) => setSubCatNewName(e.target.value)}
+                                        placeholder="e.g. Sleeveless Kurtis, Halter Neck Top, Anarkali Suits..."
                                         className="flex-1 bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-500 font-medium"
                                     />
                                     <button
                                         type="submit"
-                                        disabled={quickSubSaving || !quickSubInput.trim()}
+                                        disabled={subCatSaving || !subCatNewName.trim()}
                                         className="px-4 py-2 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-xs font-extrabold transition cursor-pointer disabled:opacity-50 flex items-center gap-1 shadow-xs"
                                     >
-                                        {quickSubSaving ? (
+                                        {subCatSaving ? (
                                             <>
                                                 <Loader2 className="w-3 h-3 animate-spin" /> Adding...
                                             </>
@@ -1381,74 +1353,84 @@ const Categories = () => {
                                 </div>
                             </form>
 
-                            {/* Subcategories Header and Tags */}
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                                        <Tag className="w-3.5 h-3.5 text-[#0891b2]" />
-                                        Active Sub-Categories in &ldquo;{subCatModalCategory.name}&rdquo;
-                                    </span>
-                                    <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                                        {(subCatModalCategory.sub_categories || []).length} Total
-                                    </span>
-                                </div>
+                            {/* Active Sub-Categories Header and List */}
+                            {(() => {
+                                const deptLower = (subCatSelectedDept || "Women").toLowerCase();
+                                const activeInDept = categories.filter(c => {
+                                    const cd = (c.department || "Women").toLowerCase();
+                                    if (deptLower === "women" || deptLower === "clothing") return cd === "women" || cd === "clothing";
+                                    return cd === deptLower;
+                                });
 
-                                {/* Chips Preview */}
-                                {(subCatModalCategory.sub_categories || []).length > 0 && (
-                                    <div className="flex flex-wrap gap-1.5 p-2 bg-slate-50 rounded-xl border border-slate-200">
-                                        {subCatModalCategory.sub_categories.map((sub, idx) => (
-                                            <span
-                                                key={`pill-${sub}-${idx}`}
-                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-slate-800 border border-slate-200 shadow-2xs"
-                                            >
-                                                <span>{sub}</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleQuickDeleteSub(sub)}
-                                                    className="text-slate-400 hover:text-red-600 transition cursor-pointer"
-                                                    title={`Remove ${sub}`}
-                                                >
-                                                    <X className="w-3 h-3" />
-                                                </button>
+                                return (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                                <Tag className="w-3.5 h-3.5 text-[#0891b2]" />
+                                                Active Sub-Categories in &ldquo;{subCatSelectedDept}&rdquo;
                                             </span>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Subcategories List View with quick removal */}
-                                <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 max-h-52 overflow-y-auto">
-                                    {(subCatModalCategory.sub_categories || []).length > 0 ? (
-                                        subCatModalCategory.sub_categories.map((sub, idx) => (
-                                            <div key={`${sub}-${idx}`} className="flex items-center justify-between p-2.5 bg-white hover:bg-slate-50 transition">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-[#0891b2]" />
-                                                    <span className="text-xs font-bold text-slate-800">{sub}</span>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleQuickDeleteSub(sub)}
-                                                    className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 transition cursor-pointer"
-                                                    title={`Remove ${sub}`}
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                    <span>Delete</span>
-                                                </button>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="p-6 text-center text-xs text-slate-400 italic">
-                                            No sub-categories yet for {subCatModalCategory.name}. Type style names above to add them.
+                                            <span className="text-[11px] font-bold text-[#0891b2] bg-cyan-50 px-2.5 py-0.5 rounded-full border border-cyan-200">
+                                                {activeInDept.length} Total
+                                            </span>
                                         </div>
-                                    )}
-                                </div>
-                            </div>
 
+                                        {/* Subcategories List View with quick removal */}
+                                        <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 max-h-56 overflow-y-auto">
+                                            {activeInDept.length > 0 ? (
+                                                activeInDept.map((catItem) => (
+                                                    <div
+                                                        key={catItem._id || catItem.id}
+                                                        className="flex items-center justify-between p-2.5 hover:bg-slate-50 transition"
+                                                    >
+                                                        <div className="min-w-0 pr-2">
+                                                            <div className="text-xs font-bold text-slate-800 truncate">
+                                                                {catItem.name}
+                                                            </div>
+                                                            <div className="text-[10px] text-slate-400 font-mono truncate">
+                                                                {catItem.link || `/category/${catItem.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setShowSubCatModal(false);
+                                                                    handleEdit(catItem);
+                                                                }}
+                                                                className="p-1 rounded text-slate-400 hover:text-[#0891b2] hover:bg-slate-100 transition cursor-pointer"
+                                                                title="Edit details"
+                                                            >
+                                                                <Edit2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDeleteSubCategoryFromModal(catItem)}
+                                                                className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+                                                                title="Delete sub-category"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="p-4 text-center text-xs text-slate-400 italic">
+                                                    No sub-categories yet under {subCatSelectedDept}. Type above and click "+ Add" to create.
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                        </div>
+
+                        <div className="p-4 bg-slate-50 border-t border-slate-200 text-right">
                             <button
                                 type="button"
-                                onClick={() => setSubCatModalCategory(null)}
-                                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition cursor-pointer"
+                                onClick={() => setShowSubCatModal(false)}
+                                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold transition cursor-pointer"
                             >
-                                Done
+                                Close
                             </button>
                         </div>
                     </div>

@@ -2219,8 +2219,8 @@ const Products = () => {
 
             {/* Add/Edit Product Modal */}
             {(showAddModal || showEditModal) && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
-                    <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-3xl my-auto max-h-[92vh] flex flex-col shadow-2xl text-left overflow-hidden">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto">
+                    <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-4xl my-auto max-h-[92vh] flex flex-col shadow-2xl text-left overflow-hidden">
                         {/* Modal Header */}
                         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50/50 flex-shrink-0">
                             <div className="flex items-center gap-2.5">
@@ -2302,26 +2302,35 @@ const Products = () => {
                                     />
                                 </div>
 
+                                {/* ── Category (Previously Department) ── */}
                                 <div>
                                     <label className="block text-slate-700 font-bold mb-1.5 flex items-center justify-between">
-                                        <span>Department / Main Section <span className="text-cyan-600 font-extrabold">*</span></span>
-                                        <span className="text-[10px] text-cyan-700 font-normal">Organize Product Line</span>
+                                        <span className="flex items-center gap-1.5">
+                                            <Folder className="w-3.5 h-3.5 text-[#0891b2]" />
+                                            <span>Category <span className="text-cyan-600 font-extrabold">*</span></span>
+                                        </span>
+                                        <span className="text-[10px] text-cyan-700 font-normal">Primary Division</span>
                                     </label>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mb-2">
                                         {(departmentsList.length > 0 ? departmentsList : PRESET_DEPARTMENTS.map(p => ({ id: p.id, name: p.label, icon: p.icon }))).map((dept) => {
                                             const deptName = dept.name || dept.id;
-                                            const isSelected = (formData.department || "Clothing").toLowerCase() === deptName.toLowerCase();
+                                            const isSelected = (formData.department || "Women").toLowerCase() === deptName.toLowerCase();
                                             return (
                                                 <button
                                                     key={dept.id || dept._id || deptName}
                                                     type="button"
                                                     onClick={() => {
                                                         const targetDept = deptName;
-                                                        const validCat = categoriesList.find(c => (c.department || "Clothing").toLowerCase() === targetDept.toLowerCase() && c.name === formData.category);
+                                                        const currentDept = (formData.department || "Women").toLowerCase();
+                                                        const isSameDept = currentDept === targetDept.toLowerCase() || 
+                                                            ((currentDept === "women" || currentDept === "clothing") && (targetDept.toLowerCase() === "women" || targetDept.toLowerCase() === "clothing"));
+                                                        
                                                         setFormData({
                                                             ...formData,
                                                             department: targetDept,
-                                                            category: validCat ? formData.category : ""
+                                                            category: isSameDept ? formData.category : "",
+                                                            sub_categories: isSameDept ? (formData.sub_categories || []) : [],
+                                                            sub_category: isSameDept ? (formData.sub_category || "") : ""
                                                         });
                                                     }}
                                                     className={`py-2 px-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
@@ -2340,159 +2349,24 @@ const Products = () => {
                                         type="text"
                                         value={formData.department || ""}
                                         onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                                        placeholder="Or type custom department (e.g., Watches, Kids, Beauty...)"
+                                        placeholder="Or type custom category name (e.g., Watches, Kids, Beauty...)"
                                         className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 font-medium mb-1"
                                     />
                                 </div>
 
+                                {/* ── Sub-Category Section with Clean Checkboxes ── */}
                                 <div>
-                                    <label className="block text-slate-700 font-bold mb-1.5 flex items-center justify-between">
-                                        <span>Category <span className="text-cyan-600 font-extrabold">*</span></span>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[10px] text-cyan-700 font-normal">
-                                                In {formData.department || "Clothing"}
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={() => setQuickAddCatOpen(!quickAddCatOpen)}
-                                                className="text-[11px] font-bold text-cyan-700 hover:text-cyan-900 underline cursor-pointer"
-                                            >
-                                                {quickAddCatOpen ? "Cancel" : "+ New Category"}
-                                            </button>
-                                        </div>
-                                    </label>
-
-                                    {quickAddCatOpen && (
-                                        <div className="mb-2.5 p-2.5 bg-cyan-50/80 border border-cyan-200 rounded-xl flex items-center gap-2 animate-fadeIn">
-                                            <input
-                                                type="text"
-                                                value={quickCatName}
-                                                onChange={(e) => setQuickCatName(e.target.value)}
-                                                placeholder={`New category for ${formData.department || 'Clothing'}...`}
-                                                className="flex-1 bg-white border border-cyan-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-cyan-500"
-                                            />
-                                            <button
-                                                type="button"
-                                                disabled={!quickCatName.trim() || quickCatLoading}
-                                                onClick={async () => {
-                                                    if (!quickCatName.trim()) return;
-                                                    setQuickCatLoading(true);
-                                                    try {
-                                                        const targetDept = formData.department?.trim() || "Clothing";
-                                                        const res = await fetch(`${API_BASE_URL}/categories/`, {
-                                                            method: "POST",
-                                                            headers: {
-                                                                "Content-Type": "application/json",
-                                                                Authorization: `Bearer ${getToken()}`
-                                                            },
-                                                            body: JSON.stringify({
-                                                                name: quickCatName.trim(),
-                                                                department: targetDept,
-                                                                image: "/placeholder.jpg",
-                                                                link: `/category/${quickCatName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
-                                                                is_active: true
-                                                            })
-                                                        });
-                                                        if (res.ok) {
-                                                            const newCat = await res.json();
-                                                            await fetchCategories();
-                                                            setFormData({
-                                                                ...formData,
-                                                                category: newCat.name,
-                                                                department: targetDept
-                                                            });
-                                                            setQuickCatName("");
-                                                            setQuickAddCatOpen(false);
-                                                        } else {
-                                                            const err = await res.json().catch(() => ({}));
-                                                            alert(err.detail || "Failed to create category");
-                                                        }
-                                                    } catch (err) {
-                                                        alert(`Error creating category: ${err.message}`);
-                                                    } finally {
-                                                        setQuickCatLoading(false);
-                                                    }
-                                                }}
-                                                className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-xs font-bold transition disabled:opacity-50 cursor-pointer"
-                                            >
-                                                {quickCatLoading ? "Saving..." : "Save & Select"}
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    <select
-                                        required
-                                        value={formData.category}
-                                        onChange={(e) => {
-                                            const selectedCatName = e.target.value;
-                                            const matchedCat = categoriesList.find(c => c.name === selectedCatName);
-                                            setFormData({
-                                                ...formData,
-                                                category: selectedCatName,
-                                                sub_category: "",
-                                                department: matchedCat?.department || formData.department || "Women"
-                                            });
-                                        }}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 cursor-pointer"
-                                    >
-                                        <option value="" className="bg-white text-slate-500">── Select Category ──</option>
-                                        {categoriesList && categoriesList.length > 0 ? (
-                                            (() => {
-                                                const currentDept = (formData.department || "Women").toLowerCase();
-                                                const deptCats = categoriesList.filter(c => {
-                                                    const cd = (c.department || "Women").toLowerCase();
-                                                    if (currentDept === "women" || currentDept === "clothing") return cd === "women" || cd === "clothing";
-                                                    return cd === currentDept;
-                                                });
-                                                const otherCats = categoriesList.filter(c => {
-                                                    const cd = (c.department || "Women").toLowerCase();
-                                                    if (currentDept === "women" || currentDept === "clothing") return cd !== "women" && cd !== "clothing";
-                                                    return cd !== currentDept;
-                                                });
-                                                
-                                                return (
-                                                    <>
-                                                        <optgroup label={`${formData.department?.toUpperCase() || 'WOMEN'} CATEGORIES`} className="bg-slate-100 text-cyan-900 font-bold">
-                                                            {deptCats.length > 0 ? (
-                                                                deptCats.map((cat) => (
-                                                                    <option key={cat._id || cat.id} value={cat.name} className="bg-white text-slate-800 font-medium">
-                                                                        {cat.name}
-                                                                    </option>
-                                                                ))
-                                                            ) : (
-                                                                <option disabled value="" className="bg-white text-slate-400">No categories in {formData.department} yet (Click "+ New Category" above)</option>
-                                                            )}
-                                                        </optgroup>
-                                                        {otherCats.length > 0 && (
-                                                            <optgroup label="OTHER DEPARTMENTS" className="bg-slate-100 text-slate-500 font-bold">
-                                                                {otherCats.map((cat) => (
-                                                                    <option key={cat._id || cat.id} value={cat.name} className="bg-white text-slate-600 font-normal">
-                                                                        {cat.name} ({cat.department || "Women"})
-                                                                    </option>
-                                                                ))}
-                                                            </optgroup>
-                                                        )}
-                                                    </>
-                                                );
-                                            })()
-                                        ) : (
-                                            <option disabled className="bg-white text-slate-400">No categories found (Click "+ New Category" to create)</option>
-                                        )}
-                                        {/* Retain current product category if not in fetched list */}
-                                        {formData.category && !categoriesList.some(c => c.name?.toLowerCase() === formData.category?.toLowerCase()) && (
-                                            <option value={formData.category} className="bg-white text-cyan-700 font-semibold">
-                                                {formData.category} (Current)
-                                            </option>
-                                        )}
-                                    </select>
-
-                                    {/* Dynamic Sub-Category / Ethnic Style Multi-Select Selector */}
                                     {(() => {
-                                        const matchedCat = categoriesList.find(c => c.name?.toLowerCase() === formData.category?.toLowerCase());
-                                        const availableSubs = matchedCat?.sub_categories || [];
+                                        const currentDept = (formData.department || "Women").toLowerCase();
+                                        const availableSubCats = categoriesList.filter(c => {
+                                            const cd = (c.department || "Women").toLowerCase();
+                                            if (currentDept === "women" || currentDept === "clothing") return cd === "women" || cd === "clothing";
+                                            return cd === currentDept;
+                                        });
+
                                         const selectedSubs = Array.isArray(formData.sub_categories) && formData.sub_categories.length > 0
                                             ? formData.sub_categories
-                                            : (formData.sub_category ? formData.sub_category.split(",").map(s => s.trim()).filter(Boolean) : []);
+                                            : (formData.sub_category ? formData.sub_category.split(",").map(s => s.trim()).filter(Boolean) : (formData.category ? [formData.category] : []));
 
                                         const toggleSub = (subName) => {
                                             const clean = subName.trim();
@@ -2505,29 +2379,18 @@ const Products = () => {
                                             }
                                             setFormData(prev => ({
                                                 ...prev,
-                                                sub_categories: next,
-                                                sub_category: next.join(", ")
-                                            }));
-                                        };
-
-                                        const addCustomSub = (customVal) => {
-                                            const parts = customVal.split(",").map(s => s.trim()).filter(Boolean);
-                                            if (parts.length === 0) return;
-                                            const next = [...selectedSubs];
-                                            parts.forEach(p => {
-                                                if (!next.includes(p)) next.push(p);
-                                            });
-                                            setFormData(prev => ({
-                                                ...prev,
+                                                category: next[0] || "",
                                                 sub_categories: next,
                                                 sub_category: next.join(", ")
                                             }));
                                         };
 
                                         const selectAllSubs = () => {
-                                            const combined = Array.from(new Set([...selectedSubs, ...availableSubs]));
+                                            const allNames = availableSubCats.map(c => c.name);
+                                            const combined = Array.from(new Set([...selectedSubs, ...allNames]));
                                             setFormData(prev => ({
                                                 ...prev,
+                                                category: combined[0] || "",
                                                 sub_categories: combined,
                                                 sub_category: combined.join(", ")
                                             }));
@@ -2536,18 +2399,59 @@ const Products = () => {
                                         const clearAllSubs = () => {
                                             setFormData(prev => ({
                                                 ...prev,
+                                                category: "",
                                                 sub_categories: [],
                                                 sub_category: ""
                                             }));
                                         };
 
+                                        const handleQuickAddSubCatOnTheFly = async (name) => {
+                                            const trimmed = name?.trim();
+                                            if (!trimmed) return;
+                                            try {
+                                                const targetDept = formData.department || "Women";
+                                                const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+                                                const res = await fetch(`${API_BASE_URL}/categories/`, {
+                                                    method: "POST",
+                                                    headers: {
+                                                        "Content-Type": "application/json",
+                                                        Authorization: `Bearer ${getAuthToken()}`
+                                                    },
+                                                    body: JSON.stringify({
+                                                        name: trimmed,
+                                                        department: targetDept,
+                                                        category_type: "regular",
+                                                        link: `/category/${slug}`,
+                                                        image: "/placeholder.jpg",
+                                                        is_active: true
+                                                    })
+                                                });
+                                                if (res.ok) {
+                                                    const newCat = await res.json();
+                                                    await fetchCategories();
+                                                    const next = [...selectedSubs, newCat.name];
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        category: next[0] || newCat.name,
+                                                        sub_categories: next,
+                                                        sub_category: next.join(", ")
+                                                    }));
+                                                }
+                                            } catch (err) {
+                                                console.error("Error adding subcategory on the fly:", err);
+                                            }
+                                        };
+
                                         return (
-                                            <div className="mt-3 bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
+                                            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
                                                 <div className="flex items-center justify-between flex-wrap gap-2">
                                                     <div className="flex items-center gap-1.5">
                                                         <Tag className="w-3.5 h-3.5 text-[#0891b2]" />
-                                                        <span className="block text-slate-800 font-bold text-xs uppercase tracking-wide">
-                                                            Sub-Categories / Styles (Multi-Select)
+                                                        <label className="text-slate-800 font-bold text-xs uppercase tracking-wide">
+                                                            Sub-Category <span className="text-cyan-600 font-extrabold">*</span>
+                                                        </label>
+                                                        <span className="text-[10px] text-slate-500 font-normal">
+                                                            (Select sub-categories in {formData.department || 'Women'})
                                                         </span>
                                                         {selectedSubs.length > 0 && (
                                                             <span className="text-[10px] text-cyan-800 font-extrabold bg-cyan-100 px-2 py-0.5 rounded-full border border-cyan-300">
@@ -2555,7 +2459,8 @@ const Products = () => {
                                                             </span>
                                                         )}
                                                     </div>
-                                                    {availableSubs.length > 1 && (
+
+                                                    {availableSubCats.length > 1 && (
                                                         <div className="flex items-center gap-2 text-[11px]">
                                                             <button
                                                                 type="button"
@@ -2576,78 +2481,48 @@ const Products = () => {
                                                     )}
                                                 </div>
 
-                                                {/* Active Selected Tags Display */}
-                                                <div className="min-h-[34px] p-2 bg-white rounded-lg border border-slate-200 flex flex-wrap items-center gap-1.5">
-                                                    {selectedSubs.length > 0 ? (
-                                                        selectedSubs.map((sub, idx) => (
-                                                            <span
-                                                                key={`sel-${sub}-${idx}`}
-                                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-cyan-50 text-cyan-950 border border-cyan-300 shadow-2xs group"
-                                                            >
-                                                                <Check className="w-3 h-3 text-[#0891b2]" />
-                                                                <span>{sub}</span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => toggleSub(sub)}
-                                                                    className="text-cyan-700 hover:text-red-600 transition cursor-pointer p-0.5"
-                                                                    title={`Remove ${sub}`}
+                                                {/* Checkboxes List / Grid */}
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1.5 bg-white rounded-xl border border-slate-200">
+                                                    {availableSubCats.length > 0 ? (
+                                                        availableSubCats.map(cat => {
+                                                            const isChecked = selectedSubs.includes(cat.name);
+                                                            return (
+                                                                <label
+                                                                    key={cat._id || cat.id || cat.name}
+                                                                    className={`flex items-center gap-2.5 p-2 rounded-lg border text-xs font-semibold cursor-pointer transition-all ${
+                                                                        isChecked
+                                                                            ? "bg-cyan-50 border-cyan-400 text-cyan-950 font-bold ring-1 ring-cyan-300/50 shadow-2xs"
+                                                                            : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                                                                    }`}
                                                                 >
-                                                                    <X className="w-3 h-3" />
-                                                                </button>
-                                                            </span>
-                                                        ))
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={isChecked}
+                                                                        onChange={() => toggleSub(cat.name)}
+                                                                        className="w-4 h-4 rounded text-[#0891b2] focus:ring-0 cursor-pointer accent-[#0891b2]"
+                                                                    />
+                                                                    <span className="truncate">{cat.name}</span>
+                                                                </label>
+                                                            );
+                                                        })
                                                     ) : (
-                                                        <span className="text-xs text-slate-400 italic">
-                                                            Click styles below or add custom tags to assign multiple sub-categories
-                                                        </span>
+                                                        <div className="col-span-full p-4 text-center text-xs text-slate-400 italic">
+                                                            No sub-categories in {formData.department || 'Women'} yet. Type below to create.
+                                                        </div>
                                                     )}
                                                 </div>
 
-                                                {/* Available Sub-Categories Pill Buttons */}
-                                                {availableSubs.length > 0 && (
-                                                    <div className="space-y-1.5">
-                                                        <span className="text-[11px] font-bold text-slate-600 flex items-center justify-between">
-                                                            <span>Available Styles for &ldquo;{matchedCat?.name}&rdquo;:</span>
-                                                            <span className="text-slate-400 font-normal">Click to toggle on/off</span>
-                                                        </span>
-                                                        <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-0.5">
-                                                            {availableSubs.map((sub, sIdx) => {
-                                                                const isSelected = selectedSubs.includes(sub);
-                                                                return (
-                                                                    <button
-                                                                        key={`avail-${sub}-${sIdx}`}
-                                                                        type="button"
-                                                                        onClick={() => toggleSub(sub)}
-                                                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
-                                                                            isSelected
-                                                                                ? "bg-cyan-100 text-cyan-950 border-cyan-400 shadow-xs"
-                                                                                : "bg-white text-slate-700 border-slate-200 hover:border-cyan-300 hover:bg-cyan-50/50"
-                                                                        }`}
-                                                                    >
-                                                                        {isSelected ? (
-                                                                            <Check className="w-3 h-3 text-[#0891b2]" />
-                                                                        ) : (
-                                                                            <Plus className="w-3 h-3 text-slate-400" />
-                                                                        )}
-                                                                        <span>{sub}</span>
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Custom Subcategory Adder */}
-                                                <div className="flex items-center gap-2 pt-1 border-t border-slate-200/60">
+                                                {/* On the fly Sub-Category creation input */}
+                                                <div className="flex items-center gap-2 pt-2 border-t border-slate-200/80">
                                                     <input
                                                         type="text"
-                                                        id="admin-custom-sub-input"
-                                                        placeholder="Add custom style / sub-category (e.g. Party Wear, Embroidered)..."
+                                                        id="admin-quick-add-subcat"
+                                                        placeholder={`+ Add new sub-category to ${formData.department || 'Women'}...`}
                                                         className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-[#0891b2]"
                                                         onKeyDown={(e) => {
                                                             if (e.key === "Enter") {
                                                                 e.preventDefault();
-                                                                addCustomSub(e.target.value);
+                                                                handleQuickAddSubCatOnTheFly(e.target.value);
                                                                 e.target.value = "";
                                                             }
                                                         }}
@@ -2655,16 +2530,15 @@ const Products = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => {
-                                                            const el = document.getElementById("admin-custom-sub-input");
+                                                            const el = document.getElementById("admin-quick-add-subcat");
                                                             if (el && el.value.trim()) {
-                                                                addCustomSub(el.value);
+                                                                handleQuickAddSubCatOnTheFly(el.value);
                                                                 el.value = "";
                                                             }
                                                         }}
-                                                        className="px-3 py-1.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1"
+                                                        className="px-3 py-1.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 shadow-xs"
                                                     >
-                                                        <Plus className="w-3 h-3" />
-                                                        <span>Add</span>
+                                                        <Plus className="w-3 h-3" /> Add
                                                     </button>
                                                 </div>
                                             </div>
@@ -2919,13 +2793,13 @@ const Products = () => {
                             </div>
 
                             {/* ── Bespoke Tailoring & Customization Settings ── */}
-                            <div className="bg-amber-50/70 border border-amber-300/80 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xs">
+                            <div className="bg-amber-50/70 border border-amber-300/80 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-xs">
                                 <div className="flex items-center justify-between flex-wrap gap-2">
                                     <div className="flex items-center gap-2">
                                         <span className="text-[#8B0000] text-sm font-bold flex items-center gap-1.5">
-                                            <Scissors className="w-3.5 h-3.5" /> Bespoke Customization &amp; Tailoring Settings
+                                            <Scissors className="w-4 h-4" /> Bespoke Customization &amp; Tailoring Settings
                                         </span>
-                                        <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                                        <span className="text-[10px] bg-amber-200 text-amber-900 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
                                             Product Page Option
                                         </span>
                                     </div>
@@ -2934,54 +2808,84 @@ const Products = () => {
                                             type="checkbox"
                                             checked={formData.is_customizable !== false}
                                             onChange={(e) => setFormData({ ...formData, is_customizable: e.target.checked })}
-                                            className="w-4 h-4 text-[#8B0000] rounded focus:ring-0 cursor-pointer"
+                                            className="w-4 h-4 text-[#8B0000] rounded focus:ring-0 cursor-pointer accent-[#8B0000]"
                                         />
                                         <span>Enable "Customize" Option on Product Page</span>
                                     </label>
                                 </div>
 
                                 {formData.is_customizable !== false && (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-amber-200">
-                                        <div>
-                                            <label className="block text-slate-700 font-bold mb-1 text-xs">
-                                                Customization Type *
-                                            </label>
-                                            <select
-                                                value={
-                                                    formData.customization_type ||
-                                                    (formData.customization_scope === "top_only"
-                                                        ? "Top"
-                                                        : formData.customization_scope === "bottom_only"
-                                                        ? "Bottom"
-                                                        : "Top & Bottom")
-                                                }
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    const scope = val === "Top" ? "top_only" : val === "Bottom" ? "bottom_only" : "both";
-                                                    setFormData({
-                                                        ...formData,
-                                                        customization_type: val,
-                                                        customization_scope: scope
-                                                    });
-                                                }}
-                                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 text-xs focus:outline-none focus:border-[#8B0000] font-medium cursor-pointer"
-                                            >
-                                                <option value="Top">Top (Kurti, Top, Tunic, Dress)</option>
-                                                <option value="Bottom">Bottom (Palazzo, Pant, Salwar, Sharara)</option>
-                                                <option value="Top & Bottom">Top &amp; Bottom (Kurti Set, Co-ord Set, Suit Set)</option>
-                                            </select>
-                                            <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                                                Dynamic rule: Determines which measurement fields appear on the customer-facing custom outfit modal.
-                                            </p>
+                                    <div className="space-y-3 pt-2.5 border-t border-amber-200">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                            <div className="sm:col-span-2">
+                                                <label className="block text-slate-700 font-bold mb-1.5 text-xs">
+                                                    Customization Scope / Type *
+                                                </label>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {[
+                                                        { id: "Top & Bottom", scope: "both", label: "Top & Bottom", desc: "Kurti Set, Co-ord, Suit Set" },
+                                                        { id: "Top", scope: "top_only", label: "Top Only", desc: "Kurti, Top, Dress, Blouse" },
+                                                        { id: "Bottom", scope: "bottom_only", label: "Bottom Only", desc: "Palazzo, Pant, Salwar, Skirt" }
+                                                    ].map((item) => {
+                                                        const isSelected = (formData.customization_type === item.id) ||
+                                                            (item.id === "Top" && formData.customization_scope === "top_only") ||
+                                                            (item.id === "Bottom" && formData.customization_scope === "bottom_only") ||
+                                                            (item.id === "Top & Bottom" && (formData.customization_scope === "both" || !formData.customization_scope));
+                                                        return (
+                                                            <button
+                                                                key={item.id}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setFormData({
+                                                                        ...formData,
+                                                                        customization_type: item.id,
+                                                                        customization_scope: item.scope
+                                                                    });
+                                                                }}
+                                                                className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                                                                    isSelected
+                                                                        ? "bg-amber-100 border-[#8B0000] text-[#8B0000] font-bold ring-1 ring-[#8B0000] shadow-xs"
+                                                                        : "bg-white border-slate-200 text-slate-700 hover:bg-amber-50/50"
+                                                                }`}
+                                                            >
+                                                                <span className="text-xs font-bold">{item.label}</span>
+                                                                <span className="text-[10px] text-slate-500 font-normal mt-0.5">{item.desc}</span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-slate-700 font-bold mb-1.5 text-xs">
+                                                    Tailoring Fee / Surcharge (₹)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={formData.tailoring_price ?? 0}
+                                                    onChange={(e) => setFormData({ ...formData, tailoring_price: Math.max(0, parseInt(e.target.value) || 0) })}
+                                                    placeholder="0"
+                                                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#8B0000] font-mono font-bold"
+                                                />
+                                                <span className="text-[10px] text-slate-500 block mt-1">₹0 = Free Bespoke Fitting</span>
+                                            </div>
                                         </div>
 
-                                        <div className="p-3 rounded-xl bg-white/90 border border-amber-200 text-xs text-amber-950 flex flex-col justify-center space-y-1">
-                                            <span className="font-bold text-[#8B0000]">Customization Type Guide:</span>
-                                            <p className="text-[11px] text-slate-600 leading-relaxed">
-                                                • <strong>Kurti / Top / Dress</strong> → Select <strong>Top</strong><br />
-                                                • <strong>Palazzo / Pant / Salwar</strong> → Select <strong>Bottom</strong><br />
-                                                • <strong>Kurti Set / Co-ord Set</strong> → Select <strong>Top &amp; Bottom</strong>
-                                            </p>
+                                        <div className="p-3 rounded-xl bg-white/95 border border-amber-200 text-xs text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-2xs">
+                                            <div>
+                                                <span className="font-bold text-[#8B0000]">Measurement Scope Rules:</span>
+                                                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                                                    • <strong>Top Only:</strong> Bust, Waist, Hip, Top Length, Shoulder, Sleeve Length<br />
+                                                    • <strong>Bottom Only:</strong> Waist, Hip, Bottom Length / Inseam, Thigh, Ankle<br />
+                                                    • <strong>Top &amp; Bottom:</strong> Complete full-outfit measurement matrix
+                                                </p>
+                                            </div>
+                                            <div className="flex-shrink-0 text-right">
+                                                <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-full font-bold">
+                                                    Live on Store
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -3461,7 +3365,7 @@ const Products = () => {
                                 />
                             </div>
 
-                            <div className="flex gap-3 pt-3 border-t border-slate-200">
+                            <div className="sticky bottom-0 bg-white/95 backdrop-blur-md pt-3 pb-2 border-t border-slate-200 flex gap-3 z-20">
                                 <button
                                     type="submit"
                                     className="flex-1 py-3 px-4 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold rounded-xl shadow-md transition duration-200 text-xs flex items-center justify-center gap-2 cursor-pointer"

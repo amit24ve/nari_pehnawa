@@ -522,66 +522,36 @@ const SellerAddProduct = () => {
                         )}
                       </div>
 
-                      {/* Active Selected Tags Display */}
-                      <div className="min-h-[34px] p-2 bg-white rounded-lg border border-slate-200 flex flex-wrap items-center gap-1.5">
-                        {selectedSubs.length > 0 ? (
-                          selectedSubs.map((sub, idx) => (
-                            <span
-                              key={`seller-sel-${sub}-${idx}`}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-cyan-50 text-cyan-950 border border-cyan-300 shadow-2xs group"
-                            >
-                              <Check className="w-3 h-3 text-[#0891b2]" />
-                              <span>{sub}</span>
-                              <button
-                                type="button"
-                                onClick={() => toggleSub(sub)}
-                                className="text-cyan-700 hover:text-red-600 transition cursor-pointer p-0.5"
-                                title={`Remove ${sub}`}
+                      {/* Checkboxes List for sub-categories */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1.5 bg-white rounded-xl border border-slate-200">
+                        {subList.length > 0 ? (
+                          subList.map((s, idx) => {
+                            const isChecked = selectedSubs.includes(s);
+                            return (
+                              <label
+                                key={`seller-sub-${s}-${idx}`}
+                                className={`flex items-center gap-2.5 p-2 rounded-lg border text-xs font-semibold cursor-pointer transition-all ${
+                                  isChecked
+                                    ? "bg-cyan-50 border-cyan-400 text-cyan-950 font-bold ring-1 ring-cyan-300/50 shadow-2xs"
+                                    : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                                }`}
                               >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </span>
-                          ))
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => toggleSub(s)}
+                                  className="w-4 h-4 rounded text-[#0891b2] focus:ring-0 cursor-pointer accent-[#0891b2]"
+                                />
+                                <span className="truncate">{s}</span>
+                              </label>
+                            );
+                          })
                         ) : (
-                          <span className="text-xs text-slate-400 italic">
-                            Select multiple styles below or add custom tags for this listing
-                          </span>
+                          <div className="col-span-full p-3 text-center text-xs text-slate-400 italic">
+                            No predefined styles for {formData.category}. You can add custom styles below.
+                          </div>
                         )}
                       </div>
-
-                      {/* Available Sub-Categories Pill Buttons */}
-                      {subList.length > 0 && (
-                        <div className="space-y-1.5">
-                          <span className="text-[11px] font-bold text-slate-600 flex items-center justify-between">
-                            <span>Available Styles for &ldquo;{formData.category}&rdquo;:</span>
-                            <span className="text-slate-400 font-normal">Click to toggle</span>
-                          </span>
-                          <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-0.5">
-                            {subList.map((s, idx) => {
-                              const isSelected = selectedSubs.includes(s);
-                              return (
-                                <button
-                                  key={`seller-sub-${s}-${idx}`}
-                                  type="button"
-                                  onClick={() => toggleSub(s)}
-                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
-                                    isSelected
-                                      ? "bg-cyan-100 text-cyan-950 border-cyan-400 shadow-xs"
-                                      : "bg-white text-slate-700 border-slate-200 hover:border-cyan-300 hover:bg-cyan-50/50"
-                                  }`}
-                                >
-                                  {isSelected ? (
-                                    <Check className="w-3 h-3 text-[#0891b2]" />
-                                  ) : (
-                                    <Plus className="w-3 h-3 text-slate-400" />
-                                  )}
-                                  <span>{s}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
 
                       {/* Custom Style Input */}
                       <div className="flex items-center gap-2 pt-1 border-t border-slate-200/60">
