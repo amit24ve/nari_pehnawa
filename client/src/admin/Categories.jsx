@@ -669,30 +669,30 @@ const Categories = () => {
                         }}
                         className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2.5 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
                     >
-                        <Settings className="w-3.5 h-3.5 text-[#0891b2]" /> Manage Departments
+                        <Settings className="w-3.5 h-3.5 text-[#0891b2]" /> Manage Categories
                     </button>
                     <button
                         onClick={() => {
-                            setSubCatSelectedDept(filterDepartment !== "all" ? filterDepartment : (availableDepartments[0] || "Women"));
-                            setSubCatNewName("");
-                            setSubCatError(null);
-                            setSubCatSuccess(null);
-                            setShowSubCatModal(true);
+                            setEditingDept(null);
+                            setDeptForm({ name: "", icon: "Sparkles", image: "", display_order: (departments.length || 5) + 1 });
+                            setDeptError(null);
+                            setDeptSuccess(null);
+                            setShowDeptModal(true);
                         }}
                         className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 px-3.5 py-2.5 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer hover:border-cyan-400"
                     >
-                        <Tag className="w-3.5 h-3.5 text-[#0891b2]" /> + Add Sub-Category
+                        <Plus className="w-3.5 h-3.5 stroke-[2.5] text-[#0891b2]" /> Add Category
                     </button>
                     <button
                         onClick={() => openAdd()}
                         className="flex items-center gap-2 bg-[#0891b2] hover:bg-[#06b6d4] text-white px-4 py-2.5 rounded-xl text-sm font-extrabold shadow-sm transition-all duration-200 cursor-pointer"
                     >
-                        <Plus className="w-4 h-4 stroke-[2.5]" /> Add Category
+                        <Tag className="w-4 h-4" /> Add Sub-Category
                     </button>
                 </div>
             </div>
 
-            {/* Department Filter Pills (With Professional Vector Icons, Zero Emojis) */}
+            {/* Category Filter Pills */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                 <button
                     type="button"
@@ -704,7 +704,7 @@ const Categories = () => {
                     }`}
                 >
                     <Grid className="w-3.5 h-3.5" />
-                    <span>All Departments ({categories.length})</span>
+                    <span>All Categories ({categories.length})</span>
                 </button>
                 {(departments.length > 0 ? departments : PRESET_DEPARTMENTS.map(p => ({ name: p.id, icon: p.icon, id: p.id }))).map((dept) => {
                     const deptName = dept.name || dept.id || dept;
@@ -894,10 +894,10 @@ const Categories = () => {
                                             </span>
                                         </div>
 
-                                        {/* Sr No Top Left */}
+                                        {/* Sequence Top Left */}
                                         <div className="absolute top-2.5 left-2.5">
-                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-black/75 text-white shadow-xs">
-                                                Sr No: #{cat.display_order ?? 0}
+                                            <span className="text-[11px] font-black px-2.5 py-0.5 rounded-md bg-white/95 text-slate-900 border border-slate-200 shadow-sm backdrop-blur-xs">
+                                                #{cat.display_order ?? 1}
                                             </span>
                                         </div>
                                     </div>
@@ -999,10 +999,10 @@ const Categories = () => {
                         <div className="flex items-center justify-between p-5 border-b border-slate-200 bg-slate-50/70">
                             <div>
                                 <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                    <span>{editingCategory ? "Edit Category & Sub-Categories" : "Create New Category"}</span>
+                                    <span>{editingCategory ? "Edit Sub-Category" : "Add New Sub-Category"}</span>
                                 </h3>
                                 <p className="text-xs text-slate-500 mt-0.5">
-                                    Define department, product styles/sub-categories, banner and routing.
+                                    Select parent category, upload image, and configure URL routing.
                                 </p>
                             </div>
                             <button
@@ -1017,61 +1017,23 @@ const Categories = () => {
                         </div>
 
                         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-                            {/* Category / Department */}
+                            {/* Parent Category Dropdown */}
                             <div>
-                                <div className="flex items-center justify-between mb-1.5">
-                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                                        Category <span className="text-cyan-600 font-extrabold">*</span>
-                                    </label>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setEditingDept(null);
-                                            setDeptForm({ name: "", icon: "Sparkles", image: "", display_order: (departments.length || 5) + 1 });
-                                            setDeptError(null);
-                                            setDeptSuccess(null);
-                                            setShowDeptModal(true);
-                                        }}
-                                        className="text-xs text-cyan-700 font-bold hover:underline flex items-center gap-1 cursor-pointer"
-                                    >
-                                        <Plus className="w-3 h-3 stroke-[2.5]" /> New Category / Department
-                                    </button>
-                                </div>
-
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2">
-                                    {(departments.length > 0 ? departments : PRESET_DEPARTMENTS.map(p => ({ name: p.id, icon: p.icon }))).map((dept) => {
-                                        const deptName = dept.name || dept.id;
-                                        const isSelected = !customDeptInput && (formData.department || "Women").toLowerCase() === deptName.toLowerCase();
-                                        return (
-                                            <button
-                                                key={dept.id || dept._id || deptName}
-                                                type="button"
-                                                onClick={() => {
-                                                    setCustomDeptInput(false);
-                                                    setFormData({ ...formData, department: deptName });
-                                                }}
-                                                className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                                                    isSelected
-                                                        ? "bg-cyan-50 border-cyan-500 text-cyan-900 shadow-sm ring-1 ring-cyan-400"
-                                                        : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
-                                                }`}
-                                            >
-                                                {renderDepartmentIcon(dept, isSelected ? "w-3.5 h-3.5 text-cyan-700" : "w-3.5 h-3.5 text-slate-500")}
-                                                <span className="truncate">{deptName}</span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                <input
-                                    type="text"
-                                    value={formData.department}
-                                    onChange={(e) => {
-                                        setCustomDeptInput(true);
-                                        setFormData({ ...formData, department: e.target.value });
-                                    }}
-                                    placeholder="Or type custom category name (e.g. Footwear, Watches)..."
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 font-medium"
-                                />
+                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
+                                    Category <span className="text-cyan-600 font-extrabold">*</span>
+                                </label>
+                                <select
+                                    required
+                                    value={formData.department || "Women"}
+                                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 font-bold focus:outline-none focus:border-cyan-400 cursor-pointer shadow-xs"
+                                >
+                                    {availableDepartments.map((deptName) => (
+                                        <option key={deptName} value={deptName} className="font-medium text-slate-800">
+                                            {deptName}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
 
                             {/* Sub-Category Name */}
@@ -1260,184 +1222,7 @@ const Categories = () => {
                 </div>
             )}
 
-            {/* ── MODAL: ADD NEW SUB-CATEGORY (CLEAN CATEGORY SELECTOR + DYNAMIC LIST) ── */}
-            {showSubCatModal && (
-                <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
-                    <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50">
-                            <div>
-                                <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
-                                    <Tag className="w-4 h-4 text-[#0891b2]" />
-                                    <span>Add New Sub-Category</span>
-                                </h3>
-                                <p className="text-[11px] text-slate-500 mt-0.5">
-                                    Select category, type new sub-category, and manage active sub-category listings.
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setShowSubCatModal(false)}
-                                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200 transition cursor-pointer"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-
-                        <div className="p-5 space-y-4 overflow-y-auto">
-                            {subCatError && (
-                                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold">
-                                    {subCatError}
-                                </div>
-                            )}
-                            {subCatSuccess && (
-                                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold">
-                                    {subCatSuccess}
-                                </div>
-                            )}
-
-                            {/* Category Selector Dropdown (Clean, ONLY Category/Department names) */}
-                            <div className="space-y-1.5 bg-slate-50/80 p-3 rounded-xl border border-slate-200">
-                                <label className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
-                                    <Layers className="w-3.5 h-3.5 text-[#0891b2]" />
-                                    Category
-                                </label>
-                                <select
-                                    value={subCatSelectedDept}
-                                    onChange={(e) => {
-                                        setSubCatSelectedDept(e.target.value);
-                                        setSubCatError(null);
-                                        setSubCatSuccess(null);
-                                    }}
-                                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-cyan-500 cursor-pointer shadow-xs"
-                                >
-                                    {availableDepartments.map(deptName => (
-                                        <option key={deptName} value={deptName}>
-                                            {deptName}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Input to add subcategory */}
-                            <form onSubmit={handleAddSubCategoryToDept} className="space-y-1.5">
-                                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
-                                    <span className="flex items-center gap-1">
-                                        <PlusCircle className="w-3.5 h-3.5 text-[#0891b2]" />
-                                        Add Sub-Category under &ldquo;{subCatSelectedDept}&rdquo;:
-                                    </span>
-                                    <span className="text-[10px] text-slate-400 font-normal">
-                                        Single or comma-separated
-                                    </span>
-                                </label>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={subCatNewName}
-                                        onChange={(e) => setSubCatNewName(e.target.value)}
-                                        placeholder="e.g. Sleeveless Kurtis, Halter Neck Top, Anarkali Suits..."
-                                        className="flex-1 bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-500 font-medium"
-                                    />
-                                    <button
-                                        type="submit"
-                                        disabled={subCatSaving || !subCatNewName.trim()}
-                                        className="px-4 py-2 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-xs font-extrabold transition cursor-pointer disabled:opacity-50 flex items-center gap-1 shadow-xs"
-                                    >
-                                        {subCatSaving ? (
-                                            <>
-                                                <Loader2 className="w-3 h-3 animate-spin" /> Adding...
-                                            </>
-                                        ) : (
-                                            "+ Add"
-                                        )}
-                                    </button>
-                                </div>
-                            </form>
-
-                            {/* Active Sub-Categories Header and List */}
-                            {(() => {
-                                const deptLower = (subCatSelectedDept || "Women").toLowerCase();
-                                const activeInDept = categories.filter(c => {
-                                    const cd = (c.department || "Women").toLowerCase();
-                                    if (deptLower === "women" || deptLower === "clothing") return cd === "women" || cd === "clothing";
-                                    return cd === deptLower;
-                                });
-
-                                return (
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                                                <Tag className="w-3.5 h-3.5 text-[#0891b2]" />
-                                                Active Sub-Categories in &ldquo;{subCatSelectedDept}&rdquo;
-                                            </span>
-                                            <span className="text-[11px] font-bold text-[#0891b2] bg-cyan-50 px-2.5 py-0.5 rounded-full border border-cyan-200">
-                                                {activeInDept.length} Total
-                                            </span>
-                                        </div>
-
-                                        {/* Subcategories List View with quick removal */}
-                                        <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 max-h-56 overflow-y-auto">
-                                            {activeInDept.length > 0 ? (
-                                                activeInDept.map((catItem) => (
-                                                    <div
-                                                        key={catItem._id || catItem.id}
-                                                        className="flex items-center justify-between p-2.5 hover:bg-slate-50 transition"
-                                                    >
-                                                        <div className="min-w-0 pr-2">
-                                                            <div className="text-xs font-bold text-slate-800 truncate">
-                                                                {catItem.name}
-                                                            </div>
-                                                            <div className="text-[10px] text-slate-400 font-mono truncate">
-                                                                {catItem.link || `/category/${catItem.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-1 flex-shrink-0">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setShowSubCatModal(false);
-                                                                    handleEdit(catItem);
-                                                                }}
-                                                                className="p-1 rounded text-slate-400 hover:text-[#0891b2] hover:bg-slate-100 transition cursor-pointer"
-                                                                title="Edit details"
-                                                            >
-                                                                <Edit2 className="w-3.5 h-3.5" />
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleDeleteSubCategoryFromModal(catItem)}
-                                                                className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
-                                                                title="Delete sub-category"
-                                                            >
-                                                                <Trash2 className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div className="p-4 text-center text-xs text-slate-400 italic">
-                                                    No sub-categories yet under {subCatSelectedDept}. Type above and click "+ Add" to create.
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })()}
-                        </div>
-
-                        <div className="p-4 bg-slate-50 border-t border-slate-200 text-right">
-                            <button
-                                type="button"
-                                onClick={() => setShowSubCatModal(false)}
-                                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold transition cursor-pointer"
-                            >
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ── MODAL: MANAGE DEPARTMENTS (PROFESSIONAL E-COMMERCE UI WITHOUT EMOJIS) ── */}
+            {/* ── MODAL: MANAGE CATEGORIES (PROFESSIONAL E-COMMERCE UI WITHOUT EMOJIS) ── */}
             {showDeptModal && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
                     <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -1446,7 +1231,7 @@ const Categories = () => {
                                 <Settings className="w-5 h-5 text-cyan-600" />
                                 <div>
                                     <h3 className="font-bold text-base text-slate-900">
-                                        {editingDept ? `Edit Department "${editingDept.name}"` : "Manage Store Departments"}
+                                        {editingDept ? `Edit Category "${editingDept.name}"` : "Manage Store Categories"}
                                     </h3>
                                     <p className="text-xs text-slate-500">
                                         Top-level divisions: Women, Men, Jewellery, Footwear, Accessories, etc.
@@ -1479,11 +1264,11 @@ const Categories = () => {
                                 </div>
                             )}
 
-                            {/* Form to Create or Edit Department */}
+                            {/* Form to Create or Edit Category */}
                             <form onSubmit={handleSaveDepartment} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3.5">
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                                        {editingDept ? `Edit Department Details` : "+ Add New Department"}
+                                        {editingDept ? `Edit Category Details` : "+ Add New Category"}
                                     </span>
                                     {editingDept && (
                                         <button
@@ -1504,7 +1289,7 @@ const Categories = () => {
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     <div className="sm:col-span-2">
                                         <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                                            Department Name *
+                                            Category Name *
                                         </label>
                                         <input
                                             type="text"
@@ -1566,7 +1351,7 @@ const Categories = () => {
                                         type="text"
                                         value={deptForm.image || ""}
                                         onChange={(e) => setDeptForm({ ...deptForm, image: e.target.value })}
-                                        placeholder="https://.../icon.svg or /uploads/dept.png"
+                                        placeholder="https://.../icon.svg or /uploads/category.png"
                                         className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-cyan-500 font-mono"
                                     />
                                 </div>
@@ -1575,17 +1360,17 @@ const Categories = () => {
                                     <button
                                         type="submit"
                                         disabled={deptSubmitting}
-                                        className="px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-black rounded-xl text-xs font-extrabold shadow-sm cursor-pointer disabled:opacity-50 transition"
+                                        className="px-4 py-2 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-xs font-extrabold shadow-sm cursor-pointer disabled:opacity-50 transition"
                                     >
-                                        {deptSubmitting ? "Saving..." : editingDept ? "Save & Rename Everywhere" : "Add Department"}
+                                        {deptSubmitting ? "Saving..." : editingDept ? "Save Category" : "+ Add Category"}
                                     </button>
                                 </div>
                             </form>
 
-                            {/* Existing Departments List */}
+                            {/* Existing Categories List */}
                             <div>
                                 <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                                    Active Departments ({departments.length})
+                                    Active Categories ({departments.length})
                                 </h4>
                                 <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
                                     {departments.map((d) => (
@@ -1600,7 +1385,7 @@ const Categories = () => {
                                                         <span className="text-[10px] text-slate-400 font-mono">#{d.display_order ?? 0}</span>
                                                     </div>
                                                     <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
-                                                        <span>{d.category_count ?? 0} categories</span>
+                                                        <span>{d.category_count ?? 0} sub-categories</span>
                                                         <span>•</span>
                                                         <span>{d.product_count ?? 0} products</span>
                                                     </div>
@@ -1622,7 +1407,7 @@ const Categories = () => {
                                                         setDeptSuccess(null);
                                                     }}
                                                     className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition"
-                                                    title="Rename / Edit Department"
+                                                    title="Rename / Edit Category"
                                                 >
                                                     <Edit2 className="w-3.5 h-3.5" /> Edit
                                                 </button>
@@ -1631,7 +1416,7 @@ const Categories = () => {
                                                         type="button"
                                                         onClick={() => handleDeleteDepartment(d)}
                                                         className="p-1.5 bg-white hover:bg-slate-100 text-slate-600 hover:text-red-600 border border-slate-300 rounded-lg text-xs font-bold cursor-pointer transition"
-                                                        title="Delete Department"
+                                                        title="Delete Category"
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />
                                                     </button>

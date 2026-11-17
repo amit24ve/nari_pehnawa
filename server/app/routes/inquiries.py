@@ -123,8 +123,8 @@ async def submit_inquiry(payload: InquiryCreate):
         db = get_database()
         inq_type = (payload.inquiry_type or "customization").strip().lower()
         subj_lower = (payload.subject or "").lower()
-        if "reseller" in subj_lower:
-            inq_type = "reseller"
+        if "reseller" in subj_lower or "seller" in subj_lower or inq_type in ["seller", "reseller"]:
+            inq_type = "seller"
         elif "custom" in subj_lower:
             inq_type = "customization"
 
@@ -147,7 +147,7 @@ async def submit_inquiry(payload: InquiryCreate):
             "name": payload.name.strip(),
             "phone": payload.phone.strip(),
             "email": str(payload.email).strip() if payload.email else "",
-            "subject": payload.subject.strip() if payload.subject else ("Become a Reseller" if inq_type == "reseller" else f"Custom Outfit: {payload.product_name or 'Bespoke Order'}"),
+            "subject": payload.subject.strip() if payload.subject else ("Seller & Vendor Application" if inq_type == "seller" else f"Custom Outfit: {payload.product_name or 'Bespoke Order'}"),
             "message": (payload.message or payload.additional_instructions or "Customization request submitted").strip(),
             "additional_instructions": (payload.additional_instructions or payload.message or "").strip(),
             "inquiry_type": inq_type,
@@ -276,7 +276,11 @@ async def list_inquiries(
         if status_filter and status_filter.strip() and status_filter.lower() != "all":
             query["status"] = status_filter.strip()
         if type_filter and type_filter.strip() and type_filter.lower() != "all":
-            query["inquiry_type"] = type_filter.strip()
+            tf = type_filter.strip().lower()
+            if tf in ["seller", "reseller"]:
+                query["inquiry_type"] = {"$in": ["seller", "reseller"]}
+            else:
+                query["inquiry_type"] = tf
         if search and search.strip():
             s = search.strip()
             query["$or"] = [

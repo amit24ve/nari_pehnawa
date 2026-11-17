@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     X,
     Plus,
@@ -38,6 +38,7 @@ import {
     Store,
     Scissors,
     Folder,
+    ChevronDown,
 } from "lucide-react";
 import shippingApi from "../services/shippingApi";
 
@@ -250,10 +251,23 @@ const Products = () => {
         style_tip: "",
         is_customizable: true,
         customization_type: "Top & Bottom",
-        customization_scope: "both"
+        customization_scope: "both",
+        tailoring_price: 0
     };
 
     const [formData, setFormData] = useState(emptyForm);
+    const [subCatDropdownOpen, setSubCatDropdownOpen] = useState(false);
+    const subCatDropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (subCatDropdownRef.current && !subCatDropdownRef.current.contains(e.target)) {
+                setSubCatDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
     const [pickupLocations, setPickupLocations] = useState(DEFAULT_WAREHOUSES);
     const [isSyncingWarehouses, setIsSyncingWarehouses] = useState(false);
 
@@ -653,6 +667,7 @@ const Products = () => {
                 is_customizable: formData.is_customizable !== false,
                 customization_type: formData.customization_type || (formData.customization_scope === "top_only" ? "Top" : formData.customization_scope === "bottom_only" ? "Bottom" : "Top & Bottom"),
                 customization_scope: formData.customization_scope || (formData.customization_type === "Top" ? "top_only" : formData.customization_type === "Bottom" ? "bottom_only" : "both"),
+                tailoring_price: formData.tailoring_price !== undefined && formData.tailoring_price !== null && formData.tailoring_price !== "" ? parseInt(formData.tailoring_price) : 0,
                 delivery_charge: formData.delivery_charge !== "" ? parseFloat(formData.delivery_charge) : 0.0,
                 pickup_location: formData.pickup_location || null,
                 warehouse_stock: { "All": totalStock },
@@ -864,7 +879,8 @@ const Products = () => {
             style_tip: product.style_tip || "",
             is_customizable: product.is_customizable !== false,
             customization_type: product.customization_type || (product.customization_scope === "top_only" ? "Top" : product.customization_scope === "bottom_only" ? "Bottom" : "Top & Bottom"),
-            customization_scope: product.customization_scope || (product.customization_type === "Top" ? "top_only" : product.customization_type === "Bottom" ? "bottom_only" : "both")
+            customization_scope: product.customization_scope || (product.customization_type === "Top" ? "top_only" : product.customization_type === "Bottom" ? "bottom_only" : "both"),
+            tailoring_price: product.tailoring_price ?? 0
         });
         setShowEditModal(true);
     };
@@ -2274,88 +2290,45 @@ const Products = () => {
                                     </select>
                                 </div>
 
-                                <div>
-                                    <label className="block text-slate-700 font-bold mb-1.5">Price (INR) <span className="text-cyan-600 font-extrabold">*</span></label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        required
-                                        value={formData.price}
-                                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs transition"
-                                        placeholder="e.g. 1299"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-slate-700 font-bold mb-1.5 flex items-center justify-between">
-                                        <span>Total Stock Quantity <span className="text-cyan-600 font-extrabold">*</span></span>
-                                        <span className="text-[10px] text-cyan-700 font-normal">Auto-calculated from Warehouses</span>
-                                    </label>
-                                    <input
-                                        type="number"
-                                        required
-                                        value={formData.stock}
-                                        onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-mono font-bold transition"
-                                        placeholder="0"
-                                    />
-                                </div>
-
-                                {/* ── Category (Previously Department) ── */}
+                                {/* ── Category Dropdown (Clean select, no small buttons) ── */}
                                 <div>
                                     <label className="block text-slate-700 font-bold mb-1.5 flex items-center justify-between">
                                         <span className="flex items-center gap-1.5">
                                             <Folder className="w-3.5 h-3.5 text-[#0891b2]" />
                                             <span>Category <span className="text-cyan-600 font-extrabold">*</span></span>
                                         </span>
-                                        <span className="text-[10px] text-cyan-700 font-normal">Primary Division</span>
+                                        <span className="text-[10px] text-cyan-700 font-semibold">Primary Section</span>
                                     </label>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mb-2">
-                                        {(departmentsList.length > 0 ? departmentsList : PRESET_DEPARTMENTS.map(p => ({ id: p.id, name: p.label, icon: p.icon }))).map((dept) => {
+                                    <select
+                                        value={formData.department || "Women"}
+                                        onChange={(e) => {
+                                            const targetDept = e.target.value;
+                                            const currentDept = (formData.department || "Women").toLowerCase();
+                                            const isSameDept = currentDept === targetDept.toLowerCase() || 
+                                                ((currentDept === "women" || currentDept === "clothing") && (targetDept.toLowerCase() === "women" || targetDept.toLowerCase() === "clothing"));
+                                            setFormData({
+                                                ...formData,
+                                                department: targetDept,
+                                                category: isSameDept ? formData.category : "",
+                                                sub_categories: isSameDept ? (formData.sub_categories || []) : [],
+                                                sub_category: isSameDept ? (formData.sub_category || "") : ""
+                                            });
+                                        }}
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 font-bold focus:outline-none focus:border-cyan-400 cursor-pointer shadow-xs"
+                                    >
+                                        {(departmentsList.length > 0 ? departmentsList : PRESET_DEPARTMENTS.map(p => ({ id: p.id, name: p.label }))).map((dept) => {
                                             const deptName = dept.name || dept.id;
-                                            const isSelected = (formData.department || "Women").toLowerCase() === deptName.toLowerCase();
                                             return (
-                                                <button
-                                                    key={dept.id || dept._id || deptName}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const targetDept = deptName;
-                                                        const currentDept = (formData.department || "Women").toLowerCase();
-                                                        const isSameDept = currentDept === targetDept.toLowerCase() || 
-                                                            ((currentDept === "women" || currentDept === "clothing") && (targetDept.toLowerCase() === "women" || targetDept.toLowerCase() === "clothing"));
-                                                        
-                                                        setFormData({
-                                                            ...formData,
-                                                            department: targetDept,
-                                                            category: isSameDept ? formData.category : "",
-                                                            sub_categories: isSameDept ? (formData.sub_categories || []) : [],
-                                                            sub_category: isSameDept ? (formData.sub_category || "") : ""
-                                                        });
-                                                    }}
-                                                    className={`py-2 px-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                                                        isSelected
-                                                            ? "bg-cyan-50 border-cyan-500 text-cyan-900 shadow-sm ring-1 ring-cyan-400 font-black"
-                                                            : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
-                                                    }`}
-                                                >
-                                                    <Folder className="w-3.5 h-3.5 text-[#0891b2]" />
-                                                    <span className="truncate">{deptName}</span>
-                                                </button>
+                                                <option key={dept.id || dept._id || deptName} value={deptName} className="font-medium text-slate-800">
+                                                    {deptName}
+                                                </option>
                                             );
                                         })}
-                                    </div>
-                                    <input
-                                        type="text"
-                                        value={formData.department || ""}
-                                        onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                                        placeholder="Or type custom category name (e.g., Watches, Kids, Beauty...)"
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 font-medium mb-1"
-                                    />
+                                    </select>
                                 </div>
 
-                                {/* ── Sub-Category Section with Clean Checkboxes ── */}
-                                <div>
+                                {/* ── Sub-Category Dropdown with Multi-Checkboxes ── */}
+                                <div ref={subCatDropdownRef} className="relative">
                                     {(() => {
                                         const currentDept = (formData.department || "Women").toLowerCase();
                                         const availableSubCats = categoriesList.filter(c => {
@@ -2443,126 +2416,166 @@ const Products = () => {
                                         };
 
                                         return (
-                                            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
-                                                <div className="flex items-center justify-between flex-wrap gap-2">
-                                                    <div className="flex items-center gap-1.5">
+                                            <div>
+                                                <label className="block text-slate-700 font-bold mb-1.5 flex items-center justify-between">
+                                                    <span className="flex items-center gap-1.5">
                                                         <Tag className="w-3.5 h-3.5 text-[#0891b2]" />
-                                                        <label className="text-slate-800 font-bold text-xs uppercase tracking-wide">
-                                                            Sub-Category <span className="text-cyan-600 font-extrabold">*</span>
-                                                        </label>
-                                                        <span className="text-[10px] text-slate-500 font-normal">
-                                                            (Select sub-categories in {formData.department || 'Women'})
+                                                        <span>Sub-Category <span className="text-cyan-600 font-extrabold">*</span></span>
+                                                    </span>
+                                                    {selectedSubs.length > 0 && (
+                                                        <span className="text-[10px] text-[#0891b2] font-bold bg-cyan-50 px-2 py-0.5 rounded-full border border-cyan-200">
+                                                            {selectedSubs.length} Selected
                                                         </span>
-                                                        {selectedSubs.length > 0 && (
-                                                            <span className="text-[10px] text-cyan-800 font-extrabold bg-cyan-100 px-2 py-0.5 rounded-full border border-cyan-300">
-                                                                {selectedSubs.length} Selected
-                                                            </span>
-                                                        )}
-                                                    </div>
-
-                                                    {availableSubCats.length > 1 && (
-                                                        <div className="flex items-center gap-2 text-[11px]">
-                                                            <button
-                                                                type="button"
-                                                                onClick={selectAllSubs}
-                                                                className="text-[#0891b2] font-bold hover:underline cursor-pointer"
-                                                            >
-                                                                Select All
-                                                            </button>
-                                                            <span className="text-slate-300">•</span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={clearAllSubs}
-                                                                className="text-slate-500 hover:text-red-600 font-bold cursor-pointer"
-                                                            >
-                                                                Clear
-                                                            </button>
-                                                        </div>
                                                     )}
+                                                </label>
+
+                                                {/* Dropdown Toggle Field */}
+                                                <div
+                                                    onClick={() => setSubCatDropdownOpen(!subCatDropdownOpen)}
+                                                    className="w-full bg-slate-50 border border-slate-300 hover:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 font-semibold flex items-center justify-between cursor-pointer transition shadow-xs"
+                                                >
+                                                    <span className="truncate">
+                                                        {selectedSubs.length > 0
+                                                            ? `${selectedSubs.length} selected: ${selectedSubs.join(", ")}`
+                                                            : `Select Sub-Categories under ${formData.department || 'Women'}...`}
+                                                    </span>
+                                                    <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${subCatDropdownOpen ? "rotate-180 text-cyan-600" : ""}`} />
                                                 </div>
 
-                                                {/* Checkboxes List / Grid */}
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1.5 bg-white rounded-xl border border-slate-200">
-                                                    {availableSubCats.length > 0 ? (
-                                                        availableSubCats.map(cat => {
-                                                            const isChecked = selectedSubs.includes(cat.name);
-                                                            return (
-                                                                <label
-                                                                    key={cat._id || cat.id || cat.name}
-                                                                    className={`flex items-center gap-2.5 p-2 rounded-lg border text-xs font-semibold cursor-pointer transition-all ${
-                                                                        isChecked
-                                                                            ? "bg-cyan-50 border-cyan-400 text-cyan-950 font-bold ring-1 ring-cyan-300/50 shadow-2xs"
-                                                                            : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
-                                                                    }`}
+                                                {/* Selected Tag Pills Below */}
+                                                {selectedSubs.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1 mt-1.5">
+                                                        {selectedSubs.map(sub => (
+                                                            <span
+                                                                key={sub}
+                                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-cyan-50 text-[#0891b2] border border-cyan-200"
+                                                            >
+                                                                <span>{sub}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => toggleSub(sub)}
+                                                                    className="text-cyan-600 hover:text-red-500 cursor-pointer"
                                                                 >
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={isChecked}
-                                                                        onChange={() => toggleSub(cat.name)}
-                                                                        className="w-4 h-4 rounded text-[#0891b2] focus:ring-0 cursor-pointer accent-[#0891b2]"
-                                                                    />
-                                                                    <span className="truncate">{cat.name}</span>
-                                                                </label>
-                                                            );
-                                                        })
-                                                    ) : (
-                                                        <div className="col-span-full p-4 text-center text-xs text-slate-400 italic">
-                                                            No sub-categories in {formData.department || 'Women'} yet. Type below to create.
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                                    <X className="w-3 h-3" />
+                                                                </button>
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
 
-                                                {/* On the fly Sub-Category creation input */}
-                                                <div className="flex items-center gap-2 pt-2 border-t border-slate-200/80">
-                                                    <input
-                                                        type="text"
-                                                        id="admin-quick-add-subcat"
-                                                        placeholder={`+ Add new sub-category to ${formData.department || 'Women'}...`}
-                                                        className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-[#0891b2]"
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === "Enter") {
-                                                                e.preventDefault();
-                                                                handleQuickAddSubCatOnTheFly(e.target.value);
-                                                                e.target.value = "";
-                                                            }
-                                                        }}
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const el = document.getElementById("admin-quick-add-subcat");
-                                                            if (el && el.value.trim()) {
-                                                                handleQuickAddSubCatOnTheFly(el.value);
-                                                                el.value = "";
-                                                            }
-                                                        }}
-                                                        className="px-3 py-1.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 shadow-xs"
-                                                    >
-                                                        <Plus className="w-3 h-3" /> Add
-                                                    </button>
-                                                </div>
+                                                {/* Dropdown Popup Menu */}
+                                                {subCatDropdownOpen && (
+                                                    <div className="absolute z-30 mt-1.5 left-0 right-0 bg-white border border-slate-200 rounded-2xl shadow-xl p-3 space-y-2.5">
+                                                        <div className="flex items-center justify-between pb-2 border-b border-slate-100 text-xs">
+                                                            <span className="font-bold text-slate-700">
+                                                                Sub-Categories under {formData.department || 'Women'} ({availableSubCats.length})
+                                                            </span>
+                                                            {availableSubCats.length > 0 && (
+                                                                <div className="flex items-center gap-2 text-[11px]">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={selectAllSubs}
+                                                                        className="text-[#0891b2] font-bold hover:underline cursor-pointer"
+                                                                    >
+                                                                        Select All
+                                                                    </button>
+                                                                    <span className="text-slate-300">•</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={clearAllSubs}
+                                                                        className="text-slate-400 hover:text-red-600 font-bold cursor-pointer"
+                                                                    >
+                                                                        Clear
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Checkboxes List */}
+                                                        <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
+                                                            {availableSubCats.length > 0 ? (
+                                                                availableSubCats.map(cat => {
+                                                                    const isChecked = selectedSubs.includes(cat.name);
+                                                                    return (
+                                                                        <label
+                                                                            key={cat._id || cat.id || cat.name}
+                                                                            className={`flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold cursor-pointer transition ${
+                                                                                isChecked
+                                                                                    ? "bg-cyan-50 text-cyan-950 font-bold border border-cyan-200"
+                                                                                    : "hover:bg-slate-50 text-slate-700"
+                                                                            }`}
+                                                                        >
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={isChecked}
+                                                                                onChange={() => toggleSub(cat.name)}
+                                                                                className="w-4 h-4 rounded text-[#0891b2] focus:ring-0 cursor-pointer accent-[#0891b2]"
+                                                                            />
+                                                                            <span className="truncate">{cat.name}</span>
+                                                                        </label>
+                                                                    );
+                                                                })
+                                                            ) : (
+                                                                <div className="p-4 text-center text-xs text-slate-400 italic">
+                                                                    No sub-categories in {formData.department || 'Women'} yet. Type below to create.
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Quick Add Sub-Category Input */}
+                                                        <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100">
+                                                            <input
+                                                                type="text"
+                                                                id="admin-quick-add-subcat"
+                                                                placeholder={`+ New sub-category...`}
+                                                                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-cyan-500 font-medium"
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === "Enter") {
+                                                                        e.preventDefault();
+                                                                        handleQuickAddSubCatOnTheFly(e.target.value);
+                                                                        e.target.value = "";
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const el = document.getElementById("admin-quick-add-subcat");
+                                                                    if (el && el.value.trim()) {
+                                                                        handleQuickAddSubCatOnTheFly(el.value);
+                                                                        el.value = "";
+                                                                    }
+                                                                }}
+                                                                className="px-2.5 py-1.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-lg text-xs font-bold transition cursor-pointer"
+                                                            >
+                                                                Add
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })()}
                                 </div>
 
-                                <div className="space-y-3">
+                                {/* ── Product Photos (Select Multiple) - FULL WIDTH across both columns ── */}
+                                <div className="md:col-span-2 space-y-3">
                                     <div className="flex items-center justify-between flex-wrap gap-2">
                                         <label className="block text-slate-800 font-bold text-xs flex items-center gap-1.5">
-                                            <ImageIcon className="w-4 h-4 text-cyan-600" />
-                                            <span>Product Photos (Select Multiple) *</span>
+                                            <ImageIcon className="w-4 h-4 text-[#0891b2]" />
+                                            <span>Product Photos (Select Multiple) <span className="text-cyan-600 font-extrabold">*</span></span>
                                         </label>
                                         <span className="text-[11px] text-slate-500 font-medium">
-                                            Hold Shift/Ctrl to select multiple files • First photo is Primary
+                                            Hold Shift/Ctrl to select multiple files • First photo is Primary Cover
                                         </span>
                                     </div>
 
                                     {/* Upload Trigger Area */}
-                                    <label className="border-2 border-dashed border-slate-300 hover:border-cyan-400 bg-slate-50 hover:bg-cyan-50/30 rounded-2xl p-4 text-center cursor-pointer transition flex flex-col sm:flex-row items-center justify-center gap-3 group">
+                                    <label className="border-2 border-dashed border-slate-300 hover:border-cyan-400 bg-slate-50 hover:bg-cyan-50/30 rounded-2xl p-5 text-center cursor-pointer transition flex flex-col sm:flex-row items-center justify-center gap-3 group">
                                         {uploadingImage ? (
-                                            <Loader2 className="w-6 h-6 text-cyan-500 animate-spin flex-shrink-0" />
+                                            <Loader2 className="w-6 h-6 text-[#0891b2] animate-spin flex-shrink-0" />
                                         ) : (
-                                            <div className="w-10 h-10 rounded-xl bg-cyan-100 flex items-center justify-center text-cyan-700 group-hover:scale-105 transition-transform flex-shrink-0">
+                                            <div className="w-10 h-10 rounded-xl bg-cyan-100 flex items-center justify-center text-[#0891b2] group-hover:scale-105 transition-transform flex-shrink-0">
                                                 <Upload className="w-5 h-5" />
                                             </div>
                                         )}
@@ -2591,7 +2604,7 @@ const Products = () => {
                                                 <span className="font-bold text-slate-800">
                                                     Uploaded Photos ({formData.images?.length || (formData.image ? 1 : 0)})
                                                 </span>
-                                                <span className="text-[11px] text-cyan-700 font-semibold">
+                                                <span className="text-[11px] text-[#0891b2] font-semibold">
                                                     Click "Make Primary" to set the main cover image
                                                 </span>
                                             </div>
@@ -2618,8 +2631,8 @@ const Products = () => {
                                                                 
                                                                 {/* Primary Badge */}
                                                                 {isPrimary && (
-                                                                    <span className="absolute top-1.5 left-1.5 bg-cyan-400 text-black text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-sm flex items-center gap-0.5">
-                                                                        <Star className="w-2.5 h-2.5 fill-black" /> Primary
+                                                                    <span className="absolute top-1.5 left-1.5 bg-[#0891b2] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-sm flex items-center gap-0.5">
+                                                                        <Star className="w-2.5 h-2.5 fill-white" /> Primary
                                                                     </span>
                                                                 )}
 
@@ -2675,29 +2688,92 @@ const Products = () => {
                                     )}
                                 </div>
 
-                                <div>
-                                    <label className="block text-slate-700 font-bold mb-1.5">Original Price (MRP)</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        value={formData.original_price}
-                                        onChange={(e) => setFormData({ ...formData, original_price: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs transition"
-                                        placeholder="e.g. 1999"
-                                    />
-                                </div>
+                                {/* ── Shifted Pricing & Stock 4-Column Row (Right below Photos) ── */}
+                                <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50/80 border border-slate-200 p-3.5 rounded-2xl shadow-2xs">
+                                    <div>
+                                        <label className="block text-slate-700 font-bold mb-1 text-xs">
+                                            Selling Price (₹) <span className="text-cyan-600 font-extrabold">*</span>
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            required
+                                            value={formData.price}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                const org = parseFloat(formData.original_price);
+                                                const sp = parseFloat(val);
+                                                let disc = formData.discount;
+                                                if (org && sp && org > sp) {
+                                                    disc = Math.round(((org - sp) / org) * 100);
+                                                }
+                                                setFormData({ ...formData, price: val, discount: disc });
+                                            }}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-cyan-500 text-xs font-mono font-bold transition shadow-2xs"
+                                            placeholder="1299"
+                                        />
+                                    </div>
 
-                                <div>
-                                    <label className="block text-slate-700 font-bold mb-1.5">Discount %</label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        max="100"
-                                        value={formData.discount}
-                                        onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs transition"
-                                        placeholder="e.g. 20"
-                                    />
+                                    <div>
+                                        <label className="block text-slate-700 font-bold mb-1 text-xs">
+                                            Original MRP (₹)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={formData.original_price}
+                                            onChange={(e) => {
+                                                const orgVal = e.target.value;
+                                                const org = parseFloat(orgVal);
+                                                const sp = parseFloat(formData.price);
+                                                let disc = formData.discount;
+                                                if (org && sp && org > sp) {
+                                                    disc = Math.round(((org - sp) / org) * 100);
+                                                }
+                                                setFormData({ ...formData, original_price: orgVal, discount: disc });
+                                            }}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-cyan-500 text-xs font-mono font-bold transition shadow-2xs"
+                                            placeholder="1999"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-slate-700 font-bold mb-1 text-xs">
+                                            Discount %
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="100"
+                                            value={formData.discount}
+                                            onChange={(e) => {
+                                                const discVal = e.target.value;
+                                                const disc = parseInt(discVal);
+                                                let sp = formData.price;
+                                                const org = parseFloat(formData.original_price);
+                                                if (org && !isNaN(disc) && disc > 0 && disc < 100) {
+                                                    sp = Math.round(org * (1 - disc / 100));
+                                                }
+                                                setFormData({ ...formData, discount: discVal, price: sp });
+                                            }}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-cyan-500 text-xs font-mono font-bold transition shadow-2xs"
+                                            placeholder="20"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-slate-700 font-bold mb-1 text-xs">
+                                            Total Stock <span className="text-cyan-600 font-extrabold">*</span>
+                                        </label>
+                                        <input
+                                            type="number"
+                                            required
+                                            value={formData.stock}
+                                            onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-cyan-500 text-xs font-mono font-bold transition shadow-2xs"
+                                            placeholder="100"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div>

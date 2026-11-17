@@ -52,7 +52,10 @@ const Inquiries = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState(() => searchParams.get("type") || "all");
+  const [typeFilter, setTypeFilter] = useState(() => {
+    const t = searchParams.get("type");
+    return t === "reseller" ? "seller" : (t || "all");
+  });
   
   // View Details Modal State
   const [selectedInquiry, setSelectedInquiry] = useState(null);
@@ -94,7 +97,7 @@ const Inquiries = () => {
 
   useEffect(() => {
     const t = searchParams.get("type");
-    if (t) setTypeFilter(t);
+    if (t) setTypeFilter(t === "reseller" ? "seller" : t);
   }, [searchParams]);
 
   useEffect(() => {
@@ -187,7 +190,7 @@ const Inquiries = () => {
   };
 
   const handleDelete = (id) => {
-    if (!window.confirm("Are you sure you want to permanently delete this inquiry / lead?")) return;
+    if (!window.confirm("Are you sure you want to permanently delete this inquiry?")) return;
 
     fetch(`${API_BASE_URL}/inquiries/${id}`, { method: "DELETE" })
       .then((r) => r.json())
@@ -260,7 +263,7 @@ const Inquiries = () => {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 font-serif flex items-center gap-2.5">
             <MessageSquare className="w-6 h-6 text-[#0891b2]" />
-            <span>Customer Inquiries, Tailoring &amp; Seller Leads</span>
+            <span>Customer &amp; Seller Inquiries</span>
           </h1>
           <p className="text-xs text-slate-500 mt-1">
             Manage incoming inquiries, update resolution status, track custom body measurements, and follow up directly via WhatsApp or Call.
@@ -271,7 +274,7 @@ const Inquiries = () => {
           className="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl flex items-center gap-2 border border-slate-200 transition-colors self-start sm:self-auto cursor-pointer"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#0891b2]" : ""}`} />
-          <span>Refresh Leads</span>
+          <span>Refresh Inquiries</span>
         </button>
       </div>
 
@@ -279,7 +282,7 @@ const Inquiries = () => {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* Total */}
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Leads</span>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Inquiries</span>
           <div className="flex items-baseline justify-between mt-2">
             <span className="text-2xl font-extrabold text-slate-900">{totalCount}</span>
             <span className="text-xs text-slate-400 font-medium">All time</span>
@@ -322,7 +325,7 @@ const Inquiries = () => {
         {/* Seller Inquiries */}
         <div className="bg-purple-50/70 p-4 rounded-xl border border-purple-200 shadow-xs flex flex-col justify-between col-span-2 lg:col-span-1">
           <span className="text-[11px] font-bold uppercase tracking-wider text-purple-800 flex items-center gap-1">
-            <Briefcase className="w-3.5 h-3.5 text-purple-600" /> Seller Leads
+            <Briefcase className="w-3.5 h-3.5 text-purple-600" /> Seller Inquiries
           </span>
           <div className="flex items-baseline justify-between mt-2">
             <span className="text-2xl font-extrabold text-purple-900">{sellerCount}</span>
@@ -347,7 +350,7 @@ const Inquiries = () => {
 
         {/* Quick Filter Selectors */}
         <div className="flex flex-wrap items-center gap-3">
-          {/* Lead Scope */}
+          {/* Inquiry Scope */}
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-bold text-slate-600 whitespace-nowrap">Category:</span>
             <select
@@ -357,7 +360,7 @@ const Inquiries = () => {
             >
               <option value="all">All Inquiries ({inquiries.length})</option>
               <option value="customization">Customization &amp; Tailoring</option>
-              <option value="reseller">Seller &amp; Reseller Applications</option>
+              <option value="seller">Seller &amp; Vendor Inquiries</option>
               <option value="general">General Messages</option>
             </select>
           </div>
@@ -405,15 +408,15 @@ const Inquiries = () => {
           <span>Tailoring &amp; Custom Orders ({inquiries.filter((i) => i.inquiry_type === "customization").length})</span>
         </button>
         <button
-          onClick={() => setTypeFilter("reseller")}
+          onClick={() => setTypeFilter("seller")}
           className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-            typeFilter === "reseller"
+            typeFilter === "seller" || typeFilter === "reseller"
               ? "bg-[#0891b2] text-white shadow-xs font-black"
               : "bg-white text-slate-700 border border-slate-200 hover:border-[#0891b2]"
           }`}
         >
           <Briefcase className="w-3.5 h-3.5 text-purple-600" />
-          <span>Seller &amp; Reseller Applications ({sellerCount})</span>
+          <span>Seller &amp; Vendor Inquiries ({sellerCount})</span>
         </button>
         <button
           onClick={() => setTypeFilter("general")}
@@ -432,7 +435,7 @@ const Inquiries = () => {
       {loading ? (
         <div className="bg-white p-12 rounded-2xl text-center border border-slate-200 shadow-xs">
           <RefreshCw className="w-8 h-8 text-[#0891b2] animate-spin mx-auto mb-2" />
-          <p className="text-xs text-slate-500 font-medium">Loading inquiries &amp; leads...</p>
+          <p className="text-xs text-slate-500 font-medium">Loading inquiries...</p>
         </div>
       ) : inquiries.length === 0 ? (
         <div className="bg-white p-12 rounded-2xl text-center border border-slate-200 shadow-xs">
@@ -445,7 +448,7 @@ const Inquiries = () => {
       ) : (
         <div className="space-y-3.5">
           {inquiries.map((item) => {
-            const isSellerLead = item.inquiry_type === "reseller" || item.inquiry_type === "seller";
+            const isSeller = item.inquiry_type === "reseller" || item.inquiry_type === "seller";
             const isCustomization = item.inquiry_type === "customization";
             const isUpdating = updatingStatusId === item.id;
             const waUrl = getWhatsAppUrl(item);
@@ -469,10 +472,10 @@ const Inquiries = () => {
                           <Scissors className="w-3 h-3 text-[#0891b2]" />
                           <span>Custom Tailoring</span>
                         </>
-                      ) : isSellerLead ? (
+                      ) : isSeller ? (
                         <>
                           <Briefcase className="w-3 h-3 text-purple-600" />
-                          <span>Seller / Reseller Lead</span>
+                          <span>Seller &amp; Vendor Inquiry</span>
                         </>
                       ) : (
                         <>
@@ -622,7 +625,7 @@ const Inquiries = () => {
                     ) : (
                       <div>
                         <p className="text-xs font-bold text-slate-900 truncate">
-                          {item.subject || (isSellerLead ? "Seller Partnership Request" : "Customer Inquiry")}
+                          {item.subject || (isSeller ? "Seller & Vendor Partnership Request" : "Customer Inquiry")}
                         </p>
                         <p className="text-[11px] text-slate-500 line-clamp-2 mt-0.5 leading-relaxed">
                           {item.message || item.additional_instructions || "No additional message text provided."}
@@ -753,6 +756,30 @@ const Inquiries = () => {
                   )}
                 </div>
               </div>
+
+              {/* Seller / Vendor Profile (if seller inquiry) */}
+              {(selectedInquiry.inquiry_type === "seller" || selectedInquiry.inquiry_type === "reseller" || selectedInquiry.shop_name || selectedInquiry.brand || selectedInquiry.gstin) && (
+                <div className="bg-purple-50/70 p-4 rounded-xl border border-purple-200 space-y-2">
+                  <span className="text-xs font-extrabold uppercase tracking-wide text-purple-900 block flex items-center gap-1.5">
+                    <Briefcase className="w-3.5 h-3.5 text-purple-700" />
+                    <span>Seller &amp; Vendor Profile Details</span>
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+                    <div>
+                      <span className="text-slate-500 block text-[10px] uppercase font-bold">Shop / Brand Name</span>
+                      <strong className="text-slate-900">{selectedInquiry.shop_name || selectedInquiry.brand || selectedInquiry.company || "N/A"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px] uppercase font-bold">GSTIN / Tax ID</span>
+                      <strong className="text-slate-900 font-mono">{selectedInquiry.gstin || selectedInquiry.tax_id || "Not Provided"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px] uppercase font-bold">Business Category</span>
+                      <strong className="text-slate-900">{selectedInquiry.category || selectedInquiry.product_types || "Apparel & Ethnic Wear"}</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Product Reference (if any) */}
               {(selectedInquiry.product_name || selectedInquiry.product_image || selectedInquiry.product_price) && (
