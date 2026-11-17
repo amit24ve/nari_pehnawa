@@ -792,12 +792,7 @@ const Categories = () => {
                             >
                                 <div>
                                     {/* Thumbnail Image */}
-                                    <div
-                                        className="h-36 relative overflow-hidden bg-slate-100"
-                                        style={{
-                                            borderBottom: `2px solid ${cat.border_color || "#780016"}`
-                                        }}
-                                    >
+                                    <div className="h-40 relative overflow-hidden bg-slate-100">
                                         {cat.image ? (
                                             <img
                                                 src={cat.image}
@@ -813,19 +808,12 @@ const Categories = () => {
                                             </div>
                                         )}
 
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-
-                                        {/* Status & Badge Top */}
-                                        <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
-                                            {cat.badge && (
-                                                <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#780016] text-white border border-rose-300/40 shadow-xs">
-                                                    {cat.badge}
-                                                </span>
-                                            )}
+                                        {/* Status Top Right */}
+                                        <div className="absolute top-2.5 right-2.5">
                                             <span
-                                                className={`text-[9.5px] font-bold px-2 py-0.5 rounded-full ${
+                                                className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs ${
                                                     cat.is_active
-                                                        ? "bg-emerald-600 text-white shadow-xs"
+                                                        ? "bg-emerald-600 text-white"
                                                         : "bg-slate-700 text-white"
                                                 }`}
                                             >
@@ -833,50 +821,42 @@ const Categories = () => {
                                             </span>
                                         </div>
 
-                                        {/* Department & Order Top Left */}
-                                        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 max-w-[70%]">
-                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/70 text-white flex-shrink-0">
-                                                #{cat.display_order || 0}
-                                            </span>
-                                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-white/95 text-slate-800 border border-slate-200/80 backdrop-blur-md truncate flex items-center gap-1 shadow-xs">
-                                                {renderDepartmentIcon(cat.department, "w-3 h-3 text-[#0891b2]")}
-                                                <span className="truncate">{cat.department || "Women"}</span>
+                                        {/* Sr No Top Left */}
+                                        <div className="absolute top-2.5 left-2.5">
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-black/75 text-white shadow-xs">
+                                                Sr No: #{cat.display_order ?? 0}
                                             </span>
                                         </div>
+                                    </div>
 
-                                        {/* Name on image */}
-                                        <div className="absolute bottom-2.5 left-3 right-3">
-                                            <div className="flex items-center justify-between gap-1">
-                                                <p className="text-white text-sm font-extrabold drop-shadow truncate">
+                                    {/* Category Details Bar */}
+                                    <div className="p-3.5 pb-2.5 border-b border-slate-100 bg-white">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <h3 className="font-extrabold text-slate-900 text-sm truncate font-serif" title={cat.name}>
                                                     {cat.name}
-                                                </p>
-                                                {isSpecial && (
-                                                    <span className="text-[9px] font-bold text-amber-200 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-600/40 flex-shrink-0">
-                                                        Special Collection
-                                                    </span>
-                                                )}
+                                                </h3>
+                                                <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500 font-medium">
+                                                    {renderDepartmentIcon(cat.department, "w-3 h-3 text-[#0891b2]")}
+                                                    <span>{cat.department || "Women"}</span>
+                                                </div>
                                             </div>
-                                            {cat.tagline && (
-                                                <p className="text-white/85 text-[10px] truncate mt-0.5 drop-shadow-xs">
-                                                    {cat.tagline}
-                                                </p>
-                                            )}
                                         </div>
                                     </div>
 
                                     {/* Sub-Categories Section Inside Card */}
-                                    <div className="p-3.5 border-b border-slate-100 bg-slate-50/60">
+                                    <div className="p-3.5 border-b border-slate-100 bg-slate-50/70">
                                         <div className="flex items-center justify-between mb-2">
-                                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                                                <Tag className="w-3 h-3 text-[#0891b2]" />
+                                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                                                <Tag className="w-3.5 h-3.5 text-[#0891b2]" />
                                                 Sub-Categories ({subCats.length})
                                             </span>
                                             <button
                                                 type="button"
                                                 onClick={() => setSubCatModalCategory(cat)}
-                                                className="text-[10px] font-bold text-[#0891b2] hover:text-[#06b6d4] hover:underline flex items-center gap-0.5 cursor-pointer"
+                                                className="text-[11px] font-bold text-[#0891b2] hover:text-[#06b6d4] hover:underline flex items-center gap-1 cursor-pointer"
                                             >
-                                                <PlusCircle className="w-3 h-3" /> Manage
+                                                <PlusCircle className="w-3.5 h-3.5" /> + Manage
                                             </button>
                                         </div>
 
@@ -885,7 +865,7 @@ const Categories = () => {
                                                 {subCats.map((sub, sIdx) => (
                                                     <span
                                                         key={`${sub}-${sIdx}`}
-                                                        className="px-2 py-0.5 text-[10px] font-semibold bg-white text-slate-700 border border-slate-200 rounded-md shadow-2xs"
+                                                        className="px-2 py-0.5 text-[10px] font-semibold bg-white text-slate-800 border border-slate-200 rounded-md shadow-2xs"
                                                     >
                                                         {sub}
                                                     </span>
@@ -893,42 +873,34 @@ const Categories = () => {
                                             </div>
                                         ) : (
                                             <p className="text-[10px] text-slate-400 italic py-1">
-                                                No sub-categories yet. Click "Manage" to add styles.
+                                                No sub-categories yet. Click &ldquo;+ Manage&rdquo; to add styles.
                                             </p>
                                         )}
                                     </div>
                                 </div>
 
                                 {/* Card bottom footer */}
-                                <div className="p-3.5 bg-white">
-                                    <div className="flex items-center justify-between text-[11px] text-slate-500 mb-3">
-                                        <a
-                                            href={cat.link || "#"}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="flex items-center gap-1 hover:text-[#0891b2] transition-colors truncate max-w-[80%]"
+                                <div className="p-3.5 bg-white space-y-2.5">
+                                    <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
+                                        <span className="font-mono text-[11px] truncate text-slate-700 max-w-[85%]">
+                                            {cat.link || `/category/${cat.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                copyToClipboard(cat.link || `/category/${cat.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`, cat.id || cat._id);
+                                            }}
+                                            title="Copy Category URL Path"
+                                            className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-[#0891b2] transition cursor-pointer flex-shrink-0"
                                         >
-                                            <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                                            <span className="truncate">{cat.link || "No link"}</span>
-                                        </a>
-                                        {cat.link && (
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    copyToClipboard(cat.link, cat.id || cat._id);
-                                                }}
-                                                title="Copy Category URL Path"
-                                                className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-[#0891b2] transition"
-                                            >
-                                                {copiedId === (cat.id || cat._id) ? (
-                                                    <Check className="w-3 h-3 text-emerald-600" />
-                                                ) : (
-                                                    <Copy className="w-3 h-3" />
-                                                )}
-                                            </button>
-                                        )}
+                                            {copiedId === (cat.id || cat._id) ? (
+                                                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                            ) : (
+                                                <Copy className="w-3.5 h-3.5" />
+                                            )}
+                                        </button>
                                     </div>
 
                                     <div className="flex gap-2">
@@ -1058,44 +1030,6 @@ const Categories = () => {
                                 />
                             </div>
 
-                            {/* Category Classification / Type */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
-                                        Category Classification
-                                    </label>
-                                    <select
-                                        value={formData.category_type}
-                                        onChange={(e) => setFormData({ ...formData, category_type: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 cursor-pointer font-medium"
-                                    >
-                                        <option value="regular">Regular Apparel / Category</option>
-                                        <option value="new_arrival">New Arrivals Drop</option>
-                                        <option value="sale">Mega Sale / Clearance Offer</option>
-                                        <option value="special_collection">Special Festive Collection</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
-                                        Card Offer Badge
-                                    </label>
-                                    <select
-                                        value={formData.badge}
-                                        onChange={(e) => setFormData({ ...formData, badge: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 cursor-pointer font-medium"
-                                    >
-                                        <option value="POPULAR">POPULAR</option>
-                                        <option value="NEW ARRIVAL">NEW ARRIVAL</option>
-                                        <option value="UP TO 50% OFF">UP TO 50% OFF</option>
-                                        <option value="MEGA SALE">MEGA SALE</option>
-                                        <option value="TRENDING">TRENDING</option>
-                                        <option value="HOT DEAL">HOT DEAL</option>
-                                        <option value="FESTIVE DEAL">FESTIVE DEAL</option>
-                                    </select>
-                                </div>
-                            </div>
-
                             {/* Category Name */}
                             <InputField label="Category Name" required>
                                 <input
@@ -1103,9 +1037,31 @@ const Categories = () => {
                                     required
                                     value={formData.name}
                                     onChange={(e) => handleNameChange(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 transition"
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 transition font-medium"
                                     placeholder="e.g. Sleeveless Kurtis, Halter Neck Tops, Anarkali Suits"
                                 />
+                            </InputField>
+
+                            {/* Category URL Path (Auto-generated from name, but fully customizable/editable) */}
+                            <InputField label="Category URL Path (Auto-Generated &amp; Editable)" required>
+                                <div className="relative flex items-center">
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.link}
+                                        onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-3.5 pr-28 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 transition font-mono"
+                                        placeholder="/category/sleeveless-kurtis"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => copyToClipboard(formData.link)}
+                                        disabled={!formData.link}
+                                        className="absolute right-1 px-2.5 py-1 bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
+                                    >
+                                        <Copy className="w-3 h-3" /> Copy
+                                    </button>
+                                </div>
                             </InputField>
 
                             {/* Sub-Categories Tag Management */}
@@ -1141,7 +1097,7 @@ const Categories = () => {
                                         ))
                                     ) : (
                                         <p className="text-[11px] text-slate-400 italic py-0.5">
-                                            No sub-categories yet. Type below and press Enter or click "+ Add".
+                                            No sub-categories yet. Type below (single or comma-separated) and click "+ Add".
                                         </p>
                                     )}
                                 </div>
@@ -1158,31 +1114,20 @@ const Categories = () => {
                                                 handleAddSubCategory();
                                             }
                                         }}
-                                        placeholder="Type sub-category (e.g. Cotton Sleeveless, Partywear, Casual) and press Enter"
+                                        placeholder="Type style (e.g. Cotton Sleeveless, Partywear — comma separated for batch)"
                                         className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 font-medium"
                                     />
                                     <button
                                         type="button"
                                         onClick={handleAddSubCategory}
-                                        className="px-3.5 py-1.5 bg-cyan-500 hover:bg-cyan-600 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
+                                        className="px-3.5 py-1.5 bg-[#0891b2] hover:bg-[#06b6d4] text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
                                     >
                                         + Add
                                     </button>
                                 </div>
                             </div>
 
-                            {/* Tagline */}
-                            <InputField label="Tagline / Hero Subtitle">
-                                <input
-                                    type="text"
-                                    value={formData.tagline}
-                                    onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 transition"
-                                    placeholder="e.g. Bloom in Fresh Green Floral Styles!"
-                                />
-                            </InputField>
-
-                            {/* Hero Banner Image */}
+                            {/* Category Banner Image */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
                                     Category Banner Image
@@ -1196,7 +1141,7 @@ const Categories = () => {
                                             onClick={() => setImgTab(tab)}
                                             className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
                                                 imgTab === tab
-                                                    ? "bg-cyan-400 text-black shadow-sm"
+                                                    ? "bg-[#0891b2] text-white shadow-xs"
                                                     : "text-slate-600 hover:text-slate-900"
                                             }`}
                                         >
@@ -1274,57 +1219,17 @@ const Categories = () => {
                                 )}
                             </div>
 
-                            {/* Link Path */}
-                            <InputField label="Category URL Path">
-                                <div className="relative flex items-center">
-                                    <input
-                                        type="text"
-                                        value={formData.link}
-                                        onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-3.5 pr-28 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 transition font-mono"
-                                        placeholder="/category/sleeveless-kurtis"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => copyToClipboard(formData.link)}
-                                        disabled={!formData.link}
-                                        className="absolute right-1 px-2 py-1 bg-cyan-400 hover:bg-cyan-300 text-black rounded-lg text-[11px] font-bold flex items-center gap-1 transition-colors disabled:opacity-40 cursor-pointer shadow-sm"
-                                    >
-                                        <Copy className="w-3 h-3" /> Copy Path
-                                    </button>
-                                </div>
+                            {/* Sr No / Display Sequence */}
+                            <InputField label="Display Order (Sr No)">
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={formData.display_order}
+                                    onChange={(e) => setFormData({ ...formData, display_order: e.target.value })}
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 transition"
+                                    placeholder="0"
+                                />
                             </InputField>
-
-                            {/* Row: border color + sequence */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <InputField label="Accent Color">
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="color"
-                                            value={formData.border_color}
-                                            onChange={(e) => setFormData({ ...formData, border_color: e.target.value })}
-                                            className="w-8 h-8 rounded-lg border border-slate-300 cursor-pointer bg-transparent"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={formData.border_color}
-                                            onChange={(e) => setFormData({ ...formData, border_color: e.target.value })}
-                                            className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 transition font-mono"
-                                        />
-                                    </div>
-                                </InputField>
-
-                                <InputField label="Display Order">
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        value={formData.display_order}
-                                        onChange={(e) => setFormData({ ...formData, display_order: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-cyan-400 transition"
-                                        placeholder="0"
-                                    />
-                                </InputField>
-                            </div>
 
                             {/* Active toggle */}
                             <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5">
