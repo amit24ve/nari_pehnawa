@@ -360,7 +360,7 @@ const Inquiries = () => {
             >
               <option value="all">All Inquiries ({inquiries.length})</option>
               <option value="customization">Customization &amp; Tailoring</option>
-              <option value="seller">Seller &amp; Vendor Inquiries</option>
+              <option value="seller">Seller Inquiries</option>
               <option value="general">General Messages</option>
             </select>
           </div>
@@ -416,7 +416,7 @@ const Inquiries = () => {
           }`}
         >
           <Briefcase className="w-3.5 h-3.5 text-purple-600" />
-          <span>Seller &amp; Vendor Inquiries ({sellerCount})</span>
+          <span>Seller Inquiries ({sellerCount})</span>
         </button>
         <button
           onClick={() => setTypeFilter("general")}
@@ -475,7 +475,7 @@ const Inquiries = () => {
                       ) : isSeller ? (
                         <>
                           <Briefcase className="w-3 h-3 text-purple-600" />
-                          <span>Seller &amp; Vendor Inquiry</span>
+                          <span>Seller Inquiry</span>
                         </>
                       ) : (
                         <>
@@ -625,7 +625,7 @@ const Inquiries = () => {
                     ) : (
                       <div>
                         <p className="text-xs font-bold text-slate-900 truncate">
-                          {item.subject || (isSeller ? "Seller & Vendor Partnership Request" : "Customer Inquiry")}
+                          {item.subject || (isSeller ? "Seller Partnership Request" : "Customer Inquiry")}
                         </p>
                         <p className="text-[11px] text-slate-500 line-clamp-2 mt-0.5 leading-relaxed">
                           {item.message || item.additional_instructions || "No additional message text provided."}
@@ -762,7 +762,7 @@ const Inquiries = () => {
                 <div className="bg-purple-50/70 p-4 rounded-xl border border-purple-200 space-y-2">
                   <span className="text-xs font-extrabold uppercase tracking-wide text-purple-900 block flex items-center gap-1.5">
                     <Briefcase className="w-3.5 h-3.5 text-purple-700" />
-                    <span>Seller &amp; Vendor Profile Details</span>
+                    <span>Seller Profile Details</span>
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
                     <div>

@@ -410,12 +410,12 @@ const Sellers = () => {
             <span>Commission & Payouts</span>
           </button>
           <Link
-            to="/admin/inquiries?type=reseller"
+            to="/admin/inquiries?type=seller"
             className="px-3 py-2 rounded-lg text-xs font-bold text-[#0891b2] hover:bg-cyan-50 hover:text-[#0e7490] transition flex items-center gap-1 border border-cyan-200"
-            title="View prospective seller & reseller leads submitted from website"
+            title="View prospective seller inquiries submitted from website"
           >
             <User className="w-3.5 h-3.5" />
-            <span>Seller Leads & Inquiries →</span>
+            <span>Seller Inquiries →</span>
           </Link>
         </div>
       </div>

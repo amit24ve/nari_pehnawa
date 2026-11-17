@@ -306,40 +306,17 @@ const ProductPage = () => {
   const [customizeSubmitted, setCustomizeSubmitted] = useState(false);
   const [customizeSuccessData, setCustomizeSuccessData] = useState(null);
   const [customizeForm, setCustomizeForm] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    delivery_address: "",
+    name: user?.name || "",
+    phone: user?.phone || "",
+    email: user?.email || "",
+    bust: "36",
+    height_length: "Calf Length (42-44\")",
+    custom_color: "",
+    additional_instructions: "",
     shipping_city: "",
     shipping_state: "Uttar Pradesh",
     shipping_pincode: "",
-    additional_instructions: "",
-    custom_color: "",
-
-    // Top Measurements (Inches)
-    shoulder: "14.5",
-    bust: "36",
-    upper_bust: "34",
-    waist: "32",
-    hip: "38",
-    armhole: "16",
-    sleeve_length: "16",
-    sleeve_opening: "11",
-    kurti_length: "44",
-    front_neck_depth: "6.5",
-    back_neck_depth: "4.5",
-
-    // Bottom Measurements (Inches)
-    bottom_waist: "32",
-    bottom_hip: "38",
-    thigh: "22",
-    knee: "15",
-    calf: "13",
-    bottom_opening: "13",
-    rise: "12",
-    inseam_length: "28",
-    outseam_length: "38",
-    bottom_length: "38"
+    delivery_address: ""
   });
 
   const getCustomizationType = () => {
@@ -409,47 +386,25 @@ const ProductPage = () => {
       name: customizeForm.name.trim(),
       phone: customizeForm.phone.trim(),
       email: customizeForm.email?.trim() || null,
-      subject: `Custom Outfit: ${product?.name || "Bespoke Order"}`,
-      message: customizeForm.additional_instructions?.trim() || "Customization inquiry submitted.",
+      subject: `Bespoke Customization: ${product?.name || "Outfit"}`,
+      message: `Chest/Bust: ${customizeForm.bust || '36'}" | Height/Length: ${customizeForm.height_length || 'Standard'} | Color: ${customizeForm.custom_color || 'As Shown'}${customizeForm.additional_instructions ? ` | Instructions: ${customizeForm.additional_instructions.trim()}` : ''}`,
       additional_instructions: customizeForm.additional_instructions?.trim() || "",
       inquiry_type: "customization",
       product_id: String(product?.id || product?._id || ""),
       product_name: product?.name || "",
       product_image: product?.images?.[0] || product?.image || "",
       product_price: currentPrice || product?.price || 0,
+      product_url: window.location.href,
       customization_type: activeCustomType,
       custom_color: customizeForm.custom_color?.trim() || "",
+      bust: customizeForm.bust || "36",
+      height_length: customizeForm.height_length || "Calf Length (42-44\")",
       delivery_address: fullAddr,
       shipping_address: customizeForm.delivery_address?.trim() || "",
       shipping_city: customizeForm.shipping_city?.trim() || "",
       shipping_state: customizeForm.shipping_state?.trim() || "",
       shipping_pincode: customizeForm.shipping_pincode?.trim() || "",
-      user_id: user?.id || "",
-
-      // Top Measurements
-      shoulder: customizeForm.shoulder || "",
-      bust: customizeForm.bust || "",
-      upper_bust: customizeForm.upper_bust || "",
-      waist: customizeForm.waist || "",
-      hip: customizeForm.hip || "",
-      armhole: customizeForm.armhole || "",
-      sleeve_length: customizeForm.sleeve_length || "",
-      sleeve_opening: customizeForm.sleeve_opening || "",
-      kurti_length: customizeForm.kurti_length || "",
-      front_neck_depth: customizeForm.front_neck_depth || "",
-      back_neck_depth: customizeForm.back_neck_depth || "",
-
-      // Bottom Measurements
-      bottom_waist: customizeForm.bottom_waist || "",
-      bottom_hip: customizeForm.bottom_hip || "",
-      thigh: customizeForm.thigh || "",
-      knee: customizeForm.knee || "",
-      calf: customizeForm.calf || "",
-      bottom_opening: customizeForm.bottom_opening || "",
-      rise: customizeForm.rise || "",
-      inseam_length: customizeForm.inseam_length || "",
-      outseam_length: customizeForm.outseam_length || "",
-      bottom_length: customizeForm.bottom_length || ""
+      user_id: user?.id || ""
     };
 
     try {
@@ -1669,7 +1624,7 @@ const ProductPage = () => {
                   <span className="font-semibold text-gray-900 text-right">
                     {product.is_returnable === false
                       ? (product.return_policy || "Non-Returnable (Final Sale)")
-                      : (product.return_policy || "Easy 15-Day Returns")}
+                      : (product.return_policy || "Easy 4-Day Returns")}
                   </span>
                 </div>
                 {Array.isArray(product.specifications) && product.specifications.map((spec, idx) => (
@@ -2500,379 +2455,178 @@ const ProductPage = () => {
             ) : (
               <form onSubmit={handleCustomizeSubmit} className="space-y-5">
 
-                {/* 3. Dynamic Measurement Form */}
-                <div className="space-y-4">
-
-                  {/* A. TOP MEASUREMENTS (Shown if Type = Top or Top & Bottom) */}
-                  {(getCustomizationType() === "Top" || getCustomizationType() === "Top & Bottom") && (
-                    <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-3">
-                      <div className="flex items-center justify-between border-b border-stone-200 pb-2">
-                        <span className="text-xs font-bold text-[#780016] uppercase tracking-wider flex items-center gap-1.5">
-                          <Layers className="w-3.5 h-3.5" />
-                          <span>Top Measurements</span>
-                        </span>
-                        <span className="text-[10px] text-gray-500 uppercase font-semibold">Inches (in)</span>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Shoulder (in)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.shoulder}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, shoulder: e.target.value })}
-                            placeholder="e.g. 14.5"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Bust (in) *</label>
-                          <input
-                            type="text"
-                            required
-                            value={customizeForm.bust}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, bust: e.target.value })}
-                            placeholder="e.g. 36"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Upper Bust (in)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.upper_bust}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, upper_bust: e.target.value })}
-                            placeholder="e.g. 34"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Waist (in)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.waist}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, waist: e.target.value })}
-                            placeholder="e.g. 32"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Hip (in)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.hip}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, hip: e.target.value })}
-                            placeholder="e.g. 38"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Armhole (in)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.armhole}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, armhole: e.target.value })}
-                            placeholder="e.g. 16"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Sleeve Length (in)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.sleeve_length}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, sleeve_length: e.target.value })}
-                            placeholder="e.g. 16"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Sleeve Opening (in)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.sleeve_opening}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, sleeve_opening: e.target.value })}
-                            placeholder="e.g. 11"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Kurti Length (in) *</label>
-                          <input
-                            type="text"
-                            required
-                            value={customizeForm.kurti_length}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, kurti_length: e.target.value })}
-                            placeholder="e.g. 44"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Front Neck Depth (in)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.front_neck_depth}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, front_neck_depth: e.target.value })}
-                            placeholder="e.g. 6.5"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Back Neck Depth (in)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.back_neck_depth}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, back_neck_depth: e.target.value })}
-                            placeholder="e.g. 4.5"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* B. BOTTOM MEASUREMENTS (Shown if Type = Bottom or Top & Bottom) */}
-                  {(getCustomizationType() === "Bottom" || getCustomizationType() === "Top & Bottom") && (
-                    <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-3">
-                      <div className="flex items-center justify-between border-b border-stone-200 pb-2">
-                        <span className="text-xs font-bold text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
-                          <Layers className="w-3.5 h-3.5 text-[#780016]" />
-                          <span>Bottom Measurements</span>
-                        </span>
-                        <span className="text-[10px] text-gray-500 uppercase font-semibold">Inches (in)</span>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Waist (in) *</label>
-                          <input
-                            type="text"
-                            required
-                            value={customizeForm.bottom_waist}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, bottom_waist: e.target.value })}
-                            placeholder="e.g. 32"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Hip (in)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.bottom_hip}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, bottom_hip: e.target.value })}
-                            placeholder="e.g. 38"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Thigh (in)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.thigh}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, thigh: e.target.value })}
-                            placeholder="e.g. 22"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Knee (in)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.knee}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, knee: e.target.value })}
-                            placeholder="e.g. 15"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Calf (in)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.calf}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, calf: e.target.value })}
-                            placeholder="e.g. 13"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Bottom Opening (in)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.bottom_opening}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, bottom_opening: e.target.value })}
-                            placeholder="e.g. 13"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Rise (in)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.rise}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, rise: e.target.value })}
-                            placeholder="e.g. 12"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Inseam Length (in)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.inseam_length}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, inseam_length: e.target.value })}
-                            placeholder="e.g. 28"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Outseam Length (in)</label>
-                          <input
-                            type="text"
-                            value={customizeForm.outseam_length}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, outseam_length: e.target.value })}
-                            placeholder="e.g. 38"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Bottom Length (in) *</label>
-                          <input
-                            type="text"
-                            required
-                            value={customizeForm.bottom_length}
-                            onChange={(e) => setCustomizeForm({ ...customizeForm, bottom_length: e.target.value })}
-                            placeholder="e.g. 38"
-                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-[#780016] font-medium"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                </div>
-
-                {/* 4. Customer Information */}
-                <div className="p-4 rounded-2xl bg-white border border-gray-200 space-y-3">
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-900 block">
-                    Customer Information &amp; Delivery Address
+                {/* 3. Essential Contact Information */}
+                <div className="p-4 rounded-2xl bg-white border border-stone-200 space-y-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#780016] flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5" /> 1. Contact & Calling Details (Store Team will Call You)
                   </span>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-gray-700 mb-1">Customer Name *</label>
+                      <label className="block text-[11px] font-bold text-gray-700 mb-1">Your Full Name *</label>
                       <input
                         type="text"
                         required
                         value={customizeForm.name}
                         onChange={(e) => setCustomizeForm({ ...customizeForm, name: e.target.value })}
-                        placeholder="Your full name"
-                        className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#780016] font-medium"
+                        placeholder="e.g. Priya Sharma"
+                        className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-[#780016] font-medium"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-gray-700 mb-1">Mobile Number *</label>
-                      <input
-                        type="tel"
-                        required
-                        maxLength={10}
-                        value={customizeForm.phone}
-                        onChange={(e) => setCustomizeForm({ ...customizeForm, phone: e.target.value })}
-                        placeholder="10-digit mobile number"
-                        className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#780016] font-medium"
-                      />
+                      <label className="block text-[11px] font-bold text-gray-700 mb-1">Mobile / WhatsApp Number *</label>
+                      <div className="flex items-center">
+                        <span className="px-2.5 py-2 text-xs font-bold bg-stone-100 border border-r-0 border-stone-300 rounded-l-xl text-stone-600">+91</span>
+                        <input
+                          type="tel"
+                          required
+                          maxLength={10}
+                          value={customizeForm.phone}
+                          onChange={(e) => setCustomizeForm({ ...customizeForm, phone: e.target.value.replace(/\D/g, "") })}
+                          placeholder="9876543210"
+                          className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-r-xl focus:outline-none focus:border-[#780016] font-medium font-mono"
+                        />
+                      </div>
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-gray-700 mb-1">Email Address</label>
-                      <input
-                        type="email"
-                        value={customizeForm.email}
-                        onChange={(e) => setCustomizeForm({ ...customizeForm, email: e.target.value })}
-                        placeholder="yourname@gmail.com"
-                        className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#780016] font-medium"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-gray-700 mb-1">Pincode *</label>
+                      <label className="block text-[11px] font-bold text-gray-700 mb-1">City / Town</label>
                       <input
                         type="text"
-                        required
-                        maxLength={6}
-                        value={customizeForm.shipping_pincode}
-                        onChange={(e) => setCustomizeForm({ ...customizeForm, shipping_pincode: e.target.value })}
-                        placeholder="6-digit pincode"
-                        className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#780016] font-medium font-mono"
+                        value={customizeForm.shipping_city}
+                        onChange={(e) => setCustomizeForm({ ...customizeForm, shipping_city: e.target.value })}
+                        placeholder="e.g. Lucknow, Varanasi, Delhi"
+                        className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-[#780016] font-medium"
                       />
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-700 mb-1">Delivery Address *</label>
-                    <input
-                      type="text"
-                      required
-                      value={customizeForm.delivery_address}
-                      onChange={(e) => setCustomizeForm({ ...customizeForm, delivery_address: e.target.value })}
-                      placeholder="House/Flat No., Road, Landmark, City"
-                      className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#780016] font-medium"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-700 mb-1">
-                      Additional Instructions (Optional)
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={customizeForm.additional_instructions}
-                      onChange={(e) => setCustomizeForm({ ...customizeForm, additional_instructions: e.target.value })}
-                      placeholder="Special instructions for our tailor (e.g., preferred color tweak, lining requirement, urgent dispatch)..."
-                      className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#780016] font-medium"
-                    />
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-700 mb-1">Pincode (Optional)</label>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        value={customizeForm.shipping_pincode}
+                        onChange={(e) => setCustomizeForm({ ...customizeForm, shipping_pincode: e.target.value.replace(/\D/g, "") })}
+                        placeholder="6-digit pincode"
+                        className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-[#780016] font-medium font-mono"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* 5. Measurement Summary */}
-                <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200 text-xs text-gray-700 space-y-1.5">
-                  <span className="font-bold text-[#780016] uppercase tracking-wider text-[11px] block">
-                    5. Measurement Summary &amp; Review
-                  </span>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-stone-600">
-                    {(getCustomizationType() === "Top" || getCustomizationType() === "Top & Bottom") && (
-                      <>
-                        {customizeForm.bust && <span>Bust: <strong>{customizeForm.bust} in</strong></span>}
-                        {customizeForm.shoulder && <span>Shoulder: <strong>{customizeForm.shoulder} in</strong></span>}
-                        {customizeForm.kurti_length && <span>Kurti Length: <strong>{customizeForm.kurti_length} in</strong></span>}
-                      </>
-                    )}
-                    {(getCustomizationType() === "Bottom" || getCustomizationType() === "Top & Bottom") && (
-                      <>
-                        {customizeForm.bottom_waist && <span>Waist: <strong>{customizeForm.bottom_waist} in</strong></span>}
-                        {customizeForm.bottom_length && <span>Bottom Length: <strong>{customizeForm.bottom_length} in</strong></span>}
-                      </>
-                    )}
+                {/* 4. Essential Tailoring & Customization Details */}
+                <div className="p-4 rounded-2xl bg-rose-50/60 border border-rose-200/80 space-y-3.5">
+                  <div className="flex items-center justify-between border-b border-rose-200/60 pb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#780016] flex items-center gap-1.5">
+                      <Scissors className="w-3.5 h-3.5" /> 2. Essential Fit & Custom Requirements
+                    </span>
+                    <span className="text-[10px] text-rose-700 font-semibold bg-rose-100 px-2 py-0.5 rounded-full">Only key details needed</span>
                   </div>
+
+                  {/* Chest / Bust Size */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[11px] font-bold text-gray-800">
+                        Chest / Bust Size (in inches) *
+                      </label>
+                      <span className="text-[10px] text-gray-500 font-medium">Standard Kurti / Blouse Size</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {["32", "34", "36", "38", "40", "42", "44", "46"].map((sz) => (
+                        <button
+                          key={sz}
+                          type="button"
+                          onClick={() => setCustomizeForm({ ...customizeForm, bust: sz })}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                            customizeForm.bust === sz
+                              ? "bg-[#780016] text-white border-[#780016] shadow-xs"
+                              : "bg-white text-gray-700 hover:bg-stone-100 border-stone-300"
+                          }`}
+                        >
+                          {sz}"
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="text-[11px] text-gray-500">Or type exact:</span>
+                      <input
+                        type="text"
+                        value={customizeForm.bust}
+                        onChange={(e) => setCustomizeForm({ ...customizeForm, bust: e.target.value })}
+                        placeholder="e.g. 37"
+                        className="w-24 px-2.5 py-1 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:border-[#780016] font-bold font-mono text-center"
+                      />
+                      <span className="text-xs font-semibold text-gray-500">inches</span>
+                    </div>
+                  </div>
+
+                  {/* Height / Preferred Length */}
+                  <div className="space-y-1.5 pt-2 border-t border-rose-200/50">
+                    <label className="block text-[11px] font-bold text-gray-800">
+                      Height / Desired Length
+                    </label>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {['Standard (44")', 'Calf Length (42")', 'Long / Floor (48")', 'Short Kurti (38")'].map((len) => (
+                        <button
+                          key={len}
+                          type="button"
+                          onClick={() => setCustomizeForm({ ...customizeForm, height_length: len })}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer border ${
+                            customizeForm.height_length === len
+                              ? "bg-[#780016] text-white border-[#780016] shadow-xs"
+                              : "bg-white text-gray-700 hover:bg-stone-100 border-stone-300"
+                          }`}
+                        >
+                          {len}
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      type="text"
+                      value={customizeForm.height_length}
+                      onChange={(e) => setCustomizeForm({ ...customizeForm, height_length: e.target.value })}
+                      placeholder="e.g. My height is 5'3, want below knee length"
+                      className="w-full px-3 py-1.5 text-xs bg-white border border-stone-300 rounded-xl focus:outline-none focus:border-[#780016] font-medium mt-1"
+                    />
+                  </div>
+
+                  {/* Color Preference & Special Instructions */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-rose-200/50">
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-800 mb-1">
+                        Preferred Color / Combination
+                      </label>
+                      <input
+                        type="text"
+                        value={customizeForm.custom_color}
+                        onChange={(e) => setCustomizeForm({ ...customizeForm, custom_color: e.target.value })}
+                        placeholder="e.g. Same as Photo / Wine Red / Bottle Green"
+                        className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-xl focus:outline-none focus:border-[#780016] font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-800 mb-1">
+                        Custom Styling Notes (Optional)
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={customizeForm.additional_instructions}
+                        onChange={(e) => setCustomizeForm({ ...customizeForm, additional_instructions: e.target.value })}
+                        placeholder="e.g. Modest neckline, 3/4 sleeves, attach cotton inner lining..."
+                        className="w-full px-3 py-1.5 text-xs bg-white border border-stone-300 rounded-xl focus:outline-none focus:border-[#780016] font-medium resize-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Direct Consultation Assurance */}
+                <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl flex items-center gap-2.5 text-xs text-amber-900">
+                  <Sparkles className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                  <p className="leading-relaxed">
+                    <strong>Direct Tailor Assistance:</strong> Once submitted, our Master Artisan will directly call / WhatsApp you on <strong>{customizeForm.phone || "your number"}</strong> to confirm all measurements and specific preferences!
+                  </p>
                 </div>
 
                 {/* 6. Submit Button */}

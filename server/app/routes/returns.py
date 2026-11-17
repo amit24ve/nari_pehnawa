@@ -101,6 +101,23 @@ def create_return_request(payload: ReturnCreate, current_user: dict = Depends(ge
             detail="Returns can only be requested for delivered orders.",
         )
 
+    # Check return window (e.g. 4 days from delivery / completion)
+    delivery_time = order.get("delivered_at") or order.get("updated_at")
+    return_days = int(order.get("return_days") or 4)
+    if delivery_time:
+        if isinstance(delivery_time, str):
+            try:
+                delivery_time = datetime.fromisoformat(delivery_time.replace("Z", "+00:00"))
+            except Exception:
+                delivery_time = None
+        if delivery_time:
+            now = datetime.now(delivery_time.tzinfo) if delivery_time.tzinfo else datetime.now()
+            if (now - delivery_time).total_seconds() > return_days * 86400:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"The return window of {return_days} days has expired for this order."
+                )
+
     existing = db["returns"].find_one(
         {"order_id": payload.order_id, "status": {"$nin": ["rejected", "closed", "completed"]}}
     )

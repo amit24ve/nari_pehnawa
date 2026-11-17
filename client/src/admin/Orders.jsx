@@ -36,7 +36,8 @@ import {
   Shield,
   MessageSquare,
   RefreshCw,
-  RotateCcw
+  RotateCcw,
+  Trash2
 } from "lucide-react";
 
 import shippingApi from "../services/shippingApi";
@@ -133,10 +134,15 @@ const Orders = () => {
   };
 
   const transformOrder = (o) => {
-    const rawOrderNum = (o.order_number || o.id || "").toString().trim();
-    const cleanDisplayId = (rawOrderNum.length === 24 && /^[0-9a-fA-F]+$/.test(rawOrderNum))
-      ? `ORD_${rawOrderNum.slice(-6).toUpperCase()}`
-      : (rawOrderNum || `ORD_${String(o.id || "").slice(-6).toUpperCase()}`);
+    const rawOrderNum = (o.order_number || o.id || o._id || "").toString().trim();
+    let cleanDisplayId = rawOrderNum;
+    if (rawOrderNum.length === 24 && /^[0-9a-fA-F]+$/.test(rawOrderNum)) {
+      cleanDisplayId = `ORD-${rawOrderNum.slice(-6).toUpperCase()}`;
+    } else if (rawOrderNum.startsWith("ORD_")) {
+      cleanDisplayId = rawOrderNum.replace("ORD_", "ORD-");
+    } else if (!rawOrderNum) {
+      cleanDisplayId = `ORD-${String(o.id || o._id || "").slice(-6).toUpperCase()}`;
+    }
 
     const rawStatus = (o.status || "pending").toLowerCase();
     const shipmentStatus = (o.shipping?.shipment_status || o.shipping?.current_status || o.shipment_status || "").toLowerCase();
@@ -1025,6 +1031,37 @@ const Orders = () => {
   const handleApproveReturn = (returnId) => handleReturnAction(returnId, "approve");
   const handleRejectReturn = (returnId) => handleReturnAction(returnId, "reject", "Did not meet return criteria");
 
+  // Admin Permanent Delete Order
+  const handleDeleteOrder = async (orderIdToDelete) => {
+    if (!orderIdToDelete) return;
+    const confirmMsg = window.confirm(`Are you sure you want to permanently delete order ${orderIdToDelete}? This action cannot be undone.`);
+    if (!confirmMsg) return;
+
+    setActionLoading(true);
+    try {
+      const cleanId = String(orderIdToDelete).replace("#", "").trim();
+      const res = await fetch(`${API_BASE_URL}/orders/${cleanId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: "Failed to delete order" }));
+        throw new Error(err.detail || "Failed to delete order");
+      }
+      setOrders(prev => prev.filter(o => o.orderId !== orderIdToDelete && o.id !== orderIdToDelete && o.order_number !== cleanId));
+      if (selectedOrder && (selectedOrder.orderId === orderIdToDelete || selectedOrder.id === orderIdToDelete || selectedOrder.order_number === cleanId)) {
+        setSelectedOrder(null);
+        setShowDetailsModal(false);
+      }
+      alert("Order deleted successfully.");
+      fetchOrders();
+    } catch (e) {
+      alert(`Delete failed: ${e.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const addrString = (a) => {
     if (typeof a === "string") return a;
     if (!a) return "N/A";
@@ -1485,12 +1522,21 @@ const Orders = () => {
                         </span>
                       </td>
                       <td className="py-3.5 px-6 text-right">
-                        <button
-                          onClick={() => handleViewDetails(o)}
-                          className="px-3.5 py-1.5 bg-cyan-400 hover:bg-cyan-300 rounded-xl transition text-black font-extrabold flex items-center gap-1 ml-auto shadow-sm"
-                        >
-                          Process Control <Eye className="w-3.5 h-3.5 text-black" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5 ml-auto">
+                          <button
+                            onClick={() => handleViewDetails(o)}
+                            className="px-3 py-1.5 bg-cyan-400 hover:bg-cyan-300 rounded-xl transition text-black font-extrabold flex items-center gap-1 shadow-sm cursor-pointer text-xs"
+                          >
+                            Process Control <Eye className="w-3.5 h-3.5 text-black" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteOrder(o.orderId || o.id)}
+                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-650 hover:text-rose-800 rounded-xl transition border border-rose-200 cursor-pointer shadow-2xs"
+                            title="Delete Order Permanently"
+                          >
+                            <Trash2 className="w-4 h-4 text-rose-600" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1741,12 +1787,23 @@ const Orders = () => {
                   }) + " IST" : "—"} • Channel ID: {selectedOrder.customerId}
                 </p>
               </div>
-              <button
-                onClick={() => setShowDetailsModal(false)}
-                className="text-slate-400 hover:text-slate-750 p-2 hover:bg-slate-100 rounded-xl transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleDeleteOrder(selectedOrder.orderId || selectedOrder.id)}
+                  className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  title="Permanently Delete Order"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Delete Order</span>
+                </button>
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="text-slate-400 hover:text-slate-750 p-2 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="p-5 md:p-6 space-y-6">

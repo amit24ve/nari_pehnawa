@@ -29,15 +29,17 @@ _STATUS_NOTIFICATION_MAP = {
 
 
 def generate_order_number() -> str:
-    """Generate clean, sequential ecommerce order number: ORD_YYYYMMDD_XXXX"""
+    """Generate clean, sequential ecommerce order number: ORD-YYYYMMDD-XXXX"""
     ts = datetime.now().strftime("%Y%m%d")
     rand_seq = "".join(random.choices(string.digits, k=4))
-    return f"ORD_{ts}_{rand_seq}"
+    return f"ORD-{ts}-{rand_seq}"
 
 
 def format_order_number(order: dict) -> str:
     """Ensure order number is clean, human-readable and NEVER a raw MongoDB ObjectId"""
     raw_num = str(order.get("order_number") or order.get("order_id") or "").strip()
+    if raw_num.startswith("ORD_"):
+        return raw_num.replace("ORD_", "ORD-")
     if not raw_num or raw_num == "N/A" or (len(raw_num) == 24 and all(c in "0123456789abcdef" for c in raw_num)):
         obj_id = str(order.get("_id") or order.get("id") or "")
         created_at = order.get("created_at")
@@ -49,7 +51,7 @@ def format_order_number(order: dict) -> str:
         if not date_str:
             date_str = datetime.now().strftime("%Y%m%d")
         suffix = obj_id[-4:].upper() if obj_id else "".join(random.choices(string.digits, k=4))
-        return f"ORD_{date_str}_{suffix}"
+        return f"ORD-{date_str}-{suffix}"
     return raw_num
 
 
@@ -1065,14 +1067,37 @@ def review_cancellation_request(
 
 @router.delete("/{order_id}")
 def delete_order(order_id: str, current_user: dict = Depends(require_admin)):
-    """Delete an order (Admin only)"""
+    """Delete an order permanently (Admin only). Supports MongoDB ObjectId, order_number, or ORD- format."""
     db = get_database()
     orders_collection = db["orders"]
     try:
-        result = orders_collection.delete_one({"_id": ObjectId(order_id)})
+        clean_id = str(order_id).replace("#", "").strip()
+        or_clauses = [
+            {"order_number": clean_id},
+            {"order_id": clean_id},
+            {"order_number": order_id},
+            {"order_id": order_id},
+            {"order_number": clean_id.replace("ORD-", "ORD_")},
+            {"order_number": clean_id.replace("ORD_", "ORD-")}
+        ]
+        if ObjectId.is_valid(clean_id):
+            or_clauses.append({"_id": ObjectId(clean_id)})
+        elif ObjectId.is_valid(order_id):
+            or_clauses.append({"_id": ObjectId(order_id)})
+
+        result = orders_collection.delete_one({"$or": or_clauses})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Order not found")
-        return {"message": "Order deleted successfully"}
+
+        # Clean up related records (logs, returns, cancellations)
+        try:
+            db["order_logs"].delete_many({"$or": [{"order_id": clean_id}, {"order_id": order_id}]})
+            db["returns"].delete_many({"$or": [{"order_id": clean_id}, {"order_id": order_id}]})
+            db["cancellations"].delete_many({"$or": [{"order_id": clean_id}, {"order_id": order_id}]})
+        except Exception:
+            pass
+
+        return {"message": "Order deleted successfully", "deleted_id": order_id}
     except HTTPException:
         raise
     except Exception as e:

@@ -988,7 +988,23 @@ async def track_shipment_public(
 
         order_status = str(order.get("status", "processing")).lower()
         can_cancel = order_status in ("pending", "confirmed", "paid", "processing") and not awb
-        can_return = order_status in ("delivered", "completed")
+        
+        # Return window check: default 4 days from delivery / completion
+        return_days = int(order.get("return_days") or 4)
+        is_return_window_open = True
+        delivery_time = order.get("delivered_at") or order.get("updated_at")
+        if delivery_time:
+            if isinstance(delivery_time, str):
+                try:
+                    delivery_time = datetime.fromisoformat(delivery_time.replace("Z", "+00:00"))
+                except Exception:
+                    delivery_time = None
+            if delivery_time:
+                now = datetime.now(delivery_time.tzinfo) if delivery_time.tzinfo else datetime.now()
+                if (now - delivery_time).total_seconds() > return_days * 86400:
+                    is_return_window_open = False
+
+        can_return = order_status in ("delivered", "completed") and is_return_window_open
 
         base_res = {
             "order_id": str(order.get("_id")),

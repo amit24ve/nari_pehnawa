@@ -68,7 +68,7 @@ def _rz_client():
 def _gen_order_number() -> str:
     ts = datetime.now().strftime("%Y%m%d")
     rand = "".join(random.choices(string.digits, k=4))
-    return f"ORD_{ts}_{rand}"
+    return f"ORD-{ts}-{rand}"
 
 
 def _log_payment_event(

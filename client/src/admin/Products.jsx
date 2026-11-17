@@ -230,13 +230,14 @@ const Products = () => {
         warehouse_stock: {},
         warehouse_size_stock: {},
         is_returnable: true,
-        return_policy: "Easy 15-Day Returns",
+        return_policy: "Easy 4-Day Returns",
+        return_days: 4,
         pattern: "",
         sleeve_type: "",
-        fit_type: "Regular Comfort Fit",
+        fit_type: "Regular Fit",
         occasion: "Festive, Casual, Office Wear",
         country_of_origin: "India",
-        hsn_code: "621133",
+        hsn_code: "",
         wash_care: "Hand Wash or Gentle Machine Wash in Cold Water",
         offer_type: "none",
         sale_title: "Mega Festive Sale",
@@ -413,7 +414,7 @@ const Products = () => {
                     fit_type: dealModalProduct.fit_type || "",
                     delivery_charge: dealModalProduct.delivery_charge || 0,
                     is_returnable: dealModalProduct.is_returnable !== false,
-                    return_policy_badge: dealModalProduct.return_policy_badge || "Easy 15-Day Returns",
+                    return_policy_badge: dealModalProduct.return_policy_badge || "Easy 4-Day Returns",
                     on_sale: !isNone,
                     offer_type: isNone ? "none" : "megasale",
                     deal_type: isNone ? null : dealModalForm.deal_type,
@@ -645,13 +646,14 @@ const Products = () => {
                 fabric: formData.fabric || null,
                 pattern: formData.pattern || null,
                 sleeve_type: formData.sleeve_type || null,
-                fit_type: formData.fit_type || null,
+                fit_type: formData.fit_type || "Regular Fit",
                 occasion: formData.occasion || null,
                 country_of_origin: formData.country_of_origin || "India",
-                hsn_code: formData.hsn_code || "621133",
+                hsn_code: formData.hsn_code || "",
                 wash_care: formData.wash_care || null,
                 is_returnable: formData.is_returnable !== false,
-                return_policy: formData.return_policy || "Easy 15-Day Returns",
+                return_policy: formData.return_policy || "Easy 4-Day Returns",
+                return_days: Number(formData.return_days) || 4,
                 offer_type: formData.offer_type || "none",
                 sale_title: formData.offer_type === "flash_sale" ? (formData.sale_title || "Mega Festive Sale") : null,
                 deal_type: formData.offer_type === "flash_sale" ? (formData.deal_type || "buy5get1") : null,
@@ -774,10 +776,16 @@ const Products = () => {
     };
 
     const handleSetPrimaryImage = (imgUrl) => {
-        setFormData(prev => ({
-            ...prev,
-            image: imgUrl
-        }));
+        setFormData(prev => {
+            const currentList = prev.images && prev.images.length > 0 ? prev.images : (prev.image ? [prev.image] : []);
+            const filtered = currentList.filter(img => img !== imgUrl);
+            const reordered = [imgUrl, ...filtered];
+            return {
+                ...prev,
+                image: imgUrl,
+                images: reordered
+            };
+        });
     };
 
     const handleRemoveImage = (indexToRemove) => {
@@ -858,13 +866,14 @@ const Products = () => {
             warehouse_stock: product.warehouse_stock || {},
             warehouse_size_stock: product.warehouse_size_stock || {},
             is_returnable: product.is_returnable !== false,
-            return_policy: product.return_policy || "Easy 15-Day Returns",
+            return_policy: product.return_policy || "Easy 4-Day Returns",
+            return_days: product.return_days || 4,
             pattern: product.pattern || "",
             sleeve_type: product.sleeve_type || "",
-            fit_type: product.fit_type || "Regular Comfort Fit",
+            fit_type: product.fit_type || "Regular Fit",
             occasion: product.occasion || "Festive, Casual, Office Wear",
             country_of_origin: product.country_of_origin || "India",
-            hsn_code: product.hsn_code || "621133",
+            hsn_code: product.hsn_code || "",
             wash_care: product.wash_care || "Hand Wash or Gentle Machine Wash in Cold Water",
             offer_type: product.offer_type || (product.offer_code ? "coupon" : (product.deal_type ? "megasale" : "none")),
             sale_title: product.sale_title || "Mega Festive Sale",
@@ -2763,28 +2772,17 @@ const Products = () => {
 
                                     <div>
                                         <label className="block text-slate-700 font-bold mb-1 text-xs">
-                                            Total Stock <span className="text-cyan-600 font-extrabold">*</span>
+                                            Fabric / Material <span className="text-cyan-600 font-extrabold">*</span>
                                         </label>
                                         <input
-                                            type="number"
+                                            type="text"
                                             required
-                                            value={formData.stock}
-                                            onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-cyan-500 text-xs font-mono font-bold transition shadow-2xs"
-                                            placeholder="100"
+                                            value={formData.fabric}
+                                            onChange={(e) => setFormData({ ...formData, fabric: e.target.value })}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-cyan-500 text-xs font-bold transition shadow-2xs"
+                                            placeholder="e.g. Pure Cotton, Rayon"
                                         />
                                     </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-slate-700 font-bold mb-1.5">Fabric</label>
-                                    <input
-                                        type="text"
-                                        value={formData.fabric}
-                                        onChange={(e) => setFormData({ ...formData, fabric: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs transition"
-                                        placeholder="e.g. Pure Cotton, Chanderi Silk"
-                                    />
                                 </div>
 
                                 <div>
@@ -2813,13 +2811,32 @@ const Products = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-slate-700 font-bold mb-1.5">Return Policy Badge Text</label>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <label className="block text-slate-700 font-bold text-xs">Return Policy & Window</label>
+                                        <span className="text-[10px] text-slate-500 font-semibold">Standard: 3-5 days</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 mb-2">
+                                        {[3, 4, 5, 7].map((days) => (
+                                            <button
+                                                key={days}
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, return_days: days, return_policy: `Easy ${days}-Day Returns` })}
+                                                className={`px-2 py-0.5 rounded text-[11px] font-bold transition border cursor-pointer ${
+                                                    Number(formData.return_days || 4) === days
+                                                        ? "bg-[#0891b2] text-white border-[#0891b2]"
+                                                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                                                }`}
+                                            >
+                                                {days} Days
+                                            </button>
+                                        ))}
+                                    </div>
                                     <input
                                         type="text"
                                         value={formData.return_policy}
                                         onChange={(e) => setFormData({ ...formData, return_policy: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891b2] text-xs transition"
-                                        placeholder="e.g. Easy 15-Day Returns or Non-Returnable"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891b2] text-xs transition"
+                                        placeholder="e.g. Easy 4-Day Returns"
                                     />
                                 </div>
 
@@ -2828,45 +2845,192 @@ const Products = () => {
                                         <label className="block text-slate-700 font-bold text-xs">Sizes (comma separated or select chips below)</label>
                                         <span className="text-[11px] text-slate-500 font-medium">Click chip to toggle size</span>
                                     </div>
-                                    <input
-                                        type="text"
-                                        value={formData.sizes}
-                                        onChange={(e) => {
-                                            const newSizesStr = e.target.value;
-                                            const parsed = newSizesStr.split(",").map(s => s.trim()).filter(Boolean);
-                                            const updatedSizeStock = { ...(formData.size_stock || {}) };
-                                            parsed.forEach(sz => {
-                                                if (updatedSizeStock[sz] === undefined) updatedSizeStock[sz] = 0;
-                                            });
-                                            setFormData({ ...formData, sizes: newSizesStr, size_stock: updatedSizeStock });
-                                        }}
-                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891b2] text-xs transition"
-                                        placeholder="e.g. S,M,L,XL,XXL"
-                                    />
-                                    {/* Quick Size Preset Chips */}
-                                    <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                                        <span className="text-[11px] text-slate-500 font-semibold mr-1">Quick Add:</span>
-                                        {["XS", "S", "M", "L", "XL", "XXL", "3XL", "Free Size"].map((sz) => {
-                                            const activeList = formData.sizes ? formData.sizes.split(",").map(s => s.trim()) : [];
-                                            const isSelected = activeList.includes(sz);
-                                            return (
-                                                <button
-                                                    key={sz}
-                                                    type="button"
-                                                    onClick={() => handleToggleSizePreset(sz)}
-                                                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer border ${
-                                                        isSelected
-                                                            ? "bg-[#0891b2] text-white border-[#0891b2] shadow-2xs"
-                                                            : "bg-white text-slate-700 hover:bg-slate-100 border-slate-300"
-                                                    }`}
-                                                >
-                                                    {isSelected ? `✓ ${sz}` : `+ ${sz}`}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
                                 </div>
                             </div>
+
+                            {/* ── Unified Size & Stock Inventory Card ── */}
+                            {(() => {
+                                const parsedSizeList = formData.sizes ? formData.sizes.split(",").map(s => s.trim()).filter(Boolean) : [];
+                                return (
+                                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
+                                            <div>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-slate-900 font-extrabold text-sm uppercase tracking-wide flex items-center gap-1.5">
+                                                        <Layers className="w-4 h-4 text-[#0891b2]" /> Size &amp; Stock Inventory
+                                                    </span>
+                                                    <span className="text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                        Auto-Synced Total
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-slate-500 mt-0.5">
+                                                    Select sizes and enter stock for each. Total inventory is calculated automatically.
+                                                </p>
+                                            </div>
+                                            <div className="text-right bg-white px-3.5 py-1.5 rounded-xl border border-slate-200 shadow-2xs self-stretch sm:self-auto flex sm:flex-col justify-between items-center sm:items-end">
+                                                <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wider">Total Stock</span>
+                                                <span className="text-base font-extrabold text-[#0891b2] font-mono">
+                                                    {Number(formData.stock || 0).toLocaleString()} <span className="text-xs font-semibold text-slate-500">units</span>
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Size Chips */}
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <label className="block text-slate-700 font-bold text-xs">Active Sizes (Click to toggle)</label>
+                                                <span className="text-[11px] text-slate-400">Custom size? Type below</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                {["XS", "S", "M", "L", "XL", "XXL", "3XL", "Free Size"].map((sz) => {
+                                                    const isSelected = parsedSizeList.includes(sz);
+                                                    return (
+                                                        <button
+                                                            key={sz}
+                                                            type="button"
+                                                            onClick={() => handleToggleSizePreset(sz)}
+                                                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                                                                isSelected
+                                                                    ? "bg-[#0891b2] text-white border-[#0891b2] shadow-xs"
+                                                                    : "bg-white text-slate-700 hover:bg-slate-100 border-slate-300"
+                                                            }`}
+                                                        >
+                                                            {isSelected ? `✓ ${sz}` : `+ ${sz}`}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={formData.sizes}
+                                                onChange={(e) => {
+                                                    const newSizesStr = e.target.value;
+                                                    const parsed = newSizesStr.split(",").map(s => s.trim()).filter(Boolean);
+                                                    const updatedSizeStock = { ...(formData.size_stock || {}) };
+                                                    parsed.forEach(sz => {
+                                                        if (updatedSizeStock[sz] === undefined) updatedSizeStock[sz] = 0;
+                                                    });
+                                                    setFormData({ ...formData, sizes: newSizesStr, size_stock: updatedSizeStock });
+                                                }}
+                                                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891b2] text-xs transition"
+                                                placeholder="e.g. S,M,L,XL,XXL or Free Size"
+                                            />
+                                        </div>
+
+                                        {/* Quantities per Size Grid */}
+                                        {parsedSizeList.length > 0 && !parsedSizeList.includes("Free Size") ? (
+                                            <div className="space-y-3 pt-2 border-t border-slate-200">
+                                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                                    <span className="text-xs text-slate-700 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                                        <Package className="w-3.5 h-3.5 text-cyan-600" /> Stock Quantity by Size:
+                                                    </span>
+                                                    <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                                                        <span className="text-slate-400 text-[11px] font-medium mr-1">Quick add to all:</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleQuickAddAllSizes(5)}
+                                                            className="px-2 py-0.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg font-bold text-[11px] transition shadow-2xs cursor-pointer active:scale-95"
+                                                        >
+                                                            +5 all
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleQuickAddAllSizes(10)}
+                                                            className="px-2 py-0.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg font-bold text-[11px] transition shadow-2xs cursor-pointer active:scale-95"
+                                                        >
+                                                            +10 all
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const reset = {};
+                                                                parsedSizeList.forEach(s => reset[s] = 0);
+                                                                setFormData(prev => ({
+                                                                    ...prev,
+                                                                    stock: 0,
+                                                                    size_stock: reset,
+                                                                    warehouse_stock: { "All": 0 }
+                                                                }));
+                                                            }}
+                                                            className="px-2 py-0.5 bg-white hover:bg-rose-50 border border-rose-200 text-rose-600 rounded-lg font-bold text-[11px] transition shadow-2xs cursor-pointer active:scale-95"
+                                                        >
+                                                            Reset 0
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+                                                    {parsedSizeList.map((sz) => {
+                                                        const qty = formData.size_stock?.[sz] ?? 0;
+                                                        return (
+                                                            <div
+                                                                key={sz}
+                                                                className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs hover:border-cyan-400 transition"
+                                                            >
+                                                                <div className="flex items-center justify-between mb-1.5">
+                                                                    <span className="text-xs font-extrabold text-slate-800 font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                                                                        {sz}
+                                                                    </span>
+                                                                    <span className={`text-[10px] font-bold ${Number(qty) > 0 ? "text-emerald-600" : "text-slate-400"}`}>
+                                                                        {Number(qty) > 0 ? `${qty} in stock` : "0 stock"}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleSizeStockChange(sz, Math.max(0, Number(qty || 0) - 1))}
+                                                                        className="w-7 h-7 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-xs cursor-pointer select-none transition"
+                                                                    >
+                                                                        -
+                                                                    </button>
+                                                                    <input
+                                                                        type="number"
+                                                                        min="0"
+                                                                        value={qty}
+                                                                        onChange={(e) => handleSizeStockChange(sz, e.target.value)}
+                                                                        className="w-full bg-slate-50 border border-slate-300 rounded-lg py-1 text-center text-xs text-slate-900 font-extrabold font-mono focus:outline-none focus:border-cyan-500 focus:bg-white"
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleSizeStockChange(sz, Number(qty || 0) + 1)}
+                                                                        className="w-7 h-7 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-xs cursor-pointer select-none transition"
+                                                                    >
+                                                                        +
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-white p-3.5 rounded-xl border border-slate-200 pt-2">
+                                                <div className="max-w-xs">
+                                                    <label className="text-xs text-slate-700 font-bold block mb-1.5 uppercase tracking-wider">
+                                                        Total Inventory Units (Free Size / Standard)
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        placeholder="0"
+                                                        value={formData.stock || ""}
+                                                        onChange={(e) => {
+                                                            const val = Math.max(0, parseInt(e.target.value) || 0);
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                stock: val,
+                                                                warehouse_stock: { "All": val }
+                                                            }));
+                                                        }}
+                                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 font-bold font-mono focus:outline-none focus:border-cyan-500 focus:bg-white transition"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
 
                             {/* ── Bespoke Tailoring & Customization Settings ── */}
                             <div className="bg-amber-50/70 border border-amber-300/80 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-xs">
@@ -2989,24 +3153,76 @@ const Products = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-slate-700 font-bold mb-1.5 text-xs">Sleeve Style</label>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <label className="block text-slate-700 font-bold text-xs">Pattern / Work</label>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={formData.pattern}
+                                            onChange={(e) => setFormData({ ...formData, pattern: e.target.value })}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition mb-1.5"
+                                            placeholder="e.g. Floral Print, Embroidered"
+                                        />
+                                        <div className="flex items-center gap-1 flex-wrap">
+                                            {["Floral Print", "Embroidered", "Solid / Plain", "Hand Block", "Zari Work"].map((pat) => (
+                                                <button
+                                                    key={pat}
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, pattern: pat })}
+                                                    className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition cursor-pointer"
+                                                >
+                                                    {pat}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <label className="block text-slate-700 font-bold text-xs">Sleeve Style</label>
+                                        </div>
                                         <input
                                             type="text"
                                             value={formData.sleeve_type}
                                             onChange={(e) => setFormData({ ...formData, sleeve_type: e.target.value })}
-                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
-                                            placeholder="e.g. Sleeveless, Full Sleeve, 3/4 Sleeves"
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition mb-1.5"
+                                            placeholder="e.g. Sleeveless, 3/4 Sleeves"
                                         />
+                                        <div className="flex items-center gap-1 flex-wrap">
+                                            {["Sleeveless", "3/4 Sleeves", "Full Sleeve", "Short Sleeves"].map((slv) => (
+                                                <button
+                                                    key={slv}
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, sleeve_type: slv })}
+                                                    className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition cursor-pointer"
+                                                >
+                                                    {slv}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                     <div>
-                                        <label className="block text-slate-700 font-bold mb-1.5 text-xs">Fit Type</label>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <label className="block text-slate-700 font-bold text-xs">Fit Type</label>
+                                        </div>
                                         <input
                                             type="text"
                                             value={formData.fit_type}
                                             onChange={(e) => setFormData({ ...formData, fit_type: e.target.value })}
-                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
-                                            placeholder="e.g. Regular Comfort Fit, Flared"
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition mb-1.5"
+                                            placeholder="e.g. Regular Fit, Straight, A-Line"
                                         />
+                                        <div className="flex items-center gap-1 flex-wrap">
+                                            {["Regular Fit", "Straight", "A-Line", "Flared", "Anarkali", "Relaxed Fit"].map((ft) => (
+                                                <button
+                                                    key={ft}
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, fit_type: ft })}
+                                                    className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition cursor-pointer"
+                                                >
+                                                    {ft}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="block text-slate-700 font-bold mb-1.5 text-xs">Occasion</label>
@@ -3014,7 +3230,7 @@ const Products = () => {
                                             type="text"
                                             value={formData.occasion}
                                             onChange={(e) => setFormData({ ...formData, occasion: e.target.value })}
-                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
                                             placeholder="e.g. Festive, Casual, Office Wear"
                                         />
                                     </div>
@@ -3024,18 +3240,8 @@ const Products = () => {
                                             type="text"
                                             value={formData.country_of_origin}
                                             onChange={(e) => setFormData({ ...formData, country_of_origin: e.target.value })}
-                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
                                             placeholder="e.g. India"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-slate-700 font-bold mb-1.5 text-xs">HSN Code</label>
-                                        <input
-                                            type="text"
-                                            value={formData.hsn_code}
-                                            onChange={(e) => setFormData({ ...formData, hsn_code: e.target.value })}
-                                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
-                                            placeholder="e.g. 621133"
                                         />
                                     </div>
                                     <div className="sm:col-span-2 lg:col-span-3">
@@ -3277,159 +3483,6 @@ const Products = () => {
                                     </div>
                                 )}
                             </div>
-
-                            {/* ── Product Stock & Variant Inventory Allocation Card ── */}
-                            {(() => {
-                                const parsedSizeList = formData.sizes ? formData.sizes.split(",").map(s => s.trim()).filter(Boolean) : [];
-                                return (
-                                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
-                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 pb-3.5">
-                                            <div>
-                                                <div className="flex items-center gap-2.5 flex-wrap">
-                                                    <span className="text-slate-900 font-extrabold text-sm uppercase tracking-wide flex items-center gap-1.5">
-                                                        <Layers className="w-4 h-4 text-cyan-600" /> Stock & Size-Wise Inventory
-                                                    </span>
-                                                    <span className="text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1.5">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                                        Auto-Synced Total
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-slate-500 mt-1">
-                                                    Enter stock per size. Dispatch warehouse will be selected dynamically at order confirmation/fulfillment time.
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center gap-2.5 self-stretch sm:self-auto justify-between sm:justify-end">
-                                                <div className="text-right bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-2xs">
-                                                    <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wider">Total Stock</span>
-                                                    <span className="text-base font-extrabold text-cyan-700 font-mono">
-                                                        {Number(formData.stock || 0).toLocaleString()} <span className="text-xs font-semibold text-slate-500">units</span>
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {parsedSizeList.length > 0 ? (
-                                            <div className="space-y-3">
-                                                <div className="flex items-center justify-between flex-wrap gap-2">
-                                                    <span className="text-xs text-slate-700 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                                                        <Package className="w-3.5 h-3.5 text-cyan-600" /> Quantities by Size:
-                                                    </span>
-                                                    <div className="flex items-center gap-1.5 flex-wrap text-xs">
-                                                        <span className="text-slate-400 text-[11px] font-medium mr-1">Quick add to all:</span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleQuickAddAllSizes(5)}
-                                                            className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg font-bold text-[11px] transition shadow-2xs cursor-pointer active:scale-95"
-                                                        >
-                                                            +5 all
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleQuickAddAllSizes(10)}
-                                                            className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg font-bold text-[11px] transition shadow-2xs cursor-pointer active:scale-95"
-                                                        >
-                                                            +10 all
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleQuickAddAllSizes(25)}
-                                                            className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg font-bold text-[11px] transition shadow-2xs cursor-pointer active:scale-95"
-                                                        >
-                                                            +25 all
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const reset = {};
-                                                                parsedSizeList.forEach(s => reset[s] = 0);
-                                                                setFormData(prev => ({
-                                                                    ...prev,
-                                                                    stock: 0,
-                                                                    size_stock: reset,
-                                                                    warehouse_stock: { "All": 0 }
-                                                                }));
-                                                            }}
-                                                            className="px-2.5 py-1 bg-white hover:bg-rose-50 border border-rose-200 text-rose-600 rounded-lg font-bold text-[11px] transition shadow-2xs cursor-pointer active:scale-95"
-                                                        >
-                                                            Reset 0
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                                                    {parsedSizeList.map((sz) => {
-                                                        const qty = formData.size_stock?.[sz] ?? 0;
-                                                        return (
-                                                            <div
-                                                                key={sz}
-                                                                className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs hover:border-cyan-400 transition"
-                                                            >
-                                                                <div className="flex items-center justify-between mb-2">
-                                                                    <span className="text-xs font-extrabold text-slate-800 font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                                                                        {sz}
-                                                                    </span>
-                                                                    <span className={`text-[10px] font-bold ${Number(qty) > 0 ? "text-emerald-600" : "text-slate-400"}`}>
-                                                                        {Number(qty) > 0 ? `${qty} in stock` : "0 stock"}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="flex items-center gap-1">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => handleSizeStockChange(sz, Math.max(0, Number(qty || 0) - 1))}
-                                                                        className="w-7 h-7 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-xs cursor-pointer select-none transition"
-                                                                    >
-                                                                        -
-                                                                    </button>
-                                                                    <input
-                                                                        type="number"
-                                                                        min="0"
-                                                                        value={qty}
-                                                                        onChange={(e) => handleSizeStockChange(sz, e.target.value)}
-                                                                        className="w-full bg-slate-50 border border-slate-300 rounded-lg py-1 text-center text-sm text-slate-900 font-extrabold font-mono focus:outline-none focus:border-cyan-500 focus:bg-white"
-                                                                    />
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => handleSizeStockChange(sz, Number(qty || 0) + 1)}
-                                                                        className="w-7 h-7 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-xs cursor-pointer select-none transition"
-                                                                    >
-                                                                        +
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="bg-white p-4 rounded-xl border border-slate-200">
-                                                <div className="max-w-xs">
-                                                    <label className="text-xs text-slate-700 font-bold block mb-1.5 uppercase tracking-wider">
-                                                        Total Inventory Units (Free Size / Standard)
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        placeholder="0"
-                                                        value={formData.stock || ""}
-                                                        onChange={(e) => {
-                                                            const val = Math.max(0, parseInt(e.target.value) || 0);
-                                                            setFormData(prev => ({
-                                                                ...prev,
-                                                                stock: val,
-                                                                warehouse_stock: { "All": val }
-                                                            }));
-                                                        }}
-                                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 font-bold font-mono focus:outline-none focus:border-cyan-500 focus:bg-white transition"
-                                                    />
-                                                    <span className="text-[11px] text-slate-400 block mt-1">
-                                                        Tip: Enter sizes in the field above (e.g. S, M, L, XL) to allocate inventory per size.
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })()}
 
                             <div>
                                 <label className="block text-slate-700 font-bold mb-1.5">Description</label>
@@ -3794,7 +3847,7 @@ const Products = () => {
                                         <div className="bg-white p-2.5 rounded-xl border border-slate-200">
                                             <span className="text-slate-400 text-[10px] block font-bold uppercase">Return Policy</span>
                                             <span className="font-bold text-slate-800">
-                                                {viewingProduct.return_policy_badge || (viewingProduct.is_returnable ? "Returnable (15-Day)" : "Non-Returnable")}
+                                                {viewingProduct.return_policy || viewingProduct.return_policy_badge || (viewingProduct.is_returnable ? "Returnable (4-Day)" : "Non-Returnable")}
                                             </span>
                                         </div>
                                     </div>
