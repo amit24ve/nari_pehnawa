@@ -456,8 +456,12 @@ const ProductPage = () => {
   const [reviewFilter, setReviewFilter] = useState("all");
   const [helpfulVotes, setHelpfulVotes] = useState({});
   const [askQModalOpen, setAskQModalOpen] = useState(false);
+  const [qaList, setQaList] = useState([]);
   const [qText, setQText] = useState("");
-  const [qSubmitted, setQSubmitted] = useState(false);
+  const [qName, setQName] = useState("");
+  const [qContact, setQContact] = useState("");
+  const [qSubmitting, setQSubmitting] = useState(false);
+  const [qSuccessMsg, setQSuccessMsg] = useState("");
 
   // Dynamic viewers & Urgency counters
   const [viewersCount, setViewersCount] = useState(null);
@@ -484,6 +488,7 @@ const ProductPage = () => {
   // Frequently Bought Together Dynamic Bundle
   const [bundleProducts, setBundleProducts] = useState([]);
   const [selectedBundleMap, setSelectedBundleMap] = useState({});
+  const [bundleSizes, setBundleSizes] = useState({});
 
   // Recently Viewed Products
   const [recentlyViewed, setRecentlyViewed] = useState([]);
@@ -581,10 +586,13 @@ const ProductPage = () => {
         const topBundleItems = list.slice(0, 2);
         setBundleProducts(topBundleItems);
         const initialMap = {};
+        const initialSizes = {};
         topBundleItems.forEach((p) => {
           initialMap[p.id] = true;
+          initialSizes[p.id] = (p.sizes && p.sizes.length > 0) ? p.sizes[0] : "Free Size";
         });
         setSelectedBundleMap(initialMap);
+        setBundleSizes(initialSizes);
       })
       .catch(() => {});
 
@@ -603,6 +611,14 @@ const ProductPage = () => {
         if (stats) setReviewStats(stats);
       })
       .catch(() => {});
+
+    // Fetch answered Q&A for this product
+    fetch(`${API_BASE_URL}/products/${productId}/questions`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((qa) => {
+        if (Array.isArray(qa)) setQaList(qa);
+      })
+      .catch(() => setQaList([]));
   }, [productId]);
 
   // Load Recently Viewed list from localStorage and validate against real active database products
@@ -788,6 +804,46 @@ const ProductPage = () => {
       setReviewFeedback({ type: "error", message: "Error submitting review. Please check your network connection." });
     } finally {
       setReviewSubmitting(false);
+    }
+  };
+
+  /* ── Submit Customer Question (Ask a Question Modal) ── */
+  const handleAskQuestionSubmit = async (e) => {
+    e?.preventDefault();
+    if (!qText.trim() || !product?.id) return;
+    setQSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/products/${product.id}/questions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: qText.trim(),
+          customer_name: qName.trim() || user?.name || "Customer",
+          customer_email: qContact.includes("@") ? qContact.trim() : (user?.email || ""),
+          customer_phone: !qContact.includes("@") ? qContact.trim() : (user?.phone || "")
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setQSuccessMsg(data.message || "Thank you! Your question has been submitted.");
+        setQText("");
+        setTimeout(() => {
+          setQSuccessMsg("");
+          setAskQModalOpen(false);
+          // Refetch answered Q&A
+          fetch(`${API_BASE_URL}/products/${product.id}/questions`)
+            .then((r) => (r.ok ? r.json() : []))
+            .then((qa) => { if (Array.isArray(qa)) setQaList(qa); })
+            .catch(() => {});
+        }, 2200);
+      } else {
+        alert(data.detail || "Failed to submit question");
+      }
+    } catch (err) {
+      console.error("Ask question error:", err);
+      alert("Network error. Please try again.");
+    } finally {
+      setQSubmitting(false);
     }
   };
 
@@ -1334,41 +1390,6 @@ const ProductPage = () => {
               })()}
             </div>
 
-            {/* ── Main Specializations & Product Story (Top Overview - Clean Text, No Boxes) ── */}
-            <div className="space-y-3 py-1 text-xs sm:text-sm text-gray-700">
-              {/* Quick Key Specializations Row */}
-              <div className="flex items-center gap-x-3.5 gap-y-1 flex-wrap text-xs text-gray-800">
-                {product.fabric && (
-                  <span><span className="text-gray-400 font-normal">Fabric: </span><strong className="font-semibold text-gray-900">{product.fabric}</strong></span>
-                )}
-                {product.pattern && (
-                  <span><span className="text-gray-300">• </span><span className="text-gray-400 font-normal">Pattern: </span><strong className="font-semibold text-gray-900">{product.pattern}</strong></span>
-                )}
-                {product.sleeve_type && (
-                  <span><span className="text-gray-300">• </span><span className="text-gray-400 font-normal">Sleeves: </span><strong className="font-semibold text-gray-900">{product.sleeve_type}</strong></span>
-                )}
-                {product.fit_type && (
-                  <span><span className="text-gray-300">• </span><span className="text-gray-400 font-normal">Fit: </span><strong className="font-semibold text-gray-900">{product.fit_type}</strong></span>
-                )}
-                {product.occasion && (
-                  <span><span className="text-gray-300">• </span><span className="text-gray-400 font-normal">Occasion: </span><strong className="font-semibold text-gray-900">{product.occasion}</strong></span>
-                )}
-              </div>
-
-              {/* Product Description */}
-              <p className="text-xs sm:text-sm text-gray-700 leading-relaxed">
-                {product.description ||
-                  `Elevate your ethnic fashion with the stunning ${product.name} from Nari Pehnawa. Crafted with precision craftsmanship, rich tones, and breathable fabric for all-day elegance.`}
-              </p>
-
-              {/* Stylist Tip if available */}
-              {product.style_tip && (
-                <p className="text-xs text-gray-600 italic border-l-2 border-[#8B0000] pl-2.5">
-                  💡 <span className="font-semibold text-gray-800 not-italic">Stylist Note:</span> {product.style_tip}
-                </p>
-              )}
-            </div>
-
             {/* Color Variants Swatches (When multiple colors are available) */}
             {((product.color_variants && product.color_variants.length > 0) || (product.colors && product.colors.length > 1)) && (
               <div className="space-y-2.5 pt-1">
@@ -1633,38 +1654,35 @@ const ProductPage = () => {
           </div>
         </div>
 
-        {/* ═══════ PRODUCT DETAILS & SPECIFICATIONS (CLEAN EDITORIAL, NO CARDS) ═══════ */}
+        {/* ═══════ PRODUCT DETAILS & SPECIFICATIONS (CENTERED, STACKED EDITORIAL) ═══════ */}
         <div className="mt-12 pt-8 border-t border-gray-200 w-full space-y-8">
-          <div className="border-b border-gray-200 pb-4">
-            <h2 className="text-lg sm:text-xl font-serif font-bold tracking-tight text-gray-900 flex items-center gap-2">
+          <div className="text-center max-w-2xl mx-auto border-b border-gray-200 pb-4">
+            <h2 className="text-xl sm:text-2xl font-serif font-bold tracking-tight text-gray-900 flex items-center justify-center gap-2">
               <span className="text-[#8B0000]">✦</span> Product Overview &amp; Specifications
             </h2>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">
               Detailed craftsmanship, fabric composition, and silhouette guide
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start w-full">
-            {/* Left Column (7 cols): Story, Key Highlights & Stylist's Note */}
-            <div className="lg:col-span-7 space-y-6">
-              
-              {/* Product Story / Description */}
-              <div className="space-y-2">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-gray-900">
-                  About The Product
-                </h3>
-                <p className="text-xs sm:text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-                  {product.description ||
-                    `Elevate your ethnic fashion quotient with the stunning ${product.name} from Nari Pehnawa. Crafted with precision craftsmanship and rich color tones, this piece combines Indian elegance with day-long comfort.`}
-                </p>
-              </div>
+          <div className="max-w-4xl mx-auto space-y-8">
+            {/* 1. About The Product (Description, Highlights & Stylist's Note) */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-gray-900 flex items-center gap-2 border-b border-gray-100 pb-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#8B0000]"></span>
+                About The Product
+              </h3>
+              <p className="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-wrap font-normal">
+                {product.description ||
+                  `Elevate your ethnic fashion quotient with the stunning ${product.name} from Nari Pehnawa. Crafted with precision craftsmanship and rich color tones, this piece combines Indian elegance with day-long comfort.`}
+              </p>
 
               {/* Key Highlights (Admin Added Highlights - 100% visible, clean bullets) */}
               {product.highlights && product.highlights.length > 0 && (
                 <div className="space-y-2.5 pt-2">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-gray-900">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-gray-800">
                     Key Highlights
-                  </h3>
+                  </h4>
                   <ul className="text-xs sm:text-sm text-gray-800 space-y-2 leading-relaxed">
                     {product.highlights.map((hl, idx) => (
                       <li key={idx} className="flex items-start gap-2.5">
@@ -1676,9 +1694,9 @@ const ProductPage = () => {
                 </div>
               )}
 
-              {/* Stylist's Note / Tip (Admin Added - Clean Quote Accent, No Card) */}
+              {/* Stylist's Note / Tip */}
               {product.style_tip && (
-                <div className="pt-3 border-l-2 border-[#8B0000] pl-4 space-y-1">
+                <div className="pt-2 border-l-2 border-[#8B0000] pl-4 space-y-1 bg-amber-50/40 p-3 rounded-r-xl">
                   <h4 className="text-xs font-bold text-gray-900 uppercase tracking-widest flex items-center gap-1.5">
                     💡 Stylist’s Note
                   </h4>
@@ -1689,62 +1707,63 @@ const ProductPage = () => {
               )}
             </div>
 
-            {/* Right Column (5 cols): Complete Specifications Matrix (Clean Rows, Zero Cards) */}
-            <div className="lg:col-span-5 space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-gray-900 border-b border-gray-200 pb-2">
-                Specifications Matrix
+            {/* 2. Complete Specifications Matrix (Directly Below About The Product) */}
+            <div className="space-y-4 pt-6 border-t border-gray-200">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-gray-900 flex items-center gap-2 border-b border-gray-100 pb-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#8B0000]"></span>
+                Specification Matrix
               </h3>
               
-              <div className="w-full text-xs sm:text-sm divide-y divide-gray-100">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-1 text-xs sm:text-sm">
                 {product.fabric && (
-                  <div className="py-2.5 flex justify-between gap-4">
+                  <div className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
                     <span className="text-gray-500 font-medium w-36 shrink-0">Fabric</span>
                     <span className="font-semibold text-gray-900 text-right">{product.fabric}</span>
                   </div>
                 )}
                 {product.pattern && (
-                  <div className="py-2.5 flex justify-between gap-4">
+                  <div className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
                     <span className="text-gray-500 font-medium w-36 shrink-0">Pattern / Work</span>
                     <span className="font-semibold text-gray-900 text-right">{product.pattern}</span>
                   </div>
                 )}
                 {product.sleeve_type && (
-                  <div className="py-2.5 flex justify-between gap-4">
+                  <div className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
                     <span className="text-gray-500 font-medium w-36 shrink-0">Sleeve Style</span>
                     <span className="font-semibold text-gray-900 text-right">{product.sleeve_type}</span>
                   </div>
                 )}
                 {product.fit_type && (
-                  <div className="py-2.5 flex justify-between gap-4">
+                  <div className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
                     <span className="text-gray-500 font-medium w-36 shrink-0">Fit Type</span>
                     <span className="font-semibold text-gray-900 text-right">{product.fit_type}</span>
                   </div>
                 )}
                 {product.occasion && (
-                  <div className="py-2.5 flex justify-between gap-4">
+                  <div className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
                     <span className="text-gray-500 font-medium w-36 shrink-0">Occasion</span>
                     <span className="font-semibold text-gray-900 text-right">{product.occasion}</span>
                   </div>
                 )}
                 {product.country_of_origin && (
-                  <div className="py-2.5 flex justify-between gap-4">
+                  <div className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
                     <span className="text-gray-500 font-medium w-36 shrink-0">Country of Origin</span>
                     <span className="font-semibold text-gray-900 text-right">{product.country_of_origin}</span>
                   </div>
                 )}
                 {product.hsn_code && (
-                  <div className="py-2.5 flex justify-between gap-4">
+                  <div className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
                     <span className="text-gray-500 font-medium w-36 shrink-0">HSN Code</span>
                     <span className="font-semibold text-gray-900 text-right">{product.hsn_code}</span>
                   </div>
                 )}
                 {product.wash_care && (
-                  <div className="py-2.5 flex justify-between gap-4">
+                  <div className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
                     <span className="text-gray-500 font-medium w-36 shrink-0">Wash &amp; Care</span>
                     <span className="font-semibold text-gray-900 text-right">{product.wash_care}</span>
                   </div>
                 )}
-                <div className="py-2.5 flex justify-between gap-4">
+                <div className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
                   <span className="text-gray-500 font-medium w-36 shrink-0">Return &amp; Exchange</span>
                   <span className="font-semibold text-gray-900 text-right">
                     {product.is_returnable === false
@@ -1753,7 +1772,7 @@ const ProductPage = () => {
                   </span>
                 </div>
                 {Array.isArray(product.specifications) && product.specifications.map((spec, idx) => (
-                  <div key={idx} className="py-2.5 flex justify-between gap-4">
+                  <div key={idx} className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
                     <span className="text-gray-500 font-medium w-36 shrink-0">{spec.name || spec.key || spec.title}</span>
                     <span className="font-semibold text-gray-900 text-right">{spec.value}</span>
                   </div>
@@ -1763,65 +1782,97 @@ const ProductPage = () => {
           </div>
         </div>
 
-          {/* Frequently Bought Together Bundle (Clean Editorial, No Cards) */}
+          {/* Frequently Bought Together Bundle */}
           {bundleProducts.length > 0 && (
             <div className="pt-8 border-t border-gray-200 space-y-4">
-              <div className="border-b border-gray-100 pb-2.5">
-                <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                  <ShoppingBag className="w-4 h-4 text-[#8B0000]" /> Frequently Bought Together
-                </h3>
-                <p className="text-xs text-gray-500 mt-0.5">Complement your look with matching handcrafted pieces</p>
+              <div className="border-b border-gray-100 pb-2.5 flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <ShoppingBag className="w-4 h-4 text-[#8B0000]" /> Frequently Bought Together
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">Complement your look with matching handcrafted pieces</p>
+                </div>
+                <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                  🎉 Special 10% Bundle Discount
+                </span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 items-center pt-1">
-                
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 items-stretch pt-1">
                 {/* Main Product */}
-                <div className="flex items-center gap-3 py-2 px-1 border-b md:border-b-0 md:border-r border-gray-100 md:pr-4">
+                <div className="flex items-center gap-3 p-3 bg-gray-50/70 rounded-xl border border-gray-200">
                   <div className="relative shrink-0">
                     <img
                       src={images[0] || FALLBACK_IMG}
                       alt={product.name}
-                      className="w-14 h-16 object-cover rounded-md"
+                      className="w-16 h-20 object-cover rounded-lg"
                     />
-                    <span className="absolute -top-1 -left-1 bg-[#8B0000] text-white text-[9px] font-bold px-1 py-0.2 rounded">
-                      Main
+                    <span className="absolute -top-1 -left-1 bg-[#8B0000] text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs">
+                      Main Item
                     </span>
                   </div>
-                  <div className="text-xs min-w-0">
+                  <div className="text-xs min-w-0 flex-1">
                     <p className="font-bold text-gray-900 truncate">{product.name}</p>
-                    <p className="text-[#8B0000] font-bold mt-0.5">₹{product.price}</p>
+                    <p className="text-[#8B0000] font-extrabold mt-0.5">₹{currentPrice}</p>
+                    <div className="mt-1 text-[11px] text-gray-600 flex items-center gap-1.5">
+                      <span>Size: <strong className="text-gray-900">{selectedSize || "Standard"}</strong></span>
+                      {selectedColor && <span>• Color: <strong className="text-gray-900">{selectedColor}</strong></span>}
+                    </div>
                   </div>
                 </div>
 
                 {/* Companion Products from Store */}
                 {bundleProducts.map((bundleItem) => {
                   const isChecked = selectedBundleMap[bundleItem.id] !== false;
+                  const itemSizes = bundleItem.sizes || [];
+                  const activeSize = bundleSizes[bundleItem.id] || (itemSizes.length > 0 ? itemSizes[0] : "Free Size");
+
                   return (
                     <div
                       key={bundleItem.id}
-                      className={`flex items-center gap-3 py-2 px-1 border-b md:border-b-0 md:border-r last:border-r-0 border-gray-100 md:pr-4 transition-opacity cursor-pointer ${
-                        isChecked ? "opacity-100" : "opacity-50"
+                      className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${
+                        isChecked
+                          ? "bg-white border-[#8B0000]/40 shadow-xs"
+                          : "bg-gray-50/50 border-gray-200 opacity-60"
                       }`}
-                      onClick={() =>
-                        setSelectedBundleMap((prev) => ({
-                          ...prev,
-                          [bundleItem.id]: !isChecked,
-                        }))
-                      }
                     >
                       <input
                         type="checkbox"
                         checked={isChecked}
-                        onChange={() => {}}
-                        className="rounded text-[#8B0000] focus:ring-[#8B0000] h-4 w-4 shrink-0 cursor-pointer"
+                        onChange={() =>
+                          setSelectedBundleMap((prev) => ({
+                            ...prev,
+                            [bundleItem.id]: !isChecked,
+                          }))
+                        }
+                        className="rounded text-[#8B0000] focus:ring-[#8B0000] h-4 w-4 shrink-0 mt-1 cursor-pointer accent-[#8B0000]"
                       />
                       <img
                         src={bundleItem.image || (bundleItem.images && bundleItem.images[0]) || FALLBACK_IMG}
                         alt={bundleItem.name}
-                        className="w-14 h-16 object-cover rounded-md shrink-0"
+                        className="w-16 h-20 object-cover rounded-lg shrink-0"
                       />
-                      <div className="text-xs min-w-0 flex-1">
-                        <p className="font-bold text-gray-900 truncate">{bundleItem.name}</p>
-                        <p className="text-[#8B0000] font-bold mt-0.5">₹{bundleItem.price}</p>
+                      <div className="text-xs min-w-0 flex-1 space-y-1">
+                        <p className="font-bold text-gray-900 truncate" title={bundleItem.name}>{bundleItem.name}</p>
+                        <p className="text-[#8B0000] font-extrabold">₹{bundleItem.price}</p>
+                        
+                        {/* Companion Size Selector */}
+                        {isChecked && itemSizes.length > 0 && (
+                          <div className="pt-0.5">
+                            <label className="text-[10px] text-gray-500 font-semibold block mb-0.5">Select Size:</label>
+                            <select
+                              value={activeSize}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setBundleSizes((prev) => ({ ...prev, [bundleItem.id]: val }));
+                              }}
+                              className="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-[11px] font-bold text-gray-800 focus:outline-none focus:border-[#8B0000] cursor-pointer"
+                            >
+                              {itemSizes.map((sz) => (
+                                <option key={sz} value={sz}>{sz}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -1829,54 +1880,79 @@ const ProductPage = () => {
 
               </div>
 
-              {/* Bundle Pricing & Add to Cart */}
+              {/* Bundle Pricing & Actions */}
               {(() => {
                 const selectedItems = bundleProducts.filter(
                   (item) => selectedBundleMap[item.id] !== false
                 );
                 const companionTotal = selectedItems.reduce((sum, item) => sum + (item.price || 0), 0);
-                const rawTotal = (product.price || 0) + companionTotal;
+                const rawTotal = (currentPrice || product.price || 0) + companionTotal;
                 const bundleSavings = selectedItems.length > 0 ? Math.round(rawTotal * 0.10) : 0;
                 const bundleFinal = rawTotal - bundleSavings;
 
+                const handleAddBundleToCart = async (redirect = false) => {
+                  // Add main product
+                  await handleAddToCart(false);
+                  // Add companion items
+                  for (const item of selectedItems) {
+                    const cSize = bundleSizes[item.id] || (item.sizes?.[0]) || "Free Size";
+                    await addToCart({
+                      product_id: item.id,
+                      name: item.name,
+                      price: item.price,
+                      image: item.image || (item.images && item.images[0]) || FALLBACK_IMG,
+                      size: cSize,
+                      color: item.colors?.[0] || "",
+                      quantity: 1,
+                    });
+                  }
+                  if (redirect) {
+                    navigate("/cart");
+                  } else {
+                    setAddedMsg(`Added Bundle (${1 + selectedItems.length} items) to Cart!`);
+                    setTimeout(() => setAddedMsg(""), 2500);
+                  }
+                };
+
                 return (
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100 flex-wrap gap-3">
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-100 flex-wrap gap-4">
                     <div>
                       <p className="text-xs text-gray-500">
-                        Bundle Price ({1 + selectedItems.length} {1 + selectedItems.length === 1 ? "Item" : "Items"}):
+                        Bundle Total ({1 + selectedItems.length} {1 + selectedItems.length === 1 ? "Item" : "Items"}):
                       </p>
-                      <p className="text-xl font-extrabold text-gray-900">
-                        ₹{bundleFinal.toLocaleString("en-IN")}{" "}
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-2xl font-black text-gray-900">
+                          ₹{bundleFinal.toLocaleString("en-IN")}
+                        </span>
                         {bundleSavings > 0 && (
-                          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded ml-1">
-                            Save ₹{bundleSavings.toLocaleString("en-IN")} (10% Bundle OFF)
-                          </span>
+                          <>
+                            <span className="text-xs text-gray-400 line-through">₹{rawTotal.toLocaleString("en-IN")}</span>
+                            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                              Save ₹{bundleSavings.toLocaleString("en-IN")} (10% OFF)
+                            </span>
+                          </>
                         )}
-                      </p>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await handleAddToCart(false);
-                        for (const item of selectedItems) {
-                          await addToCart({
-                            product_id: item.id,
-                            name: item.name,
-                            price: item.price,
-                            image: item.image || (item.images && item.images[0]) || FALLBACK_IMG,
-                            size: item.sizes?.[0] || "Free Size",
-                            color: item.colors?.[0] || "",
-                            quantity: 1,
-                          });
-                        }
-                        setAddedMsg(`Added Bundle (${1 + selectedItems.length} items) to Cart!`);
-                        setTimeout(() => setAddedMsg(""), 2500);
-                      }}
-                      className="px-6 py-3 bg-[#8B0000] hover:bg-[#6B0000] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors shadow-md flex items-center gap-2"
-                    >
-                      <ShoppingBag className="w-4 h-4" />
-                      Add Bundle to Cart
-                    </button>
+
+                    <div className="flex items-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => handleAddBundleToCart(false)}
+                        className="px-5 py-2.5 bg-white border border-[#8B0000] text-[#8B0000] hover:bg-[#8B0000]/5 font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <ShoppingBag className="w-4 h-4" />
+                        Add Bundle to Cart
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAddBundleToCart(true)}
+                        className="px-6 py-2.5 bg-[#8B0000] hover:bg-[#6B0000] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-md flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Check className="w-4 h-4" />
+                        Buy Bundle Now
+                      </button>
+                    </div>
                   </div>
                 );
               })()}
@@ -2045,37 +2121,70 @@ const ProductPage = () => {
           </div>
         </div>
 
-          {/* Q&A Accordion (Clean Text, No Card) */}
+          {/* Q&A Section (Dynamic Answered Questions from Store & Admin Replies) */}
           <div className="pt-8 border-t border-gray-200 space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2 border-b border-gray-100 pb-3">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <HelpCircle className="w-5 h-5 text-[#8B0000]" /> Questions & Answers
-              </h3>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <HelpCircle className="w-5 h-5 text-[#8B0000]" /> Questions &amp; Answers
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Have questions about this piece? Ask directly or view answered questions
+                </p>
+              </div>
               <button
+                type="button"
                 onClick={() => setAskQModalOpen(true)}
-                className="text-xs text-[#8B0000] font-bold underline hover:text-[#6B0000]"
+                className="px-3.5 py-1.5 bg-rose-50 text-[#8B0000] hover:bg-rose-100 font-bold text-xs rounded-xl border border-rose-200 transition cursor-pointer flex items-center gap-1.5"
               >
-                Ask a Question
+                <HelpCircle className="w-3.5 h-3.5" />
+                <span>Ask a Question</span>
               </button>
             </div>
 
             <div className="divide-y divide-gray-100 text-xs">
-              {(product.q_and_a && product.q_and_a.length > 0
-                ? product.q_and_a
-                : [
-                    { q: "Is the fabric see-through or transparent?", a: "No, it is crafted from high-density premium cotton blend and is non-transparent." },
-                    { q: "Does the color bleed on first wash?", a: "All Nari Pehnawa fabrics are pre-washed and color-fast. We recommend gentle cold wash." },
-                  ]
-              ).map((item, idx) => (
-                <div key={idx} className="py-3.5 space-y-1">
-                  <p className="font-bold text-gray-900 text-xs sm:text-sm flex items-center gap-2">
-                    <span className="text-[#8B0000] font-bold">Q.</span> {item.q}
-                  </p>
-                  <p className="text-gray-600 pl-4 border-l-2 border-[#8B0000] font-normal leading-relaxed text-xs sm:text-sm">
-                    {item.a}
-                  </p>
-                </div>
-              ))}
+              {(() => {
+                const displayList = qaList.length > 0
+                  ? qaList
+                  : (product.q_and_a && product.q_and_a.length > 0
+                      ? product.q_and_a
+                      : [
+                          { q: "Is the fabric see-through or transparent?", a: "No, it is crafted from high-density premium cotton blend and is non-transparent." },
+                          { q: "Does the color bleed on first wash?", a: "All Nari Pehnawa fabrics are pre-washed and color-fast. We recommend gentle cold wash." },
+                        ]
+                    );
+
+                return displayList.map((item, idx) => (
+                  <div key={item.id || idx} className="py-4 space-y-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="font-bold text-gray-900 text-xs sm:text-sm flex items-start gap-2">
+                        <span className="text-[#8B0000] font-black text-sm leading-none mt-0.5">Q.</span>
+                        <span>{item.q || item.question}</span>
+                      </p>
+                      {item.customer_name && (
+                        <span className="text-[10px] text-gray-400 shrink-0">
+                          Asked by {item.customer_name}
+                        </span>
+                      )}
+                    </div>
+                    <div className="pl-4 border-l-2 border-[#8B0000] space-y-1">
+                      <p className="text-gray-700 font-normal leading-relaxed text-xs sm:text-sm">
+                        {item.a || item.answer || item.reply}
+                      </p>
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          <Check className="w-2.5 h-2.5" /> Nari Pehnawa Verified Answer
+                        </span>
+                        {item.replied_at && (
+                          <span className="text-[10px] text-gray-400">
+                            {new Date(item.replied_at).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ));
+              })()}
             </div>
           </div>
 
@@ -2527,6 +2636,112 @@ const ProductPage = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Ask a Customer Question Modal ── */}
+      {askQModalOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs animate-in fade-in" onClick={() => setAskQModalOpen(false)} />
+          <div className="relative bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 z-10 shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-200">
+            <button
+              type="button"
+              onClick={() => setAskQModalOpen(false)}
+              className="absolute top-4 right-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4 text-gray-700" />
+            </button>
+
+            <div className="mb-4 pr-6">
+              <div className="flex items-center gap-2 mb-1">
+                <HelpCircle className="w-5 h-5 text-[#8B0000]" />
+                <h3 className="text-lg sm:text-xl font-serif font-bold text-gray-900">
+                  Ask a Question
+                </h3>
+              </div>
+              <p className="text-xs text-gray-500 truncate">
+                About: <span className="font-semibold text-gray-800">{product.name}</span>
+              </p>
+            </div>
+
+            {qSuccessMsg ? (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-center space-y-2">
+                <div className="w-10 h-10 mx-auto rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
+                  ✓
+                </div>
+                <p className="text-xs sm:text-sm font-bold text-emerald-900">{qSuccessMsg}</p>
+                <p className="text-[11px] text-emerald-700">Our customer care team will review and publish the official answer.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleAskQuestionSubmit} className="space-y-3.5">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Your Question <span className="text-[#8B0000]">*</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={qText}
+                    onChange={(e) => setQText(e.target.value)}
+                    placeholder="e.g. Does this kurti run true to size? What is the sleeve length? Is the fabric non-transparent?"
+                    className="w-full text-xs p-3 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] leading-relaxed"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Your Name (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={qName}
+                      onChange={(e) => setQName(e.target.value)}
+                      placeholder="e.g. Priya Sharma"
+                      className="w-full text-xs px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Email or Phone (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={qContact}
+                      onChange={(e) => setQContact(e.target.value)}
+                      placeholder="To notify when answered"
+                      className="w-full text-xs px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000]"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setAskQModalOpen(false)}
+                    className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={qSubmitting || !qText.trim()}
+                    className="px-5 py-2.5 bg-[#8B0000] hover:bg-[#6B0000] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    {qSubmitting ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Submitting...</span>
+                      </>
+                    ) : (
+                      <span>Submit Question</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

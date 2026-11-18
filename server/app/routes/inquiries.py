@@ -383,6 +383,21 @@ async def reply_inquiry(inquiry_id: str, payload: InquiryReply):
             raise HTTPException(status_code=404, detail="Inquiry not found")
 
         updated_doc = db.customer_inquiries.find_one({"id": inquiry_id}, {"_id": 0})
+        if updated_doc and updated_doc.get("inquiry_type") == "product_question":
+            q_text = updated_doc.get("message")
+            p_id = updated_doc.get("product_id")
+            q_id = updated_doc.get("question_id")
+            reply_text = payload.reply_message.strip()
+            if q_id:
+                db.product_questions.update_one(
+                    {"id": q_id},
+                    {"$set": {"reply": reply_text, "status": "answered", "replied_at": now_iso}}
+                )
+            if p_id and q_text:
+                from bson import ObjectId
+                cond = {"$or": [{"_id": ObjectId(p_id)} if ObjectId.is_valid(p_id) else {"_id": p_id}, {"id": p_id}]}
+                db.products.update_one(cond, {"$push": {"q_and_a": {"q": q_text, "a": reply_text}}})
+
         return {"success": True, "message": "Reply saved successfully", "data": updated_doc}
     except HTTPException:
         raise

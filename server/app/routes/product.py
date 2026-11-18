@@ -587,3 +587,201 @@ def share_product_email(
     if not ok:
         raise HTTPException(status_code=500, detail="Could not send email (check SMTP settings in .env)")
     return {"success": True, "message": f"Email sent to {payload.email}"}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Product Customer Q&A System with Admin Reply
+# ─────────────────────────────────────────────────────────────────────────────
+
+class ProductQuestionCreate(BaseModel):
+    question: str
+    customer_name: Optional[str] = "Customer"
+    customer_phone: Optional[str] = None
+    customer_email: Optional[str] = None
+
+
+class ProductQuestionReply(BaseModel):
+    reply: str
+
+
+@router.post("/{product_id}/questions")
+def submit_product_question(product_id: str, payload: ProductQuestionCreate):
+    """Customer asks a question on product detail page"""
+    from datetime import datetime, timezone
+    import uuid
+
+    db = get_database()
+    prod = db["products"].find_one(_build_product_query(product_id))
+    if not prod:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    cleaned_q = payload.question.strip()
+    if not cleaned_q:
+        raise HTTPException(status_code=400, detail="Question cannot be empty")
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    q_id = f"Q-{uuid.uuid4().hex[:8].upper()}"
+    canonical_id = str(prod["_id"])
+    prod_name = prod.get("name", "Product")
+    prod_image = prod.get("image", "")
+
+    question_doc = {
+        "id": q_id,
+        "product_id": canonical_id,
+        "product_name": prod_name,
+        "product_image": prod_image,
+        "question": cleaned_q,
+        "customer_name": (payload.customer_name or "Customer").strip(),
+        "customer_phone": (payload.customer_phone or "").strip() or None,
+        "customer_email": (payload.customer_email or "").strip().lower() or None,
+        "reply": None,
+        "status": "pending",
+        "created_at": now_iso,
+        "updated_at": now_iso
+    }
+
+    db["product_questions"].insert_one(question_doc)
+
+    # Also log to customer_inquiries so Admin can manage and reply from the unified Inquiries dashboard
+    inquiry_doc = {
+        "id": f"INQ-{q_id}",
+        "inquiry_type": "product_question",
+        "question_id": q_id,
+        "product_id": canonical_id,
+        "product_name": prod_name,
+        "product_image": prod_image,
+        "name": (payload.customer_name or "Customer").strip(),
+        "phone": (payload.customer_phone or "Not provided").strip(),
+        "email": (payload.customer_email or "").strip().lower() or None,
+        "subject": f"Q&A: {prod_name}",
+        "message": cleaned_q,
+        "status": "New",
+        "created_at": now_iso,
+        "updated_at": now_iso
+    }
+    try:
+        db["customer_inquiries"].insert_one(inquiry_doc)
+        db["admin_notifications"].insert_one({
+            "id": f"NOTIF-{uuid.uuid4().hex[:8].upper()}",
+            "type": "product_question",
+            "title": f"New Customer Question on {prod_name}",
+            "message": f"{payload.customer_name or 'Customer'}: {cleaned_q[:80]}...",
+            "link": f"/admin/inquiries?type=product_question",
+            "is_read": False,
+            "created_at": now_iso
+        })
+    except Exception as e:
+        print(f"Error logging customer_inquiry for question: {e}")
+
+    return {
+        "success": True,
+        "message": "Thank you! Your question has been submitted. Our team will answer shortly.",
+        "question_id": q_id
+    }
+
+
+@router.get("/{product_id}/questions")
+def get_product_questions(product_id: str):
+    """Get all public answered questions for a product (merged with default product Q&A)"""
+    db = get_database()
+    prod = db["products"].find_one(_build_product_query(product_id))
+    if not prod:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    canonical_id = str(prod["_id"])
+    
+    # 1. Answered questions from dynamic product_questions collection
+    db_questions = list(db["product_questions"].find(
+        {"product_id": canonical_id, "status": "answered"},
+        {"_id": 0}
+    ).sort("created_at", -1))
+
+    # Format into unified list
+    results = []
+    seen_q = set()
+    for q_item in db_questions:
+        q_text = q_item.get("question") or q_item.get("q")
+        a_text = q_item.get("reply") or q_item.get("a")
+        if q_text and a_text:
+            results.append({
+                "id": q_item.get("id"),
+                "q": q_text,
+                "a": a_text,
+                "customer_name": q_item.get("customer_name") or "Verified Customer",
+                "replied_at": q_item.get("replied_at"),
+                "is_official": True
+            })
+            seen_q.add(q_text.strip().lower())
+
+    # 2. Merge static Q&A stored on product if not already present
+    prod_qa = prod.get("q_and_a") or []
+    for item in prod_qa:
+        if isinstance(item, dict):
+            q = item.get("q") or item.get("question")
+            a = item.get("a") or item.get("answer") or item.get("reply")
+            if q and a and q.strip().lower() not in seen_q:
+                results.append({
+                    "id": f"static-{len(results)}",
+                    "q": q,
+                    "a": a,
+                    "customer_name": "Verified Customer",
+                    "replied_at": None,
+                    "is_official": True
+                })
+                seen_q.add(q.strip().lower())
+
+    return results
+
+
+@router.post("/{product_id}/questions/{question_id}/reply")
+def reply_product_question(
+    product_id: str,
+    question_id: str,
+    payload: ProductQuestionReply,
+    current_user: dict = Depends(require_admin)
+):
+    """Admin replies to a customer question and publishes answer to live product page"""
+    from datetime import datetime, timezone
+    db = get_database()
+    reply_text = payload.reply.strip()
+    if not reply_text:
+        raise HTTPException(status_code=400, detail="Reply message cannot be empty")
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    q_doc = db["product_questions"].find_one({"id": question_id})
+    if not q_doc:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    # Update question in product_questions
+    db["product_questions"].update_one(
+        {"id": question_id},
+        {"$set": {
+            "reply": reply_text,
+            "status": "answered",
+            "replied_by": current_user.get("email") or "Admin",
+            "replied_at": now_iso,
+            "updated_at": now_iso
+        }}
+    )
+
+    # Sync into product.q_and_a array so it's permanently part of product
+    prod_q = q_doc.get("question")
+    if prod_q:
+        db["products"].update_one(
+            _build_product_query(product_id),
+            {"$push": {"q_and_a": {"q": prod_q, "a": reply_text}}}
+        )
+
+    # Sync inquiry status
+    db["customer_inquiries"].update_one(
+        {"$or": [{"question_id": question_id}, {"id": f"INQ-{question_id}"}]},
+        {"$set": {
+            "reply_message": reply_text,
+            "status": "Solved",
+            "replied_at": now_iso,
+            "updated_at": now_iso
+        }}
+    )
+
+    clear_api_cache()
+    return {"success": True, "message": "Reply published successfully to product page!"}
