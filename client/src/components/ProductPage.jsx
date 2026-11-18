@@ -40,6 +40,8 @@ import {
   Package,
   Scissors,
   Layers,
+  Ruler,
+  Maximize2,
 } from "lucide-react";
 import { useWishlist } from "../context/WishlistProvider";
 import { useCart } from "../context/CartProvider";
@@ -1273,8 +1275,8 @@ const ProductPage = () => {
               </div>
             )}
 
-            {/* Dynamic Price & Coupon Badges (Clean Typography, No Card) */}
-            <div className="py-3 border-y border-gray-100 space-y-3">
+            {/* Dynamic Price & Coupon Badges (Clean Typography, No Heavy Card) */}
+            <div className="py-2.5 border-y border-gray-100 space-y-2">
               <div className="flex items-baseline gap-3 flex-wrap">
                 <span className="text-3xl font-extrabold text-gray-900 font-mono">
                   ₹{(currentPrice || 0).toLocaleString("en-IN")}
@@ -1284,8 +1286,8 @@ const ProductPage = () => {
                     <span className="text-lg text-gray-400 line-through font-mono">
                       MRP ₹{currentMRP.toLocaleString("en-IN")}
                     </span>
-                    <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
-                      SAVE ₹{(currentMRP - currentPrice).toLocaleString("en-IN")}
+                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
+                      SAVE ₹{(currentMRP - currentPrice).toLocaleString("en-IN")} ({discount}% OFF)
                     </span>
                   </>
                 )}
@@ -1311,9 +1313,9 @@ const ProductPage = () => {
                     : null);
                 if (!couponCode) return null;
                 return (
-                  <div className="pt-2 border-t border-gray-200/60 flex items-center justify-between gap-2 text-xs flex-wrap">
-                    <div className="flex items-center gap-1.5 text-amber-900 font-semibold">
-                      <Tag className="w-4 h-4 text-amber-600" />
+                  <div className="pt-1.5 border-t border-gray-100 flex items-center justify-between gap-2 text-xs flex-wrap">
+                    <div className="flex items-center gap-1.5 text-amber-900 font-medium">
+                      <Tag className="w-3.5 h-3.5 text-amber-600" />
                       <span>{couponDesc || <>Use Coupon <strong>{couponCode}</strong> for special discount</>}</span>
                     </div>
                     <button
@@ -1323,7 +1325,7 @@ const ProductPage = () => {
                         setCopiedCoupon(true);
                         setTimeout(() => setCopiedCoupon(false), 2000);
                       }}
-                      className="text-[11px] text-[#8B0000] font-bold underline hover:text-[#6B0000]"
+                      className="text-[11px] text-[#8B0000] font-bold underline hover:text-[#6B0000] cursor-pointer"
                     >
                       {copiedCoupon ? "Copied!" : "Copy Code"}
                     </button>
@@ -1332,9 +1334,44 @@ const ProductPage = () => {
               })()}
             </div>
 
+            {/* ── Main Specializations & Product Story (Top Overview - Clean Text, No Boxes) ── */}
+            <div className="space-y-3 py-1 text-xs sm:text-sm text-gray-700">
+              {/* Quick Key Specializations Row */}
+              <div className="flex items-center gap-x-3.5 gap-y-1 flex-wrap text-xs text-gray-800">
+                {product.fabric && (
+                  <span><span className="text-gray-400 font-normal">Fabric: </span><strong className="font-semibold text-gray-900">{product.fabric}</strong></span>
+                )}
+                {product.pattern && (
+                  <span><span className="text-gray-300">• </span><span className="text-gray-400 font-normal">Pattern: </span><strong className="font-semibold text-gray-900">{product.pattern}</strong></span>
+                )}
+                {product.sleeve_type && (
+                  <span><span className="text-gray-300">• </span><span className="text-gray-400 font-normal">Sleeves: </span><strong className="font-semibold text-gray-900">{product.sleeve_type}</strong></span>
+                )}
+                {product.fit_type && (
+                  <span><span className="text-gray-300">• </span><span className="text-gray-400 font-normal">Fit: </span><strong className="font-semibold text-gray-900">{product.fit_type}</strong></span>
+                )}
+                {product.occasion && (
+                  <span><span className="text-gray-300">• </span><span className="text-gray-400 font-normal">Occasion: </span><strong className="font-semibold text-gray-900">{product.occasion}</strong></span>
+                )}
+              </div>
+
+              {/* Product Description */}
+              <p className="text-xs sm:text-sm text-gray-700 leading-relaxed">
+                {product.description ||
+                  `Elevate your ethnic fashion with the stunning ${product.name} from Nari Pehnawa. Crafted with precision craftsmanship, rich tones, and breathable fabric for all-day elegance.`}
+              </p>
+
+              {/* Stylist Tip if available */}
+              {product.style_tip && (
+                <p className="text-xs text-gray-600 italic border-l-2 border-[#8B0000] pl-2.5">
+                  💡 <span className="font-semibold text-gray-800 not-italic">Stylist Note:</span> {product.style_tip}
+                </p>
+              )}
+            </div>
+
             {/* Color Variants Swatches (When multiple colors are available) */}
             {((product.color_variants && product.color_variants.length > 0) || (product.colors && product.colors.length > 1)) && (
-              <div className="space-y-2.5">
+              <div className="space-y-2.5 pt-1">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
                     <span className="text-[#8B0000]">●</span> Color: <span className="font-extrabold text-[#8B0000] normal-case">{selectedColor || "Select"}</span>
@@ -1402,19 +1439,21 @@ const ProductPage = () => {
               </div>
             )}
 
-            {/* Size Selector with Stock Badges */}
+            {/* Size Selector with Stock Badges & Size Chart Popup Link */}
             {product.sizes?.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-3 pt-1">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-gray-800">
                     Select Size
                   </span>
                   <div className="flex items-center gap-2.5">
                     <button
+                      type="button"
                       onClick={() => setShowSizeChart(true)}
-                      className="flex items-center gap-1 text-xs text-[#8B0000] font-semibold hover:underline cursor-pointer"
+                      className="flex items-center gap-1.5 text-xs text-[#8B0000] font-bold hover:underline cursor-pointer bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200/80 transition hover:bg-rose-100"
                     >
-                      <Pencil className="w-3.5 h-3.5" /> Size Chart
+                      <Ruler className="w-3.5 h-3.5" />
+                      <span>Size Chart</span>
                     </button>
                   </div>
                 </div>
@@ -1468,97 +1507,98 @@ const ProductPage = () => {
             )}
 
             {/* Quantity Selector */}
-            <div className="space-y-2">
+            <div className="space-y-1.5 pt-1">
               <span className="text-xs font-bold uppercase tracking-wider text-gray-800">Quantity</span>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="w-9 h-9 flex items-center justify-center border border-gray-300 rounded-lg text-gray-700 hover:border-[#8B0000] transition-colors"
+                  className="w-9 h-9 flex items-center justify-center border border-gray-300 rounded-lg text-gray-700 hover:border-[#8B0000] transition-colors cursor-pointer"
                 >
                   −
                 </button>
                 <span className="w-8 text-center font-bold text-gray-900">{quantity}</span>
                 <button
                   onClick={() => setQuantity((q) => q + 1)}
-                  className="w-9 h-9 flex items-center justify-center border border-gray-300 rounded-lg text-gray-700 hover:border-[#8B0000] transition-colors"
+                  className="w-9 h-9 flex items-center justify-center border border-gray-300 rounded-lg text-gray-700 hover:border-[#8B0000] transition-colors cursor-pointer"
                 >
                   +
                 </button>
               </div>
             </div>
 
-            {/* Wishlist Button */}
-            <button
-              type="button"
-              onClick={handleWishlistToggle}
-              className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider transition-all shadow-sm cursor-pointer ${
-                isInWishlist(product.id)
-                  ? "bg-rose-700 text-white hover:bg-rose-800"
-                  : "bg-gray-900 text-white hover:bg-black"
-              }`}
-            >
-              <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? "fill-white text-white" : "fill-none"}`} />
-              {isInWishlist(product.id) ? `Wishlisted (${productWishlistCount})` : `Add to Wishlist (${productWishlistCount})`}
-            </button>
-
-            {/* Action Buttons (Positioned directly below Wishlist button) */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-1 w-full">
+            {/* Primary Action Buttons: Add to Cart & Buy Now */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2 w-full">
               <button
                 onClick={() => handleAddToCart(false)}
-                className="flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl border-2 border-[#8B0000] text-[#8B0000] font-bold text-sm uppercase tracking-wider hover:bg-[#8B0000] hover:text-white transition-all shadow-sm active:scale-98"
+                className="flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl border-2 border-[#8B0000] text-[#8B0000] font-bold text-sm uppercase tracking-wider hover:bg-[#8B0000] hover:text-white transition-all shadow-sm active:scale-98 cursor-pointer"
               >
                 <ShoppingCart className="w-4 h-4" /> Add to Cart
               </button>
               <button
                 onClick={handleBuyNow}
-                className="flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl bg-[#8B0000] text-white font-bold text-sm uppercase tracking-wider hover:bg-[#6B0000] transition-all shadow-md active:scale-98"
+                className="flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl bg-[#8B0000] text-white font-bold text-sm uppercase tracking-wider hover:bg-[#6B0000] transition-all shadow-md active:scale-98 cursor-pointer"
               >
                 <Zap className="w-4 h-4" /> Buy Now
               </button>
             </div>
 
-            {/* Dual Product Sharing Actions */}
-            <div className="grid grid-cols-2 gap-2.5 pt-1">
+            {/* Utility Actions: Wishlist & Share Link (Clean Text Buttons, No Heavy Boxes) */}
+            <div className="flex items-center justify-between text-xs text-gray-600 pt-1 border-t border-gray-100 flex-wrap gap-3">
               <button
                 type="button"
-                onClick={() => setShowShareModal(true)}
-                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100/80 border border-amber-200/80 text-amber-950 font-bold text-xs tracking-wide transition-all shadow-2xs active:scale-98 cursor-pointer"
-                title="Share this product"
+                onClick={handleWishlistToggle}
+                className="flex items-center gap-1.5 font-semibold hover:text-[#8B0000] transition-colors cursor-pointer"
               >
-                <Share2 className="w-4 h-4 text-amber-700" />
-                <span>Share Product</span>
+                <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? "fill-[#8B0000] text-[#8B0000]" : "text-gray-400"}`} />
+                <span>{isInWishlist(product.id) ? `In Wishlist (${productWishlistCount})` : `Save to Wishlist (${productWishlistCount})`}</span>
               </button>
 
-              <button
-                type="button"
-                onClick={copyProductLink}
-                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold tracking-wide transition-all shadow-2xs active:scale-98 cursor-pointer ${
-                  copiedLink
-                    ? "bg-emerald-600 border-emerald-600 text-white"
-                    : "bg-gray-50 hover:bg-gray-100/80 border-gray-200 text-gray-800"
-                }`}
-                title="Copy canonical product URL"
-              >
-                {copiedLink ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    <span>Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4 text-gray-600" />
-                    <span>Copy Product Link</span>
-                  </>
-                )}
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowShareModal(true)}
+                  className="flex items-center gap-1 hover:text-[#8B0000] transition-colors cursor-pointer"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>Share</span>
+                </button>
+                <span className="text-gray-300">|</span>
+                <button
+                  type="button"
+                  onClick={copyProductLink}
+                  className="flex items-center gap-1 hover:text-[#8B0000] transition-colors cursor-pointer"
+                >
+                  {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span className={copiedLink ? "text-emerald-600 font-semibold" : ""}>{copiedLink ? "Copied!" : "Copy Link"}</span>
+                </button>
+              </div>
             </div>
 
             {addedMsg && <p className="text-xs text-emerald-600 font-bold">✓ {addedMsg}</p>}
 
-            {/* Pincode Servicability Checker (Clean Text, No Card) */}
-            <div className="pt-3 border-t border-gray-100 space-y-2.5">
+            {/* Clean Trust & Delivery Highlights (Minimalist Editorial, No Heavy Cards) */}
+            <div className="grid grid-cols-3 gap-2 py-3 border-y border-gray-100 text-center text-xs text-gray-600">
+              <div className="flex flex-col items-center gap-1">
+                <Truck className="w-4 h-4 text-[#8B0000]" />
+                <span className="font-semibold text-gray-900">Free Delivery</span>
+                <span className="text-[10px] text-gray-400">Orders above ₹999</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 border-x border-gray-100">
+                <Award className="w-4 h-4 text-[#8B0000]" />
+                <span className="font-semibold text-gray-900">100% Handcrafted</span>
+                <span className="text-[10px] text-gray-400">Authentic Indian Wear</span>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <Clock className="w-4 h-4 text-[#8B0000]" />
+                <span className="font-semibold text-gray-900">{product.return_policy || "Easy Returns"}</span>
+                <span className="text-[10px] text-gray-400">{product.is_returnable === false ? "Final Sale" : "Doorstep Pickup"}</span>
+              </div>
+            </div>
+
+            {/* Pincode Servicability Checker (Clean Text, No Heavy Card) */}
+            <div className="space-y-2">
               <span className="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-[#8B0000]" /> Check Delivery & Servicability
+                <MapPin className="w-4 h-4 text-[#8B0000]" /> Check Delivery in Your City
               </span>
               <form onSubmit={handlePincodeCheck} className="flex gap-2">
                 <input
@@ -1567,19 +1607,19 @@ const ProductPage = () => {
                   placeholder="Enter 6-digit PIN Code"
                   value={pincode}
                   onChange={(e) => setPincode(e.target.value)}
-                  className="flex-1 px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-[#8B0000]"
+                  className="flex-1 px-3 py-2 text-xs border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000]"
                 />
                 <button
                   type="submit"
                   disabled={pincodeStatus === "checking"}
-                  className="px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-black transition-colors"
+                  className="px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded-xl hover:bg-black transition-colors cursor-pointer"
                 >
                   {pincodeStatus === "checking" ? "Checking…" : "Check"}
                 </button>
               </form>
 
               {pincodeStatus === "valid" && (
-                <div className="text-xs text-emerald-700 space-y-0.5 pt-1">
+                <div className="text-xs text-emerald-700 space-y-0.5 pt-0.5">
                   <p className="font-bold flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5" /> Servicable Pincode
                   </p>
@@ -1587,7 +1627,7 @@ const ProductPage = () => {
                 </div>
               )}
               {pincodeStatus === "invalid" && (
-                <p className="text-xs text-red-600 font-semibold pt-1">{pincodeMsg}</p>
+                <p className="text-xs text-red-600 font-semibold pt-0.5">{pincodeMsg}</p>
               )}
             </div>
           </div>
@@ -2079,127 +2119,173 @@ const ProductPage = () => {
 
         </div>
 
-      {/* ── Size Guide Modal (Exact Kurti Size Chart) ── */}
+      {/* ── Size Guide Modal (Product-Specific Custom Image or Custom Notes or Standard Ethnic Guide) ── */}
       {showSizeChart && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setShowSizeChart(false)} />
-          <div className="relative bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 z-10 shadow-2xl max-h-[92vh] overflow-y-auto border border-gray-100">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-xs" onClick={() => setShowSizeChart(false)} />
+          <div className="relative bg-white rounded-3xl max-w-3xl w-full p-5 sm:p-8 z-10 shadow-2xl max-h-[92vh] overflow-y-auto border border-gray-100">
             <button
               onClick={() => setShowSizeChart(false)}
-              className="absolute top-5 right-5 p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="absolute top-4 right-4 sm:top-5 sm:right-5 p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors cursor-pointer"
+              aria-label="Close Size Chart"
             >
-              <X className="w-5 h-5 text-gray-500" />
+              <X className="w-5 h-5 text-gray-700" />
             </button>
 
             {/* Header */}
-            <div className="text-center mb-6">
-              <h3 className="text-2xl sm:text-3xl font-extrabold text-[#8B0000] tracking-wider uppercase">
-                KURTI SIZE CHART
-              </h3>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                All measurements are in inches. Measure yourself before choosing your regular size.
+            <div className="text-center mb-5 sm:mb-6 pr-8">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Ruler className="w-5 h-5 text-[#8B0000]" />
+                <h3 className="text-xl sm:text-2xl font-serif font-bold text-[#8B0000] tracking-wide uppercase">
+                  Size Chart &amp; Fit Guide
+                </h3>
+              </div>
+              <p className="text-xs sm:text-sm text-gray-600 font-medium truncate max-w-md mx-auto">
+                {product.name}
               </p>
             </div>
 
-            {/* Main Content Grid: Table + Kurti Diagram */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-              {/* Size Table */}
-              <div className="md:col-span-8 overflow-x-auto">
-                <table className="w-full text-center border-collapse border-2 border-gray-800 rounded-xl overflow-hidden text-xs sm:text-sm font-semibold">
-                  <thead>
-                    <tr className="bg-gray-50 text-[#8B0000] border-b-2 border-gray-800 uppercase tracking-tight">
-                      <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold">SIZE</th>
-                      <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">BUST<br/>SIZE</th>
-                      <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">KURTA<br/>WAIST</th>
-                      <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">KURTA<br/>HIP</th>
-                      <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">SHOULDER<br/>SIZE</th>
-                      <th className="py-3 px-2 font-extrabold leading-tight">KURTA<br/>LENGTH</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y-2 divide-gray-800 text-gray-900 font-bold">
-                    {[
-                      { size: "S", bust: "36", waist: "34", hip: "39", shoulder: "14", length: "44" },
-                      { size: "M", bust: "38", waist: "36", hip: "41", shoulder: "14.5", length: "44" },
-                      { size: "L", bust: "40", waist: "38", hip: "43", shoulder: "15", length: "44" },
-                      { size: "XL", bust: "42", waist: "40", hip: "45", shoulder: "15.5", length: "44" },
-                      { size: "2XL", bust: "44", waist: "42", hip: "47", shoulder: "16", length: "44" },
-                    ].map((row, i) => (
-                      <tr key={row.size} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
-                        <td className="py-3 px-2 border-r-2 border-gray-800 font-extrabold text-[#8B0000] text-sm">
-                          {row.size}
-                        </td>
-                        <td className="py-3 px-2 border-r-2 border-gray-800">{row.bust}</td>
-                        <td className="py-3 px-2 border-r-2 border-gray-800">{row.waist}</td>
-                        <td className="py-3 px-2 border-r-2 border-gray-800">{row.hip}</td>
-                        <td className="py-3 px-2 border-r-2 border-gray-800">{row.shoulder}</td>
-                        <td className="py-3 px-2">{row.length}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Kurti Diagram Illustration */}
-              <div className="md:col-span-4 flex flex-col items-center justify-center p-3">
-                <svg
-                  viewBox="0 0 200 320"
-                  className="w-full max-w-[160px] h-auto"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  {/* Kurti Body Outline */}
-                  <path
-                    d="M75 25 C85 45 115 45 125 25 L155 42 L185 135 L165 140 L150 78 L148 100 Q145 150 148 290 L52 290 Q55 150 52 100 L50 78 L35 140 L15 135 L45 42 Z"
-                    fill="#ffffff"
-                    stroke="#1e293b"
-                    strokeWidth="2.5"
-                    strokeLinejoin="round"
+            {/* CASE 1: Custom Size Chart Image Uploaded for this Product */}
+            {product.size_chart_image ? (
+              <div className="space-y-4">
+                <div className="relative rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center p-2 sm:p-4 shadow-xs">
+                  <img
+                    src={resolveImageUrl(product.size_chart_image, product.size_chart_image)}
+                    alt={`${product.name} Size Chart`}
+                    className="w-full max-h-[65vh] object-contain rounded-xl select-none"
                   />
-                  {/* Neckline */}
-                  <path
-                    d="M75 25 C85 50 115 50 125 25"
-                    stroke="#1e293b"
-                    strokeWidth="2.5"
-                    fill="none"
-                  />
-                  {/* Bust arrow */}
-                  <line x1="50" y1="88" x2="150" y2="88" stroke="#1e293b" strokeWidth="2" />
-                  <path d="M57 83 L50 88 L57 93 M143 83 L150 88 L143 93" stroke="#1e293b" strokeWidth="2" fill="none" />
-                  <text x="100" y="80" textAnchor="middle" fill="#1e293b" fontSize="12" fontWeight="bold">Bust</text>
+                </div>
 
-                  {/* Waist arrow */}
-                  <line x1="53" y1="145" x2="147" y2="145" stroke="#1e293b" strokeWidth="2" />
-                  <path d="M60 140 L53 145 L60 150 M140 140 L147 145 L140 150" stroke="#1e293b" strokeWidth="2" fill="none" />
-                  <text x="100" y="137" textAnchor="middle" fill="#1e293b" fontSize="12" fontWeight="bold">Waist</text>
+                <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
+                  <a
+                    href={resolveImageUrl(product.size_chart_image, product.size_chart_image)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[#8B0000] font-bold hover:underline"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" /> Open Full Resolution in New Tab
+                  </a>
+                  <span className="text-gray-500 text-[11px]">
+                    Tap or pinch image to zoom in
+                  </span>
+                </div>
 
-                  {/* Hip arrow */}
-                  <line x1="52" y1="195" x2="148" y2="195" stroke="#1e293b" strokeWidth="2" />
-                  <path d="M59 190 L52 195 L59 200 M141 190 L148 195 L141 200" stroke="#1e293b" strokeWidth="2" fill="none" />
-                  <text x="100" y="187" textAnchor="middle" fill="#1e293b" fontSize="12" fontWeight="bold">Hip</text>
-                </svg>
-                <span className="text-[11px] font-bold text-[#8B0000] mt-2 text-center">
-                  Measurement Guide
-                </span>
+                {/* Optional notes below image */}
+                {product.size_chart_text && (
+                  <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/60 text-xs text-amber-950 space-y-1">
+                    <span className="font-bold block uppercase tracking-wider text-[10px] text-amber-900">
+                      Fit &amp; Sizing Notes:
+                    </span>
+                    <p className="whitespace-pre-wrap leading-relaxed">{product.size_chart_text}</p>
+                  </div>
+                )}
               </div>
-            </div>
+            ) : (
+              /* CASE 2: Custom Text / Standard Table Fallback */
+              <div className="space-y-6">
+                {product.size_chart_text && (
+                  <div className="p-4 rounded-xl bg-rose-50/60 border border-rose-200 text-xs text-gray-900 space-y-1">
+                    <span className="font-bold block uppercase tracking-wider text-[10px] text-[#8B0000]">
+                      Custom Sizing &amp; Measurements for this Style:
+                    </span>
+                    <p className="whitespace-pre-wrap leading-relaxed font-mono">{product.size_chart_text}</p>
+                  </div>
+                )}
 
-            {/* How to Measure Guidelines */}
-            <div className="mt-6 pt-4 border-t border-gray-100">
-              <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-2">
-                How to Measure Your Body:
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-600">
-                <div>
-                  <strong className="text-gray-900">1. Bust:</strong> Measure around the fullest part of your chest with tape horizontal.
+                {/* Main Content Grid: Table + Kurti Diagram */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                  {/* Size Table */}
+                  <div className="md:col-span-8 overflow-x-auto">
+                    <table className="w-full text-center border-collapse border-2 border-gray-800 rounded-xl overflow-hidden text-xs sm:text-sm font-semibold">
+                      <thead>
+                        <tr className="bg-gray-50 text-[#8B0000] border-b-2 border-gray-800 uppercase tracking-tight">
+                          <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold">SIZE</th>
+                          <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">BUST<br/>SIZE</th>
+                          <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">KURTA<br/>WAIST</th>
+                          <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">KURTA<br/>HIP</th>
+                          <th className="py-3 px-2 border-r-2 border-gray-800 font-extrabold leading-tight">SHOULDER<br/>SIZE</th>
+                          <th className="py-3 px-2 font-extrabold leading-tight">KURTA<br/>LENGTH</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y-2 divide-gray-800 text-gray-900 font-bold">
+                        {[
+                          { size: "S", bust: "36", waist: "34", hip: "39", shoulder: "14", length: "44" },
+                          { size: "M", bust: "38", waist: "36", hip: "41", shoulder: "14.5", length: "44" },
+                          { size: "L", bust: "40", waist: "38", hip: "43", shoulder: "15", length: "44" },
+                          { size: "XL", bust: "42", waist: "40", hip: "45", shoulder: "15.5", length: "44" },
+                          { size: "2XL", bust: "44", waist: "42", hip: "47", shoulder: "16", length: "44" },
+                        ].map((row, i) => (
+                          <tr key={row.size} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
+                            <td className="py-3 px-2 border-r-2 border-gray-800 font-extrabold text-[#8B0000] text-sm">
+                              {row.size}
+                            </td>
+                            <td className="py-3 px-2 border-r-2 border-gray-800">{row.bust}</td>
+                            <td className="py-3 px-2 border-r-2 border-gray-800">{row.waist}</td>
+                            <td className="py-3 px-2 border-r-2 border-gray-800">{row.hip}</td>
+                            <td className="py-3 px-2 border-r-2 border-gray-800">{row.shoulder}</td>
+                            <td className="py-3 px-2">{row.length}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Kurti Diagram Illustration */}
+                  <div className="md:col-span-4 flex flex-col items-center justify-center p-3">
+                    <svg
+                      viewBox="0 0 200 320"
+                      className="w-full max-w-[160px] h-auto"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M75 25 C85 45 115 45 125 25 L155 42 L185 135 L165 140 L150 78 L148 100 Q145 150 148 290 L52 290 Q55 150 52 100 L50 78 L35 140 L15 135 L45 42 Z"
+                        fill="#ffffff"
+                        stroke="#1e293b"
+                        strokeWidth="2.5"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M75 25 C85 50 115 50 125 25"
+                        stroke="#1e293b"
+                        strokeWidth="2.5"
+                        fill="none"
+                      />
+                      <line x1="50" y1="88" x2="150" y2="88" stroke="#1e293b" strokeWidth="2" />
+                      <path d="M57 83 L50 88 L57 93 M143 83 L150 88 L143 93" stroke="#1e293b" strokeWidth="2" fill="none" />
+                      <text x="100" y="80" textAnchor="middle" fill="#1e293b" fontSize="12" fontWeight="bold">Bust</text>
+                      <line x1="53" y1="145" x2="147" y2="145" stroke="#1e293b" strokeWidth="2" />
+                      <path d="M60 140 L53 145 L60 150 M140 140 L147 145 L140 150" stroke="#1e293b" strokeWidth="2" fill="none" />
+                      <text x="100" y="137" textAnchor="middle" fill="#1e293b" fontSize="12" fontWeight="bold">Waist</text>
+                      <line x1="52" y1="195" x2="148" y2="195" stroke="#1e293b" strokeWidth="2" />
+                      <path d="M59 190 L52 195 L59 200 M141 190 L148 195 L141 200" stroke="#1e293b" strokeWidth="2" fill="none" />
+                      <text x="100" y="187" textAnchor="middle" fill="#1e293b" fontSize="12" fontWeight="bold">Hip</text>
+                    </svg>
+                    <span className="text-[11px] font-bold text-[#8B0000] mt-2 text-center">
+                      Measurement Guide
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <strong className="text-gray-900">2. Waist:</strong> Measure around your natural waistline, just above the navel.
-                </div>
-                <div>
-                  <strong className="text-gray-900">3. Hip:</strong> Measure around the fullest part of your hips/seat.
+
+                {/* How to Measure Guidelines */}
+                <div className="mt-4 pt-3 border-t border-gray-100">
+                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-2">
+                    How to Measure:
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-600">
+                    <div>
+                      <strong className="text-gray-900">1. Bust:</strong> Measure around the fullest part of chest.
+                    </div>
+                    <div>
+                      <strong className="text-gray-900">2. Waist:</strong> Measure around natural waistline.
+                    </div>
+                    <div>
+                      <strong className="text-gray-900">3. Hip:</strong> Measure around the fullest part of hips.
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}

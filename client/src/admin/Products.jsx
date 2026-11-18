@@ -40,6 +40,8 @@ import {
     Folder,
     Palette,
     ChevronDown,
+    Ruler,
+    Maximize2,
 } from "lucide-react";
 import shippingApi from "../services/shippingApi";
 
@@ -256,12 +258,16 @@ const Products = () => {
         is_customizable: true,
         customization_type: "Top & Bottom",
         customization_scope: "both",
-        tailoring_price: 0
+        tailoring_price: 0,
+        size_chart_image: "",
+        size_chart_text: "",
+        size_chart_data: null
     };
 
     const [formData, setFormData] = useState(emptyForm);
     const [subCatDropdownOpen, setSubCatDropdownOpen] = useState(false);
     const subCatDropdownRef = useRef(null);
+    const [uploadingSizeChart, setUploadingSizeChart] = useState(false);
 
     // Color variant builder state
     const [newColorInputName, setNewColorInputName] = useState("");
@@ -896,6 +902,9 @@ const Products = () => {
                 tailoring_price: formData.tailoring_price !== undefined && formData.tailoring_price !== null && formData.tailoring_price !== "" ? parseInt(formData.tailoring_price) : 0,
                 delivery_charge: formData.delivery_charge !== "" ? parseFloat(formData.delivery_charge) : 0.0,
                 pickup_location: formData.pickup_location || null,
+                size_chart_image: formData.size_chart_image || null,
+                size_chart_text: formData.size_chart_text || null,
+                size_chart_data: formData.size_chart_data || null,
                 warehouse_stock: { "All": totalStock },
                 warehouse_size_stock: { "Default": cleanSizeStock }
             };
@@ -1010,6 +1019,37 @@ const Products = () => {
                 images: reordered
             };
         });
+    };
+
+    const handleSizeChartUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploadingSizeChart(true);
+        try {
+            const token = getAuthToken();
+            const fd = new FormData();
+            fd.append("file", file);
+            const res = await fetch(`${API_BASE_URL}/upload/image`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` },
+                body: fd,
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const url = data.url.startsWith("http") ? data.url : `${API_BASE_URL}${data.url}`;
+                setFormData(prev => ({
+                    ...prev,
+                    size_chart_image: url
+                }));
+            } else {
+                throw new Error("Failed to upload size chart image");
+            }
+        } catch (err) {
+            alert(`Size chart upload error: ${err.message}`);
+        } finally {
+            setUploadingSizeChart(false);
+            if (e.target) e.target.value = "";
+        }
     };
 
     const handleRemoveImage = (indexToRemove) => {
@@ -1333,7 +1373,10 @@ const Products = () => {
             is_customizable: product.is_customizable !== false,
             customization_type: product.customization_type || (product.customization_scope === "top_only" ? "Top" : product.customization_scope === "bottom_only" ? "Bottom" : "Top & Bottom"),
             customization_scope: product.customization_scope || (product.customization_type === "Top" ? "top_only" : product.customization_type === "Bottom" ? "bottom_only" : "both"),
-            tailoring_price: product.tailoring_price ?? 0
+            tailoring_price: product.tailoring_price ?? 0,
+            size_chart_image: product.size_chart_image || "",
+            size_chart_text: product.size_chart_text || "",
+            size_chart_data: product.size_chart_data || null
         });
         setShowEditModal(true);
     };
@@ -3565,6 +3608,111 @@ const Products = () => {
                                                 </div>
                                             </div>
                                         )}
+
+                                        {/* ── Product Specific Size Chart (Image & Custom Notes) ── */}
+                                        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3 pt-3">
+                                            <div className="flex items-center justify-between flex-wrap gap-2 border-b border-slate-100 pb-2.5">
+                                                <div className="flex items-center gap-2">
+                                                    <Ruler className="w-4 h-4 text-[#0891b2]" />
+                                                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                                                        Product Size Chart / Size Guide
+                                                    </span>
+                                                    <span className="text-[10px] bg-cyan-100 text-cyan-800 font-bold px-2 py-0.5 rounded-full">
+                                                        Custom Per Product
+                                                    </span>
+                                                </div>
+                                                <span className="text-[11px] text-slate-500 font-medium">
+                                                    Upload custom size chart image or enter measurement notes
+                                                </span>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-start">
+                                                {/* Left: Size Chart Image Upload (Primary option requested by user) */}
+                                                <div className="md:col-span-7 space-y-2">
+                                                    <label className="block text-[11px] font-bold text-slate-700">
+                                                        Size Chart Image <span className="text-cyan-600 font-normal">(Shown in popup when customer clicks "Size Chart")</span>
+                                                    </label>
+
+                                                    {formData.size_chart_image ? (
+                                                        <div className="flex items-center gap-3 p-3 bg-cyan-50/50 rounded-xl border border-cyan-200">
+                                                            <img
+                                                                src={formData.size_chart_image}
+                                                                alt="Size Chart"
+                                                                className="w-16 h-16 object-contain rounded-lg border border-slate-300 bg-white p-1 shrink-0"
+                                                            />
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-xs font-bold text-slate-900 truncate">Size Chart Image Active</p>
+                                                                <a
+                                                                    href={formData.size_chart_image}
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                    className="text-[11px] text-[#0891b2] font-bold underline hover:text-cyan-800 flex items-center gap-1 mt-0.5"
+                                                                >
+                                                                    <Maximize2 className="w-3 h-3" /> Preview Full Image
+                                                                </a>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                <label className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold cursor-pointer transition shadow-2xs">
+                                                                    <span>Replace</span>
+                                                                    <input
+                                                                        type="file"
+                                                                        accept="image/*"
+                                                                        onChange={handleSizeChartUpload}
+                                                                        className="hidden"
+                                                                        disabled={uploadingSizeChart}
+                                                                    />
+                                                                </label>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setFormData(prev => ({ ...prev, size_chart_image: "" }))}
+                                                                    className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 rounded-xl text-xs font-bold cursor-pointer transition shadow-2xs"
+                                                                    title="Remove size chart image"
+                                                                >
+                                                                    Remove
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <label className="border-2 border-dashed border-slate-300 hover:border-cyan-400 bg-slate-50/70 hover:bg-cyan-50/20 rounded-xl p-4 text-center cursor-pointer transition flex flex-col sm:flex-row items-center justify-center gap-3 group">
+                                                            {uploadingSizeChart ? (
+                                                                <Loader2 className="w-5 h-5 text-[#0891b2] animate-spin shrink-0" />
+                                                            ) : (
+                                                                <Upload className="w-5 h-5 text-[#0891b2] group-hover:scale-110 transition-transform shrink-0" />
+                                                            )}
+                                                            <div className="text-center sm:text-left">
+                                                                <span className="text-xs font-bold text-slate-800 block">
+                                                                    {uploadingSizeChart ? "Uploading Size Chart..." : "Click to Upload Size Chart Image (PNG, JPG, WebP)"}
+                                                                </span>
+                                                                <span className="text-[10px] text-slate-500">
+                                                                    Upload brand size chart, vendor chart graphic, or tailored measurement sheet
+                                                                </span>
+                                                            </div>
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                onChange={handleSizeChartUpload}
+                                                                className="hidden"
+                                                                disabled={uploadingSizeChart}
+                                                            />
+                                                        </label>
+                                                    )}
+                                                </div>
+
+                                                {/* Right: Custom Text / Measurement Notes */}
+                                                <div className="md:col-span-5 space-y-2">
+                                                    <label className="block text-[11px] font-bold text-slate-700">
+                                                        Measurement Notes / Text Guide <span className="text-slate-400 font-normal">(Optional)</span>
+                                                    </label>
+                                                    <textarea
+                                                        rows={3}
+                                                        value={formData.size_chart_text || ""}
+                                                        onChange={(e) => setFormData({ ...formData, size_chart_text: e.target.value })}
+                                                        placeholder="e.g. S: Bust 36, Waist 34 | M: Bust 38, Waist 36&#10;Fit tip: Model is 5'7 wearing size S."
+                                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:bg-white transition"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 );
                             })()}

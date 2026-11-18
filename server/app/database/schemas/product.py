@@ -63,6 +63,9 @@ class ProductBase(BaseModel):
     is_customizable: Optional[bool] = True
     customization_type: Optional[str] = "Top & Bottom"  # "Top", "Bottom", "Top & Bottom"
     customization_scope: Optional[str] = "both"  # "both", "top_only", "bottom_only"
+    size_chart_image: Optional[str] = None
+    size_chart_text: Optional[str] = None
+    size_chart_data: Optional[Any] = None
 
 
 class ProductCreate(ProductBase):
@@ -127,6 +130,9 @@ class ProductUpdate(BaseModel):
     is_customizable: Optional[bool] = None
     customization_type: Optional[str] = None
     customization_scope: Optional[str] = None
+    size_chart_image: Optional[str] = None
+    size_chart_text: Optional[str] = None
+    size_chart_data: Optional[Any] = None
 
 
 class Product(ProductBase):
