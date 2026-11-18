@@ -1654,9 +1654,9 @@ const ProductPage = () => {
           </div>
         </div>
 
-        {/* ═══════ PRODUCT DETAILS & SPECIFICATIONS (CENTERED, STACKED EDITORIAL) ═══════ */}
+        {/* ═══════ PRODUCT DETAILS & SPECIFICATIONS (CENTERED HEADING, FULL-WIDTH CONTENT) ═══════ */}
         <div className="mt-12 pt-8 border-t border-gray-200 w-full space-y-8">
-          <div className="text-center max-w-2xl mx-auto border-b border-gray-200 pb-4">
+          <div className="text-center w-full border-b border-gray-200 pb-4">
             <h2 className="text-xl sm:text-2xl font-serif font-bold tracking-tight text-gray-900 flex items-center justify-center gap-2">
               <span className="text-[#8B0000]">✦</span> Product Overview &amp; Specifications
             </h2>
@@ -1665,25 +1665,25 @@ const ProductPage = () => {
             </p>
           </div>
 
-          <div className="max-w-4xl mx-auto space-y-8">
-            {/* 1. About The Product (Description, Highlights & Stylist's Note) */}
-            <div className="space-y-4">
+          <div className="w-full space-y-8">
+            {/* 1. About The Product (Description, Highlights & Stylist's Note - Full Width) */}
+            <div className="w-full space-y-4 text-left">
               <h3 className="text-xs font-bold uppercase tracking-widest text-gray-900 flex items-center gap-2 border-b border-gray-100 pb-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#8B0000]"></span>
                 About The Product
               </h3>
-              <p className="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-wrap font-normal">
+              <p className="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-wrap font-normal w-full text-left">
                 {product.description ||
                   `Elevate your ethnic fashion quotient with the stunning ${product.name} from Nari Pehnawa. Crafted with precision craftsmanship and rich color tones, this piece combines Indian elegance with day-long comfort.`}
               </p>
 
-              {/* Key Highlights (Admin Added Highlights - 100% visible, clean bullets) */}
+              {/* Key Highlights (Admin Added Highlights - 100% visible, clean bullets, full width) */}
               {product.highlights && product.highlights.length > 0 && (
-                <div className="space-y-2.5 pt-2">
+                <div className="space-y-2.5 pt-2 w-full text-left">
                   <h4 className="text-xs font-bold uppercase tracking-widest text-gray-800">
                     Key Highlights
                   </h4>
-                  <ul className="text-xs sm:text-sm text-gray-800 space-y-2 leading-relaxed">
+                  <ul className="text-xs sm:text-sm text-gray-800 space-y-2 leading-relaxed w-full">
                     {product.highlights.map((hl, idx) => (
                       <li key={idx} className="flex items-start gap-2.5">
                         <span className="text-[#8B0000] font-bold text-sm leading-none mt-0.5">•</span>
@@ -1694,9 +1694,9 @@ const ProductPage = () => {
                 </div>
               )}
 
-              {/* Stylist's Note / Tip */}
+              {/* Stylist's Note / Tip (Full Width Accent) */}
               {product.style_tip && (
-                <div className="pt-2 border-l-2 border-[#8B0000] pl-4 space-y-1 bg-amber-50/40 p-3 rounded-r-xl">
+                <div className="pt-2 border-l-2 border-[#8B0000] pl-4 space-y-1 bg-amber-50/40 p-3 rounded-r-xl w-full text-left">
                   <h4 className="text-xs font-bold text-gray-900 uppercase tracking-widest flex items-center gap-1.5">
                     💡 Stylist’s Note
                   </h4>
@@ -1707,64 +1707,64 @@ const ProductPage = () => {
               )}
             </div>
 
-            {/* 2. Complete Specifications Matrix (Directly Below About The Product) */}
-            <div className="space-y-4 pt-6 border-t border-gray-200">
+            {/* 2. Complete Specifications Matrix (Directly Below About The Product - Full Width Grid) */}
+            <div className="space-y-4 pt-6 border-t border-gray-200 w-full text-left">
               <h3 className="text-xs font-bold uppercase tracking-widest text-gray-900 flex items-center gap-2 border-b border-gray-100 pb-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#8B0000]"></span>
                 Specification Matrix
               </h3>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-1 text-xs sm:text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-1 text-xs sm:text-sm w-full">
                 {product.fabric && (
                   <div className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
-                    <span className="text-gray-500 font-medium w-36 shrink-0">Fabric</span>
+                    <span className="text-gray-500 font-medium w-40 shrink-0">Fabric</span>
                     <span className="font-semibold text-gray-900 text-right">{product.fabric}</span>
                   </div>
                 )}
                 {product.pattern && (
                   <div className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
-                    <span className="text-gray-500 font-medium w-36 shrink-0">Pattern / Work</span>
+                    <span className="text-gray-500 font-medium w-40 shrink-0">Pattern / Work</span>
                     <span className="font-semibold text-gray-900 text-right">{product.pattern}</span>
                   </div>
                 )}
                 {product.sleeve_type && (
                   <div className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
-                    <span className="text-gray-500 font-medium w-36 shrink-0">Sleeve Style</span>
+                    <span className="text-gray-500 font-medium w-40 shrink-0">Sleeve Style</span>
                     <span className="font-semibold text-gray-900 text-right">{product.sleeve_type}</span>
                   </div>
                 )}
                 {product.fit_type && (
                   <div className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
-                    <span className="text-gray-500 font-medium w-36 shrink-0">Fit Type</span>
+                    <span className="text-gray-500 font-medium w-40 shrink-0">Fit Type</span>
                     <span className="font-semibold text-gray-900 text-right">{product.fit_type}</span>
                   </div>
                 )}
                 {product.occasion && (
                   <div className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
-                    <span className="text-gray-500 font-medium w-36 shrink-0">Occasion</span>
+                    <span className="text-gray-500 font-medium w-40 shrink-0">Occasion</span>
                     <span className="font-semibold text-gray-900 text-right">{product.occasion}</span>
                   </div>
                 )}
                 {product.country_of_origin && (
                   <div className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
-                    <span className="text-gray-500 font-medium w-36 shrink-0">Country of Origin</span>
+                    <span className="text-gray-500 font-medium w-40 shrink-0">Country of Origin</span>
                     <span className="font-semibold text-gray-900 text-right">{product.country_of_origin}</span>
                   </div>
                 )}
                 {product.hsn_code && (
                   <div className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
-                    <span className="text-gray-500 font-medium w-36 shrink-0">HSN Code</span>
+                    <span className="text-gray-500 font-medium w-40 shrink-0">HSN Code</span>
                     <span className="font-semibold text-gray-900 text-right">{product.hsn_code}</span>
                   </div>
                 )}
                 {product.wash_care && (
                   <div className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
-                    <span className="text-gray-500 font-medium w-36 shrink-0">Wash &amp; Care</span>
+                    <span className="text-gray-500 font-medium w-40 shrink-0">Wash &amp; Care</span>
                     <span className="font-semibold text-gray-900 text-right">{product.wash_care}</span>
                   </div>
                 )}
                 <div className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
-                  <span className="text-gray-500 font-medium w-36 shrink-0">Return &amp; Exchange</span>
+                  <span className="text-gray-500 font-medium w-40 shrink-0">Return &amp; Exchange</span>
                   <span className="font-semibold text-gray-900 text-right">
                     {product.is_returnable === false
                       ? (product.return_policy || "Non-Returnable (Final Sale)")
@@ -1773,7 +1773,7 @@ const ProductPage = () => {
                 </div>
                 {Array.isArray(product.specifications) && product.specifications.map((spec, idx) => (
                   <div key={idx} className="py-2.5 flex justify-between gap-4 border-b border-gray-100">
-                    <span className="text-gray-500 font-medium w-36 shrink-0">{spec.name || spec.key || spec.title}</span>
+                    <span className="text-gray-500 font-medium w-40 shrink-0">{spec.name || spec.key || spec.title}</span>
                     <span className="font-semibold text-gray-900 text-right">{spec.value}</span>
                   </div>
                 ))}
