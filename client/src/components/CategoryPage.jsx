@@ -626,54 +626,20 @@ const CategoryPage = ({ categoryName: propCategoryName }) => {
               </p>
             )}
 
-            {/* Dynamic Deal Showcase & Filter Pills in Hero Section */}
-            {slug === "sale" && dealOffers.length > 0 && (
-              <div className="mt-4 flex flex-col items-center gap-2 w-full max-w-2xl mx-auto">
-                <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-amber-300">
-                  <Sparkles className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  <span>Live Mega Promotions ({dealOffers.reduce((acc, d) => acc + d.count, 0)} Active Items)</span>
-                </div>
-                <div className="flex items-center justify-center gap-2 flex-wrap px-2">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedDealType("all")}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all shadow-md cursor-pointer ${
-                      selectedDealType === "all"
-                        ? "bg-amber-400 text-slate-950 scale-105 ring-2 ring-white"
-                        : "bg-black/60 backdrop-blur-md text-white hover:bg-black/80 border border-white/20"
-                    }`}
-                  >
-                    All Deals ({products.length})
-                  </button>
-                  {dealOffers.map((deal) => (
-                    <button
-                      key={deal.dealText}
-                      type="button"
-                      onClick={() => setSelectedDealType(deal.dealText)}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all shadow-md flex items-center gap-1.5 cursor-pointer ${
-                        selectedDealType === deal.dealText
-                          ? "bg-amber-400 text-slate-950 scale-105 ring-2 ring-white"
-                          : "bg-black/60 backdrop-blur-md text-white hover:bg-black/80 border border-amber-300/40"
-                      }`}
-                    >
-                      <Zap className="w-3 h-3 text-amber-400 fill-amber-400" />
-                      <span>{deal.dealText}</span>
-                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-                        selectedDealType === deal.dealText ? "bg-slate-950 text-amber-400" : "bg-amber-500/40 text-amber-200"
-                      }`}>
-                        {deal.count}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* CTA button */}
-            <div className="mt-4 flex gap-3">
-              <span className="inline-block bg-white text-[#8B0000] text-xs font-bold px-6 py-2 rounded-full shadow-lg tracking-wide hover:bg-amber-50 transition-all cursor-pointer">
-                {slug === "sale" ? "Shop All Sale Deals ↓" : "Explore Collection"}
-              </span>
+            <div className="mt-5 flex justify-center">
+              <button
+                type="button"
+                onClick={() => {
+                  if (filterBarRef.current) {
+                    filterBarRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                }}
+                className="inline-flex items-center gap-2 bg-white hover:bg-amber-50 text-[#8B0000] text-xs sm:text-sm font-extrabold px-7 py-2.5 rounded-full shadow-xl tracking-wide transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                <span>Explore Now</span>
+                <ChevronDown className="w-4 h-4 text-[#8B0000]" />
+              </button>
             </div>
           </div>
         </div>
