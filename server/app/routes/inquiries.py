@@ -24,6 +24,17 @@ class InquiryCreate(BaseModel):
     reseller_type: Optional[str] = None
     custom_type: Optional[str] = None  # "top_only", "bottom_only", "complete_set"
     
+    # ── Seller / Vendor Inquiry Details ──
+    business_name: Optional[str] = None
+    shop_name: Optional[str] = None
+    category: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    seller_type: Optional[str] = None
+    gst_status: Optional[str] = None
+    gstin: Optional[str] = None
+    monthly_capacity: Optional[str] = None
+    
     # ── Top Measurements (Inches) ──
     shoulder: Optional[str] = None
     bust: Optional[str] = None
@@ -161,6 +172,17 @@ async def submit_inquiry(payload: InquiryCreate):
             "reseller_type": payload.reseller_type or "",
             "custom_type": payload.custom_type or "",
 
+            # ── Seller / Vendor Inquiry Profile ──
+            "business_name": (payload.business_name or payload.shop_name or "").strip(),
+            "shop_name": (payload.shop_name or payload.business_name or "").strip(),
+            "category": (payload.category or "").strip(),
+            "city": (payload.city or payload.shipping_city or "").strip(),
+            "state": (payload.state or payload.shipping_state or "").strip(),
+            "seller_type": (payload.seller_type or payload.reseller_type or "").strip(),
+            "gst_status": (payload.gst_status or payload.gstin or "").strip(),
+            "gstin": (payload.gstin or payload.gst_status or "").strip(),
+            "monthly_capacity": (payload.monthly_capacity or "").strip(),
+
             # ── Top Measurements (Inches) ──
             "shoulder": payload.shoulder or "",
             "bust": payload.bust or payload.bust_size or "",
@@ -235,11 +257,12 @@ async def submit_inquiry(payload: InquiryCreate):
 
         # Generate an admin notification for the new inquiry
         try:
+            is_seller_inq = inq_type in ["seller", "reseller"]
             db.admin_notifications.insert_one({
-                "type": "customization_inquiry" if inq_type == "customization" else "customer_inquiry",
+                "type": "seller_inquiry" if is_seller_inq else ("customization_inquiry" if inq_type == "customization" else "customer_inquiry"),
                 "inquiry_id": generated_id,
-                "title": f"New Customization Request: {payload.name.strip()}",
-                "message": f"{payload.name.strip()} requested custom outfit for {payload.product_name or 'Product'} (ID: {generated_id})",
+                "title": f"New Seller Partner Inquiry: {payload.business_name or payload.name.strip()}" if is_seller_inq else f"New Customization Request: {payload.name.strip()}",
+                "message": f"{payload.name.strip()} ({payload.business_name or 'Seller'}) submitted seller inquiry. Phone: {payload.phone.strip()}" if is_seller_inq else f"{payload.name.strip()} requested custom outfit for {payload.product_name or 'Product'} (ID: {generated_id})",
                 "customer_name": payload.name.strip(),
                 "customer_phone": payload.phone.strip(),
                 "product_name": payload.product_name or "",
@@ -252,9 +275,11 @@ async def submit_inquiry(payload: InquiryCreate):
         if "_id" in inquiry_doc:
             del inquiry_doc["_id"]
 
+        success_msg = "Your seller partner inquiry has been submitted! Our onboarding team will contact you shortly." if inq_type in ["seller", "reseller"] else ("Your customization request has been submitted successfully!" if inq_type == "customization" else "Your inquiry has been submitted successfully!")
+
         return {
             "success": True,
-            "message": "Your customization request has been submitted successfully!",
+            "message": success_msg,
             "inquiry_id": generated_id,
             "data": inquiry_doc
         }

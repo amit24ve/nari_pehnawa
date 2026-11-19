@@ -812,25 +812,41 @@ const Inquiries = () => {
               </div>
 
               {/* Seller / Vendor Profile (if seller inquiry) */}
-              {(selectedInquiry.inquiry_type === "seller" || selectedInquiry.inquiry_type === "reseller" || selectedInquiry.shop_name || selectedInquiry.brand || selectedInquiry.gstin) && (
-                <div className="bg-purple-50/70 p-4 rounded-xl border border-purple-200 space-y-2">
+              {(selectedInquiry.inquiry_type === "seller" || selectedInquiry.inquiry_type === "reseller" || selectedInquiry.shop_name || selectedInquiry.business_name || selectedInquiry.brand || selectedInquiry.gstin) && (
+                <div className="bg-purple-50/70 p-4 rounded-xl border border-purple-200 space-y-2.5">
                   <span className="text-xs font-extrabold uppercase tracking-wide text-purple-900 block flex items-center gap-1.5">
                     <Briefcase className="w-3.5 h-3.5 text-purple-700" />
-                    <span>Seller Profile Details</span>
+                    <span>Seller Partner Inquiry Details</span>
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
                     <div>
-                      <span className="text-slate-500 block text-[10px] uppercase font-bold">Shop / Brand Name</span>
-                      <strong className="text-slate-900">{selectedInquiry.shop_name || selectedInquiry.brand || selectedInquiry.company || "N/A"}</strong>
+                      <span className="text-slate-500 block text-[10px] uppercase font-bold">Brand / Business Name</span>
+                      <strong className="text-slate-900">{selectedInquiry.business_name || selectedInquiry.shop_name || selectedInquiry.brand || selectedInquiry.company || "N/A"}</strong>
                     </div>
                     <div>
-                      <span className="text-slate-500 block text-[10px] uppercase font-bold">GSTIN / Tax ID</span>
-                      <strong className="text-slate-900 font-mono">{selectedInquiry.gstin || selectedInquiry.tax_id || "Not Provided"}</strong>
+                      <span className="text-slate-500 block text-[10px] uppercase font-bold">Business / Seller Type</span>
+                      <strong className="text-slate-900">{selectedInquiry.seller_type || selectedInquiry.reseller_type || "Merchant / Partner"}</strong>
                     </div>
                     <div>
-                      <span className="text-slate-500 block text-[10px] uppercase font-bold">Business Category</span>
-                      <strong className="text-slate-900">{selectedInquiry.category || selectedInquiry.product_types || "Apparel & Ethnic Wear"}</strong>
+                      <span className="text-slate-500 block text-[10px] uppercase font-bold">Primary Category</span>
+                      <strong className="text-slate-900">{selectedInquiry.category || selectedInquiry.product_types || "Ethnic Fashion & Kurtis"}</strong>
                     </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px] uppercase font-bold">Location (City, State)</span>
+                      <strong className="text-slate-900">
+                        {[selectedInquiry.city, selectedInquiry.state].filter(Boolean).join(", ") || selectedInquiry.delivery_address || "N/A"}
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px] uppercase font-bold">GSTIN Status</span>
+                      <strong className="text-slate-900 font-mono">{selectedInquiry.gstin || selectedInquiry.gst_status || "Not Provided"}</strong>
+                    </div>
+                    {selectedInquiry.monthly_capacity && (
+                      <div>
+                        <span className="text-slate-500 block text-[10px] uppercase font-bold">Monthly Supply Capacity</span>
+                        <strong className="text-slate-900">{selectedInquiry.monthly_capacity}</strong>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

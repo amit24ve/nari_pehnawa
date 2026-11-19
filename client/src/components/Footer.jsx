@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Mail, MapPin, ShieldCheck, Award, Headset, RefreshCw, Truck, MessageSquare, X, CheckCircle, Loader2, Sparkles, Briefcase, Phone, Users, Store } from "lucide-react";
+import { Mail, MapPin, ShieldCheck, Award, Headset, RefreshCw, Truck, MessageSquare, X, CheckCircle, Loader2, Sparkles, Briefcase, Phone, Users, Store, FileText } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
@@ -78,6 +78,23 @@ const Footer = () => {
     inquiry_type: "general"
   });
 
+  // Seller Partner Inquiry Modal States
+  const [showSellerInquiryModal, setShowSellerInquiryModal] = useState(false);
+  const [sellerSubmitting, setSellerSubmitting] = useState(false);
+  const [sellerSubmitted, setSellerSubmitted] = useState(false);
+  const [sellerForm, setSellerForm] = useState({
+    business_name: "",
+    contact_name: "",
+    phone: "",
+    email: "",
+    city: "",
+    category: "Kurtis & Suits",
+    seller_type: "Manufacturer",
+    gst_status: "Yes",
+    monthly_capacity: "200 – 500 Pieces",
+    message: ""
+  });
+
   useEffect(() => {
     fetch(`${API_BASE_URL}/categories/?is_active=true`)
       .then((r) => (r.ok ? r.json() : []))
@@ -99,10 +116,9 @@ const Footer = () => {
         name: formData.name.trim(),
         phone: formData.phone.trim(),
         email: formData.email && formData.email.trim() ? formData.email.trim() : null,
-        subject: inquiryMode === "reseller" ? `Become a Reseller: ${formData.reseller_type || "General"}` : (formData.subject || "General Inquiry"),
-        inquiry_type: inquiryMode,
-        reseller_type: inquiryMode === "reseller" ? formData.reseller_type : "",
-        message: formData.message.trim() || (inquiryMode === "reseller" ? `Interested in becoming a reseller (${formData.reseller_type})` : "General Inquiry")
+        subject: formData.subject || "General Customer Inquiry",
+        inquiry_type: formData.inquiry_type || "general",
+        message: formData.message.trim() || "General Customer Inquiry"
       };
 
       const res = await fetch(`${API_BASE_URL}/inquiries/`, {
@@ -120,10 +136,9 @@ const Footer = () => {
             name: "",
             phone: "",
             email: "",
-            subject: "Become a Reseller",
-            reseller_type: "Home Reseller / Boutique",
+            subject: "General Query",
             message: "",
-            inquiry_type: "reseller"
+            inquiry_type: "general"
           });
         }, 2500);
       } else {
@@ -134,6 +149,63 @@ const Footer = () => {
       alert("Network error. Please try again.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSellerInquirySubmit = async (e) => {
+    e.preventDefault();
+    if (!sellerForm.contact_name.trim() || !sellerForm.phone.trim()) return;
+
+    setSellerSubmitting(true);
+    try {
+      const payload = {
+        name: sellerForm.contact_name.trim(),
+        phone: sellerForm.phone.trim(),
+        email: sellerForm.email?.trim() || null,
+        business_name: sellerForm.business_name.trim(),
+        shop_name: sellerForm.business_name.trim(),
+        category: sellerForm.category,
+        city: sellerForm.city.trim(),
+        seller_type: sellerForm.seller_type,
+        gst_status: sellerForm.gst_status,
+        monthly_capacity: sellerForm.monthly_capacity,
+        subject: `Seller Partner Inquiry: ${sellerForm.business_name.trim() || sellerForm.contact_name.trim()}`,
+        inquiry_type: "seller",
+        message: sellerForm.message.trim() || `Seller inquiry submitted by ${sellerForm.contact_name} for ${sellerForm.business_name || 'Ethnic Business'} (${sellerForm.category}, ${sellerForm.seller_type}) in ${sellerForm.city}.`
+      };
+
+      const res = await fetch(`${API_BASE_URL}/inquiries/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSellerSubmitted(true);
+        setTimeout(() => {
+          setSellerSubmitted(false);
+          setShowSellerInquiryModal(false);
+          setSellerForm({
+            business_name: "",
+            contact_name: "",
+            phone: "",
+            email: "",
+            city: "",
+            category: "Kurtis & Suits",
+            seller_type: "Manufacturer",
+            gst_status: "Yes",
+            monthly_capacity: "200 – 500 Pieces",
+            message: ""
+          });
+        }, 2800);
+      } else {
+        alert(data.detail || "Failed to submit seller inquiry");
+      }
+    } catch (err) {
+      console.error("Seller inquiry error:", err);
+      alert("Network error. Please try again.");
+    } finally {
+      setSellerSubmitting(false);
     }
   };
 
@@ -169,7 +241,6 @@ const Footer = () => {
       ══════════════════════════════════════════════════════════════ */}
       <div className="relative z-10 max-w-[1280px] mx-auto px-4 md:px-10 pt-12 pb-10">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 sm:gap-8 lg:gap-8">
-
           {/* ── Brand Column 1 (Spans 2 columns on mobile) ── */}
           <div className="col-span-2 sm:col-span-1 space-y-4 lg:pr-2">
             <div>
@@ -333,18 +404,16 @@ const Footer = () => {
                 </div>
               </div>
 
-              {/* Seller Registration Trigger Button */}
+              {/* Seller Partner Inquiry Trigger Button */}
               <div className="pt-3">
                 <button
                   type="button"
-                  onClick={() => window.dispatchEvent(new CustomEvent("np_open_seller_register"))}
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-[#8B0000] via-[#9e1616] to-[#5c0000] hover:from-[#a52a2a] hover:to-[#8B0000] text-white text-xs font-black rounded-xl shadow-lg shadow-[#8B0000]/25 transition-all duration-300 flex items-center justify-center gap-2 border-2 border-[#d4af37]/70 uppercase tracking-wider group hover:scale-[1.02] cursor-pointer"
+                  onClick={() => setShowSellerInquiryModal(true)}
+                  className="w-full py-2.5 px-4 bg-[#8B0000] hover:bg-[#700000] text-white text-xs font-bold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 border border-[#8B0000] tracking-wide cursor-pointer"
+                  title="Submit your seller requirements to partner with Nari Pehnawa"
                 >
-                  <Store className="w-4 h-4 text-[#d4af37] group-hover:rotate-12 transition-transform" />
-                  <span>Sell on Nari Pehnawa</span>
-                  <span className="text-[9px] bg-[#d4af37] text-[#3a0808] font-black px-1.5 py-0.5 rounded ml-1">
-                    Seller Hub
-                  </span>
+                  <FileText className="w-4 h-4 text-[#d4af37]" />
+                  <span>Seller Partner Inquiry</span>
                 </button>
               </div>
             </div>
@@ -464,23 +533,15 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Highlighted "Sell With Us" Badge */}
+          {/* Direct Seller Registration Button */}
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("np_open_seller_register"))}
-            className="group relative flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#8B0000] via-[#A01111] to-[#6A0000] hover:from-[#A51515] hover:to-[#8B0000] text-white select-none shadow-lg shadow-[#8B0000]/30 border-2 border-[#d4af37] transition-all duration-300 hover:scale-105 cursor-pointer ring-2 ring-[#d4af37]/40"
-            title="Partner with Nari Pehnawa - Register as a Verified Seller"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#8B0000] hover:bg-[#700000] text-white text-xs font-bold shadow-sm hover:shadow transition-all border border-[#8B0000] cursor-pointer tracking-wide"
+            title="Register directly as a verified seller on Nari Pehnawa"
           >
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#d4af37] opacity-80"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#d4af37]"></span>
-            </span>
-            <span className="text-[10.5px] sm:text-xs font-black tracking-wider text-white uppercase flex items-center gap-1.5 drop-shadow-sm whitespace-nowrap">
-              🏪 Sell With Us
-            </span>
-            <span className="text-[9px] bg-[#d4af37] text-[#3a0808] font-black px-2 py-0.5 rounded-full uppercase tracking-tight shadow-xs whitespace-nowrap">
-              Seller Hub
-            </span>
+            <Store className="w-4 h-4 text-[#d4af37]" />
+            <span>Register as Seller</span>
           </button>
 
         </div>
@@ -605,6 +666,237 @@ const Footer = () => {
                     <span>Submit Inquiry</span>
                   )}
                 </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          5. SELLER PARTNER INQUIRY FORM MODAL
+      ══════════════════════════════════════════════════════════════ */}
+      {showSellerInquiryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-5 sm:p-7 relative border border-gray-200 max-h-[92vh] overflow-y-auto">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowSellerInquiryModal(false)}
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-800 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Modal Header */}
+            <div className="text-center mb-5 sm:mb-6 pr-6">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#8B0000]/10 text-[#8B0000] mb-2 border border-[#8B0000]/20 shadow-xs">
+                <Store className="w-6 h-6 text-[#8B0000]" />
+              </div>
+              <h3 className="text-xl sm:text-2xl font-serif font-bold text-[#8B0000] tracking-tight">
+                Seller Partner Inquiry
+              </h3>
+              <p className="text-xs text-gray-600 mt-1 max-w-md mx-auto leading-relaxed">
+                Want to sell ethnic wear on Nari Pehnawa? Submit your business profile &amp; supply requirements. Our merchant onboarding team will connect with you.
+              </p>
+            </div>
+
+            {sellerSubmitted ? (
+              <div className="py-8 text-center space-y-3">
+                <CheckCircle className="w-14 h-14 text-emerald-600 mx-auto animate-bounce" />
+                <h4 className="text-lg font-bold text-gray-900">
+                  Seller Inquiry Submitted!
+                </h4>
+                <p className="text-xs text-gray-600 max-w-sm mx-auto leading-relaxed">
+                  Thank you! Our seller onboarding specialist will review your requirements and reach out via Phone / WhatsApp within 24 hours to guide you through catalog listing.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleSellerInquirySubmit} className="space-y-3.5">
+                {/* Row 1: Brand / Business Name & Contact Person */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Brand / Business Name <span className="text-[#8B0000]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={sellerForm.business_name}
+                      onChange={(e) => setSellerForm({ ...sellerForm, business_name: e.target.value })}
+                      placeholder="e.g. Radhika Ethnic Creation"
+                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Contact Person Name <span className="text-[#8B0000]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={sellerForm.contact_name}
+                      onChange={(e) => setSellerForm({ ...sellerForm, contact_name: e.target.value })}
+                      placeholder="e.g. Ramesh Sharma"
+                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-medium"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 2: Mobile/WhatsApp & Email */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Mobile / WhatsApp Number <span className="text-[#8B0000]">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={sellerForm.phone}
+                      onChange={(e) => setSellerForm({ ...sellerForm, phone: e.target.value })}
+                      placeholder="10-digit mobile number"
+                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Email Address (Optional)
+                    </label>
+                    <input
+                      type="email"
+                      value={sellerForm.email}
+                      onChange={(e) => setSellerForm({ ...sellerForm, email: e.target.value })}
+                      placeholder="business@example.com"
+                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-medium"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 3: City/State & Primary Product Category */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      City &amp; State <span className="text-[#8B0000]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={sellerForm.city}
+                      onChange={(e) => setSellerForm({ ...sellerForm, city: e.target.value })}
+                      placeholder="e.g. Jaipur, Rajasthan / Surat"
+                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Primary Product Category <span className="text-[#8B0000]">*</span>
+                    </label>
+                    <select
+                      value={sellerForm.category}
+                      onChange={(e) => setSellerForm({ ...sellerForm, category: e.target.value })}
+                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-semibold cursor-pointer"
+                    >
+                      <option value="Kurtis & Suits">Kurtis &amp; Suit Sets</option>
+                      <option value="Sarees & Lehengas">Sarees &amp; Party Lehengas</option>
+                      <option value="Ethnic Bottomwear">Ethnic Bottomwear &amp; Pants</option>
+                      <option value="Handloom & Fabrics">Handloom &amp; Pure Silk Fabrics</option>
+                      <option value="Jewellery & Accessories">Jewellery &amp; Accessories</option>
+                      <option value="Footwear">Juttis &amp; Ethnic Footwear</option>
+                      <option value="Other Ethnic Wear">Other Ethnic Collections</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Row 4: Business Type & GSTIN Status */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Business Type <span className="text-[#8B0000]">*</span>
+                    </label>
+                    <select
+                      value={sellerForm.seller_type}
+                      onChange={(e) => setSellerForm({ ...sellerForm, seller_type: e.target.value })}
+                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-semibold cursor-pointer"
+                    >
+                      <option value="Manufacturer">Manufacturer / Factory</option>
+                      <option value="Wholesaler">Wholesaler / Trader</option>
+                      <option value="Boutique Owner">Boutique Owner / Retailer</option>
+                      <option value="Handloom Weaver / Artisan">Handloom Artisan / Weaver</option>
+                      <option value="Fashion Designer">Independent Fashion Designer</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Do you have GSTIN?
+                    </label>
+                    <select
+                      value={sellerForm.gst_status}
+                      onChange={(e) => setSellerForm({ ...sellerForm, gst_status: e.target.value })}
+                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-semibold cursor-pointer"
+                    >
+                      <option value="Yes">Yes, Registered with GSTIN</option>
+                      <option value="Applied">Applied for GSTIN</option>
+                      <option value="No">No / Not Yet</option>
+                      <option value="Composition">Composition Scheme</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Supply Capacity */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Monthly Supply / Production Capacity
+                  </label>
+                  <select
+                    value={sellerForm.monthly_capacity}
+                    onChange={(e) => setSellerForm({ ...sellerForm, monthly_capacity: e.target.value })}
+                    className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-semibold cursor-pointer"
+                  >
+                    <option value="50 – 200 Pieces">50 – 200 Pieces / Month</option>
+                    <option value="200 – 500 Pieces">200 – 500 Pieces / Month</option>
+                    <option value="500 – 2000 Pieces">500 – 2,000 Pieces / Month</option>
+                    <option value="2000+ Bulk Production">2,000+ Bulk Production / Month</option>
+                  </select>
+                </div>
+
+                {/* Requirements & Questions */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Your Requirements / Inquiry Details <span className="text-[#8B0000]">*</span>
+                  </label>
+                  <textarea
+                    required
+                    rows="3"
+                    value={sellerForm.message}
+                    onChange={(e) => setSellerForm({ ...sellerForm, message: e.target.value })}
+                    placeholder="Tell us about your products, commission queries, shipping pickup requirements, or catalog questions..."
+                    className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:border-[#8B0000] focus:bg-white font-medium leading-relaxed"
+                  ></textarea>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="pt-2 flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowSellerInquiryModal(false)}
+                    className="px-4 py-2.5 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={sellerSubmitting}
+                    className="px-6 py-2.5 bg-[#8B0000] hover:bg-[#700000] text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60"
+                  >
+                    {sellerSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <span>Submitting Inquiry...</span>
+                      </>
+                    ) : (
+                      <span>Submit Seller Inquiry</span>
+                    )}
+                  </button>
+                </div>
               </form>
             )}
           </div>
