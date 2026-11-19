@@ -533,11 +533,11 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Direct Seller Registration Button */}
+          {/* Direct Seller Registration Button (Offset left to prevent overlap with floating chat widget) */}
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("np_open_seller_register"))}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#8B0000] hover:bg-[#700000] text-white text-xs font-bold shadow-sm hover:shadow transition-all border border-[#8B0000] cursor-pointer tracking-wide"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#8B0000] hover:bg-[#700000] text-white text-xs font-bold shadow-sm hover:shadow transition-all border border-[#8B0000] cursor-pointer tracking-wide whitespace-nowrap mr-14 sm:mr-18 lg:mr-24"
             title="Register directly as a verified seller on Nari Pehnawa"
           >
             <Store className="w-4 h-4 text-[#d4af37]" />
