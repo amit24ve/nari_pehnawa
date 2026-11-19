@@ -218,17 +218,38 @@ def get_products(
 
         if on_sale is not None:
             if on_sale:
-                sale_cond = [
-                    {"on_sale": True},
-                    {"mega_sale_price": {"$gt": 0}},
-                    {"deal_text": {"$nin": [None, ""]}}
-                ]
-                if "$or" in query:
-                    query["$and"] = [{"$or": query.pop("$or")}, {"$or": sale_cond}]
+                sale_cond = {
+                    "on_sale": True,
+                    "offer_type": {"$nin": ["none", None]},
+                    "$or": [
+                        {"deal_text": {"$nin": [None, ""]}},
+                        {"offer_type": {"$in": ["megasale", "flash_sale"]}},
+                        {"mega_sale_price": {"$gt": 0}}
+                    ]
+                }
+                if "$and" in query:
+                    query["$and"].append(sale_cond)
+                elif "$or" in query:
+                    existing_or = query.pop("$or")
+                    query["$and"] = [{"$or": existing_or}, sale_cond]
                 else:
-                    query["$or"] = sale_cond
+                    query.update(sale_cond)
             else:
-                query["on_sale"] = False
+                not_sale_cond = {
+                    "$or": [
+                        {"on_sale": False},
+                        {"on_sale": None},
+                        {"on_sale": {"$exists": False}},
+                        {"offer_type": "none"}
+                    ]
+                }
+                if "$and" in query:
+                    query["$and"].append(not_sale_cond)
+                elif "$or" in query:
+                    existing_or = query.pop("$or")
+                    query["$and"] = [{"$or": existing_or}, not_sale_cond]
+                else:
+                    query["$or"] = not_sale_cond["$or"]
         if is_new is not None:
             if is_new:
                 query["$or"] = [{"is_new": True}, {"is_new": {"$exists": False}}]
@@ -325,17 +346,38 @@ def get_product_count(
             query["category"] = {"$regex": category, "$options": "i"}
         if on_sale is not None:
             if on_sale:
-                sale_cond = [
-                    {"on_sale": True},
-                    {"mega_sale_price": {"$gt": 0}},
-                    {"deal_text": {"$nin": [None, ""]}}
-                ]
-                if "$or" in query:
-                    query["$and"] = [{"$or": query.pop("$or")}, {"$or": sale_cond}]
+                sale_cond = {
+                    "on_sale": True,
+                    "offer_type": {"$nin": ["none", None]},
+                    "$or": [
+                        {"deal_text": {"$nin": [None, ""]}},
+                        {"offer_type": {"$in": ["megasale", "flash_sale"]}},
+                        {"mega_sale_price": {"$gt": 0}}
+                    ]
+                }
+                if "$and" in query:
+                    query["$and"].append(sale_cond)
+                elif "$or" in query:
+                    existing_or = query.pop("$or")
+                    query["$and"] = [{"$or": existing_or}, sale_cond]
                 else:
-                    query["$or"] = sale_cond
+                    query.update(sale_cond)
             else:
-                query["on_sale"] = False
+                not_sale_cond = {
+                    "$or": [
+                        {"on_sale": False},
+                        {"on_sale": None},
+                        {"on_sale": {"$exists": False}},
+                        {"offer_type": "none"}
+                    ]
+                }
+                if "$and" in query:
+                    query["$and"].append(not_sale_cond)
+                elif "$or" in query:
+                    existing_or = query.pop("$or")
+                    query["$and"] = [{"$or": existing_or}, not_sale_cond]
+                else:
+                    query["$or"] = not_sale_cond["$or"]
         if is_new is not None:
             query["is_new"] = is_new
         if min_price is not None or max_price is not None:

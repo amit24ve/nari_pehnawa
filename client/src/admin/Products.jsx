@@ -246,11 +246,12 @@ const Products = () => {
         wash_care: "Hand Wash or Gentle Machine Wash in Cold Water",
         offer_type: "none",
         sale_title: "Mega Festive Sale",
-        deal_type: "buy5get1",
-        deal_text: "BUY 5 GET 1 FREE",
-        buy_qty: 5,
+        deal_type: "bogo",
+        deal_text: "BUY 1 GET 1 FREE (BOGO)",
+        buy_qty: 1,
         get_free_qty: 1,
         on_sale: false,
+        mega_sale_price: "",
         offer_code: "",
         offer_text: "",
         highlights: "",
@@ -867,7 +868,7 @@ const Products = () => {
                 images: orderedImages,
                 color_variants: colorVariants,
                 brand: formData.brand || "Nari Pehnawa",
-                on_sale: formData.offer_type === "flash_sale" || Boolean(formData.on_sale) || (formData.discount ? parseInt(formData.discount) > 0 : false),
+                on_sale: (formData.offer_type === "megasale" || formData.offer_type === "flash_sale") && formData.offer_type !== "none",
                 is_new: true,
                 in_stock: totalStock > 0,
                 sizes: parsedSizes.length > 0 ? parsedSizes : ["Free Size"],
@@ -884,14 +885,15 @@ const Products = () => {
                 is_returnable: formData.is_returnable !== false,
                 return_policy: formData.return_policy || "Easy 3-Day Returns",
                 return_days: Number(formData.return_days) || 3,
-                offer_type: formData.offer_type || "none",
-                sale_title: formData.offer_type === "flash_sale" ? (formData.sale_title || "Mega Festive Sale") : null,
-                deal_type: formData.offer_type === "flash_sale" ? (formData.deal_type || "buy5get1") : null,
-                deal_text: formData.offer_type === "flash_sale" ? (formData.deal_text || "BUY 5 GET 1 FREE") : null,
-                buy_qty: formData.offer_type === "flash_sale" ? (parseInt(formData.buy_qty) || 5) : null,
-                get_free_qty: formData.offer_type === "flash_sale" ? (parseInt(formData.get_free_qty) || 1) : null,
-                offer_code: formData.offer_type === "coupon" || formData.offer_code ? formData.offer_code : null,
-                offer_text: formData.offer_type === "coupon" || formData.offer_text ? formData.offer_text : null,
+                offer_type: (formData.offer_type === "megasale" || formData.offer_type === "flash_sale") ? "megasale" : (formData.offer_type === "coupon" ? "coupon" : "none"),
+                sale_title: (formData.offer_type === "megasale" || formData.offer_type === "flash_sale") ? (formData.sale_title || "Mega Festive Sale") : null,
+                deal_type: (formData.offer_type === "megasale" || formData.offer_type === "flash_sale") ? (formData.deal_type || "bogo") : null,
+                deal_text: (formData.offer_type === "megasale" || formData.offer_type === "flash_sale") ? (formData.deal_text || "BUY 1 GET 1 FREE (BOGO)") : null,
+                buy_qty: (formData.offer_type === "megasale" || formData.offer_type === "flash_sale") ? (parseInt(formData.buy_qty) || 1) : null,
+                get_free_qty: (formData.offer_type === "megasale" || formData.offer_type === "flash_sale") ? (parseInt(formData.get_free_qty) || 1) : null,
+                mega_sale_price: (formData.offer_type === "megasale" || formData.offer_type === "flash_sale") && formData.mega_sale_price ? parseFloat(formData.mega_sale_price) : null,
+                offer_code: formData.offer_type === "coupon" && formData.offer_code ? formData.offer_code : null,
+                offer_text: formData.offer_type === "coupon" && formData.offer_text ? formData.offer_text : null,
                 highlights: formData.highlights
                     ? formData.highlights.split("\n").map(h => h.trim()).filter(Boolean)
                     : [],
@@ -1359,13 +1361,16 @@ const Products = () => {
             country_of_origin: product.country_of_origin || "India",
             hsn_code: product.hsn_code || "",
             wash_care: product.wash_care || "Hand Wash or Gentle Machine Wash in Cold Water",
-            offer_type: product.offer_type || (product.offer_code ? "coupon" : (product.deal_type ? "megasale" : "none")),
+            offer_type: ((product.offer_type === "megasale" || product.offer_type === "flash_sale" || Boolean(product.deal_text)) && product.offer_type !== "none")
+                ? "megasale"
+                : (product.offer_code ? "coupon" : "none"),
             sale_title: product.sale_title || "Mega Festive Sale",
-            deal_type: product.deal_type || (product.buy_qty ? (product.buy_qty === 5 ? "buy5get1" : "custom") : "buy5get1"),
+            deal_type: product.deal_type || (product.deal_text ? "custom" : "bogo"),
             deal_text: product.deal_text || "",
-            buy_qty: product.buy_qty || 5,
+            buy_qty: product.buy_qty || 1,
             get_free_qty: product.get_free_qty || 1,
-            on_sale: product.on_sale || false,
+            on_sale: ((product.offer_type === "megasale" || product.offer_type === "flash_sale" || Boolean(product.deal_text)) && product.offer_type !== "none") || false,
+            mega_sale_price: product.mega_sale_price || "",
             offer_code: product.offer_code || "",
             offer_text: product.offer_text || "",
             highlights: Array.isArray(product.highlights) ? product.highlights.join("\n") : (product.highlights || ""),
@@ -2100,18 +2105,20 @@ const Products = () => {
                                                         ₹{Number(p.original_price).toLocaleString()}
                                                     </div>
                                                 )}
-                                                {p.on_sale && (p.mega_sale_price || p.deal_text) && (
+                                                {p.on_sale && (p.mega_sale_price || p.deal_text) ? (
                                                     <div className="mt-1 flex flex-col gap-0.5 font-sans">
-                                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold">
-                                                            <Zap className="w-2.5 h-2.5 text-amber-600 fill-amber-600" />
-                                                            Mega: ₹{Number(p.mega_sale_price || p.price).toLocaleString()}
+                                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gradient-to-r from-amber-500 to-rose-500 text-white text-[10px] font-extrabold shadow-2xs w-fit">
+                                                            <Zap className="w-2.5 h-2.5 fill-white text-white" />
+                                                            Mega Sale Live
                                                         </span>
                                                         {p.deal_text && (
-                                                            <span className="text-[9px] text-amber-700 font-semibold truncate max-w-[130px]" title={p.deal_text}>
+                                                            <span className="text-[9px] text-amber-800 font-bold truncate max-w-[140px]" title={p.deal_text}>
                                                                 {p.deal_text}
                                                             </span>
                                                         )}
                                                     </div>
+                                                ) : (
+                                                    <span className="text-[9px] text-slate-400 font-medium block mt-1">Catalog Only</span>
                                                 )}
                                             </td>
 
@@ -4445,10 +4452,10 @@ const Products = () => {
                             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
                                 <div>
                                     <span className="text-slate-900 font-extrabold text-sm uppercase tracking-wide flex items-center gap-1.5">
-                                        Product Offer & Promotion Scheme
+                                        Product Listing Category & Mega Sale Settings
                                     </span>
                                     <p className="text-xs text-slate-500 mt-1">
-                                        Attach a Mega Sale, Flash Sale & Event deal (e.g. Buy 5 Get 1 Free, Buy 5 Get 2 Free, BOGO) or a Special Promo Coupon to this product.
+                                        Select whether this product is a regular catalog item or an active Mega Sale deal. Standard MRP discounts (e.g. 30% off) will stay in regular catalog only and will NOT appear in Mega Sale.
                                     </p>
                                 </div>
 
@@ -4462,6 +4469,8 @@ const Products = () => {
                                             on_sale: false, 
                                             deal_type: "", 
                                             deal_text: "", 
+                                            sale_title: "",
+                                            mega_sale_price: "",
                                             offer_code: "", 
                                             offer_text: "" 
                                         })}
@@ -4471,8 +4480,11 @@ const Products = () => {
                                                 : "bg-white/60 border-slate-200 text-slate-600 hover:bg-white"
                                         }`}
                                     >
-                                        <span className="text-sm">Standard Price</span>
-                                        <span className="text-[11px] font-normal text-slate-500">Regular catalog listing without active promotion</span>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm">Standard Catalog</span>
+                                            <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-semibold">Default</span>
+                                        </div>
+                                        <span className="text-[11px] font-normal text-slate-500">Regular catalog listing with standard MRP discount (Not in Mega Sale)</span>
                                     </button>
 
                                     <button
@@ -4482,19 +4494,22 @@ const Products = () => {
                                             offer_type: "megasale", 
                                             on_sale: true, 
                                             sale_title: formData.sale_title || "Mega Festive Sale",
-                                            deal_type: formData.deal_type || "buy5get1",
-                                            buy_qty: formData.buy_qty || 5,
+                                            deal_type: formData.deal_type || "bogo",
+                                            buy_qty: formData.buy_qty || 1,
                                             get_free_qty: formData.get_free_qty || 1,
-                                            deal_text: formData.deal_text || "BUY 5 GET 1 FREE"
+                                            deal_text: formData.deal_text || "BUY 1 GET 1 FREE (BOGO)"
                                         })}
                                         className={`p-3 rounded-xl border text-left text-xs font-bold transition flex flex-col gap-1 cursor-pointer ${
                                             formData.offer_type === "megasale"
-                                                ? "bg-white border-[#0891b2] text-slate-900 ring-2 ring-[#0891b2]/20 shadow-xs"
+                                                ? "bg-amber-50/70 border-amber-500 text-amber-950 ring-2 ring-amber-400/30 shadow-xs"
                                                 : "bg-white/60 border-slate-200 text-slate-600 hover:bg-white"
                                         }`}
                                     >
-                                        <span className="text-sm">Mega / Flash Sale</span>
-                                        <span className="text-[11px] font-normal text-slate-500">BOGO, Buy 5 Get 1 Free, Buy X Get Y Free</span>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm flex items-center gap-1.5">🔥 Live in Mega Sale</span>
+                                            <span className="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-extrabold animate-pulse">Sale Live</span>
+                                        </div>
+                                        <span className="text-[11px] font-normal text-slate-500">Live on /category/sale with BOGO, Buy 2 Get 1, etc.</span>
                                     </button>
 
                                     <button
@@ -4511,9 +4526,54 @@ const Products = () => {
                                     </button>
                                 </div>
 
+                                {/* Standard Catalog Active Notice */}
+                                {(formData.offer_type === "none" || !formData.offer_type) && (
+                                    <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-center gap-2.5 text-xs text-emerald-900">
+                                        <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                                        <div>
+                                            <span className="font-bold">Standard Catalog Listing: </span>
+                                            <span>This product will appear in regular categories ({formData.category || "Selected Category"}) with MRP discount ({formData.discount || 0}% OFF). It will <strong>NOT</strong> appear in Mega Sale.</span>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Mega / Flash Sale Details */}
                                 {formData.offer_type === "megasale" && (
-                                    <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-4">
+                                    <div className="p-4 bg-white border border-amber-300 rounded-xl space-y-4 shadow-2xs">
+                                        {/* Quick Deal Presets */}
+                                        <div>
+                                            <label className="block text-slate-700 font-bold mb-1.5 text-xs uppercase tracking-wide">
+                                                Quick Offer Deal Presets (1-Click Selection)
+                                            </label>
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                                {[
+                                                    { id: "bogo", label: "Buy 1 Get 1 Free", b: 1, g: 1, text: "BUY 1 GET 1 FREE (BOGO)" },
+                                                    { id: "buy2get1", label: "Buy 2 Get 1 Free", b: 2, g: 1, text: "BUY 2 GET 1 FREE" },
+                                                    { id: "buy3get1", label: "Buy 3 Get 1 Free", b: 3, g: 1, text: "BUY 3 GET 1 FREE" },
+                                                    { id: "buy5get1", label: "Buy 5 Get 1 Free", b: 5, g: 1, text: "BUY 5 GET 1 FREE" }
+                                                ].map(preset => (
+                                                    <button
+                                                        key={preset.id}
+                                                        type="button"
+                                                        onClick={() => setFormData({
+                                                            ...formData,
+                                                            deal_type: preset.id,
+                                                            buy_qty: preset.b,
+                                                            get_free_qty: preset.g,
+                                                            deal_text: preset.text
+                                                        })}
+                                                        className={`p-2 rounded-lg border text-xs font-bold text-center transition cursor-pointer ${
+                                                            formData.deal_type === preset.id
+                                                                ? "bg-amber-100 border-amber-500 text-amber-950 ring-1 ring-amber-400"
+                                                                : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                                                        }`}
+                                                    >
+                                                        {preset.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div>
                                                 <label className="block text-slate-700 font-bold mb-1.5 text-xs">Event / Sale Title</label>
@@ -4528,28 +4588,28 @@ const Products = () => {
                                             <div>
                                                 <label className="block text-slate-700 font-bold mb-1.5 text-xs">Deal Format / Structure</label>
                                                 <select
-                                                    value={formData.deal_type || "buy5get1"}
+                                                    value={formData.deal_type || "bogo"}
                                                     onChange={(e) => {
                                                         const val = e.target.value;
-                                                        let b = formData.buy_qty || 5;
+                                                        let b = formData.buy_qty || 1;
                                                         let g = formData.get_free_qty || 1;
                                                         let text = "";
-                                                        if (val === "buy5get1") { b = 5; g = 1; text = "BUY 5 GET 1 FREE"; }
-                                                        else if (val === "buy5get2") { b = 5; g = 2; text = "BUY 5 GET 2 FREE"; }
-                                                        else if (val === "bogo") { b = 1; g = 1; text = "BUY 1 GET 1 FREE (BOGO)"; }
+                                                        if (val === "bogo") { b = 1; g = 1; text = "BUY 1 GET 1 FREE (BOGO)"; }
                                                         else if (val === "buy2get1") { b = 2; g = 1; text = "BUY 2 GET 1 FREE"; }
                                                         else if (val === "buy3get1") { b = 3; g = 1; text = "BUY 3 GET 1 FREE"; }
+                                                        else if (val === "buy5get1") { b = 5; g = 1; text = "BUY 5 GET 1 FREE"; }
+                                                        else if (val === "buy5get2") { b = 5; g = 2; text = "BUY 5 GET 2 FREE"; }
                                                         else if (val === "percent") { text = "FLASH SALE DISCOUNT"; }
                                                         else { text = `BUY ${b} GET ${g} FREE`; }
                                                         setFormData({ ...formData, deal_type: val, buy_qty: b, get_free_qty: g, deal_text: text });
                                                     }}
                                                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs focus:outline-none focus:border-[#0891b2] cursor-pointer"
                                                 >
-                                                    <option value="buy5get1">Buy 5 Get 1 Free</option>
-                                                    <option value="buy5get2">Buy 5 Get 2 Free</option>
                                                     <option value="bogo">Buy 1 Get 1 Free (BOGO)</option>
                                                     <option value="buy2get1">Buy 2 Get 1 Free</option>
                                                     <option value="buy3get1">Buy 3 Get 1 Free</option>
+                                                    <option value="buy5get1">Buy 5 Get 1 Free</option>
+                                                    <option value="buy5get2">Buy 5 Get 2 Free</option>
                                                     <option value="custom">Custom Buy X Get Y Free</option>
                                                     <option value="percent">Percentage Flash Discount</option>
                                                 </select>
@@ -4563,14 +4623,14 @@ const Products = () => {
                                                     <input
                                                         type="number"
                                                         min="1"
-                                                        value={formData.buy_qty ?? 5}
+                                                        value={formData.buy_qty ?? 1}
                                                         onChange={(e) => {
                                                             const val = parseInt(e.target.value) || 1;
                                                             const g = formData.get_free_qty || 1;
-                                                            setFormData({ ...formData, buy_qty: val, deal_text: `BUY ${val} GET ${g} FREE` });
+                                                            setFormData({ ...formData, buy_qty: val, deal_text: val === 1 && g === 1 ? "BUY 1 GET 1 FREE (BOGO)" : `BUY ${val} GET ${g} FREE` });
                                                         }}
                                                         className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs focus:outline-none focus:border-[#0891b2] transition"
-                                                        placeholder="e.g. 5"
+                                                        placeholder="e.g. 1"
                                                     />
                                                 </div>
                                                 <div>
@@ -4582,7 +4642,7 @@ const Products = () => {
                                                         onChange={(e) => {
                                                             const val = parseInt(e.target.value) || 1;
                                                             const b = formData.buy_qty || 1;
-                                                            setFormData({ ...formData, get_free_qty: val, deal_text: `BUY ${b} GET ${val} FREE` });
+                                                            setFormData({ ...formData, get_free_qty: val, deal_text: b === 1 && val === 1 ? "BUY 1 GET 1 FREE (BOGO)" : `BUY ${b} GET ${val} FREE` });
                                                         }}
                                                         className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs focus:outline-none focus:border-[#0891b2] transition"
                                                         placeholder="e.g. 1"
@@ -4591,26 +4651,39 @@ const Products = () => {
                                             </div>
                                         )}
 
-                                        <div>
-                                            <label className="block text-slate-700 font-bold mb-1.5 text-xs">Deal Badge / Banner Text (Shown on Storefront & Cart)</label>
-                                            <input
-                                                type="text"
-                                                value={formData.deal_text || ""}
-                                                onChange={(e) => setFormData({ ...formData, deal_text: e.target.value })}
-                                                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs font-bold focus:outline-none focus:border-[#0891b2] transition"
-                                                placeholder="e.g. BUY 5 GET 1 FREE"
-                                            />
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-slate-700 font-bold mb-1.5 text-xs">Deal Badge / Banner Text (Shown on Storefront & Cart)</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.deal_text || ""}
+                                                    onChange={(e) => setFormData({ ...formData, deal_text: e.target.value })}
+                                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs font-bold focus:outline-none focus:border-[#0891b2] transition"
+                                                    placeholder="e.g. BUY 1 GET 1 FREE (BOGO)"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-slate-700 font-bold mb-1.5 text-xs">Special Mega Sale Deal Price (₹) <span className="font-normal text-slate-500">(Optional)</span></label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={formData.mega_sale_price || ""}
+                                                    onChange={(e) => setFormData({ ...formData, mega_sale_price: e.target.value })}
+                                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs font-mono focus:outline-none focus:border-[#0891b2] transition"
+                                                    placeholder={`Leave blank to use ₹${formData.price || 0}`}
+                                                />
+                                            </div>
                                         </div>
 
-                                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-3 text-xs">
+                                        <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl flex items-center justify-between gap-3 text-xs">
                                             <div className="flex items-center gap-2">
                                                 <Zap className="w-4 h-4 text-amber-600 fill-amber-600 flex-shrink-0" />
                                                 <div>
-                                                    <span className="font-extrabold text-amber-900 block">{formData.sale_title || "Mega Festive Sale"}: {formData.deal_text || "BUY 5 GET 1 FREE"}</span>
-                                                    <span className="text-[11px] text-amber-700">Discounts will be automatically calculated when customers add qualifying items to their cart!</span>
+                                                    <span className="font-extrabold text-amber-900 block">🟢 LIVE IN MEGA SALE: {formData.deal_text || "BUY 1 GET 1 FREE (BOGO)"}</span>
+                                                    <span className="text-[11px] text-amber-700">This product will be LIVE on the Mega Sale page (/category/sale). Normal % OFF is replaced with this promotional deal.</span>
                                                 </div>
                                             </div>
-                                            <span className="px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-900 font-extrabold text-[10px] whitespace-nowrap">Active Deal</span>
+                                            <span className="px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 font-extrabold text-[10px] whitespace-nowrap">Sale Active</span>
                                         </div>
                                     </div>
                                 )}

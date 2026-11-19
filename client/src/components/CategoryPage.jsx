@@ -75,11 +75,13 @@ const CatProductCard = ({ product, onWishlistToggle, isWishlisted, index = 0, is
             : `${pebbleClass} border-[#8B0000]/15`
       } group-hover:rounded-2xl group-active:rounded-2xl shadow-md border-2 group-hover:border-[#8B0000] group-active:border-[#8B0000] transition-all duration-500 ease-in-out`}>
         {/* Deal Badge (BOGO / Buy 2 Get 1 / etc) - ONLY on Sale page */}
-        {isSalePage && product.deal_text ? (
-          <span className="absolute top-2.5 left-2.5 z-20 bg-gradient-to-r from-[#8B0000] via-rose-700 to-amber-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-lg border border-white/30 flex items-center gap-1 animate-pulse">
-            <Sparkles className="w-3 h-3 fill-white text-white" />
-            {product.deal_text}
-          </span>
+        {isSalePage ? (
+          (product.deal_text || product.on_sale) ? (
+            <span className="absolute top-2.5 left-2.5 z-20 bg-gradient-to-r from-[#8B0000] via-rose-700 to-amber-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-lg border border-white/30 flex items-center gap-1 animate-pulse">
+              <Sparkles className="w-3 h-3 fill-white text-white" />
+              {product.deal_text || "MEGA SALE"}
+            </span>
+          ) : null
         ) : discount > 0 ? (
           <span
             className={`absolute top-2.5 left-2.5 z-20 ${discountBg} text-white text-[10px] font-bold px-2 py-0.5 rounded`}
