@@ -1,6 +1,6 @@
 const API_BASE = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
-export const DEFAULT_FALLBACK_IMAGE = "/product_1_sky_bloom.jpg";
+export const DEFAULT_FALLBACK_IMAGE = "/placeholder.png";
 
 export const DEFAULT_HERO_FALLBACK = "/hero_slide_1.png";
 
@@ -29,6 +29,7 @@ export const resolveImageUrl = (img, fallback = DEFAULT_FALLBACK_IMAGE) => {
     trimmed.startsWith("/category_") ||
     trimmed.startsWith("/gob-") ||
     trimmed.startsWith("/logo") ||
+    trimmed.startsWith("/placeholder") ||
     trimmed.startsWith("/assets/")
   ) {
     return trimmed;

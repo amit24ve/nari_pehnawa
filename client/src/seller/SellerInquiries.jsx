@@ -145,15 +145,21 @@ const SellerInquiries = () => {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner with 24-48h SLA */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-6 sm:p-7 rounded-3xl shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30 mb-2">
-            <Clock className="w-3.5 h-3.5" />
-            <span>Guaranteed SLA: Response within 24 to 48 Hours</span>
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#0891b2]">
+              Helpdesk & Support
+            </span>
+            <span className="text-slate-300">•</span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+              <Clock className="w-3.5 h-3.5 text-amber-600" />
+              <span>Guaranteed SLA: Response within 24 to 48 Hours</span>
+            </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold">Seller Support & Inquiry Desk</h1>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Seller Support & Inquiry Desk</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5 max-w-2xl">
             Direct communication with the Nari Pehnawa administration team. Request new categories, order security polybags, or get fast resolution for KYC and store questions.
           </p>
         </div>
@@ -168,7 +174,7 @@ const SellerInquiries = () => {
           </button>
           <button
             onClick={loadInquiries}
-            className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition"
+            className="p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition shadow-xs cursor-pointer"
             title="Refresh Inquiries"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />

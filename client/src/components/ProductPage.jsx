@@ -235,37 +235,87 @@ const ProductPage = () => {
     ? (Number(product?.original_price) || Math.round(currentPrice * 1.5))
     : (Number(product?.original_price) || 0);
 
+  // Selected variant for the currently selected color
+  const activeVariant = useMemo(() => {
+    if (!product?.color_variants || product.color_variants.length === 0) return null;
+    return (
+      product.color_variants.find(
+        (v) => v.color_name?.toLowerCase() === selectedColor?.toLowerCase()
+      ) || product.color_variants[0]
+    );
+  }, [product?.color_variants, selectedColor]);
+
+  // Gallery images strictly belonging to this product / active color variant
+  const images = useMemo(() => {
+    const rawList =
+      activeVariant?.images && activeVariant.images.length > 0
+        ? activeVariant.images
+        : activeVariant?.image
+        ? [activeVariant.image]
+        : Array.isArray(product?.images) && product.images.length > 0
+        ? product.images
+        : [product?.image].filter(Boolean);
+
+    // Resolve images; do not fallback to another product!
+    const resolved = rawList
+      .map((img) => resolveImageUrl(img, null))
+      .filter(Boolean);
+
+    // If empty, try product.image
+    if (resolved.length === 0 && product?.image) {
+      const pImg = resolveImageUrl(product.image, null);
+      if (pImg) resolved.push(pImg);
+    }
+
+    // Ultimate fallback is neutral placeholder, NEVER another product
+    if (resolved.length === 0) {
+      resolved.push(FALLBACK_IMG);
+    }
+    return resolved;
+  }, [activeVariant, product?.images, product?.image]);
+
+  // Reset activeImg to 0 whenever color variant or product ID changes to prevent out-of-bounds index
+  useEffect(() => {
+    setActiveImg(0);
+  }, [selectedColor, product?.id]);
+
+  // Safety guard: Ensure activeImg is always strictly in range [0, images.length - 1]
+  useEffect(() => {
+    if (activeImg >= images.length && images.length > 0) {
+      setActiveImg(0);
+    }
+  }, [images.length, activeImg]);
+
   const handlePrevImg = useCallback((e) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    const count = product?.images?.length > 0 ? product.images.length : (product?.image ? 1 : 1);
-    setActiveImg((prev) => (prev - 1 + count) % count);
-  }, [product?.images, product?.image]);
+    if (images.length <= 1) return;
+    setActiveImg((prev) => (prev - 1 + images.length) % images.length);
+  }, [images.length]);
 
   const handleNextImg = useCallback((e) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    const count = product?.images?.length > 0 ? product.images.length : (product?.image ? 1 : 1);
-    setActiveImg((prev) => (prev + 1) % count);
-  }, [product?.images, product?.image]);
+    if (images.length <= 1) return;
+    setActiveImg((prev) => (prev + 1) % images.length);
+  }, [images.length]);
 
   const didSwipe = useRef(false);
 
   // Auto-slide product images gently every 6.5s (pauses on hover, touch, or when zoomed in)
   useEffect(() => {
-    const count = product?.images?.length || 0;
-    if (count <= 1 || sliderPaused || isZoomed || isHovered) return;
+    if (images.length <= 1 || sliderPaused || isZoomed || isHovered) return;
 
     const interval = setInterval(() => {
-      setActiveImg((prev) => (prev + 1) % count);
+      setActiveImg((prev) => (prev + 1) % images.length);
     }, 6500);
 
     return () => clearInterval(interval);
-  }, [product?.images?.length, sliderPaused, isZoomed, isHovered]);
+  }, [images.length, sliderPaused, isZoomed, isHovered]);
 
   const handleImgMouseMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -975,14 +1025,6 @@ const ProductPage = () => {
     }));
   };
 
-  const activeVariant = (product?.color_variants && product.color_variants.length > 0)
-    ? (product.color_variants.find(v => v.color_name?.toLowerCase() === selectedColor?.toLowerCase()) || product.color_variants[0])
-    : null;
-
-  const rawImages = (activeVariant?.images && activeVariant.images.length > 0)
-    ? activeVariant.images
-    : (activeVariant?.image ? [activeVariant.image] : (product?.images?.length > 0 ? product.images : [product?.image].filter(Boolean)));
-  const images = rawImages.map(img => resolveImageUrl(img, FALLBACK_IMG));
   const activeSizeStock = activeVariant?.size_stock || product?.size_stock || {};
   const catSlug = slugify(product?.category || "");
   const discount = product?.discount || 0;
@@ -1163,11 +1205,11 @@ const ProductPage = () => {
 
               {/* Main Image with In-Place Zoom Magnifier */}
               <img
-                src={images[activeImg] || FALLBACK_IMG}
+                src={images[activeImg] || images[0] || resolveImageUrl(product?.image, FALLBACK_IMG)}
                 alt={product.name}
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = FALLBACK_IMG;
+                  e.target.src = images[0] || resolveImageUrl(product?.image, FALLBACK_IMG);
                 }}
                 className="w-full h-full max-h-[580px] object-cover sm:object-contain will-change-transform pointer-events-none select-none"
                 style={{
@@ -1180,7 +1222,7 @@ const ProductPage = () => {
               {/* Counter Indicator Badge */}
               {images.length > 1 && (
                 <div className="absolute bottom-3.5 left-3.5 z-10 bg-black/60 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1.5 pointer-events-none">
-                  <span>{activeImg + 1}</span>
+                  <span>{Math.min(activeImg + 1, images.length)}</span>
                   <span className="text-white/50">/</span>
                   <span>{images.length}</span>
                 </div>

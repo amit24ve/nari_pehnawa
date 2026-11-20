@@ -146,7 +146,7 @@ const ProductCard = ({
                     alt={product.name}
                     onError={(e) => {
                         e.target.onerror = null;
-                        e.target.src = DEFAULT_FALLBACK_IMAGE;
+                        e.target.src = allImages[0] || resolveImageUrl(product.image, DEFAULT_FALLBACK_IMAGE);
                     }}
                     className={`w-full h-[270px] sm:h-[290px] object-cover transition-all duration-700 group-hover:scale-105 ${
                         isHovered ? "scale-105" : ""
