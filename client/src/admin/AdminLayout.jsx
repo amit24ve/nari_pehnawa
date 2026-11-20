@@ -70,13 +70,10 @@ const AdminLayout = () => {
             logout();
         } catch (e) {
             try {
-                localStorage.removeItem("neel_admin_user");
-                localStorage.removeItem("neel_token");
-                localStorage.removeItem("token");
-                localStorage.removeItem("np_seller_token");
-                localStorage.removeItem("np_seller_user");
+                localStorage.clear();
+                sessionStorage.clear();
             } catch (_) {}
-            window.location.href = "/";
+            window.location.replace("/");
         }
     };
 

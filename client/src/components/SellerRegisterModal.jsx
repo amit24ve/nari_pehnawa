@@ -191,7 +191,7 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
   const handleSendEmailOtp = async () => {
     const cleanEmail = formData.email.trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes("@")) {
-      setError("Please enter a valid business email address before requesting OTP.");
+      setError("Please enter a valid business email address before requesting verification code.");
       return;
     }
     setError("");
@@ -201,9 +201,9 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
       await sellerApi.sendOtp("email", cleanEmail);
       setEmailOtpSent(true);
       setEmailResendTimer(30);
-      setSuccessNotice(`Verification OTP sent to ${cleanEmail} from otp@naripehnawa.com`);
+      setSuccessNotice(`Verification code sent to ${cleanEmail} from support@naripehnawa.com. Please check your Inbox (or Spam folder).`);
     } catch (err) {
-      setError(err.message || "Failed to send email OTP.");
+      setError(err.message || "Failed to send email verification code. Please check your email address.");
     } finally {
       setSendingEmailOtp(false);
     }
@@ -212,7 +212,7 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
   const handleVerifyEmailOtp = async () => {
     const cleanEmail = formData.email.trim().toLowerCase();
     if (!emailOtp || emailOtp.trim().length < 4) {
-      setError("Please enter the complete OTP code sent to your email.");
+      setError("Please enter the 6-digit verification code sent to your email.");
       return;
     }
     setError("");
@@ -221,9 +221,9 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
     try {
       await sellerApi.verifyOtp("email", cleanEmail, emailOtp.trim());
       setEmailVerified(true);
-      setSuccessNotice("Business email verified successfully!");
+      setSuccessNotice("Business email verified successfully via support@naripehnawa.com!");
     } catch (err) {
-      setError(err.message || "Invalid email OTP code. Please check your inbox or spam.");
+      setError(err.message || "Invalid or expired verification code. Please check your inbox or spam.");
     } finally {
       setVerifyingEmailOtp(false);
     }
@@ -242,13 +242,13 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
       return false;
     }
     if (!formData.email.trim() || !formData.email.includes("@")) {
-      setError("Please enter a valid email address.");
+      setError("Please enter a valid business email address.");
       return false;
     }
 
-    // OTP Verification check: Must verify at least Mobile or Email (or both)
-    if (!phoneVerified && !emailVerified) {
-      setError("Verification Mandatory: Please verify your Mobile Number or Business Email via OTP before proceeding.");
+    // Email OTP Verification mandatory
+    if (!emailVerified) {
+      setError("Email Verification Mandatory: Please verify your business email address via the 6-digit OTP sent from support@naripehnawa.com before proceeding.");
       return false;
     }
 
@@ -460,94 +460,43 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
                 </div>
               </div>
 
-              {/* Mobile Number with OTP Verification */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-[#0891b2]" />
-                    <span>10-Digit Mobile Number *</span>
-                  </label>
-                  {phoneVerified && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full">
-                      <Check className="w-3 h-3 text-emerald-600" /> Verified via OTP
-                    </span>
-                  )}
+              {/* 10-Digit Mobile Number (Standard Required Input) */}
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  10-Digit Mobile Number *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">
+                    +91
+                  </span>
+                  <input
+                    type="tel"
+                    name="phone"
+                    required
+                    maxLength={10}
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="9876543210"
+                    className="w-full pl-11 pr-3 py-2 text-sm rounded-lg border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#8B0000]"
+                  />
                 </div>
-
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
-                      +91
-                    </span>
-                    <input
-                      type="tel"
-                      name="phone"
-                      required
-                      maxLength={10}
-                      disabled={phoneVerified}
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="9876543210"
-                      className="w-full pl-11 pr-3 py-2 text-sm rounded-lg border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2] disabled:bg-slate-100 disabled:text-slate-600"
-                    />
-                  </div>
-
-                  {!phoneVerified && (
-                    <button
-                      type="button"
-                      onClick={handleSendPhoneOtp}
-                      disabled={sendingPhoneOtp || phoneResendTimer > 0}
-                      className="px-4 py-2 bg-[#0891b2] hover:bg-[#0e7490] text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer whitespace-nowrap"
-                    >
-                      {sendingPhoneOtp ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : phoneResendTimer > 0 ? (
-                        `Resend (${phoneResendTimer}s)`
-                      ) : phoneOtpSent ? (
-                        "Resend OTP"
-                      ) : (
-                        "Send OTP"
-                      )}
-                    </button>
-                  )}
-                </div>
-
-                {/* Mobile OTP Input */}
-                {phoneOtpSent && !phoneVerified && (
-                  <div className="pt-2 flex gap-2 animate-fadeIn">
-                    <div className="relative flex-1">
-                      <KeyRound className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-                      <input
-                        type="text"
-                        maxLength={6}
-                        value={phoneOtp}
-                        onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, ""))}
-                        placeholder="Enter 6-digit SMS OTP"
-                        className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2]"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleVerifyPhoneOtp}
-                      disabled={verifyingPhoneOtp || phoneOtp.length < 4}
-                      className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer"
-                    >
-                      {verifyingPhoneOtp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Verify Mobile"}
-                    </button>
-                  </div>
-                )}
+                <p className="text-[11px] text-slate-500 mt-1">Used for merchant order updates and courier pickup coordination.</p>
               </div>
 
-              {/* Email Address with OTP Verification */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+              {/* Email Address with Mandatory OTP Verification via support@naripehnawa.com */}
+              <div className="p-3.5 bg-amber-50/40 border border-amber-200/80 rounded-xl space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-[#0891b2]" />
-                    <span>Business Email Address *</span>
+                    <Mail className="w-3.5 h-3.5 text-[#8B0000]" />
+                    <span>Business Email Address (Verification Code will be sent here) *</span>
                   </label>
-                  {emailVerified && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full">
-                      <Check className="w-3 h-3 text-emerald-600" /> Verified via OTP
+                  {emailVerified ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                      <Check className="w-3 h-3 text-emerald-700" /> Verified via support@naripehnawa.com
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full font-bold">
+                      Email OTP Mandatory
                     </span>
                   )}
                 </div>
@@ -563,7 +512,7 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="merchant@example.com"
-                      className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2] disabled:bg-slate-100 disabled:text-slate-600"
+                      className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#8B0000] disabled:bg-slate-100 disabled:text-slate-600"
                     />
                   </div>
 
@@ -572,24 +521,28 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
                       type="button"
                       onClick={handleSendEmailOtp}
                       disabled={sendingEmailOtp || emailResendTimer > 0}
-                      className="px-4 py-2 bg-[#0891b2] hover:bg-[#0e7490] text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                      className="px-4 py-2 bg-[#8B0000] hover:bg-[#700000] text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer whitespace-nowrap shadow-xs"
                     >
                       {sendingEmailOtp ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : emailResendTimer > 0 ? (
                         `Resend (${emailResendTimer}s)`
                       ) : emailOtpSent ? (
-                        "Resend OTP"
+                        "Resend Code"
                       ) : (
-                        "Send OTP"
+                        "Send Verification Code"
                       )}
                     </button>
                   )}
                 </div>
 
+                <p className="text-[11px] text-slate-500">
+                  Verification OTP will be dispatched from <strong>support@naripehnawa.com</strong> to your email address.
+                </p>
+
                 {/* Email OTP Input */}
                 {emailOtpSent && !emailVerified && (
-                  <div className="pt-2 flex gap-2 animate-fadeIn">
+                  <div className="pt-2 flex gap-2 animate-fadeIn bg-white p-2.5 rounded-xl border border-amber-300 shadow-2xs">
                     <div className="relative flex-1">
                       <KeyRound className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
                       <input
@@ -597,17 +550,17 @@ const SellerRegisterModal = ({ isOpen: controlledIsOpen, onClose: controlledOnCl
                         maxLength={6}
                         value={emailOtp}
                         onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, ""))}
-                        placeholder="Enter 6-digit Email OTP"
-                        className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#0891b2]"
+                        placeholder="Enter 6-digit Code"
+                        className="w-full pl-9 pr-3 py-2 text-xs font-mono font-bold tracking-widest rounded-lg border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#8B0000]"
                       />
                     </div>
                     <button
                       type="button"
                       onClick={handleVerifyEmailOtp}
                       disabled={verifyingEmailOtp || emailOtp.length < 4}
-                      className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer shadow-xs whitespace-nowrap"
                     >
-                      {verifyingEmailOtp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Verify Email"}
+                      {verifyingEmailOtp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Verify Code"}
                     </button>
                   </div>
                 )}

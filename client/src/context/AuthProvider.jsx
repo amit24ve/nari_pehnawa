@@ -618,34 +618,91 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const clearAllAuthAndStorageData = () => {
+        try {
+            // 1. Wipe all known auth and user session keys from localStorage
+            const keysToRemove = [
+                "neel_admin_user",
+                "neel_user",
+                "user",
+                "neel_token",
+                "token",
+                "np_seller_token",
+                "np_seller_user",
+                "seller_token",
+                "seller_user",
+                "np_pending_checkout",
+                "cart",
+                "neel_cart",
+                "cart_items"
+            ];
+            keysToRemove.forEach((key) => {
+                try { localStorage.removeItem(key); } catch (_) {}
+            });
+
+            // 2. Clear sessionStorage
+            try { sessionStorage.clear(); } catch (_) {}
+
+            // 3. Clear all browser cookies
+            try {
+                const cookies = document.cookie.split(";");
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i];
+                    const eqPos = cookie.indexOf("=");
+                    const name = eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
+                    if (name) {
+                        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+                        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`;
+                    }
+                }
+            } catch (_) {}
+
+            // 4. Purge Browser Cache Storage if available
+            try {
+                if (typeof window !== "undefined" && "caches" in window) {
+                    window.caches.keys().then((names) => {
+                        names.forEach((name) => window.caches.delete(name));
+                    }).catch(() => {});
+                }
+            } catch (_) {}
+        } catch (err) {
+            console.warn("Storage purge warning:", err);
+        }
+    };
+
     const logout = async () => {
         const API_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
-        const token = localStorage.getItem("neel_token") || localStorage.getItem("np_seller_token");
+        const token = localStorage.getItem("neel_token") || localStorage.getItem("token") || localStorage.getItem("np_seller_token");
 
+        // 1. Immediately wipe all local caches, storage, tokens and cookies synchronously (ONE click, zero delay)
+        clearAllAuthAndStorageData();
+        clearPendingCheckout();
+        setUser(null);
+
+        // 2. Dispatch storage and logout events so all open tabs and components update immediately
         try {
-            if (token) {
-                await fetch(`${API_URL}/auth/logout`, {
+            window.dispatchEvent(new Event("storage"));
+            window.dispatchEvent(new CustomEvent("np_user_logout"));
+        } catch (_) {}
+
+        // 3. Fire-and-forget backend notification with strict 800ms abort controller so it never blocks or delays
+        if (token) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 800);
+                fetch(`${API_URL}/auth/logout`, {
                     method: "POST",
                     headers: {
                         Authorization: `Bearer ${token}`,
                         "Content-Type": "application/json",
                     },
-                });
-            }
-        } catch (err) {
-            console.error("Logout API error:", err);
-        } finally {
-            localStorage.removeItem("neel_admin_user");
-            localStorage.removeItem("neel_user");
-            localStorage.removeItem("user");
-            localStorage.removeItem("neel_token");
-            localStorage.removeItem("token");
-            localStorage.removeItem("np_seller_token");
-            localStorage.removeItem("np_seller_user");
-            clearPendingCheckout();
-            setUser(null);
-            window.location.href = "/";
+                    signal: controller.signal,
+                }).catch(() => {}).finally(() => clearTimeout(timeoutId));
+            } catch (_) {}
         }
+
+        // 4. Instant hard reload to root without caching
+        window.location.replace("/");
     };
 
     return (

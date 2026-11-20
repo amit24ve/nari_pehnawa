@@ -86,6 +86,17 @@ export const SellerAuthProvider = ({ children }) => {
     setSellerStoredUser(null);
     setSeller(null);
     setToken("");
+    try {
+      localStorage.removeItem("np_seller_token");
+      localStorage.removeItem("np_seller_user");
+      localStorage.removeItem("seller_token");
+      localStorage.removeItem("seller_user");
+      sessionStorage.clear();
+      if (typeof window !== "undefined" && "caches" in window) {
+        window.caches.keys().then((names) => names.forEach((n) => window.caches.delete(n))).catch(() => {});
+      }
+    } catch (_) {}
+    window.location.replace("/");
   };
 
   const value = {

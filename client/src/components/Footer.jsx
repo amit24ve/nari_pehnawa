@@ -404,8 +404,8 @@ const Footer = () => {
                 </div>
               </div>
 
-              {/* Seller Partner Inquiry Trigger Button */}
-              <div className="pt-3">
+              {/* Seller Partner Inquiry & Registration Buttons */}
+              <div className="pt-3 space-y-2">
                 <button
                   type="button"
                   onClick={() => setShowSellerInquiryModal(true)}
@@ -413,7 +413,16 @@ const Footer = () => {
                   title="Submit your seller requirements to partner with Nari Pehnawa"
                 >
                   <FileText className="w-4 h-4 text-[#d4af37]" />
-                  <span>Seller Partner Inquiry</span>
+                  <span>Inquiry on Seller</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent("np_open_seller_register"))}
+                  className="w-full py-2.5 px-4 bg-gradient-to-r from-[#4A0A19] to-[#780016] hover:from-[#5C0D20] hover:to-[#8B0000] text-white text-xs font-bold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 border border-[#d4af37]/40 tracking-wide cursor-pointer"
+                  title="Register directly as a verified merchant on Nari Pehnawa"
+                >
+                  <Store className="w-4 h-4 text-[#d4af37]" />
+                  <span>Register as Seller</span>
                 </button>
               </div>
             </div>
@@ -533,11 +542,11 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Direct Seller Registration Button (Offset left to prevent overlap with floating chat widget) */}
+          {/* Direct Seller Registration Button (Shifted far left to guarantee zero overlap with floating chat widget) */}
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("np_open_seller_register"))}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#8B0000] hover:bg-[#700000] text-white text-xs font-bold shadow-sm hover:shadow transition-all border border-[#8B0000] cursor-pointer tracking-wide whitespace-nowrap mr-14 sm:mr-18 lg:mr-24"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#8B0000] hover:bg-[#700000] text-white text-xs font-bold shadow-sm hover:shadow transition-all border border-[#8B0000] cursor-pointer tracking-wide whitespace-nowrap mr-28 sm:mr-32 md:mr-36 lg:mr-44"
             title="Register directly as a verified seller on Nari Pehnawa"
           >
             <Store className="w-4 h-4 text-[#d4af37]" />

@@ -331,10 +331,14 @@ def send_seller_otp(request: SellerSendOTPRequest):
         try:
             from app.services.notification_service import NotificationService
             notif = NotificationService(db)
-            subject = "Nari Pehnawa Seller Verification Code"
+            subject = f"Your Nari Pehnawa Seller Verification Code: {otp_code}"
             html_body = f"""
             <!DOCTYPE html>
             <html>
+            <head>
+              <meta charset="utf-8">
+              <title>Nari Pehnawa Seller Verification</title>
+            </head>
             <body style="margin: 0; padding: 20px; background-color: #faf7f2; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
                 <div style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e8dfc8;">
                     <div style="background: linear-gradient(135deg, #4A0A19 0%, #780016 100%); padding: 28px 24px; text-align: center;">
@@ -343,20 +347,34 @@ def send_seller_otp(request: SellerSendOTPRequest):
                     </div>
                     <div style="padding: 32px 28px;">
                         <h2 style="margin: 0 0 12px 0; color: #1a1a1a; font-size: 18px; font-weight: 700;">Seller Account Verification</h2>
-                        <p style="margin: 0 0 20px 0; color: #555555; font-size: 14px; line-height: 1.6;">You are registering as a verified merchant on Nari Pehnawa. Use the 6-digit verification code below to verify your email address:</p>
-                        <div style="background-color: #faf7f2; border: 2px dashed #0891b2; border-radius: 12px; padding: 20px; text-align: center; margin: 0 0 24px 0;">
-                            <span style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #0891b2; font-family: 'Courier New', monospace;">{otp_code}</span>
+                        <p style="margin: 0 0 20px 0; color: #555555; font-size: 14px; line-height: 1.6;">You are registering as a verified merchant on Nari Pehnawa. Use the 6-digit verification code below to verify your business email address (<strong>{clean_email}</strong>):</p>
+                        <div style="background-color: #faf7f2; border: 2px dashed #8B0000; border-radius: 12px; padding: 20px; text-align: center; margin: 0 0 24px 0;">
+                            <span style="font-size: 34px; font-weight: 900; letter-spacing: 8px; color: #8B0000; font-family: 'Courier New', monospace; display: inline-block;">{otp_code}</span>
                             <p style="margin: 8px 0 0 0; color: #777777; font-size: 12px;">This code is valid for 10 minutes</p>
                         </div>
-                        <p style="margin: 0; color: #888888; font-size: 12px; line-height: 1.5;">If you did not initiate this merchant registration, please ignore this email.</p>
+                        <p style="margin: 0 0 16px 0; color: #666666; font-size: 13px; line-height: 1.5;">If you did not initiate this merchant registration, please ignore this email or contact support at <a href="mailto:support@naripehnawa.com" style="color: #8B0000;">support@naripehnawa.com</a>.</p>
+                        <hr style="border: none; border-top: 1px solid #efe8da; margin: 20px 0;" />
+                        <p style="margin: 0; color: #999999; font-size: 11px; text-align: center;">Sent by Nari Pehnawa Seller Central &bull; <a href="mailto:support@naripehnawa.com" style="color: #8B0000;">support@naripehnawa.com</a></p>
                     </div>
                 </div>
             </body>
             </html>
             """
-            notif.send_email(to_email=clean_email, subject=subject, body=html_body, is_html=True)
+            sent = notif.send_custom_email(
+                to_email=clean_email,
+                subject=subject,
+                body=html_body,
+                is_html=True,
+                event_name="seller_otp"
+            )
+            if not sent:
+                print(f"[Seller OTP] Failed to send email to {clean_email}")
+                raise HTTPException(status_code=500, detail="Could not send verification email. Please check your email address and try again.")
+        except HTTPException:
+            raise
         except Exception as e:
             print(f"Email send error: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to dispatch verification email: {str(e)}")
 
         return {
             "success": True,
