@@ -30,6 +30,7 @@ export const resolveImageUrl = (img, fallback = DEFAULT_FALLBACK_IMAGE) => {
     trimmed.startsWith("/gob-") ||
     trimmed.startsWith("/logo") ||
     trimmed.startsWith("/placeholder") ||
+    trimmed.startsWith("/pooja-verma") ||
     trimmed.startsWith("/assets/")
   ) {
     return trimmed;

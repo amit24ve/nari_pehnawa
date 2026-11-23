@@ -169,10 +169,20 @@ def update_owner_profile(
         
     update_data["updated_at"] = datetime.now(timezone.utc)
     
+    # Prepare $setOnInsert without any fields that exist in $set to prevent MongoDB conflict code 40
+    insert_defaults = {
+        k: v for k, v in DEFAULT_OWNER.items()
+        if k not in update_data and k != "created_at"
+    }
+    insert_defaults["created_at"] = datetime.now(timezone.utc)
+
     # Upsert the single primary owner document
     db["owner_profile"].update_one(
         {"_id": "primary_owner"},
-        {"$set": update_data, "$setOnInsert": {"created_at": datetime.now(timezone.utc)}},
+        {
+            "$set": update_data,
+            "$setOnInsert": insert_defaults
+        },
         upsert=True
     )
     
@@ -228,7 +238,13 @@ async def upload_owner_image(
         img.save(str(save_path), "WEBP", quality=88, method=6)
         image_url = f"/api/uploads/{filename}"
 
-        # Update in DB
+        # Update in DB with safe $setOnInsert (excluding 'image' and 'updated_at' to prevent MongoDB conflict code 40)
+        insert_defaults = {
+            k: v for k, v in DEFAULT_OWNER.items()
+            if k not in ("image", "updated_at")
+        }
+        insert_defaults["created_at"] = datetime.now(timezone.utc)
+
         db = get_database()
         db["owner_profile"].update_one(
             {"_id": "primary_owner"},
@@ -237,7 +253,7 @@ async def upload_owner_image(
                     "image": image_url,
                     "updated_at": datetime.now(timezone.utc)
                 },
-                "$setOnInsert": {**DEFAULT_OWNER, "created_at": datetime.now(timezone.utc)}
+                "$setOnInsert": insert_defaults
             },
             upsert=True
         )
