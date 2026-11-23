@@ -16,7 +16,9 @@ import {
   Sparkles,
   HeartHandshake,
   Scale,
-  PackageCheck
+  PackageCheck,
+  Scissors,
+  Check
 } from "lucide-react";
 import { resolveImageUrl } from "../utils/imageUrl";
 
@@ -25,7 +27,7 @@ const API_BASE = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 const DEFAULT_OWNER_DATA = {
   name: "Pooja Verma",
   role: "Founder",
-  tagline: "Traditional Ka Tadka • Handcrafted Luxury Ethnic Wear",
+  tagline: "Timeless Indian Heritage • Handcrafted Luxury Ethnic Wear",
   quote: "My dream has always been to bring the royal elegance of authentic Indian handlooms into everyday life — handcrafted for women, by women, with uncompromised fabric purity, honest pricing, and genuine trust.",
   image: "/pooja-verma.jpg",
   origin: "Deoria & Sultanpur, Uttar Pradesh (Traditional Purvanchal Handloom & Artisan Heartland)",
@@ -41,12 +43,12 @@ const DEFAULT_OWNER_DATA = {
     "What started as a passionate mission has grown into a beloved ethnic label trusted by women nationwide. Today, Nari Pehnawa connects skilled rural artisans directly to modern households, ensuring fair livelihoods for craft families and heirloom-grade ethnic wear for every customer.",
     "Every single kurti, suit set, and handcrafted ensemble carries Pooja's personal seal of quality, honest pricing, and genuine devotion to Indian handloom pride."
   ],
-  trust_title: "The Pillars of Trust | प्रामाणिकता और विश्वास",
+  trust_title: "The Pillars of Uncompromising Trust",
   trust_subtitle: "Every thread, every silhouette, and every promise backed by our personal founder commitment.",
   trust_items: [
     {
       title: "100% Pure Breathable Fabric Guarantee",
-      desc: "Hand-tested for breathability, pure cotton density, and color-fastness with zero skin-irritating synthetics. Fabrics crafted to breathe with you all day."
+      desc: "Hand-tested for breathability, pure cotton density, and color-fastness with zero skin-irritating synthetics. Fabrics crafted to breathe with you all day long."
     },
     {
       title: "Direct-From-Loom Fair Honest Pricing",
@@ -95,6 +97,33 @@ const TRUST_ICONS = [
   HeartHandshake
 ];
 
+const PROCESS_STEPS = [
+  {
+    step: "01",
+    phase: "Cluster Sourcing",
+    title: "Direct Loom Sourcing",
+    desc: "Traveling directly to weaving hubs across Uttar Pradesh, hand-selecting high-grade cotton and silk fibers from generational artisans."
+  },
+  {
+    step: "02",
+    phase: "Quality Testing",
+    title: "Pure Fabric & Density Verification",
+    desc: "Rigorous yarn count, color fastness, and breathability checks to guarantee skin-friendly, long-lasting comfort with zero synthetic itch."
+  },
+  {
+    step: "03",
+    phase: "Master Tailoring",
+    title: "True Indian Fit Construction",
+    desc: "Crafted with generous 2-3 inch inner alteration margins and tailored armholes, ensuring effortless drape for real women's bodies."
+  },
+  {
+    step: "04",
+    phase: "Ethical Delivery",
+    title: "Transparent Doorstep Luxury",
+    desc: "Packaged securely with honest fabric disclosures and shipped directly to your wardrobe with fair compensation returned to weavers."
+  }
+];
+
 const OwnerPage = () => {
   const [owner, setOwner] = useState(DEFAULT_OWNER_DATA);
   const [loading, setLoading] = useState(true);
@@ -112,6 +141,14 @@ const OwnerPage = () => {
               ...prev,
               ...data,
               role: data.role || prev.role || "Founder",
+              trust_title:
+                data.trust_title && data.trust_title.replace(/[^\x00-\x7F]/g, "").trim().length > 3
+                  ? data.trust_title.replace(/[^\x00-\x7F]/g, "").replace(/\|\s*$/, "").trim()
+                  : "The Pillars of Uncompromising Trust",
+              tagline:
+                data.tagline && !data.tagline.includes("Tadka")
+                  ? data.tagline
+                  : "Timeless Indian Heritage • Handcrafted Luxury Ethnic Wear",
               story_paragraphs:
                 Array.isArray(data.story_paragraphs) && data.story_paragraphs.length > 0
                   ? data.story_paragraphs
@@ -247,11 +284,13 @@ const OwnerPage = () => {
 
       <main className="flex-grow w-full">
 
-        {/* ── EDITORIAL HERO HEADER SECTION (FULL WIDTH, PURE TYPOGRAPHY, NO BADGES) ── */}
-        <section className="w-full bg-gradient-to-b from-[#1C0206] via-[#2A0309] to-[#1C0206] text-white py-14 sm:py-20 lg:py-24 px-4 sm:px-8 text-center relative overflow-hidden">
+        {/* ══════════════════════════════════════════════════════════════════
+            SECTION 1: HERO COVER BANNER (DARK ROYAL BURGUNDY WITH GOLD ACCENTS)
+        ══════════════════════════════════════════════════════════════════ */}
+        <section className="w-full bg-gradient-to-b from-[#160205] via-[#240308] to-[#140105] text-white py-14 sm:py-20 lg:py-24 px-4 sm:px-8 text-center relative overflow-hidden">
           <div className="w-full max-w-4xl mx-auto space-y-4 relative z-10">
             <div className="text-xs sm:text-sm font-semibold uppercase tracking-[0.3em] text-[#C59B27]">
-              The Heart &amp; Vision of the Label
+              The Heart &amp; Heritage of Nari Pehnawa
             </div>
 
             <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight">
@@ -270,16 +309,17 @@ const OwnerPage = () => {
           </div>
         </section>
 
-        {/* ── FOUNDER EDITORIAL SPREAD (FULL WIDTH, PERFECT IMAGE ON MOBILE & DESKTOP, NO BOXED CARDS) ── */}
-        <section className="w-full py-12 sm:py-16 lg:py-24 px-4 sm:px-8 lg:px-12 max-w-7xl mx-auto">
+        {/* ══════════════════════════════════════════════════════════════════
+            SECTION 2: FOUNDER EDITORIAL SPREAD & DOSSIER (WARM LINEN CANVAS)
+        ══════════════════════════════════════════════════════════════════ */}
+        <section className="w-full py-14 sm:py-18 lg:py-24 px-4 sm:px-8 lg:px-12 max-w-7xl mx-auto bg-[#FDFBF7]">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 lg:gap-16 items-start">
             
-            {/* PORTRAIT PRESENTATION: Centered on Mobile, Stately Left Column on Desktop */}
+            {/* PORTRAIT PRESENTATION: Responsive Framing on Mobile & Desktop */}
             <div className="lg:col-span-5 flex justify-center">
               <div className="w-full max-w-[340px] sm:max-w-[420px] lg:max-w-none">
                 
-                {/* Elegant Luxury Frame: Fine gold hairline outline, subtle depth, zero cheesy badge overlays */}
-                <div className="relative rounded-2xl overflow-hidden aspect-[3/4] bg-stone-900 shadow-xl border border-[#C59B27]/40 ring-1 ring-[#C59B27]/20 ring-offset-4 ring-offset-[#FAF7F2]">
+                <div className="relative rounded-2xl overflow-hidden aspect-[3/4] bg-stone-900 shadow-2xl border border-[#C59B27]/40 ring-1 ring-[#C59B27]/25 ring-offset-4 ring-offset-[#FDFBF7]">
                   <img
                     src={ownerImg}
                     alt={`${owner.name} - ${owner.role}`}
@@ -291,10 +331,9 @@ const OwnerPage = () => {
                       }
                     }}
                   />
-                  {/* Gentle bottom shade for high-fashion photography depth */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
 
-                  {/* Clean, Understated Name Plaque on Image */}
+                  {/* Elegant Name Plaque on Image */}
                   <div className="absolute bottom-4 left-4 right-4 text-center">
                     <p className="font-serif text-lg sm:text-xl font-bold text-white tracking-wide drop-shadow-md">
                       {owner.name}
@@ -319,7 +358,7 @@ const OwnerPage = () => {
                   {owner.name}
                 </h2>
                 <p className="font-serif text-sm sm:text-base lg:text-lg italic text-[#780016]">
-                  The Heart, Craft &amp; Vision Behind Every Ensemble
+                  The Visionary Behind Handcrafted Indian Elegance
                 </p>
               </div>
 
@@ -334,7 +373,7 @@ const OwnerPage = () => {
                 </span>
               </div>
 
-              {/* Clean Editorial Dossier Lines — Pure Minimalist Layout, No Cluttered Cards */}
+              {/* Clean Editorial Dossier Lines — Pure Minimalist Specification Layout */}
               <div className="border-y border-[#E8DFC8] divide-y divide-[#E8DFC8]/80 py-1">
                 {owner.origin && (
                   <div className="py-3 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-6">
@@ -390,13 +429,15 @@ const OwnerPage = () => {
           </div>
         </section>
 
-        {/* ── NARRATIVE ESSAY: THE JOURNEY OF NARI PEHNAWA (FULL-WIDTH CONTINUOUS PROSE) ── */}
+        {/* ══════════════════════════════════════════════════════════════════
+            SECTION 3: THE STORY OF NARI PEHNAWA (CRISP EDITORIAL WHITE CANVAS)
+        ══════════════════════════════════════════════════════════════════ */}
         <section className="w-full py-16 sm:py-20 lg:py-24 bg-white border-y border-[#E8DFC8]/70">
           <div className="w-full max-w-4xl mx-auto px-4 sm:px-8">
             
             <div className="text-center space-y-2 mb-10 sm:mb-14">
               <span className="text-xs font-bold uppercase tracking-[0.25em] text-[#780016]">
-                Roots, Passion &amp; Craft
+                Our Heritage &amp; Journey
               </span>
               <h3 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 tracking-tight">
                 {owner.story_title}
@@ -414,7 +455,6 @@ const OwnerPage = () => {
               {owner.story_paragraphs.map((para, idx) => {
                 if (!para || !para.trim()) return null;
 
-                // First paragraph with elegant editorial drop-cap
                 if (idx === 0) {
                   const firstLetter = para.charAt(0);
                   const restOfPara = para.slice(1);
@@ -448,50 +488,52 @@ const OwnerPage = () => {
           </div>
         </section>
 
-        {/* ── PILLARS OF TRUST (विश्वास और प्रामाणिकता) SECTION ── */}
+        {/* ══════════════════════════════════════════════════════════════════
+            SECTION 4: THE PILLARS OF TRUST (DISTINCT DARK ROYAL VELVET BACKGROUND)
+        ══════════════════════════════════════════════════════════════════ */}
         {Array.isArray(owner.trust_items) && owner.trust_items.length > 0 && (
-          <section className="w-full py-16 sm:py-20 lg:py-24 bg-[#FAF7F2] border-b border-[#E8DFC8]/70">
+          <section className="w-full py-16 sm:py-20 lg:py-24 bg-[#180307] text-white border-b border-[#C59B27]/30">
             <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-12">
               
               <div className="text-center space-y-2 mb-12 sm:mb-16">
-                <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.25em] text-[#780016]">
-                  <ShieldCheck className="w-4 h-4 text-[#C59B27]" />
-                  <span>Founder's Trust Assurance</span>
+                <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.25em] text-[#E5B842]">
+                  <ShieldCheck className="w-4 h-4 text-[#E5B842]" />
+                  <span>Founder's Personal Pledge</span>
                 </div>
-                <h3 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 tracking-tight">
-                  {owner.trust_title || "The Pillars of Trust | प्रामाणिकता और विश्वास"}
+                <h3 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight">
+                  {owner.trust_title || "The Pillars of Uncompromising Trust"}
                 </h3>
                 {owner.trust_subtitle && (
-                  <p className="font-serif text-sm sm:text-base italic text-[#780016] max-w-2xl mx-auto pt-1">
+                  <p className="font-serif text-sm sm:text-base italic text-amber-100/80 max-w-2xl mx-auto pt-1 font-light">
                     {owner.trust_subtitle}
                   </p>
                 )}
                 <div className="w-16 h-0.5 bg-[#C59B27] mx-auto mt-3" />
               </div>
 
-              {/* Minimalist Editorial Trust Spread — NO CLUTTERED CARDS, PURE ELEGANCE */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10 lg:gap-12">
+              {/* Distinctive Dark Gold-Accented Trust Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
                 {owner.trust_items.map((item, idx) => {
                   const IconComponent = TRUST_ICONS[idx % TRUST_ICONS.length] || ShieldCheck;
                   return (
                     <div
                       key={idx}
-                      className="flex flex-col space-y-3 pt-6 border-t border-[#C59B27]/40 transition-colors"
+                      className="flex flex-col space-y-3 p-6 rounded-2xl bg-white/[0.04] border border-[#C59B27]/25 hover:border-[#C59B27]/60 hover:bg-white/[0.07] transition-all"
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <div className="w-9 h-9 rounded-full bg-[#780016]/10 flex items-center justify-center text-[#780016]">
-                          <IconComponent className="w-4 h-4 text-[#780016]" />
+                        <div className="w-10 h-10 rounded-xl bg-[#C59B27]/15 flex items-center justify-center text-[#E5B842]">
+                          <IconComponent className="w-5 h-5 text-[#E5B842]" />
                         </div>
-                        <span className="font-serif text-xs font-bold uppercase tracking-widest text-[#C59B27]">
-                          Pillar 0{idx + 1}
+                        <span className="font-serif text-xs font-bold uppercase tracking-widest text-[#E5B842]">
+                          Guarantee 0{idx + 1}
                         </span>
                       </div>
 
-                      <h4 className="font-serif text-lg sm:text-xl font-bold text-gray-900 leading-snug">
+                      <h4 className="font-serif text-lg sm:text-xl font-bold text-white leading-snug">
                         {item.title}
                       </h4>
 
-                      <p className="text-xs sm:text-sm text-gray-600 leading-relaxed font-normal">
+                      <p className="text-xs sm:text-sm text-stone-300 leading-relaxed font-light">
                         {item.desc}
                       </p>
                     </div>
@@ -500,9 +542,9 @@ const OwnerPage = () => {
               </div>
 
               {/* Trust Reassurance Footnote */}
-              <div className="mt-12 pt-8 border-t border-[#E8DFC8]/60 text-center">
-                <p className="text-xs sm:text-sm text-gray-500 max-w-2xl mx-auto leading-relaxed">
-                  Every order placed on <strong className="text-gray-800">Nari Pehnawa</strong> is inspected under Pooja Verma's quality standards before dispatch. We take direct personal accountability for your satisfaction.
+              <div className="mt-12 pt-8 border-t border-white/10 text-center">
+                <p className="text-xs sm:text-sm text-stone-400 max-w-2xl mx-auto leading-relaxed">
+                  Every order placed on <strong className="text-[#E5B842] font-semibold">Nari Pehnawa</strong> is individually inspected to founder Pooja Verma's standards before dispatch. We take direct personal accountability for your satisfaction.
                 </p>
               </div>
 
@@ -510,45 +552,59 @@ const OwnerPage = () => {
           </section>
         )}
 
-        {/* ── CORE BRAND PILLARS (EDITORIAL NUMBERED LIST, NO BOXED CARDS) ── */}
-        {Array.isArray(owner.brand_values) && owner.brand_values.length > 0 && (
-          <section className="w-full py-16 sm:py-20 lg:py-24 max-w-7xl mx-auto px-4 sm:px-8">
+        {/* ══════════════════════════════════════════════════════════════════
+            SECTION 5: THE ARTISAN CRAFT PROCESS (WARM SANDSTONE STEP PROGRESSION)
+        ══════════════════════════════════════════════════════════════════ */}
+        <section className="w-full py-16 sm:py-20 lg:py-24 bg-[#F4EFEB] border-b border-[#E8DFC8]">
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-12">
+            
             <div className="text-center space-y-2 mb-12 sm:mb-16">
               <span className="text-xs font-bold uppercase tracking-[0.25em] text-[#780016]">
-                Our Guiding Principles
+                Transparent Artisanship
               </span>
               <h3 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 tracking-tight">
-                Why Women Trust Nari Pehnawa
+                The Artisan Making Process
               </h3>
+              <p className="font-serif text-sm sm:text-base italic text-[#780016] max-w-2xl mx-auto pt-1">
+                A transparent glimpse into how every handcrafted Nari Pehnawa silhouette comes to life.
+              </p>
               <div className="w-16 h-0.5 bg-[#C59B27] mx-auto mt-3" />
             </div>
 
-            {/* Minimalist 2-Column Editorial Spec List — NO CHUNKY BOXES */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 lg:gap-16">
-              {owner.brand_values.map((item, idx) => (
+            {/* Sequential 4-Step Craft Progression */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+              {PROCESS_STEPS.map((step, idx) => (
                 <div
                   key={idx}
-                  className="flex gap-4 sm:gap-5 border-t border-[#C59B27]/40 pt-5"
+                  className="flex flex-col space-y-3 p-6 rounded-2xl bg-white border border-[#E8DFC8] shadow-xs relative overflow-hidden"
                 >
-                  <span className="font-serif text-2xl sm:text-3xl font-bold text-[#C59B27] flex-shrink-0">
-                    0{idx + 1}.
-                  </span>
-                  <div className="space-y-1.5">
-                    <h4 className="font-serif text-lg sm:text-xl font-bold text-gray-900">
-                      {item.title}
-                    </h4>
-                    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed font-normal">
-                      {item.desc}
-                    </p>
+                  <div className="flex items-center justify-between">
+                    <span className="font-serif text-3xl sm:text-4xl font-bold text-[#C59B27]">
+                      {step.step}
+                    </span>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#780016] px-2.5 py-0.5 rounded-full bg-[#780016]/10">
+                      {step.phase}
+                    </span>
                   </div>
+
+                  <h4 className="font-serif text-base sm:text-lg font-bold text-gray-900 leading-snug pt-1">
+                    {step.title}
+                  </h4>
+
+                  <p className="text-xs text-gray-600 leading-relaxed font-normal">
+                    {step.desc}
+                  </p>
                 </div>
               ))}
             </div>
-          </section>
-        )}
 
-        {/* ── SIGNATURE NOTE & CTA (FULL-WIDTH ROYAL BANNER, ZERO BADGES) ── */}
-        <section className="w-full py-16 sm:py-20 lg:py-24 bg-gradient-to-br from-[#150205] via-[#220308] to-[#0D0103] text-white text-center px-4 sm:px-8">
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════════════
+            SECTION 6: FOUNDER INVITATION NOTE & CTA (RICH WINE GRADIENT BANNER)
+        ══════════════════════════════════════════════════════════════════ */}
+        <section className="w-full py-16 sm:py-20 lg:py-24 bg-gradient-to-r from-[#200308] via-[#2D040C] to-[#200308] text-white text-center px-4 sm:px-8">
           <div className="w-full max-w-3xl mx-auto space-y-6">
             <Quote className="w-10 h-10 text-[#C59B27]/60 mx-auto" />
 
@@ -608,7 +664,7 @@ const OwnerPage = () => {
 
           <div className="md:text-right text-gray-400 space-y-1">
             <p>&copy; {new Date().getFullYear()} Nari Pehnawa. All Rights Reserved.</p>
-            <p className="text-[11px] text-gray-500">Traditional Ka Tadka • Handcrafted with devotion in Uttar Pradesh.</p>
+            <p className="text-[11px] text-gray-500">Timeless Indian Heritage • Handcrafted with devotion in Uttar Pradesh.</p>
           </div>
         </div>
       </footer>

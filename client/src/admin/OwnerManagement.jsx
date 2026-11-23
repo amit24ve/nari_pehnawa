@@ -35,7 +35,7 @@ const OwnerManagement = () => {
   const [ownerData, setOwnerData] = useState({
     name: "Pooja Verma",
     role: "Founder",
-    tagline: "Traditional Ka Tadka • Handcrafted Luxury Ethnic Wear",
+    tagline: "Timeless Indian Heritage • Handcrafted Luxury Ethnic Wear",
     quote: "My dream has always been to bring the royal elegance of authentic Indian handlooms into everyday life — handcrafted for women, by women, with uncompromised fabric purity, honest pricing, and genuine trust.",
     image: "/pooja-verma.jpg",
     origin: "Deoria & Sultanpur, Uttar Pradesh (Traditional Purvanchal Handloom & Artisan Heartland)",
@@ -51,7 +51,7 @@ const OwnerManagement = () => {
       "What started as a passionate mission has grown into a beloved ethnic label trusted by women nationwide. Today, Nari Pehnawa connects skilled rural artisans directly to modern households, ensuring fair livelihoods for craft families and heirloom-grade ethnic wear for every customer.",
       "Every single kurti, suit set, and handcrafted ensemble carries Pooja's personal seal of quality, honest pricing, and genuine devotion to Indian handloom pride."
     ],
-    trust_title: "The Pillars of Trust | प्रामाणिकता और विश्वास",
+    trust_title: "The Pillars of Uncompromising Trust",
     trust_subtitle: "Every thread, every silhouette, and every promise backed by our personal founder commitment.",
     trust_items: [
       {
@@ -475,7 +475,7 @@ const OwnerManagement = () => {
                   type="text"
                   value={ownerData.tagline}
                   onChange={(e) => handleInputChange("tagline", e.target.value)}
-                  placeholder="e.g. Traditional Ka Tadka • Handcrafted Luxury Ethnic Wear"
+                  placeholder="e.g. Timeless Indian Heritage • Handcrafted Luxury Ethnic Wear"
                   className="w-full px-3.5 py-2 text-xs font-semibold text-slate-800 rounded-xl border border-slate-200 focus:outline-none focus:border-[#780016] focus:ring-1 focus:ring-[#780016]"
                 />
               </div>
@@ -628,12 +628,12 @@ const OwnerManagement = () => {
           </div>
         </div>
 
-        {/* ── PILLARS OF TRUST (विश्वास और प्रामाणिकता) SECTION ── */}
+        {/* ── PILLARS OF TRUST SECTION ── */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>Customer Trust &amp; Authenticity Pillars (विश्वास और प्रामाणिकता)</span>
+              <span>Customer Trust &amp; Authenticity Guarantees</span>
             </h3>
             <button
               type="button"
@@ -654,7 +654,7 @@ const OwnerManagement = () => {
                 type="text"
                 value={ownerData.trust_title}
                 onChange={(e) => handleInputChange("trust_title", e.target.value)}
-                placeholder="The Pillars of Trust | प्रामाणिकता और विश्वास"
+                placeholder="The Pillars of Uncompromising Trust"
                 className="w-full px-3.5 py-2 text-xs font-semibold text-slate-800 rounded-xl border border-slate-200 focus:outline-none focus:border-[#780016]"
               />
             </div>

@@ -29,7 +29,7 @@ ALLOWED_IMAGE_MIME = {
 DEFAULT_OWNER = {
     "name": "Pooja Verma",
     "role": "Founder",
-    "tagline": "Traditional Ka Tadka • Handcrafted Luxury Ethnic Wear",
+    "tagline": "Timeless Indian Heritage • Handcrafted Luxury Ethnic Wear",
     "quote": "My dream has always been to bring the royal elegance of authentic Indian handlooms into everyday life — handcrafted for women, by women, with uncompromised fabric purity, honest pricing, and genuine trust.",
     "image": "/pooja-verma.jpg",
     "origin": "Deoria & Sultanpur, Uttar Pradesh (Traditional Purvanchal Handloom & Artisan Heartland)",
@@ -45,7 +45,7 @@ DEFAULT_OWNER = {
         "What started as a passionate mission has grown into a beloved ethnic label trusted by women nationwide. Today, Nari Pehnawa connects skilled rural artisans directly to modern households, ensuring fair livelihoods for craft families and heirloom-grade ethnic wear for every customer.",
         "Every single kurti, suit set, and handcrafted ensemble carries Pooja's personal seal of quality, honest pricing, and genuine devotion to Indian handloom pride."
     ],
-    "trust_title": "The Pillars of Trust | प्रामाणिकता और विश्वास",
+    "trust_title": "The Pillars of Uncompromising Trust",
     "trust_subtitle": "Every thread, every silhouette, and every promise backed by our personal founder commitment.",
     "trust_items": [
         {
