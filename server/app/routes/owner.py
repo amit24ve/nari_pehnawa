@@ -28,23 +28,48 @@ ALLOWED_IMAGE_MIME = {
 
 DEFAULT_OWNER = {
     "name": "Pooja Verma",
-    "role": "Founder & Creative Director",
+    "role": "Founder",
     "tagline": "Traditional Ka Tadka • Handcrafted Luxury Ethnic Wear",
-    "quote": "My dream has always been to bring the regal elegance of authentic Indian handlooms into everyday life — handcrafted with integrity, honest pricing, and genuine pride in our heritage.",
+    "quote": "My dream has always been to bring the royal elegance of authentic Indian handlooms into everyday life — handcrafted for women, by women, with uncompromised fabric purity, honest pricing, and genuine trust.",
     "image": "/pooja-verma.jpg",
-    "origin": "Deoria & Sultanpur, Uttar Pradesh (Purvanchal Handloom Belt)",
-    "education": "Bachelor of Arts (B.A.), Sultanpur University",
-    "craft_expertise": "Direct Handloom Sourcing & Pure Cotton Quality Testing",
-    "core_mission": "Artisan Empowerment, True Indian Fits & Accessible Luxury",
+    "origin": "Deoria & Sultanpur, Uttar Pradesh (Traditional Purvanchal Handloom & Artisan Heartland)",
+    "education": "Bachelor of Arts (B.A.) • Rishi Raj Mahavidyalaya, Katka, Sultanpur (Dr. Ram Manohar Lohia Avadh University, RMLAU)",
+    "craft_expertise": "Direct Artisan Loom Sourcing, 100% Breathable Pure Cotton & Thread Count Density Testing",
+    "core_mission": "Women Self-Reliance, Fair Artisan Livelihoods & Heirloom Handcrafted Luxury at Honest Pricing",
     "story_title": "The Journey of Nari Pehnawa",
-    "story_subtitle": "From the Generational Looms of Purvanchal to Wardrobes Nationwide",
+    "story_subtitle": "From Generational Weaving Looms to Wardrobes Across India",
     "story_paragraphs": [
-        "Nari Pehnawa was born out of a simple yet transformative dream: to make genuine, royal Indian ethnic fashion accessible, comfortable, and celebratory for every woman across the country. Founded by Pooja Verma, the brand stands as an authentic testament to woman-led entrepreneurship and grassroots handloom preservation.",
-        "Growing up in Deoria, Uttar Pradesh, and later completing her higher education in Sultanpur, Pooja recognized a recurring void in the ethnic wear market. Boutiques charged exorbitant prices, while commercial mass-market labels frequently compromised on pure cotton breathability, fabric longevity, and realistic silhouette fits.",
-        "Determined to build an independent brand grounded in integrity, Pooja bypassed corporate middlemen and traveled directly to traditional artisan weaving clusters across Uttar Pradesh. She studied thread counts, yarn densities, vegetable dyes, and lock-stitch tailoring directly alongside generational master weavers.",
-        "Today, Nari Pehnawa connects rural artisan excellence with modern Indian wardrobes nationwide. Every single kurti, suit, and festive ensemble carries Pooja's personal seal of quality, honest pricing, and genuine pride in Indian handloom traditions."
+        "Nari Pehnawa was born out of a profound dream: to bring genuine, royal Indian ethnic wear into everyday wardrobes with uncompromising authenticity, pure fabric comfort, and honest pricing. Founded by Pooja Verma, the brand represents woman-led entrepreneurship rooted firmly in the rich cultural soil of Purvanchal, Uttar Pradesh.",
+        "Having grown up in Deoria and completed her Bachelor of Arts from Rishi Raj Mahavidyalaya, Katka, Sultanpur (affiliated to Dr. Ram Manohar Lohia Avadh University - RMLAU), Pooja observed a critical dilemma in the ethnic wear space. Commercial fast-fashion was flooding wardrobes with synthetic polyester blends and rigid fits, while high-end designer boutiques charged exorbitant prices that ordinary families could not afford.",
+        "Refusing to accept compromises on comfort and authenticity, Pooja journeyed directly to traditional handloom artisan clusters across Uttar Pradesh. Working closely alongside generational master weavers and tailors, she personally inspected yarn densities, thread counts, vegetable dye stability, and reinforced lock-stitch seams to ensure lasting durability and effortless drape.",
+        "What started as a passionate mission has grown into a beloved ethnic label trusted by women nationwide. Today, Nari Pehnawa connects skilled rural artisans directly to modern households, ensuring fair livelihoods for craft families and heirloom-grade ethnic wear for every customer.",
+        "Every single kurti, suit set, and handcrafted ensemble carries Pooja's personal seal of quality, honest pricing, and genuine devotion to Indian handloom pride."
     ],
-    "vision_title": "Our Creative Philosophy",
+    "trust_title": "The Pillars of Trust | प्रामाणिकता और विश्वास",
+    "trust_subtitle": "Every thread, every silhouette, and every promise backed by our personal founder commitment.",
+    "trust_items": [
+        {
+            "title": "100% Pure Breathable Fabric Guarantee",
+            "desc": "Hand-tested for breathability, pure cotton density, and color-fastness with zero skin-irritating synthetics. Fabrics crafted to breathe with you all day."
+        },
+        {
+            "title": "Direct-From-Loom Fair Honest Pricing",
+            "desc": "We completely eliminate middleman broker markups. Every single rupee goes directly into artisan craft density and premium fabric quality."
+        },
+        {
+            "title": "Generous 2-3 Inch Tailored Alteration Margins",
+            "desc": "Every ensemble features generous 2-3 inch inner margins and tailored armholes designed specifically for real Indian women's body silhouettes."
+        },
+        {
+            "title": "Transparent Doorstep Experience",
+            "desc": "Real product photographs with no deceptive lighting or filters, honest fabric weight disclosures, and dedicated founder-backed customer support."
+        },
+        {
+            "title": "Fair Artisan Wages & Women Empowerment",
+            "desc": "Providing sustainable year-round employment to rural women tailors and multigenerational handloom artisan families across Uttar Pradesh."
+        }
+    ],
+    "vision_title": "Our Guiding Promise",
     "vision_quote": "To deliver heirloom-grade, breathable, and regal Indian ethnic wear into every household — straight from artisan looms with complete transparency and fair pricing.",
     "brand_values": [
         {
@@ -72,6 +97,11 @@ class BrandValueItem(BaseModel):
     desc: str = Field(..., description="Description of the value")
 
 
+class TrustItem(BaseModel):
+    title: str = Field(..., description="Trust pillar title")
+    desc: str = Field(..., description="Trust pillar description")
+
+
 class OwnerProfileUpdate(BaseModel):
     name: Optional[str] = None
     role: Optional[str] = None
@@ -85,6 +115,9 @@ class OwnerProfileUpdate(BaseModel):
     story_title: Optional[str] = None
     story_subtitle: Optional[str] = None
     story_paragraphs: Optional[List[str]] = None
+    trust_title: Optional[str] = None
+    trust_subtitle: Optional[str] = None
+    trust_items: Optional[List[TrustItem]] = None
     vision_title: Optional[str] = None
     vision_quote: Optional[str] = None
     brand_values: Optional[List[BrandValueItem]] = None
@@ -103,7 +136,10 @@ def get_owner_profile():
     
     # Strip MongoDB internal _id
     record["id"] = str(record.pop("_id", "primary_owner"))
-    return record
+    
+    # Ensure default fields exist if DB has older schema
+    merged = {**DEFAULT_OWNER, **record}
+    return merged
 
 
 @router.put("/")
@@ -122,6 +158,13 @@ def update_owner_profile(
         update_data["brand_values"] = [
             bv if isinstance(bv, dict) else bv.model_dump()
             for bv in update_data["brand_values"]
+        ]
+
+    # Convert trust_items pydantic objects to dicts if needed
+    if "trust_items" in update_data and update_data["trust_items"] is not None:
+        update_data["trust_items"] = [
+            ti if isinstance(ti, dict) else ti.model_dump()
+            for ti in update_data["trust_items"]
         ]
         
     update_data["updated_at"] = datetime.now(timezone.utc)

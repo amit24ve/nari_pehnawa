@@ -18,7 +18,8 @@ import {
   Award,
   MapPin,
   GraduationCap,
-  Heart
+  Heart,
+  ShieldCheck
 } from "lucide-react";
 import { resolveImageUrl } from "../utils/imageUrl";
 
@@ -33,23 +34,48 @@ const OwnerManagement = () => {
 
   const [ownerData, setOwnerData] = useState({
     name: "Pooja Verma",
-    role: "Founder & Creative Director",
+    role: "Founder",
     tagline: "Traditional Ka Tadka • Handcrafted Luxury Ethnic Wear",
-    quote: "My dream has always been to bring the regal elegance of authentic Indian handlooms into everyday life — handcrafted with integrity, honest pricing, and genuine pride in our heritage.",
+    quote: "My dream has always been to bring the royal elegance of authentic Indian handlooms into everyday life — handcrafted for women, by women, with uncompromised fabric purity, honest pricing, and genuine trust.",
     image: "/pooja-verma.jpg",
-    origin: "Deoria & Sultanpur, Uttar Pradesh (Purvanchal Handloom Belt)",
-    education: "Bachelor of Arts (B.A.), Sultanpur University",
-    craft_expertise: "Direct Handloom Sourcing & Pure Cotton Quality Testing",
-    core_mission: "Artisan Empowerment, True Indian Fits & Accessible Luxury",
+    origin: "Deoria & Sultanpur, Uttar Pradesh (Traditional Purvanchal Handloom & Artisan Heartland)",
+    education: "Bachelor of Arts (B.A.) • Rishi Raj Mahavidyalaya, Katka, Sultanpur (Dr. Ram Manohar Lohia Avadh University, RMLAU)",
+    craft_expertise: "Direct Artisan Loom Sourcing, 100% Breathable Pure Cotton & Thread Count Density Testing",
+    core_mission: "Women Self-Reliance, Fair Artisan Livelihoods & Heirloom Handcrafted Luxury at Honest Pricing",
     story_title: "The Journey of Nari Pehnawa",
-    story_subtitle: "From the Generational Looms of Purvanchal to Wardrobes Nationwide",
+    story_subtitle: "From Generational Weaving Looms to Wardrobes Across India",
     story_paragraphs: [
-      "Nari Pehnawa was born out of a simple yet transformative dream: to make genuine, royal Indian ethnic fashion accessible, comfortable, and celebratory for every woman across the country. Founded by Pooja Verma, the brand stands as an authentic testament to woman-led entrepreneurship and grassroots handloom preservation.",
-      "Growing up in Deoria, Uttar Pradesh, and later completing her higher education in Sultanpur, Pooja recognized a recurring void in the ethnic wear market. Boutiques charged exorbitant prices, while commercial mass-market labels frequently compromised on pure cotton breathability, fabric longevity, and realistic silhouette fits.",
-      "Determined to build an independent brand grounded in integrity, Pooja bypassed corporate middlemen and traveled directly to traditional artisan weaving clusters across Uttar Pradesh. She studied thread counts, yarn densities, vegetable dyes, and lock-stitch tailoring directly alongside generational master weavers.",
-      "Today, Nari Pehnawa connects rural artisan excellence with modern Indian wardrobes nationwide. Every single kurti, suit, and festive ensemble carries Pooja's personal seal of quality, honest pricing, and genuine pride in Indian handloom traditions."
+      "Nari Pehnawa was born out of a profound dream: to bring genuine, royal Indian ethnic wear into everyday wardrobes with uncompromising authenticity, pure fabric comfort, and honest pricing. Founded by Pooja Verma, the brand represents woman-led entrepreneurship rooted firmly in the rich cultural soil of Purvanchal, Uttar Pradesh.",
+      "Having grown up in Deoria and completed her Bachelor of Arts from Rishi Raj Mahavidyalaya, Katka, Sultanpur (affiliated to Dr. Ram Manohar Lohia Avadh University - RMLAU), Pooja observed a critical dilemma in the ethnic wear space. Commercial fast-fashion was flooding wardrobes with synthetic polyester blends and rigid fits, while high-end designer boutiques charged exorbitant prices that ordinary families could not afford.",
+      "Refusing to accept compromises on comfort and authenticity, Pooja journeyed directly to traditional handloom artisan clusters across Uttar Pradesh. Working closely alongside generational master weavers and tailors, she personally inspected yarn densities, thread counts, vegetable dye stability, and reinforced lock-stitch seams to ensure lasting durability and effortless drape.",
+      "What started as a passionate mission has grown into a beloved ethnic label trusted by women nationwide. Today, Nari Pehnawa connects skilled rural artisans directly to modern households, ensuring fair livelihoods for craft families and heirloom-grade ethnic wear for every customer.",
+      "Every single kurti, suit set, and handcrafted ensemble carries Pooja's personal seal of quality, honest pricing, and genuine devotion to Indian handloom pride."
     ],
-    vision_title: "Our Creative Philosophy",
+    trust_title: "The Pillars of Trust | प्रामाणिकता और विश्वास",
+    trust_subtitle: "Every thread, every silhouette, and every promise backed by our personal founder commitment.",
+    trust_items: [
+      {
+        title: "100% Pure Breathable Fabric Guarantee",
+        desc: "Hand-tested for breathability, pure cotton density, and color-fastness with zero skin-irritating synthetics. Fabrics crafted to breathe with you all day."
+      },
+      {
+        title: "Direct-From-Loom Fair Honest Pricing",
+        desc: "We completely eliminate middleman broker markups. Every single rupee goes directly into artisan craft density and premium fabric quality."
+      },
+      {
+        title: "Generous 2-3 Inch Tailored Alteration Margins",
+        desc: "Every ensemble features generous 2-3 inch inner margins and tailored armholes designed specifically for real Indian women's body silhouettes."
+      },
+      {
+        title: "Transparent Doorstep Experience",
+        desc: "Real product photographs with no deceptive lighting or filters, honest fabric weight disclosures, and dedicated founder-backed customer support."
+      },
+      {
+        title: "Fair Artisan Wages & Women Empowerment",
+        desc: "Providing sustainable year-round employment to rural women tailors and multigenerational handloom artisan families across Uttar Pradesh."
+      }
+    ],
+    vision_title: "Our Guiding Promise",
     vision_quote: "To deliver heirloom-grade, breathable, and regal Indian ethnic wear into every household — straight from artisan looms with complete transparency and fair pricing.",
     brand_values: [
       {
@@ -92,10 +118,15 @@ const OwnerManagement = () => {
           setOwnerData((prev) => ({
             ...prev,
             ...data,
+            role: data.role || prev.role || "Founder",
             story_paragraphs:
               Array.isArray(data.story_paragraphs) && data.story_paragraphs.length > 0
                 ? data.story_paragraphs
                 : prev.story_paragraphs,
+            trust_items:
+              Array.isArray(data.trust_items) && data.trust_items.length > 0
+                ? data.trust_items
+                : prev.trust_items,
             brand_values:
               Array.isArray(data.brand_values) && data.brand_values.length > 0
                 ? data.brand_values
@@ -141,6 +172,29 @@ const OwnerManagement = () => {
     setOwnerData((prev) => ({
       ...prev,
       story_paragraphs: prev.story_paragraphs.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleTrustItemChange = (index, key, value) => {
+    setOwnerData((prev) => {
+      const nextItems = [...prev.trust_items];
+      nextItems[index] = { ...nextItems[index], [key]: value };
+      return { ...prev, trust_items: nextItems };
+    });
+  };
+
+  const handleAddTrustItem = () => {
+    setOwnerData((prev) => ({
+      ...prev,
+      trust_items: [...prev.trust_items, { title: "", desc: "" }]
+    }));
+  };
+
+  const handleRemoveTrustItem = (index) => {
+    if (ownerData.trust_items.length <= 1) return;
+    setOwnerData((prev) => ({
+      ...prev,
+      trust_items: prev.trust_items.filter((_, i) => i !== index)
     }));
   };
 
@@ -401,14 +455,14 @@ const OwnerManagement = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Role / Designation *
+                  Role / Designation * (e.g. Founder or Owner)
                 </label>
                 <input
                   type="text"
                   required
                   value={ownerData.role}
                   onChange={(e) => handleInputChange("role", e.target.value)}
-                  placeholder="e.g. Founder & Creative Director"
+                  placeholder="e.g. Founder"
                   className="w-full px-3.5 py-2 text-xs font-semibold text-slate-800 rounded-xl border border-slate-200 focus:outline-none focus:border-[#780016] focus:ring-1 focus:ring-[#780016]"
                 />
               </div>
@@ -429,7 +483,7 @@ const OwnerManagement = () => {
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-[#C59B27]" />
-                  <span>Origin &amp; Regional Heritage</span>
+                  <span>Roots &amp; Regional Heritage</span>
                 </label>
                 <input
                   type="text"
@@ -449,7 +503,7 @@ const OwnerManagement = () => {
                   type="text"
                   value={ownerData.education}
                   onChange={(e) => handleInputChange("education", e.target.value)}
-                  placeholder="e.g. Bachelor of Arts (B.A.), Sultanpur University"
+                  placeholder="e.g. Bachelor of Arts (B.A.) • Rishi Raj Mahavidyalaya, Katka, Sultanpur (RMLAU)"
                   className="w-full px-3.5 py-2 text-xs font-medium text-slate-800 rounded-xl border border-slate-200 focus:outline-none focus:border-[#780016]"
                 />
               </div>
@@ -483,11 +537,11 @@ const OwnerManagement = () => {
               </div>
             </div>
 
-            {/* Featured Quote */}
+            {/* Featured Quote / My Dream */}
             <div className="pt-2 border-t border-slate-100">
               <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
                 <Quote className="w-3.5 h-3.5 text-[#780016]" />
-                <span>Featured Personal Quote (Prominent Display)</span>
+                <span>Featured Personal Quote / My Dream (Prominent Display)</span>
               </label>
               <textarea
                 rows={3}
@@ -505,7 +559,7 @@ const OwnerManagement = () => {
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-[#780016]" />
-              <span>Detailed Origin Story &amp; Brand Journey</span>
+              <span>Detailed Origin Story &amp; Brand Journey (The Journey of Nari Pehnawa)</span>
             </h3>
             <button
               type="button"
@@ -538,7 +592,7 @@ const OwnerManagement = () => {
                 type="text"
                 value={ownerData.story_subtitle}
                 onChange={(e) => handleInputChange("story_subtitle", e.target.value)}
-                placeholder="From the Handloom Looms of Purvanchal to Wardrobes Nationwide"
+                placeholder="From Generational Weaving Looms to Wardrobes Across India"
                 className="w-full px-3.5 py-2 text-xs font-semibold text-slate-800 rounded-xl border border-slate-200 focus:outline-none focus:border-[#780016]"
               />
             </div>
@@ -574,12 +628,104 @@ const OwnerManagement = () => {
           </div>
         </div>
 
-        {/* Philosophy & Brand Pillars */}
+        {/* ── PILLARS OF TRUST (विश्वास और प्रामाणिकता) SECTION ── */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>Customer Trust &amp; Authenticity Pillars (विश्वास और प्रामाणिकता)</span>
+            </h3>
+            <button
+              type="button"
+              onClick={handleAddTrustItem}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#780016] hover:text-[#5A0010] cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Trust Pillar</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Trust Section Title
+              </label>
+              <input
+                type="text"
+                value={ownerData.trust_title}
+                onChange={(e) => handleInputChange("trust_title", e.target.value)}
+                placeholder="The Pillars of Trust | प्रामाणिकता और विश्वास"
+                className="w-full px-3.5 py-2 text-xs font-semibold text-slate-800 rounded-xl border border-slate-200 focus:outline-none focus:border-[#780016]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Trust Section Subtitle
+              </label>
+              <input
+                type="text"
+                value={ownerData.trust_subtitle}
+                onChange={(e) => handleInputChange("trust_subtitle", e.target.value)}
+                placeholder="Every thread, every silhouette, and every promise backed by our personal founder commitment."
+                className="w-full px-3.5 py-2 text-xs font-semibold text-slate-800 rounded-xl border border-slate-200 focus:outline-none focus:border-[#780016]"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-2">
+            {ownerData.trust_items.map((item, idx) => (
+              <div
+                key={idx}
+                className="p-3.5 bg-emerald-50/40 rounded-xl border border-emerald-100 flex flex-col sm:flex-row gap-3 items-start"
+              >
+                <div className="w-full sm:w-1/3">
+                  <label className="block text-[11px] font-semibold text-emerald-900 mb-1">
+                    Trust Pillar #{idx + 1} Title
+                  </label>
+                  <input
+                    type="text"
+                    value={item.title}
+                    onChange={(e) =>
+                      handleTrustItemChange(idx, "title", e.target.value)
+                    }
+                    placeholder="e.g. 100% Pure Fabric Guarantee"
+                    className="w-full px-3 py-1.5 text-xs font-semibold text-slate-800 bg-white rounded-lg border border-slate-200 focus:outline-none focus:border-[#780016]"
+                  />
+                </div>
+                <div className="flex-1 w-full">
+                  <label className="block text-[11px] font-semibold text-emerald-900 mb-1">
+                    Description
+                  </label>
+                  <input
+                    type="text"
+                    value={item.desc}
+                    onChange={(e) =>
+                      handleTrustItemChange(idx, "desc", e.target.value)
+                    }
+                    placeholder="Details about this trust pillar..."
+                    className="w-full px-3 py-1.5 text-xs text-slate-800 bg-white rounded-lg border border-slate-200 focus:outline-none focus:border-[#780016]"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveTrustItem(idx)}
+                  disabled={ownerData.trust_items.length <= 1}
+                  className="p-1.5 text-slate-400 hover:text-red-600 disabled:opacity-20 transition cursor-pointer self-center mt-4 sm:mt-5"
+                  title="Remove this trust pillar"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Philosophy & Brand Values */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#C59B27]" />
-              <span>Philosophy &amp; Core Brand Pillars</span>
+              <span>Philosophy &amp; Core Brand Principles</span>
             </h3>
             <button
               type="button"
@@ -587,7 +733,7 @@ const OwnerManagement = () => {
               className="inline-flex items-center gap-1.5 text-xs font-bold text-[#780016] hover:text-[#5A0010] cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Add Pillar</span>
+              <span>Add Principle</span>
             </button>
           </div>
 
@@ -600,7 +746,7 @@ const OwnerManagement = () => {
                 type="text"
                 value={ownerData.vision_title}
                 onChange={(e) => handleInputChange("vision_title", e.target.value)}
-                placeholder="Our Creative Philosophy"
+                placeholder="Our Guiding Promise"
                 className="w-full px-3.5 py-2 text-xs font-semibold text-slate-800 rounded-xl border border-slate-200 focus:outline-none focus:border-[#780016]"
               />
             </div>
@@ -626,7 +772,7 @@ const OwnerManagement = () => {
               >
                 <div className="w-full sm:w-1/3">
                   <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                    Pillar #{idx + 1} Title
+                    Principle #{idx + 1} Title
                   </label>
                   <input
                     type="text"
@@ -657,7 +803,7 @@ const OwnerManagement = () => {
                   onClick={() => handleRemoveBrandValue(idx)}
                   disabled={ownerData.brand_values.length <= 1}
                   className="p-1.5 text-slate-400 hover:text-red-600 disabled:opacity-20 transition cursor-pointer self-center mt-4 sm:mt-5"
-                  title="Remove this pillar"
+                  title="Remove this principle"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

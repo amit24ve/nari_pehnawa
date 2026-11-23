@@ -10,7 +10,13 @@ import {
   GraduationCap,
   Award,
   Heart,
-  Loader2
+  Loader2,
+  ShieldCheck,
+  CheckCircle2,
+  Sparkles,
+  HeartHandshake,
+  Scale,
+  PackageCheck
 } from "lucide-react";
 import { resolveImageUrl } from "../utils/imageUrl";
 
@@ -18,23 +24,48 @@ const API_BASE = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
 const DEFAULT_OWNER_DATA = {
   name: "Pooja Verma",
-  role: "Founder & Creative Director",
+  role: "Founder",
   tagline: "Traditional Ka Tadka • Handcrafted Luxury Ethnic Wear",
-  quote: "My dream has always been to weave the regal dignity of authentic Indian handlooms into effortless everyday silhouettes — handcrafted for women, by women, with honest pricing and lasting trust.",
+  quote: "My dream has always been to bring the royal elegance of authentic Indian handlooms into everyday life — handcrafted for women, by women, with uncompromised fabric purity, honest pricing, and genuine trust.",
   image: "/pooja-verma.jpg",
-  origin: "Deoria & Sultanpur, Uttar Pradesh (Purvanchal Handloom Belt)",
-  education: "Bachelor of Arts (B.A.), Sultanpur University",
-  craft_expertise: "Direct Loom Sourcing & Pure Cotton Density Testing",
-  core_mission: "Women Self-Reliance, Artisan Empowerment & Honest Value",
-  story_title: "The Story Behind Nari Pehnawa",
+  origin: "Deoria & Sultanpur, Uttar Pradesh (Traditional Purvanchal Handloom & Artisan Heartland)",
+  education: "Bachelor of Arts (B.A.) • Rishi Raj Mahavidyalaya, Katka, Sultanpur (Dr. Ram Manohar Lohia Avadh University, RMLAU)",
+  craft_expertise: "Direct Artisan Loom Sourcing, 100% Breathable Pure Cotton & Thread Count Density Testing",
+  core_mission: "Women Self-Reliance, Fair Artisan Livelihoods & Heirloom Handcrafted Luxury at Honest Pricing",
+  story_title: "The Journey of Nari Pehnawa",
   story_subtitle: "From Generational Weaving Looms to Wardrobes Across India",
   story_paragraphs: [
-    "Nari Pehnawa was born out of a simple yet transformative dream: to make genuine, royal Indian ethnic fashion accessible, comfortable, and celebratory for every woman across the country. Founded by Pooja Verma, the brand stands as an authentic testament to woman-led entrepreneurship and grassroots handloom preservation.",
-    "Growing up in Deoria, Uttar Pradesh, and later completing her higher graduation in Sultanpur, Pooja recognized a recurring void in the ethnic wear market. Boutiques charged exorbitant prices, while commercial mass-market labels frequently compromised on pure cotton breathability, fabric longevity, and realistic silhouette fits.",
-    "Determined to build an independent brand grounded in integrity, Pooja bypassed corporate middlemen and traveled directly to traditional artisan weaving clusters across Uttar Pradesh. She studied thread counts, yarn densities, vegetable dyes, and lock-stitch tailoring directly alongside generational master weavers.",
-    "Today, Nari Pehnawa connects rural artisan excellence with modern Indian wardrobes nationwide. Every single kurti, suit, and festive ensemble carries Pooja's personal seal of quality, honest pricing, and genuine pride in Indian handloom traditions."
+    "Nari Pehnawa was born out of a profound dream: to bring genuine, royal Indian ethnic wear into everyday wardrobes with uncompromising authenticity, pure fabric comfort, and honest pricing. Founded by Pooja Verma, the brand represents woman-led entrepreneurship rooted firmly in the rich cultural soil of Purvanchal, Uttar Pradesh.",
+    "Having grown up in Deoria and completed her Bachelor of Arts from Rishi Raj Mahavidyalaya, Katka, Sultanpur (affiliated to Dr. Ram Manohar Lohia Avadh University - RMLAU), Pooja observed a critical dilemma in the ethnic wear space. Commercial fast-fashion was flooding wardrobes with synthetic polyester blends and rigid fits, while high-end designer boutiques charged exorbitant prices that ordinary families could not afford.",
+    "Refusing to accept compromises on comfort and authenticity, Pooja journeyed directly to traditional handloom artisan clusters across Uttar Pradesh. Working closely alongside generational master weavers and tailors, she personally inspected yarn densities, thread counts, vegetable dye stability, and reinforced lock-stitch seams to ensure lasting durability and effortless drape.",
+    "What started as a passionate mission has grown into a beloved ethnic label trusted by women nationwide. Today, Nari Pehnawa connects skilled rural artisans directly to modern households, ensuring fair livelihoods for craft families and heirloom-grade ethnic wear for every customer.",
+    "Every single kurti, suit set, and handcrafted ensemble carries Pooja's personal seal of quality, honest pricing, and genuine devotion to Indian handloom pride."
   ],
-  vision_title: "Our Creative Philosophy",
+  trust_title: "The Pillars of Trust | प्रामाणिकता और विश्वास",
+  trust_subtitle: "Every thread, every silhouette, and every promise backed by our personal founder commitment.",
+  trust_items: [
+    {
+      title: "100% Pure Breathable Fabric Guarantee",
+      desc: "Hand-tested for breathability, pure cotton density, and color-fastness with zero skin-irritating synthetics. Fabrics crafted to breathe with you all day."
+    },
+    {
+      title: "Direct-From-Loom Fair Honest Pricing",
+      desc: "We completely eliminate middleman broker markups. Every single rupee goes directly into artisan craft density and premium fabric quality."
+    },
+    {
+      title: "Generous 2-3 Inch Tailored Alteration Margins",
+      desc: "Every ensemble features generous 2-3 inch inner margins and tailored armholes designed specifically for real Indian women's body silhouettes."
+    },
+    {
+      title: "Transparent Doorstep Experience",
+      desc: "Real product photographs with no deceptive lighting or filters, honest fabric weight disclosures, and dedicated founder-backed customer support."
+    },
+    {
+      title: "Fair Artisan Wages & Women Empowerment",
+      desc: "Providing sustainable year-round employment to rural women tailors and multigenerational handloom artisan families across Uttar Pradesh."
+    }
+  ],
+  vision_title: "Our Guiding Promise",
   vision_quote: "To deliver heirloom-grade, breathable, and regal Indian ethnic wear into every household — straight from artisan looms with complete transparency and fair pricing.",
   brand_values: [
     {
@@ -56,6 +87,14 @@ const DEFAULT_OWNER_DATA = {
   ]
 };
 
+const TRUST_ICONS = [
+  ShieldCheck,
+  Scale,
+  Sparkles,
+  PackageCheck,
+  HeartHandshake
+];
+
 const OwnerPage = () => {
   const [owner, setOwner] = useState(DEFAULT_OWNER_DATA);
   const [loading, setLoading] = useState(true);
@@ -72,10 +111,15 @@ const OwnerPage = () => {
             setOwner((prev) => ({
               ...prev,
               ...data,
+              role: data.role || prev.role || "Founder",
               story_paragraphs:
                 Array.isArray(data.story_paragraphs) && data.story_paragraphs.length > 0
                   ? data.story_paragraphs
                   : prev.story_paragraphs,
+              trust_items:
+                Array.isArray(data.trust_items) && data.trust_items.length > 0
+                  ? data.trust_items
+                  : prev.trust_items,
               brand_values:
                 Array.isArray(data.brand_values) && data.brand_values.length > 0
                   ? data.brand_values
@@ -92,17 +136,17 @@ const OwnerPage = () => {
 
     fetchOwner();
 
-    const pageTitle = `Meet The Founder & Creative Director | Pooja Verma — Nari Pehnawa`;
+    const pageTitle = `Meet The Founder | Pooja Verma — Nari Pehnawa`;
     document.title = pageTitle;
 
     const metaTags = {
       description:
-        "Meet Pooja Verma, the Founder and Creative Director behind Nari Pehnawa. Discover her journey of women self-reliance, authentic handloom heritage, and affordable luxury ethnic fashion.",
+        "Meet Pooja Verma, the Founder behind Nari Pehnawa. Discover her journey of women self-reliance, authentic handloom heritage, pure breathable fabrics, and transparent ethnic fashion.",
       keywords:
-        "Nari Pehnawa, Nari Pehnawa Founder, Pooja Verma, Women Entrepreneurship, Indian Ethnic Wear, Handloom Heritage, Authentic Kurtis, Handcrafted Fashion India",
+        "Nari Pehnawa, Nari Pehnawa Founder, Pooja Verma, Women Entrepreneurship, Indian Ethnic Wear, Handloom Heritage, Authentic Kurtis, Handcrafted Fashion India, Purvanchal Handlooms",
       "og:title": pageTitle,
       "og:description":
-        "Discover the journey of Pooja Verma, Founder of Nari Pehnawa — authentic handloom fashion directly from artisan looms.",
+        "Discover the inspiring journey of Pooja Verma, Founder of Nari Pehnawa — authentic handloom fashion directly from artisan looms.",
       "og:image": "https://www.naripehnawa.com/pooja-verma.jpg",
       "og:url": "https://www.naripehnawa.com/owner",
       "og:type": "profile",
@@ -110,7 +154,7 @@ const OwnerPage = () => {
       "twitter:card": "summary_large_image",
       "twitter:title": pageTitle,
       "twitter:description":
-        "Discover the journey of Pooja Verma, Founder of Nari Pehnawa — authentic handloom fashion directly from artisan looms.",
+        "Discover the inspiring journey of Pooja Verma, Founder of Nari Pehnawa — authentic handloom fashion directly from artisan looms.",
       "twitter:image": "https://www.naripehnawa.com/pooja-verma.jpg",
     };
 
@@ -211,7 +255,7 @@ const OwnerPage = () => {
             </div>
 
             <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight">
-              Meet The <span className="text-[#E5B842] italic font-serif">Founder</span>
+              Meet The <span className="text-[#E5B842] italic font-serif">{owner.role || "Founder"}</span>
             </h1>
 
             <p className="font-serif text-sm sm:text-base lg:text-lg text-amber-100/90 font-light max-w-2xl mx-auto leading-relaxed pt-1">
@@ -269,7 +313,7 @@ const OwnerPage = () => {
               
               <div className="space-y-2">
                 <div className="text-xs font-bold uppercase tracking-[0.25em] text-[#780016]">
-                  Founder &amp; Creative Director
+                  {owner.role || "Founder"}
                 </div>
                 <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1F0206] tracking-tight leading-tight">
                   {owner.name}
@@ -279,14 +323,14 @@ const OwnerPage = () => {
                 </p>
               </div>
 
-              {/* Personal Quote - Editorial Border Accent */}
+              {/* Personal Quote / My Dream - Editorial Border Accent */}
               <div className="relative pl-5 sm:pl-6 border-l-2 border-[#C59B27] py-1.5">
                 <Quote className="w-6 h-6 text-[#C59B27]/40 mb-1" />
                 <p className="font-serif text-base sm:text-lg lg:text-xl text-gray-800 italic leading-relaxed font-normal">
                   "{owner.quote}"
                 </p>
                 <span className="block text-xs font-bold text-[#780016] uppercase tracking-[0.2em] mt-3">
-                  — {owner.name}
+                  — {owner.name}, {owner.role}
                 </span>
               </div>
 
@@ -346,7 +390,7 @@ const OwnerPage = () => {
           </div>
         </section>
 
-        {/* ── NARRATIVE ESSAY (FULL-WIDTH CONTINUOUS PROSE, HIGH-END EDITORIAL READING FLOW) ── */}
+        {/* ── NARRATIVE ESSAY: THE JOURNEY OF NARI PEHNAWA (FULL-WIDTH CONTINUOUS PROSE) ── */}
         <section className="w-full py-16 sm:py-20 lg:py-24 bg-white border-y border-[#E8DFC8]/70">
           <div className="w-full max-w-4xl mx-auto px-4 sm:px-8">
             
@@ -404,6 +448,68 @@ const OwnerPage = () => {
           </div>
         </section>
 
+        {/* ── PILLARS OF TRUST (विश्वास और प्रामाणिकता) SECTION ── */}
+        {Array.isArray(owner.trust_items) && owner.trust_items.length > 0 && (
+          <section className="w-full py-16 sm:py-20 lg:py-24 bg-[#FAF7F2] border-b border-[#E8DFC8]/70">
+            <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-12">
+              
+              <div className="text-center space-y-2 mb-12 sm:mb-16">
+                <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.25em] text-[#780016]">
+                  <ShieldCheck className="w-4 h-4 text-[#C59B27]" />
+                  <span>Founder's Trust Assurance</span>
+                </div>
+                <h3 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 tracking-tight">
+                  {owner.trust_title || "The Pillars of Trust | प्रामाणिकता और विश्वास"}
+                </h3>
+                {owner.trust_subtitle && (
+                  <p className="font-serif text-sm sm:text-base italic text-[#780016] max-w-2xl mx-auto pt-1">
+                    {owner.trust_subtitle}
+                  </p>
+                )}
+                <div className="w-16 h-0.5 bg-[#C59B27] mx-auto mt-3" />
+              </div>
+
+              {/* Minimalist Editorial Trust Spread — NO CLUTTERED CARDS, PURE ELEGANCE */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10 lg:gap-12">
+                {owner.trust_items.map((item, idx) => {
+                  const IconComponent = TRUST_ICONS[idx % TRUST_ICONS.length] || ShieldCheck;
+                  return (
+                    <div
+                      key={idx}
+                      className="flex flex-col space-y-3 pt-6 border-t border-[#C59B27]/40 transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="w-9 h-9 rounded-full bg-[#780016]/10 flex items-center justify-center text-[#780016]">
+                          <IconComponent className="w-4 h-4 text-[#780016]" />
+                        </div>
+                        <span className="font-serif text-xs font-bold uppercase tracking-widest text-[#C59B27]">
+                          Pillar 0{idx + 1}
+                        </span>
+                      </div>
+
+                      <h4 className="font-serif text-lg sm:text-xl font-bold text-gray-900 leading-snug">
+                        {item.title}
+                      </h4>
+
+                      <p className="text-xs sm:text-sm text-gray-600 leading-relaxed font-normal">
+                        {item.desc}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Trust Reassurance Footnote */}
+              <div className="mt-12 pt-8 border-t border-[#E8DFC8]/60 text-center">
+                <p className="text-xs sm:text-sm text-gray-500 max-w-2xl mx-auto leading-relaxed">
+                  Every order placed on <strong className="text-gray-800">Nari Pehnawa</strong> is inspected under Pooja Verma's quality standards before dispatch. We take direct personal accountability for your satisfaction.
+                </p>
+              </div>
+
+            </div>
+          </section>
+        )}
+
         {/* ── CORE BRAND PILLARS (EDITORIAL NUMBERED LIST, NO BOXED CARDS) ── */}
         {Array.isArray(owner.brand_values) && owner.brand_values.length > 0 && (
           <section className="w-full py-16 sm:py-20 lg:py-24 max-w-7xl mx-auto px-4 sm:px-8">
@@ -417,7 +523,7 @@ const OwnerPage = () => {
               <div className="w-16 h-0.5 bg-[#C59B27] mx-auto mt-3" />
             </div>
 
-            {/* Minimalist 2-Column or 4-Column Editorial Spec List — NO CHUNKY BOXES */}
+            {/* Minimalist 2-Column Editorial Spec List — NO CHUNKY BOXES */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 lg:gap-16">
               {owner.brand_values.map((item, idx) => (
                 <div
@@ -450,9 +556,9 @@ const OwnerPage = () => {
               A Personal Note From The Founder
             </div>
 
-            <blockquote className="font-serif text-lg sm:text-xl lg:text-2xl text-white/95 font-medium italic leading-relaxed">
-              "Every outfit you choose from Nari Pehnawa is crafted with love, dignity, and deep respect for the craftswomen who stitch your dreams. I invite you to experience the warmth and timeless purity of authentic Indian ethnic fashion."
-            </blockquote>
+            <p className="font-serif text-base sm:text-xl lg:text-2xl text-amber-50/95 italic leading-relaxed font-light">
+              "When you wear a Nari Pehnawa piece, you are not just wearing clothing; you are honoring the sacred hands of rural Indian weavers and carrying forward our generational heritage with pure pride."
+            </p>
 
             <div className="space-y-1 pt-2">
               <h4 className="font-serif font-bold text-[#E5B842] text-xl sm:text-2xl tracking-wide">
@@ -470,7 +576,6 @@ const OwnerPage = () => {
               >
                 <ShoppingBag className="w-4 h-4 text-[#1F0206]" />
                 <span>Shop The Handcrafted Collection</span>
-                <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 to="/"
