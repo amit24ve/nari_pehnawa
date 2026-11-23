@@ -51,6 +51,7 @@ import Inquiries from "./admin/Inquiries";
 import AdminAnnouncementsModal from "./admin/AdminAnnouncementsModal";
 import Collaborations from "./admin/Collaborations";
 import Sellers from "./admin/Sellers";
+import OwnerManagement from "./admin/OwnerManagement";
 import CreatorDashboard from "./components/CreatorDashboard";
 import RequireAuth from "./admin/RequireAuth";
 import { AuthProvider } from "./context/AuthProvider";
@@ -367,6 +368,10 @@ function App() {
                                     <Route
                                         path="sellers"
                                         element={<Sellers />}
+                                    />
+                                    <Route
+                                        path="owner"
+                                        element={<OwnerManagement />}
                                     />
                                 </Route>
 

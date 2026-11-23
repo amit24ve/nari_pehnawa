@@ -1148,7 +1148,7 @@ const SellerProfile = () => {
             <button
               type="submit"
               disabled={passwordLoading}
-              className="px-5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+              className="px-5 py-2.5 rounded-xl bg-[#0891b2] hover:bg-[#0e7490] text-white text-xs font-bold shadow-xs transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
             >
               <Lock className="w-3.5 h-3.5" />
               <span>{passwordLoading ? "Updating Password..." : "Update Password"}</span>

@@ -22,6 +22,7 @@ import {
     MessageSquare,
     Megaphone,
     Share2,
+    Crown,
     Image as ImageIcon,
 } from "lucide-react";
 import logoImg from "../assets/logo.png";
@@ -153,6 +154,9 @@ const AdminLayout = () => {
                     </NavItem>
                     <NavItem to="/admin/sellers" icon={Store}>
                         Sellers & Vendors
+                    </NavItem>
+                    <NavItem to="/admin/owner" icon={Crown}>
+                        Owner Profile
                     </NavItem>
                     <NavItem to="/admin/settings" icon={Settings}>
                         Settings
@@ -458,6 +462,13 @@ const AdminLayout = () => {
                                     onClick={closeMobileMenu}
                                 >
                                     Sellers & Vendors
+                                </NavItem>
+                                <NavItem
+                                    to="/admin/owner"
+                                    icon={Crown}
+                                    onClick={closeMobileMenu}
+                                >
+                                    Owner Profile
                                 </NavItem>
                                 <NavItem
                                     to="/admin/settings"

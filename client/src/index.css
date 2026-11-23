@@ -232,6 +232,18 @@ div.min-h-screen.bg-slate-50 {
         color: #ffffff !important;
         box-shadow: 0 4px 6px -1px rgba(8, 145, 178, 0.1) !important;
     }
+    .bg-\[\#0891b2\],
+    .bg-\[\#0891b2\] *,
+    .bg-emerald-600,
+    .bg-emerald-600 *,
+    .bg-emerald-700,
+    .bg-emerald-700 *,
+    .bg-slate-900,
+    .bg-slate-900 *,
+    .bg-slate-800,
+    .bg-slate-800 * {
+        color: #ffffff !important;
+    }
     .hover\:bg-\[\#c49d2f\]:hover,
     .hover\:brightness-110:hover {
         background-color: #06b6d4 !important;

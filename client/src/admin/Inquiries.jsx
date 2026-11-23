@@ -515,7 +515,7 @@ const Inquiries = () => {
                 {/* ── Top Header Row ── */}
                 <div className="px-4 py-3 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50/70">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs font-black px-2.5 py-0.5 rounded-lg bg-slate-900 text-white shadow-2xs">
+                    <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-800 border border-slate-300 shadow-2xs">
                       {item.id}
                     </span>
                     
@@ -722,7 +722,7 @@ const Inquiries = () => {
             {/* Modal Header */}
             <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <span className="font-mono text-sm font-black px-2.5 py-1 rounded-lg bg-slate-900 text-white">
+                <span className="font-mono text-sm font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-300">
                   {selectedInquiry.id}
                 </span>
                 <div>
