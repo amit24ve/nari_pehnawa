@@ -134,6 +134,7 @@ const SellerLayout = () => {
     { to: "/seller/products/new", label: "Add Product", icon: PlusCircle },
     { to: "/seller/orders", label: "Orders", icon: ShoppingCart },
     { to: "/seller/inventory", label: "Inventory", icon: Boxes },
+    { to: "/seller/warehouse", label: "Warehouse & Pickup", icon: Building2 },
     { to: "/seller/finance", label: "Payments", icon: IndianRupee },
     { to: "/seller/returns", label: "Returns", icon: RotateCcw },
     { to: "/seller/inquiries", label: "Inquiries & Support", icon: MessageSquare },
@@ -351,8 +352,17 @@ const SellerLayout = () => {
                       onClick={() => setShowProfileMenu(false)}
                       className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
                     >
-                      <Building2 className="w-4 h-4 text-slate-500" />
+                      <Store className="w-4 h-4 text-slate-500" />
                       <span>Shop Profile & KYC</span>
+                    </Link>
+
+                    <Link
+                      to="/seller/warehouse"
+                      onClick={() => setShowProfileMenu(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                    >
+                      <Building2 className="w-4 h-4 text-slate-500" />
+                      <span>Warehouse & Pickup</span>
                     </Link>
 
                     <Link

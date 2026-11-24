@@ -124,6 +124,20 @@ class SellerProfileUpdateRequest(BaseModel):
     kyc_documents: Optional[List[str]] = None
 
 
+class SellerWarehouseUpdateRequest(BaseModel):
+    warehouse_name: Optional[str] = None
+    pickup_location: Optional[str] = None
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    address_line1: str = Field(..., min_length=2, max_length=250)
+    address_2: Optional[str] = None
+    city: str = Field(..., min_length=2, max_length=100)
+    state: str = Field(..., min_length=2, max_length=100)
+    pincode: str = Field(..., min_length=6, max_length=6)
+    country: Optional[str] = "India"
+
+
 class AdminProductApprovalRequest(BaseModel):
     status: str = Field(..., pattern="^(approved|rejected|pending)$")
     remarks: Optional[str] = None
@@ -504,8 +518,59 @@ def register_seller(payload: SellerRegisterRequest):
         "updated_at": now,
     }
 
+    # Generate unique Shiprocket pickup location nickname for this seller
+    shop_clean = re.sub(r"[^a-zA-Z0-9]", "_", payload.shop_name.strip()).upper()[:12].strip("_") or "SELLER"
+    pickup_nickname = f"NP_{shop_clean}_{seller_code.replace('NP-SEL-', '')}"[:36]
+
+    warehouse_doc = {
+        "pickup_location": pickup_nickname,
+        "warehouse_name": f"{payload.shop_name.strip()} Primary Warehouse",
+        "contact_name": payload.name.strip(),
+        "contact_phone": payload.phone.strip(),
+        "contact_email": email_clean,
+        "address_line1": payload.address.strip() if payload.address else f"{payload.city.strip()}, {payload.state.strip()}",
+        "address_2": "",
+        "city": payload.city.strip(),
+        "state": payload.state.strip(),
+        "pincode": payload.pincode.strip() if payload.pincode else "228151",
+        "country": "India",
+        "is_synced_shiprocket": False,
+        "created_at": now,
+        "updated_at": now,
+    }
+    seller_doc["pickup_location"] = pickup_nickname
+    seller_doc["warehouse"] = warehouse_doc
+
     result = db["sellers"].insert_one(seller_doc)
     seller_id = str(result.inserted_id)
+
+    # Register pickup location in Shiprocket in background
+    try:
+        import asyncio
+        import threading
+        from app.services.shiprocket_service import get_shiprocket_service
+
+        def _bg_register_pickup(wh_data, s_id):
+            async def _do():
+                try:
+                    sr = get_shiprocket_service()
+                    sr_res = await sr.add_pickup_location(wh_data)
+                    if sr_res.get("success"):
+                        db["sellers"].update_one(
+                            {"_id": ObjectId(s_id)},
+                            {"$set": {
+                                "warehouse.is_synced_shiprocket": True,
+                                "warehouse.shiprocket_synced_at": datetime.now(timezone.utc),
+                                "warehouse.shiprocket_response": sr_res
+                            }}
+                        )
+                except Exception as exc:
+                    print(f"[Shiprocket] Seller registration pickup location note: {exc}")
+            asyncio.run(_do())
+
+        threading.Thread(target=_bg_register_pickup, args=(warehouse_doc, seller_id), daemon=True).start()
+    except Exception as exc:
+        print(f"[Shiprocket] Seller pickup location registration thread error: {exc}")
 
     # Link uploaded KYC documents to this seller
     if payload.kyc_documents:
@@ -760,6 +825,200 @@ def update_seller_profile(
         "changed_fields": changed_fields,
         "seller": serialize_doc(seller),
     }
+
+
+# ── Warehouse & Pickup Location Management (Shiprocket Auto-Sync) ──────────────
+
+@router.get("/warehouse")
+def get_seller_warehouse(current_user: dict = Depends(require_seller)):
+    """
+    Get the seller's active warehouse & Shiprocket pickup location.
+    If not yet initialized, auto-generates from registered profile.
+    """
+    db = get_database()
+    seller = db["sellers"].find_one({"_id": ObjectId(current_user["id"])})
+    if not seller:
+        raise HTTPException(status_code=404, detail="Seller not found.")
+
+    warehouse = seller.get("warehouse")
+    pickup_nickname = seller.get("pickup_location")
+
+    now = datetime.now(timezone.utc)
+    # Auto-initialize warehouse if missing
+    if not warehouse:
+        shop_clean = re.sub(r"[^a-zA-Z0-9]", "_", seller.get("shop_name", "SELLER")).upper()[:12].strip("_")
+        code_part = seller.get("seller_code", "").replace("NP-SEL-", "") or str(seller["_id"])[-5:].upper()
+        pickup_nickname = f"NP_{shop_clean}_{code_part}"[:36]
+
+        warehouse = {
+            "pickup_location": pickup_nickname,
+            "warehouse_name": f"{seller.get('shop_name', 'My Shop')} Primary Warehouse",
+            "contact_name": seller.get("name") or "Warehouse Manager",
+            "contact_phone": seller.get("phone") or "9876543210",
+            "contact_email": seller.get("email") or "support@naripehnawa.com",
+            "address_line1": seller.get("address") or f"{seller.get('city', 'Sultanpur')}, {seller.get('state', 'Uttar Pradesh')}",
+            "address_2": "",
+            "city": seller.get("city") or "Sultanpur",
+            "state": seller.get("state") or "Uttar Pradesh",
+            "pincode": seller.get("pincode") or "228151",
+            "country": "India",
+            "is_synced_shiprocket": False,
+            "created_at": now,
+            "updated_at": now,
+        }
+        db["sellers"].update_one(
+            {"_id": seller["_id"]},
+            {"$set": {"warehouse": warehouse, "pickup_location": pickup_nickname}}
+        )
+
+    # Count products associated with this seller's warehouse
+    seller_id_str = str(seller["_id"])
+    linked_products_count = db["products"].count_documents({"seller_id": seller_id_str})
+
+    return {
+        "success": True,
+        "pickup_location": pickup_nickname or warehouse.get("pickup_location"),
+        "warehouse": warehouse,
+        "linked_products_count": linked_products_count,
+        "is_synced_shiprocket": warehouse.get("is_synced_shiprocket", False),
+        "shiprocket_synced_at": warehouse.get("shiprocket_synced_at"),
+    }
+
+
+@router.put("/warehouse")
+async def update_seller_warehouse(
+    payload: SellerWarehouseUpdateRequest,
+    current_user: dict = Depends(require_seller),
+):
+    """
+    Update seller's pickup location & warehouse address.
+    Automatically syncs / registers this pickup location with Shiprocket
+    and updates pickup_location across all of the seller's active products.
+    """
+    db = get_database()
+    seller = db["sellers"].find_one({"_id": ObjectId(current_user["id"])})
+    if not seller:
+        raise HTTPException(status_code=404, detail="Seller not found.")
+
+    now = datetime.now(timezone.utc)
+    seller_id_str = str(seller["_id"])
+
+    # Determine pickup location nickname (cannot be empty, alphanumeric)
+    if payload.pickup_location and payload.pickup_location.strip():
+        raw_nick = payload.pickup_location.strip().upper()
+        clean_nick = re.sub(r"[^A-Z0-9_\-]", "_", raw_nick)[:36]
+    else:
+        existing_wh = seller.get("warehouse") or {}
+        clean_nick = existing_wh.get("pickup_location") or seller.get("pickup_location")
+        if not clean_nick:
+            shop_clean = re.sub(r"[^a-zA-Z0-9]", "_", seller.get("shop_name", "SELLER")).upper()[:12].strip("_")
+            code_part = seller.get("seller_code", "").replace("NP-SEL-", "") or str(seller["_id"])[-5:].upper()
+            clean_nick = f"NP_{shop_clean}_{code_part}"[:36]
+
+    wh_dict = {
+        "pickup_location": clean_nick,
+        "warehouse_name": payload.warehouse_name.strip() if payload.warehouse_name else f"{seller.get('shop_name', 'Seller')} Warehouse",
+        "contact_name": payload.contact_name.strip() if payload.contact_name else seller.get("name"),
+        "contact_phone": payload.contact_phone.strip() if payload.contact_phone else seller.get("phone"),
+        "contact_email": payload.contact_email.strip() if payload.contact_email else seller.get("email"),
+        "address_line1": payload.address_line1.strip(),
+        "address_2": payload.address_2.strip() if payload.address_2 else "",
+        "city": payload.city.strip(),
+        "state": payload.state.strip(),
+        "pincode": payload.pincode.strip(),
+        "country": payload.country or "India",
+        "is_synced_shiprocket": False,
+        "updated_at": now,
+    }
+
+    # Attempt to sync / register directly with Shiprocket API
+    sr_res = {}
+    is_synced = False
+    try:
+        from app.services.shiprocket_service import get_shiprocket_service
+        sr = get_shiprocket_service()
+        sr_res = await sr.add_pickup_location(wh_dict)
+        if sr_res.get("success"):
+            is_synced = True
+            wh_dict["is_synced_shiprocket"] = True
+            wh_dict["shiprocket_synced_at"] = now
+            wh_dict["shiprocket_response"] = sr_res
+    except Exception as exc:
+        print(f"[Shiprocket] Update warehouse sync note: {exc}")
+        wh_dict["shiprocket_error"] = str(exc)
+
+    # Update seller document
+    db["sellers"].update_one(
+        {"_id": seller["_id"]},
+        {"$set": {
+            "warehouse": wh_dict,
+            "pickup_location": clean_nick,
+            "updated_at": now
+        }}
+    )
+
+    # Automatically update all products belonging to this seller to use the new pickup location!
+    updated_prods = db["products"].update_many(
+        {"seller_id": seller_id_str},
+        {"$set": {
+            "pickup_location": clean_nick,
+            "seller_warehouse": wh_dict,
+            "updated_at": now
+        }}
+    )
+
+    try:
+        clear_api_cache()
+    except Exception:
+        pass
+
+    return {
+        "success": True,
+        "message": f"Warehouse and pickup location '{clean_nick}' saved! {updated_prods.modified_count} products updated.",
+        "pickup_location": clean_nick,
+        "warehouse": wh_dict,
+        "is_synced_shiprocket": is_synced,
+        "shiprocket_sync": sr_res,
+        "updated_products_count": updated_prods.modified_count
+    }
+
+
+@router.post("/warehouse/sync-shiprocket")
+async def force_sync_warehouse_shiprocket(current_user: dict = Depends(require_seller)):
+    """Force an active sync of the seller's warehouse with Shiprocket API."""
+    db = get_database()
+    seller = db["sellers"].find_one({"_id": ObjectId(current_user["id"])})
+    if not seller:
+        raise HTTPException(status_code=404, detail="Seller not found.")
+
+    warehouse = seller.get("warehouse")
+    if not warehouse:
+        raise HTTPException(status_code=400, detail="No warehouse registered yet. Please save your warehouse address first.")
+
+    now = datetime.now(timezone.utc)
+    try:
+        from app.services.shiprocket_service import get_shiprocket_service
+        sr = get_shiprocket_service()
+        sr_res = await sr.add_pickup_location(warehouse)
+        is_synced = bool(sr_res.get("success"))
+
+        db["sellers"].update_one(
+            {"_id": seller["_id"]},
+            {"$set": {
+                "warehouse.is_synced_shiprocket": is_synced,
+                "warehouse.shiprocket_synced_at": now if is_synced else None,
+                "warehouse.shiprocket_response": sr_res,
+                "updated_at": now
+            }}
+        )
+
+        return {
+            "success": is_synced,
+            "message": "Pickup location successfully registered and verified with Shiprocket!" if is_synced else "Shiprocket response received.",
+            "response": sr_res
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Shiprocket sync error: {str(exc)}")
 
 
 @router.get("/change-requests")
@@ -1700,6 +1959,8 @@ def create_seller_product(
         "seller_id": str(seller["_id"]),
         "seller_name": seller.get("shop_name"),
         "seller_city": seller.get("city"),
+        "pickup_location": seller.get("pickup_location") or (seller.get("warehouse") or {}).get("pickup_location") or f"NP_{str(seller['_id'])[-6:].upper()}",
+        "seller_warehouse": seller.get("warehouse"),
         "created_at": now,
         "updated_at": now,
     }

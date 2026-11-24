@@ -568,7 +568,7 @@ async def fulfill_order(
     if chosen_warehouse:
         order_data["pickup_location"] = str(chosen_warehouse).strip()
     else:
-        # Fallback to resolve from products in the order
+        # Fallback to resolve from seller/warehouse in the order products
         items = order_data.get("items", []) or []
         for item in items:
             pid = item.get("product_id") or item.get("id") or item.get("_id")
@@ -578,6 +578,37 @@ async def fulfill_order(
                     db = repo.db
                     prod = db["products"].find_one({"_id": ObjectId(str(pid))})
                     if prod:
+                        # 1. Check if product belongs to a seller
+                        seller_id = prod.get("seller_id")
+                        if seller_id:
+                            try:
+                                seller = db["sellers"].find_one({"_id": ObjectId(str(seller_id))})
+                                if seller:
+                                    s_pickup = seller.get("pickup_location") or (seller.get("warehouse") or {}).get("pickup_location")
+                                    if s_pickup:
+                                        order_data["pickup_location"] = str(s_pickup).strip()
+                                        # Auto-sync seller warehouse with Shiprocket if needed
+                                        wh_data = seller.get("warehouse")
+                                        if wh_data and not wh_data.get("is_synced_shiprocket"):
+                                            try:
+                                                sr_res = await sr.add_pickup_location(wh_data)
+                                                if sr_res.get("success"):
+                                                    db["sellers"].update_one(
+                                                        {"_id": seller["_id"]},
+                                                        {"$set": {"warehouse.is_synced_shiprocket": True}}
+                                                    )
+                                            except Exception as sync_err:
+                                                logger.warning("Auto-sync seller warehouse failed: %s", sync_err)
+                                        break
+                            except Exception as s_err:
+                                logger.warning("Seller lookup failed in shipping fulfill: %s", s_err)
+
+                        # 2. Check product's explicit pickup_location
+                        if prod.get("pickup_location"):
+                            order_data["pickup_location"] = str(prod["pickup_location"]).strip()
+                            break
+
+                        # 3. Fallback to in-house store warehouse
                         sz = item.get("size")
                         wh_size_stock = prod.get("warehouse_size_stock") or {}
                         wh_stock = prod.get("warehouse_stock") or {}
@@ -593,9 +624,6 @@ async def fulfill_order(
                             break
                         elif int(wh_stock.get("home-1", 0) or 0) > 0:
                             order_data["pickup_location"] = "home-1"
-                            break
-                        if prod.get("pickup_location"):
-                            order_data["pickup_location"] = prod["pickup_location"]
                             break
                 except Exception:
                     pass

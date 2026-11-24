@@ -104,6 +104,10 @@ const Footer = () => {
         }
       })
       .catch(() => { });
+
+    const handleOpenInquiry = () => setShowSellerInquiryModal(true);
+    window.addEventListener("np_open_seller_inquiry", handleOpenInquiry);
+    return () => window.removeEventListener("np_open_seller_inquiry", handleOpenInquiry);
   }, []);
 
   const handleInquirySubmit = async (e) => {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import {
   Building2,
   Store,
@@ -288,6 +289,33 @@ const SellerProfile = () => {
           </span>
           Once registered on Nari Pehnawa, your registered name, phone number, address, bank accounts, GST, PAN, and KYC documents are protected. To update any details, edit the fields below and submit your request. Changes are submitted as a <strong>Change Request</strong> and will be applied automatically once reviewed and approved by the Admin Panel.
         </div>
+      </div>
+
+      {/* Warehouse & Shipping Pickup Quick Card */}
+      <div className="bg-gradient-to-r from-cyan-900 to-slate-900 text-white p-5 rounded-xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0 text-cyan-300">
+            <Building2 className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="text-xs uppercase font-bold tracking-wider text-cyan-300">
+              Courier Pickup & Logistics
+            </div>
+            <div className="text-sm font-extrabold text-white mt-0.5">
+              Dedicated Warehouse & Shiprocket Pickup Location
+            </div>
+            <div className="text-xs text-slate-300 mt-0.5">
+              Manage your courier pickup address, facility contacts, and automated Shiprocket sync.
+            </div>
+          </div>
+        </div>
+        <Link
+          to="/seller/warehouse"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#0891b2] hover:bg-[#0e7490] text-white text-xs font-bold rounded-xl transition shadow-xs whitespace-nowrap cursor-pointer"
+        >
+          <span>Manage Warehouse</span>
+          <ExternalLink className="w-3.5 h-3.5" />
+        </Link>
       </div>
 
       {/* KYC Status Strip */}

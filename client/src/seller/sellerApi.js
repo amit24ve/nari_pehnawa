@@ -254,6 +254,15 @@ export const sellerApi = {
     }
     return res.json();
   },
+
+  // Warehouse & Shiprocket Pickup Location
+  getWarehouse: () => sellerRequest("/seller/warehouse"),
+
+  updateWarehouse: (payload) =>
+    sellerRequest("/seller/warehouse", { method: "PUT", body: payload }),
+
+  syncShiprocketWarehouse: () =>
+    sellerRequest("/seller/warehouse/sync-shiprocket", { method: "POST" }),
 };
 
 export default sellerApi;

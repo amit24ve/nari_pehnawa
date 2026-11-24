@@ -72,6 +72,7 @@ import SellerInventory from "./seller/SellerInventory";
 import SellerFinance from "./seller/SellerFinance";
 import SellerReturns from "./seller/SellerReturns";
 import SellerReports from "./seller/SellerReports";
+import SellerWarehouse from "./seller/SellerWarehouse";
 
 // User account (no separate dashboard — pages are reached only via the
 // navbar's profile dropdown, rendered inside the normal site layout)
@@ -400,6 +401,10 @@ function App() {
                                     <Route
                                         path="inventory"
                                         element={<SellerInventory />}
+                                    />
+                                    <Route
+                                        path="warehouse"
+                                        element={<SellerWarehouse />}
                                     />
                                     <Route
                                         path="finance"
