@@ -15,6 +15,10 @@ import {
   HelpCircle,
   Check,
   Tag,
+  Building2,
+  MapPin,
+  Truck,
+  ExternalLink,
 } from "lucide-react";
 import sellerApi from "./sellerApi";
 import { useSellerAuth } from "./SellerAuthContext";
@@ -67,6 +71,18 @@ const SellerAddProduct = () => {
   const [initialLoading, setInitialLoading] = useState(isEditMode);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const [warehouse, setWarehouse] = useState(null);
+
+  useEffect(() => {
+    sellerApi.getWarehouse()
+      .then((res) => {
+        if (res && res.warehouse) {
+          setWarehouse(res.warehouse);
+        }
+      })
+      .catch((err) => console.log("Warehouse load note:", err));
+  }, []);
 
   // Load categories and brands
   useEffect(() => {
@@ -1004,6 +1020,17 @@ const SellerAddProduct = () => {
                 Publish Product Immediately (Visible to buyers on storefront)
               </label>
             </div>
+
+            {/* Dispatch Warehouse Reminder in Form */}
+            <div className="p-4 rounded-xl bg-cyan-50/70 border border-cyan-200/80 flex items-start gap-3">
+              <Truck className="w-5 h-5 text-[#0891b2] flex-shrink-0 mt-0.5" />
+              <div className="text-xs text-slate-700 leading-relaxed">
+                <span className="font-bold text-slate-900 block mb-0.5">
+                  Automatic Dispatch Pickup Address:
+                </span>
+                This catalog item will dispatch from <strong>{warehouse?.warehouse_name || `${seller?.shop_name || "Merchant"} Warehouse`}</strong> ({warehouse?.city || seller?.city || "City"}, {warehouse?.pincode || seller?.pincode || ""}). If you ever change your warehouse address in settings, this product and all your other products will update automatically.
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-2">
@@ -1082,6 +1109,48 @@ const SellerAddProduct = () => {
             </div>
           </div>
 
+          {/* Dispatch Warehouse (Auto-Selected) Card */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <Building2 className="w-4 h-4 text-[#0891b2]" />
+                <span>Dispatch Warehouse</span>
+              </span>
+              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                Auto-Selected
+              </span>
+            </div>
+
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+              <div className="text-xs font-extrabold text-slate-900">
+                {warehouse?.warehouse_name || `${seller?.shop_name || "Merchant"} Warehouse`}
+              </div>
+              <div className="text-[11px] font-mono font-bold text-[#0891b2]">
+                Location ID: {warehouse?.pickup_location || seller?.pickup_location || "Auto Assigned"}
+              </div>
+              <div className="text-xs text-slate-600 flex items-start gap-1 pt-1">
+                <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
+                <span>
+                  {warehouse?.address_line1 || seller?.address || "Registered Address"}, {warehouse?.city || seller?.city || "City"},{" "}
+                  {warehouse?.state || seller?.state || "State"} - {warehouse?.pincode || seller?.pincode || ""}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              When an order is placed for this product, couriers (Delhivery, Blue Dart, Shadowfax, Xpressbees) will automatically arrive at this address for pickup.
+            </p>
+
+            <div className="pt-1">
+              <Link
+                to="/seller/warehouse"
+                className="text-xs font-bold text-[#0891b2] hover:underline inline-flex items-center gap-1"
+              >
+                <span>Change Warehouse Address</span>
+                <ExternalLink className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
 
         </div>
       </div>

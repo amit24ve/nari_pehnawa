@@ -111,6 +111,47 @@ def _stock_items_from_order_data(order_data: dict) -> list[StockLineItem]:
     return result
 
 
+def _enrich_order_items_with_seller(order_data: dict, db):
+    """
+    Ensure every line item in order_data['items'] has seller_id, seller_name,
+    and pickup_location explicitly stamped from the product catalog.
+    Also auto-resolves order_data['pickup_location'] for Shiprocket fulfillment.
+    """
+    items = order_data.get("items", []) or []
+    first_seller_pickup = None
+    for it in items:
+        pid = it.get("product_id") or it.get("id") or it.get("_id")
+        if not pid:
+            continue
+        try:
+            prod = None
+            if ObjectId.is_valid(str(pid)):
+                prod = db["products"].find_one({"_id": ObjectId(str(pid))})
+            if not prod:
+                prod = db["products"].find_one({"_id": str(pid)})
+            if prod:
+                sid = prod.get("seller_id")
+                if sid:
+                    it["seller_id"] = str(sid)
+                    if prod.get("seller_name"):
+                        it["seller_name"] = prod.get("seller_name")
+                    pickup = prod.get("pickup_location")
+                    if not pickup:
+                        seller = db["sellers"].find_one({"_id": ObjectId(str(sid))}) if ObjectId.is_valid(str(sid)) else None
+                        if seller:
+                            pickup = seller.get("pickup_location")
+                    if pickup:
+                        it["pickup_location"] = str(pickup).strip()
+                        if not first_seller_pickup:
+                            first_seller_pickup = str(pickup).strip()
+                elif not it.get("seller_id"):
+                    it["seller_id"] = "owner"
+        except Exception:
+            pass
+    if first_seller_pickup and not order_data.get("pickup_location"):
+        order_data["pickup_location"] = first_seller_pickup
+
+
 def _trigger_shiprocket(order_id: str, order_data: dict, db):
     """
     Fire off the full Shiprocket fulfilment pipeline (create order -> assign
@@ -486,6 +527,7 @@ def verify_razorpay_payment(data: dict, current_user: dict = Depends(get_current
     # ── Create order ──────────────────────────────────────────────────────
     try:
         order_num = _gen_order_number()
+        _enrich_order_items_with_seller(order_data, db)
         order_data.update(
             {
                 "user_id": current_user.get("id"),
@@ -781,6 +823,7 @@ def create_cod_order(order_data: dict, current_user: dict = Depends(get_current_
 
     try:
         order_num = _gen_order_number()
+        _enrich_order_items_with_seller(order_data, db)
         order_data.update(
             {
                 "user_id": current_user.get("id"),

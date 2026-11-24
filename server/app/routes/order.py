@@ -131,6 +131,28 @@ def create_order(order: OrderCreate, current_user: dict = Depends(get_current_us
         order_data["payment_status"] = "pending"
         order_data["created_at"] = datetime.now(timezone.utc)
         
+        # Enrich order items with seller_id and pickup_location
+        for it in order_data.get("items", []) or []:
+            pid = it.get("product_id") or it.get("id") or it.get("_id")
+            if pid:
+                try:
+                    from bson import ObjectId
+                    prod = db["products"].find_one({"_id": ObjectId(str(pid))}) if ObjectId.is_valid(str(pid)) else db["products"].find_one({"_id": str(pid)})
+                    if prod:
+                        sid = prod.get("seller_id")
+                        if sid:
+                            it["seller_id"] = str(sid)
+                            if prod.get("seller_name"):
+                                it["seller_name"] = prod.get("seller_name")
+                            if prod.get("pickup_location"):
+                                it["pickup_location"] = prod.get("pickup_location")
+                            if not order_data.get("pickup_location") and prod.get("pickup_location"):
+                                order_data["pickup_location"] = str(prod.get("pickup_location")).strip()
+                        elif not it.get("seller_id"):
+                            it["seller_id"] = "owner"
+                except Exception:
+                    pass
+
         result = orders_collection.insert_one(order_data)
         order_data["_id"] = str(result.inserted_id)
 

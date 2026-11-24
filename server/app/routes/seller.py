@@ -958,8 +958,14 @@ async def update_seller_warehouse(
     )
 
     # Automatically update all products belonging to this seller to use the new pickup location!
+    query_seller_prods = {
+        "$or": [
+            {"seller_id": seller_id_str},
+            {"seller_id": ObjectId(seller_id_str)} if ObjectId.is_valid(seller_id_str) else {"seller_id": seller_id_str}
+        ]
+    }
     updated_prods = db["products"].update_many(
-        {"seller_id": seller_id_str},
+        query_seller_prods,
         {"$set": {
             "pickup_location": clean_nick,
             "seller_warehouse": wh_dict,
@@ -1028,7 +1034,14 @@ def get_seller_change_requests(
 ):
     """Fetch change requests raised by the authenticated seller."""
     db = get_database()
-    query = {"seller_id": current_user["id"]}
+    uid = current_user["id"]
+    base_seller_query = {
+        "$or": [
+            {"seller_id": uid},
+            {"seller_id": ObjectId(uid)} if ObjectId.is_valid(uid) else {"seller_id": uid}
+        ]
+    }
+    query = dict(base_seller_query)
     if status_filter and status_filter != "all":
         query["status"] = status_filter
 
@@ -1109,7 +1122,12 @@ def get_seller_dashboard_stats(
         raise HTTPException(status_code=404, detail="Seller not found.")
 
     # 1. Product & stock counts
-    seller_products = list(db["products"].find({"seller_id": sid}))
+    seller_products = list(db["products"].find({
+        "$or": [
+            {"seller_id": sid},
+            {"seller_id": ObjectId(sid)} if ObjectId.is_valid(sid) else {"seller_id": sid}
+        ]
+    }))
     total_products = len(seller_products)
     active_products = sum(1 for p in seller_products if p.get("in_stock", True))
     total_stock_units = sum(int(p.get("stock_quantity") or p.get("stock") or 0) for p in seller_products)
@@ -1135,12 +1153,14 @@ def get_seller_dashboard_stats(
     seller_pids = {str(p["_id"]): p for p in seller_products}
     seller_pid_list = list(seller_pids.keys())
 
-    order_query = {
-        "$or": [
-            {"items.product_id": {"$in": seller_pid_list}},
-            {"items.seller_id": sid},
-        ]
-    }
+    seller_match_clauses = [{"items.seller_id": str(sid)}]
+    if seller_pid_list:
+        seller_match_clauses.extend([
+            {"items.product_id": {"$in": seller_pid_list + [ObjectId(p) for p in seller_pid_list if ObjectId.is_valid(p)]}},
+            {"items.id": {"$in": seller_pid_list}},
+            {"items._id": {"$in": seller_pid_list}},
+        ])
+    order_query = {"$or": seller_match_clauses}
     all_seller_orders = list(db["orders"].find(order_query).sort("created_at", -1))
 
     # Calculate metrics
@@ -1305,24 +1325,38 @@ def list_seller_orders(
     db = get_database()
     sid = current_user["id"]
 
-    seller_products = list(db["products"].find({"seller_id": sid}, {"_id": 1}))
-    seller_pid_list = [str(p["_id"]) for p in seller_products]
+    seller_prods = list(db["products"].find(
+        {"$or": [
+            {"seller_id": sid},
+            {"seller_id": ObjectId(sid)} if ObjectId.is_valid(sid) else {"seller_id": sid}
+        ]},
+        {"_id": 1}
+    ))
+    seller_pid_list = [str(p["_id"]) for p in seller_prods]
+    seller_pid_objs = [p["_id"] for p in seller_prods]
 
-    query = {
-        "$or": [
-            {"items.product_id": {"$in": seller_pid_list}},
-            {"items.seller_id": sid},
-        ]
-    }
+    seller_match_clauses = [{"items.seller_id": str(sid)}]
+    if seller_pid_list:
+        seller_match_clauses.extend([
+            {"items.product_id": {"$in": seller_pid_list + seller_pid_objs}},
+            {"items.id": {"$in": seller_pid_list + seller_pid_objs}},
+            {"items._id": {"$in": seller_pid_list + seller_pid_objs}},
+        ])
+
+    and_clauses = [{"$or": seller_match_clauses}]
 
     if status and status != "all":
-        query["status"] = status
+        and_clauses.append({"status": status})
     if search:
-        query["$or"] = [
-            {"order_number": {"$regex": search.strip(), "$options": "i"}},
-            {"customer_email": {"$regex": search.strip(), "$options": "i"}},
-            {"shipping_address.name": {"$regex": search.strip(), "$options": "i"}},
-        ]
+        and_clauses.append({
+            "$or": [
+                {"order_number": {"$regex": search.strip(), "$options": "i"}},
+                {"customer_email": {"$regex": search.strip(), "$options": "i"}},
+                {"shipping_address.name": {"$regex": search.strip(), "$options": "i"}},
+            ]
+        })
+
+    query = {"$and": and_clauses} if len(and_clauses) > 1 else and_clauses[0]
 
     total = db["orders"].count_documents(query)
     raw_orders = list(db["orders"].find(query).sort("created_at", -1).skip(skip).limit(limit))
@@ -1331,21 +1365,29 @@ def list_seller_orders(
     for o in raw_orders:
         seller_items = [
             it for it in o.get("items", [])
-            if str(it.get("product_id")) in seller_pid_list or str(it.get("seller_id")) == sid
+            if str(it.get("seller_id") or "") == str(sid) or
+               str(it.get("product_id") or it.get("id") or it.get("_id") or "") in seller_pid_list
         ]
+        if not seller_items:
+            continue
+
         seller_subtotal = sum(
             float(it.get("price") or 0) * int(it.get("quantity") or 1) for it in seller_items
         )
 
         formatted = serialize_doc(o)
+        # CRITICAL: Overwrite items with seller_items so the seller NEVER sees other sellers' items
+        formatted["items"] = seller_items
         formatted["seller_items"] = seller_items
         formatted["seller_subtotal"] = round(seller_subtotal, 2)
+        formatted["total_amount"] = round(seller_subtotal, 2)
+        formatted["amount"] = round(seller_subtotal, 2)
         formatted["seller_item_count"] = sum(int(it.get("quantity") or 1) for it in seller_items)
         seller_orders.append(formatted)
 
     return {
         "orders": seller_orders,
-        "total": total,
+        "total": len(seller_orders) if search else total,
     }
 
 
@@ -1366,12 +1408,19 @@ def get_seller_order_detail(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found.")
 
-    seller_products = list(db["products"].find({"seller_id": sid}, {"_id": 1}))
+    seller_products = list(db["products"].find(
+        {"$or": [
+            {"seller_id": sid},
+            {"seller_id": ObjectId(sid)} if ObjectId.is_valid(sid) else {"seller_id": sid}
+        ]},
+        {"_id": 1}
+    ))
     seller_pid_list = [str(p["_id"]) for p in seller_products]
 
     seller_items = [
         it for it in order.get("items", [])
-        if str(it.get("product_id")) in seller_pid_list or str(it.get("seller_id")) == sid
+        if str(it.get("seller_id") or "") == str(sid) or
+           str(it.get("product_id") or it.get("id") or it.get("_id") or "") in seller_pid_list
     ]
     if not seller_items:
         raise HTTPException(status_code=403, detail="You do not have products in this order.")
@@ -1381,8 +1430,11 @@ def get_seller_order_detail(
     )
 
     formatted = serialize_doc(order)
+    formatted["items"] = seller_items
     formatted["seller_items"] = seller_items
     formatted["seller_subtotal"] = round(seller_subtotal, 2)
+    formatted["total_amount"] = round(seller_subtotal, 2)
+    formatted["amount"] = round(seller_subtotal, 2)
     return formatted
 
 
@@ -1516,7 +1568,12 @@ def get_seller_finance_overview(current_user: dict = Depends(require_seller)):
     if not seller:
         raise HTTPException(status_code=404, detail="Seller not found.")
 
-    seller_products = list(db["products"].find({"seller_id": sid}, {"_id": 1}))
+    seller_products = list(db["products"].find({
+        "$or": [
+            {"seller_id": sid},
+            {"seller_id": ObjectId(sid)} if ObjectId.is_valid(sid) else {"seller_id": sid}
+        ]
+    }, {"_id": 1}))
     seller_pids = [str(p["_id"]) for p in seller_products]
 
     # Find delivered orders
@@ -1585,7 +1642,12 @@ def list_seller_returns(
     db = get_database()
     sid = current_user["id"]
 
-    seller_products = list(db["products"].find({"seller_id": sid}, {"_id": 1}))
+    seller_products = list(db["products"].find({
+        "$or": [
+            {"seller_id": sid},
+            {"seller_id": ObjectId(sid)} if ObjectId.is_valid(sid) else {"seller_id": sid}
+        ]
+    }, {"_id": 1}))
     seller_pid_list = [str(p["_id"]) for p in seller_products]
 
     query = {
@@ -1707,7 +1769,12 @@ def export_seller_report(
 
     if report_type == "orders":
         writer.writerow(["Order Number", "Order Date", "Status", "Items Count", "Seller Subtotal (INR)", "Customer Name", "City", "State", "AWB Code"])
-        seller_products = list(db["products"].find({"seller_id": sid}, {"_id": 1}))
+        seller_products = list(db["products"].find({
+        "$or": [
+            {"seller_id": sid},
+            {"seller_id": ObjectId(sid)} if ObjectId.is_valid(sid) else {"seller_id": sid}
+        ]
+    }, {"_id": 1}))
         seller_pids = [str(p["_id"]) for p in seller_products]
         orders = list(db["orders"].find({
             "$or": [
@@ -1765,7 +1832,12 @@ def export_seller_report(
 
     else:  # settlements / finance
         writer.writerow(["Order Number", "Order Date", "Status", "Gross Subtotal (INR)", "Platform Commission (10%)", "Logistics Fee (INR)", "Net Earnings (INR)"])
-        seller_products = list(db["products"].find({"seller_id": sid}, {"_id": 1}))
+        seller_products = list(db["products"].find({
+        "$or": [
+            {"seller_id": sid},
+            {"seller_id": ObjectId(sid)} if ObjectId.is_valid(sid) else {"seller_id": sid}
+        ]
+    }, {"_id": 1}))
         seller_pids = [str(p["_id"]) for p in seller_products]
         orders = list(db["orders"].find({
             "$or": [
@@ -1815,7 +1887,14 @@ def list_seller_products(
 ):
     """List all products uploaded by the authenticated seller."""
     db = get_database()
-    query = {"seller_id": current_user["id"]}
+    uid = current_user["id"]
+    base_seller_query = {
+        "$or": [
+            {"seller_id": uid},
+            {"seller_id": ObjectId(uid)} if ObjectId.is_valid(uid) else {"seller_id": uid}
+        ]
+    }
+    query = dict(base_seller_query)
 
     if search:
         query["name"] = {"$regex": search.strip(), "$options": "i"}
@@ -1908,6 +1987,34 @@ def create_seller_product(
     elif raw_sub:
         clean_subs = [str(s).strip() for s in str(raw_sub).split(",") if str(s).strip()]
 
+    # Ensure warehouse & pickup_location are fully initialized and auto-selected
+    pickup_nickname = seller.get("pickup_location")
+    wh_data = seller.get("warehouse")
+    if not pickup_nickname or not wh_data:
+        shop_clean = re.sub(r"[^a-zA-Z0-9]", "_", seller.get("shop_name", "SELLER")).upper()[:12].strip("_")
+        code_part = seller.get("seller_code", "").replace("NP-SEL-", "") or str(seller["_id"])[-5:].upper()
+        pickup_nickname = f"NP_{shop_clean}_{code_part}"[:36]
+        wh_data = {
+            "pickup_location": pickup_nickname,
+            "warehouse_name": f"{seller.get('shop_name', 'My Shop')} Primary Warehouse",
+            "contact_name": seller.get("name") or "Warehouse Manager",
+            "contact_phone": seller.get("phone") or "9876543210",
+            "contact_email": seller.get("email") or "support@naripehnawa.com",
+            "address_line1": seller.get("address") or f"{seller.get('city', 'Sultanpur')}, {seller.get('state', 'Uttar Pradesh')}",
+            "address_2": "",
+            "city": seller.get("city") or "Sultanpur",
+            "state": seller.get("state") or "Uttar Pradesh",
+            "pincode": seller.get("pincode") or "228151",
+            "country": "India",
+            "is_synced_shiprocket": False,
+            "created_at": now,
+            "updated_at": now,
+        }
+        db["sellers"].update_one(
+            {"_id": seller["_id"]},
+            {"$set": {"pickup_location": pickup_nickname, "warehouse": wh_data}}
+        )
+
     prod_doc = {
         "name": payload.name.strip(),
         "brand": payload.brand.strip() if payload.brand else (seller.get("shop_name") or "Nari Pehnawa"),
@@ -1959,8 +2066,8 @@ def create_seller_product(
         "seller_id": str(seller["_id"]),
         "seller_name": seller.get("shop_name"),
         "seller_city": seller.get("city"),
-        "pickup_location": seller.get("pickup_location") or (seller.get("warehouse") or {}).get("pickup_location") or f"NP_{str(seller['_id'])[-6:].upper()}",
-        "seller_warehouse": seller.get("warehouse"),
+        "pickup_location": pickup_nickname,
+        "seller_warehouse": wh_data,
         "created_at": now,
         "updated_at": now,
     }
@@ -2001,6 +2108,13 @@ def update_seller_product(
 
     update_fields = {k: v for k, v in payload.model_dump().items() if v is not None}
     update_fields["updated_at"] = datetime.now(timezone.utc)
+
+    seller = db["sellers"].find_one({"_id": ObjectId(current_user["id"])})
+    if seller:
+        if not prod.get("pickup_location") and seller.get("pickup_location"):
+            update_fields["pickup_location"] = seller["pickup_location"]
+        if not prod.get("seller_warehouse") and seller.get("warehouse"):
+            update_fields["seller_warehouse"] = seller["warehouse"]
 
     if "sizes" in update_fields and isinstance(update_fields["sizes"], list):
         parsed_sizes = []
