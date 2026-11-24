@@ -1461,11 +1461,30 @@ def update_seller_order_status(
         "updated_at": datetime.now(timezone.utc),
     }
     if payload.tracking_awb:
+        update_doc["shipping.awb"] = payload.tracking_awb
         update_doc["shipping.awb_code"] = payload.tracking_awb
+        update_doc["shipping.tracking_number"] = payload.tracking_awb
     if payload.courier_name:
         update_doc["shipping.courier_name"] = payload.courier_name
+    if payload.status in ("ready_to_ship", "packed"):
+        update_doc["shipping.shipment_status"] = "awb_assigned" if payload.tracking_awb else "ready_to_ship"
+    elif payload.status in ("shipped", "in_transit"):
+        update_doc["shipping.shipment_status"] = "in_transit"
 
     db["orders"].update_one({"_id": order["_id"]}, {"$set": update_doc})
+
+    # Log to order_logs for complete admin audit trail
+    try:
+        db["order_logs"].insert_one({
+            "order_id": str(order["_id"]),
+            "action": f"Status updated to '{payload.status}' by Seller",
+            "details": f"Courier: {payload.courier_name or 'N/A'}, AWB: {payload.tracking_awb or 'N/A'}",
+            "created_at": datetime.now(timezone.utc),
+            "author": current_user.get("store_name") or current_user.get("name") or "Seller"
+        })
+    except Exception as log_err:
+        print(f"Warning: failed to record seller order log: {log_err}")
+
     return {"message": f"Order status updated to '{payload.status}'.", "status": payload.status}
 
 

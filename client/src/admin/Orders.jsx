@@ -80,6 +80,27 @@ const Orders = () => {
   const [warehouseAssigned, setWarehouseAssigned] = useState("");
   const [pickupLocations, setPickupLocations] = useState([]);
   const [selectedPickupLocation, setSelectedPickupLocation] = useState("");
+
+  const allAvailablePickupLocations = React.useMemo(() => {
+    const list = [...pickupLocations];
+    if (selectedOrder?.items) {
+      selectedOrder.items.forEach((it) => {
+        const loc = it.pickup_location;
+        if (loc && !list.some((l) => (typeof l === "string" ? l : l.pickup_location) === loc)) {
+          list.push({
+            id: `seller-${loc}`,
+            pickup_location: loc,
+            city: it.seller_warehouse?.city || "Seller Facility",
+            state: it.seller_warehouse?.state || "India",
+            pin_code: it.seller_warehouse?.pincode || "",
+            is_seller_location: true,
+            seller_name: it.seller_name || "Seller Partner",
+          });
+        }
+      });
+    }
+    return list;
+  }, [pickupLocations, selectedOrder]);
   
   // Action Feedback States
   const [actionSuccessMsg, setActionSuccessMsg] = useState(null);
@@ -209,6 +230,11 @@ const Orders = () => {
         discount: item.discount || 0,
         tax: item.tax || 0,
         shipping: item.shipping || 0,
+        seller_id: item.seller_id,
+        seller_name: item.seller_name,
+        pickup_location: item.pickup_location || item.product?.pickup_location,
+        seller_warehouse: item.seller_warehouse,
+        product: item.product,
       })),
       shippingAddress: typeof o.shipping_address === "string" ? {
         full_name: o.user?.name || "Customer",
@@ -2092,6 +2118,20 @@ const Orders = () => {
                             <div className="text-slate-400 text-[10px] pt-1">
                               Qty: {item.quantity} • Price: ₹{item.price.toLocaleString()} (Tax: ₹{item.tax} • Discount: ₹{item.discount})
                             </div>
+                            {(item.seller_name || item.pickup_location) && (
+                              <div className="pt-1 flex items-center gap-1.5 flex-wrap">
+                                {item.seller_name && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200">
+                                    Seller: {item.seller_name}
+                                  </span>
+                                )}
+                                {item.pickup_location && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                                    <MapPin className="w-2.5 h-2.5" /> Pickup Hub: {item.pickup_location}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                           <div className="text-right flex-shrink-0 text-xs">
                             <p className="font-mono font-bold text-slate-800 text-sm">₹{((item.price - item.discount) * item.quantity).toLocaleString()}</p>
@@ -2306,7 +2346,7 @@ const Orders = () => {
                           </div>
                         )}
 
-                        {pickupLocations.length > 0 && (
+                        {allAvailablePickupLocations.length > 0 && (
                           <div className="flex flex-col gap-1.5 pl-9">
                             <label className="text-[10px] font-bold text-slate-400 uppercase">Dispatch From Warehouse (Shiprocket)</label>
                             <select
@@ -2317,11 +2357,16 @@ const Orders = () => {
                               }}
                               className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-[#8B0000] cursor-pointer"
                             >
-                              {pickupLocations.map((loc) => (
-                                <option key={loc.id || loc.pickup_location} value={loc.pickup_location}>
-                                  {loc.pickup_location} — {loc.city}, {loc.state} ({loc.pin_code}) {loc.is_primary_location ? "★ Primary" : ""}
-                                </option>
-                              ))}
+                              {allAvailablePickupLocations.map((loc) => {
+                                const locVal = typeof loc === "string" ? loc : loc.pickup_location;
+                                const isSeller = loc.is_seller_location;
+                                return (
+                                  <option key={loc.id || locVal} value={locVal}>
+                                    {isSeller ? `🏪 [Seller: ${loc.seller_name || "Partner"}] ` : ""}
+                                    {locVal} — {loc.city || "Hub"}, {loc.state || ""} {loc.pin_code ? `(${loc.pin_code})` : ""} {loc.is_primary_location ? "★ Primary" : ""}
+                                  </option>
+                                );
+                              })}
                             </select>
                           </div>
                         )}
@@ -2529,12 +2574,17 @@ const Orders = () => {
                           }}
                           className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none cursor-pointer"
                         >
-                          {pickupLocations.length > 0 ? (
-                            pickupLocations.map((loc) => (
-                              <option key={loc.id || loc.pickup_location} value={loc.pickup_location}>
-                                {loc.pickup_location} — {loc.city}, {loc.state} ({loc.pin_code}) {loc.is_primary_location ? "★ Primary" : ""}
-                              </option>
-                            ))
+                          {allAvailablePickupLocations.length > 0 ? (
+                            allAvailablePickupLocations.map((loc) => {
+                              const locVal = typeof loc === "string" ? loc : loc.pickup_location;
+                              const isSeller = loc.is_seller_location;
+                              return (
+                                <option key={loc.id || locVal} value={locVal}>
+                                  {isSeller ? `🏪 [Seller: ${loc.seller_name || "Partner"}] ` : ""}
+                                  {locVal} — {loc.city || "Hub"}, {loc.state || ""} {loc.pin_code ? `(${loc.pin_code})` : ""} {loc.is_primary_location ? "★ Primary" : ""}
+                                </option>
+                              );
+                            })
                           ) : (
                             <option value="">Default (Primary Warehouse)</option>
                           )}

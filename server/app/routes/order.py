@@ -316,6 +316,14 @@ def get_orders(
                         "product_name": item.get("product_name") or item.get("name") or "Unknown Product",
                         "quantity": item.get("quantity", 1),
                         "price": item.get("price", 0),
+                        "size": item.get("size"),
+                        "color": item.get("color"),
+                        "sku": item.get("sku"),
+                        "image": item.get("image") or item.get("product_image"),
+                        "seller_id": str(item.get("seller_id")) if item.get("seller_id") else None,
+                        "seller_name": item.get("seller_name"),
+                        "pickup_location": item.get("pickup_location"),
+                        "seller_warehouse": item.get("seller_warehouse"),
                         "product": None
                     }
                     
@@ -327,8 +335,17 @@ def get_orders(
                             if product:
                                 item_dict["product"] = {
                                     "name": product.get("name", item.get("product_name")),
-                                    "image_url": product.get("image_url", "/placeholder.jpg")
+                                    "image_url": product.get("image_url", "/placeholder.jpg"),
+                                    "pickup_location": product.get("pickup_location"),
+                                    "warehouse_stock": product.get("warehouse_stock", {}),
+                                    "warehouse_size_stock": product.get("warehouse_size_stock", {}),
                                 }
+                                if not item_dict.get("pickup_location") and product.get("pickup_location"):
+                                    item_dict["pickup_location"] = product.get("pickup_location")
+                                if not item_dict.get("seller_name") and product.get("seller_name"):
+                                    item_dict["seller_name"] = product.get("seller_name")
+                                if not item_dict.get("seller_id") and product.get("seller_id"):
+                                    item_dict["seller_id"] = str(product.get("seller_id"))
                         except Exception as e:
                             print(f"Error fetching product: {e}")
                     
@@ -559,6 +576,14 @@ def get_order(order_id: str, current_user: dict = Depends(get_current_user)):
                     "product_name": item.get("product_name") or item.get("name") or "Unknown Product",
                     "quantity": item.get("quantity", 1),
                     "price": item.get("price", 0),
+                    "size": item.get("size"),
+                    "color": item.get("color"),
+                    "sku": item.get("sku"),
+                    "image": item.get("image") or item.get("product_image"),
+                    "seller_id": str(item.get("seller_id")) if item.get("seller_id") else None,
+                    "seller_name": item.get("seller_name"),
+                    "pickup_location": item.get("pickup_location"),
+                    "seller_warehouse": item.get("seller_warehouse"),
                     "product": None
                 }
                 
@@ -571,8 +596,16 @@ def get_order(order_id: str, current_user: dict = Depends(get_current_user)):
                             item_dict["product"] = {
                                 "name": product.get("name", item.get("product_name")),
                                 "image_url": product.get("image_url", "/placeholder.jpg"),
-                                "pickup_location": product.get("pickup_location")
+                                "pickup_location": product.get("pickup_location"),
+                                "warehouse_stock": product.get("warehouse_stock", {}),
+                                "warehouse_size_stock": product.get("warehouse_size_stock", {}),
                             }
+                            if not item_dict.get("pickup_location") and product.get("pickup_location"):
+                                item_dict["pickup_location"] = product.get("pickup_location")
+                            if not item_dict.get("seller_name") and product.get("seller_name"):
+                                item_dict["seller_name"] = product.get("seller_name")
+                            if not item_dict.get("seller_id") and product.get("seller_id"):
+                                item_dict["seller_id"] = str(product.get("seller_id"))
                     except Exception as e:
                         print(f"Error fetching product: {e}")
                 
