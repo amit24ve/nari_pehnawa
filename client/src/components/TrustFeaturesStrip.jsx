@@ -3,9 +3,9 @@ import { Truck, ShieldCheck, RefreshCw, Award } from "lucide-react";
 
 const TRUST_FEATURES = [
   {
-    id: "free_shipping",
-    title: "Free Shipping",
-    subtitle: "on orders above ₹799",
+    id: "express_delivery",
+    title: "Express Delivery",
+    subtitle: "Pan-India fast dispatch",
     icon: Truck,
   },
   {

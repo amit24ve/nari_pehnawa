@@ -88,7 +88,7 @@ import InteractiveCampaignBanner from "./components/InteractiveCampaignBanner";
 function HomePage() {
     useSEO(
         "Nari Pehnawa | Traditional Ka Tadka | Luxury Women Ethnic Wear & Designer Kurtis",
-        "Nari Pehnawa (naripehnawa.com) is India's premier boutique for handcrafted Women's Floral Kurtis, Designer Sleeveless Tops, Festive Outfits & Ethnic Wear. Free Shipping & Fast Delivery."
+        "Nari Pehnawa (naripehnawa.com) is India's premier boutique for handcrafted Women's Floral Kurtis, Designer Sleeveless Tops, Festive Outfits & Ethnic Wear. Express Delivery & Pan-India Dispatch."
     );
     return (
         <>

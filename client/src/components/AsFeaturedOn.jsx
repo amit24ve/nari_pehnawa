@@ -217,7 +217,7 @@ const AsFeaturedOn = () => {
 
             <div className="my-4">
               <p className="font-semibold text-gray-800">
-                FREE SHIPPING | 100% QUALITY ASSURANCE | EASY RETURNS
+                EXPRESS DELIVERY | 100% QUALITY ASSURANCE | EASY RETURNS
               </p>
             </div>
 

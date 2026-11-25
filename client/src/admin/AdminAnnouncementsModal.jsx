@@ -1698,7 +1698,7 @@ const AdminAnnouncementsModal = () => {
                               ? `${c.value}% OFF`
                               : c.type === "flat"
                               ? `₹${c.value} FLAT OFF`
-                              : "FREE SHIPPING"}
+                              : "EXPRESS DELIVERY"}
                           </td>
                           <td className="py-3.5 px-4 text-slate-600 font-medium">
                             {c.min_order_value > 0 ? `₹${c.min_order_value}` : "No Minimum"}
@@ -1775,7 +1775,7 @@ const AdminAnnouncementsModal = () => {
                       >
                         <option value="percent">Percentage (%)</option>
                         <option value="flat">Flat Amount (₹)</option>
-                        <option value="free_shipping">Free Shipping</option>
+                        <option value="free_shipping">Express Delivery</option>
                       </select>
                     </div>
 

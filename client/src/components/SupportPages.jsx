@@ -247,7 +247,7 @@ export default function SupportPages() {
       case "faqs":
         const faqs = [
           { q: "How can I track my order?", a: "Once your order is shipped, we will send you an email and SMS containing tracking details. You can also log in to your account and go to 'Track Order' under the profile menu to see live delivery updates." },
-          { q: "Is shipping free on my first order?", a: "Yes, shipping is absolutely free on your first order! For subsequent orders, we offer free shipping on all orders valued above ₹999. For orders below ₹999, a flat shipping fee of ₹99 is charged." },
+          { q: "Is delivery complimentary on my first order?", a: "Yes, delivery is absolutely complimentary on your first order! For subsequent orders, we offer complimentary express delivery on all orders valued above ₹999. For orders below ₹999, a nominal delivery fee of ₹99 is charged." },
           { q: "What is your return & exchange policy?", a: "We offer a hassle-free 7-day return and exchange policy on most of our products. The items must be unused, unwashed, and in their original packaging with price tags intact. Refunds are credited back to your payment mode within 5-7 business days." },
           { q: "How do I choose the correct size?", a: "Please refer to our Size Guide tab, which lists chest, waist, and hip measurements for XS, S, M, L, XL, and XXL sizes. We recommend measuring yourself before placing an order to get the perfect fit." },
           { q: "What payment options are available?", a: "We accept all major Credit/Debit Cards, Net Banking, UPI (PhonePe, GPay, Paytm), and Cash on Delivery (COD)." },
@@ -291,9 +291,9 @@ export default function SupportPages() {
               <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
                 <h3 className="text-base font-bold text-gray-900 font-serif">Shipping Rates</h3>
                 <ul className="list-disc pl-5 space-y-2">
-                  <li><strong>First Order:</strong> Free shipping is automatically applied to your very first order, regardless of the cart total!</li>
-                  <li><strong>Subsequent Orders (Above ₹999):</strong> Free shipping across India.</li>
-                  <li><strong>Subsequent Orders (Below ₹999):</strong> Flat shipping fee of ₹99 is applicable.</li>
+                  <li><strong>First Order:</strong> Complimentary delivery is automatically applied to your very first order, regardless of the cart total!</li>
+                  <li><strong>Subsequent Orders (Above ₹999):</strong> Complimentary express delivery across India.</li>
+                  <li><strong>Subsequent Orders (Below ₹999):</strong> Flat delivery fee of ₹99 is applicable.</li>
                 </ul>
               </div>
 

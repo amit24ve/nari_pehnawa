@@ -125,7 +125,7 @@ const AIChatbot = () => {
     // 2. Offers / Coupons / Sale
     if (input.includes("offer") || input.includes("coupon") || input.includes("discount") || input.includes("sale") || input.includes("promo") || input.includes("code")) {
       return {
-        text: `🎉 **Current Live Offers & Coupons:**\n\n• **WELCOME200**: Flat ₹200 OFF on your first purchase above ₹1,499.\n• **NARI10**: Instant 10% OFF on all orders above ₹999.\n• **FREE DELIVERY**: Free shipping automatically applied on your order!\n\nExplore our live Flash Sale for limited-time discounts.`,
+        text: `🎉 **Current Live Offers & Coupons:**\n\n• **WELCOME200**: Flat ₹200 OFF on your first purchase above ₹1,499.\n• **NARI10**: Instant 10% OFF on all orders above ₹999.\n• **FREE DELIVERY**: Complimentary express delivery automatically applied on your order!\n\nExplore our live Flash Sale for limited-time discounts.`,
         suggestions: [
           { label: "🔥 Today's Mega Sale Offers", link: "/category/sale" },
           { label: "✨ Best Sellers", key: "best_sellers" },

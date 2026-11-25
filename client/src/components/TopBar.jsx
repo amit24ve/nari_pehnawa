@@ -12,8 +12,8 @@ const DEFAULT_ANNOUNCEMENTS = [
     cta: "Shop Now →",
   },
   {
-    id: "def_free_shipping",
-    text: "FREE EXPRESS SHIPPING ON ALL PREPAID ORDERS ABOVE ₹799",
+    id: "def_express_delivery",
+    text: "EXPRESS PAN-INDIA DELIVERY ON ALL PREPAID ORDERS ABOVE ₹799",
     link: "/category/sale",
     cta: "Explore →",
   },
@@ -192,16 +192,16 @@ const TopBar = () => {
         })}
       </div>
 
-      {/* Pinned Right Button: Seller Inquiry */}
+      {/* Pinned Right Button: Enquiry as Seller */}
       <div className="relative z-20 flex-shrink-0 pr-2 sm:pr-4 pl-2 bg-gradient-to-l from-[#3B0713] via-[#3B0713] to-transparent h-full flex items-center">
         <button
           type="button"
           onClick={() => window.dispatchEvent(new CustomEvent("np_open_seller_inquiry"))}
-          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-[#3B0713] hover:from-[#E5C158] hover:to-[#FFF] text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-sm transition-all cursor-pointer whitespace-nowrap border border-[#D4AF37]/60 active:scale-95"
+          className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 rounded-full bg-gradient-to-r from-[#D4AF37] via-[#F3E5AB] to-[#D4AF37] text-[#3B0713] hover:from-[#E5C158] hover:to-[#FFF] text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-sm transition-all cursor-pointer whitespace-nowrap border border-[#D4AF37]/80 active:scale-95"
           title="Submit merchant seller requirements & partner with Nari Pehnawa"
         >
-          <FileText className="w-3 h-3 text-[#3B0713]" />
-          <span>Seller Inquiry</span>
+          <FileText className="w-3 h-3 text-[#3B0713] flex-shrink-0" />
+          <span>Enquiry as Seller</span>
         </button>
       </div>
     </div>
