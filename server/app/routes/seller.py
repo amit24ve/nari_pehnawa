@@ -1375,11 +1375,24 @@ def list_seller_orders(
             float(it.get("price") or 0) * int(it.get("quantity") or 1) for it in seller_items
         )
 
+        commission_rate = float(current_user.get("commission_rate", 10.0))
+        total_seller_payout = 0.0
+        for it in seller_items:
+            qty = int(it.get("quantity") or 1)
+            it_seller_price = it.get("seller_price")
+            if it_seller_price is not None and float(it_seller_price) > 0:
+                total_seller_payout += float(it_seller_price) * qty
+            else:
+                it_price = float(it.get("price") or 0)
+                total_seller_payout += (it_price * (1.0 - commission_rate / 100.0)) * qty
+
         formatted = serialize_doc(o)
         # CRITICAL: Overwrite items with seller_items so the seller NEVER sees other sellers' items
         formatted["items"] = seller_items
         formatted["seller_items"] = seller_items
         formatted["seller_subtotal"] = round(seller_subtotal, 2)
+        formatted["commission_rate"] = commission_rate
+        formatted["seller_payout"] = round(total_seller_payout, 2)
         formatted["total_amount"] = round(seller_subtotal, 2)
         formatted["amount"] = round(seller_subtotal, 2)
         formatted["seller_item_count"] = sum(int(it.get("quantity") or 1) for it in seller_items)
@@ -1429,10 +1442,23 @@ def get_seller_order_detail(
         float(it.get("price") or 0) * int(it.get("quantity") or 1) for it in seller_items
     )
 
+    commission_rate = float(current_user.get("commission_rate", 10.0))
+    total_seller_payout = 0.0
+    for it in seller_items:
+        qty = int(it.get("quantity") or 1)
+        it_seller_price = it.get("seller_price")
+        if it_seller_price is not None and float(it_seller_price) > 0:
+            total_seller_payout += float(it_seller_price) * qty
+        else:
+            it_price = float(it.get("price") or 0)
+            total_seller_payout += (it_price * (1.0 - commission_rate / 100.0)) * qty
+
     formatted = serialize_doc(order)
     formatted["items"] = seller_items
     formatted["seller_items"] = seller_items
     formatted["seller_subtotal"] = round(seller_subtotal, 2)
+    formatted["commission_rate"] = commission_rate
+    formatted["seller_payout"] = round(total_seller_payout, 2)
     formatted["total_amount"] = round(seller_subtotal, 2)
     formatted["amount"] = round(seller_subtotal, 2)
     return formatted
@@ -1603,9 +1629,21 @@ def get_seller_finance_overview(current_user: dict = Depends(require_seller)):
         ]
     }))
 
+    # Determine commission rate dynamically: prefer seller-specific rate, fallback to global
+    seller_comm = seller.get("commission_rate")
+    if seller_comm is not None and str(seller_comm).strip() != "":
+        comm_percentage = float(seller_comm)
+    else:
+        m_cfg = db["marketplace_settings"].find_one({"key": "global_config"}) or {}
+        comm_percentage = float(m_cfg.get("global_commission_rate", 10.0))
+    comm_rate = comm_percentage / 100.0
+
     gross_sales = 0.0
     completed_sales = 0.0
     orders_count = 0
+    total_commission_fee = 0.0
+    total_seller_earnings = 0.0
+    completed_earnings = 0.0
 
     for o in orders:
         st = str(o.get("status") or "").lower()
@@ -1619,21 +1657,37 @@ def get_seller_finance_overview(current_user: dict = Depends(require_seller)):
         sub = sum(float(it.get("price") or 0) * int(it.get("quantity") or 1) for it in seller_items)
         gross_sales += sub
         orders_count += 1
+
+        order_payout = 0.0
+        for it in seller_items:
+            qty = int(it.get("quantity") or 1)
+            it_seller_price = it.get("seller_price")
+            if it_seller_price is not None and float(it_seller_price) > 0:
+                order_payout += float(it_seller_price) * qty
+            else:
+                it_price = float(it.get("price") or 0)
+                order_payout += (it_price * (1.0 - comm_rate)) * qty
+
+        order_comm = max(0.0, sub - order_payout)
+        total_commission_fee += order_comm
+        total_seller_earnings += order_payout
+
         if st in ["delivered", "completed"]:
             completed_sales += sub
+            completed_earnings += order_payout
 
     m_cfg = db["marketplace_settings"].find_one({"key": "global_config"}) or {}
-    comm_rate = float(m_cfg.get("global_commission_rate", 10.0)) / 100.0
-    commission_fee = round(gross_sales * comm_rate, 2)
-    logistics_fee = round(orders_count * float(m_cfg.get("shipping_fee_default", 50.0)), 2)
-    net_earnings = round(max(0, gross_sales - commission_fee - logistics_fee), 2)
+    shipping_default = float(m_cfg.get("shipping_fee_default", 50.0))
+    logistics_fee = round(orders_count * shipping_default, 2)
+    net_earnings = round(max(0, total_seller_earnings - logistics_fee), 2)
 
-    available_balance = round(max(0, completed_sales - (completed_sales * comm_rate)), 2)
+    available_balance = round(max(0, completed_earnings - (orders_count * shipping_default if completed_sales > 0 else 0)), 2)
     pending_settlement = round(max(0, net_earnings - available_balance), 2)
 
     return {
         "gross_sales": round(gross_sales, 2),
-        "platform_commission": commission_fee,
+        "platform_commission": round(total_commission_fee, 2),
+        "commission_rate": comm_percentage,
         "logistics_deductions": logistics_fee,
         "net_earnings": net_earnings,
         "available_balance": available_balance,

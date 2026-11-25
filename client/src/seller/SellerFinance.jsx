@@ -24,6 +24,7 @@ const SellerFinance = () => {
   const [finance, setFinance] = useState({
     gross_sales: 0,
     platform_commission: 0,
+    commission_rate: 10,
     logistics_deductions: 0,
     net_earnings: 0,
     available_balance: 0,
@@ -119,11 +120,11 @@ const SellerFinance = () => {
           <p className="text-[11px] text-slate-500 mt-1">Customer listing value ordered</p>
         </div>
 
-        {/* Platform Commission (10%) */}
+        {/* Platform Commission */}
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Platform Commission</p>
           <h3 className="text-2xl font-bold text-red-600 mt-1">-₹{finance.platform_commission}</h3>
-          <p className="text-[11px] text-slate-500 mt-1">10% Nari Pehnawa fee</p>
+          <p className="text-[11px] text-slate-500 mt-1">{finance.commission_rate ?? 10}% Nari Pehnawa fee</p>
         </div>
 
         {/* Available Balance */}
@@ -152,14 +153,14 @@ const SellerFinance = () => {
           <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
             <span className="text-xs font-bold text-slate-700 block">1. Garment Selling Price</span>
             <p className="text-xs text-slate-500 mt-1">
-              Set by seller on product add form. Includes dynamic delivery (+₹50), RTO buffer (+₹35), and NP polybag fee (+₹10).
+              Set by seller on product add form. Includes dynamic delivery (+₹50), RTO buffer (+₹35), and packaging handling buffer.
             </p>
           </div>
 
           <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
             <span className="text-xs font-bold text-slate-700 block">2. Standard Deductions</span>
             <p className="text-xs text-slate-500 mt-1">
-              Platform commission (10%) and forward carrier shipping charges are deducted automatically upon successful delivery.
+              Platform commission ({finance.commission_rate ?? 10}%) and forward carrier shipping charges are deducted automatically upon successful delivery.
             </p>
           </div>
 

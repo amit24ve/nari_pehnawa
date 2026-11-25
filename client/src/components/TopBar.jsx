@@ -1,33 +1,27 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { FileText } from "lucide-react";
+import { Store, ChevronRight } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://naripehnawa.com:7100";
 
 const DEFAULT_ANNOUNCEMENTS = [
   {
-    id: "def_mega_sale",
-    text: "MEGA SALE IS LIVE: UP TO 40% OFF ON FESTIVE ETHNIC WEAR",
-    link: "/category/sale",
-    cta: "Shop Now →",
+    id: "def_festive",
+    text: "Grand Launch Celebration: Handcrafted Designer Ethnic Wear & Kurtis",
+    link: "/new-arrivals",
+    cta: "Explore",
   },
   {
     id: "def_express_delivery",
-    text: "EXPRESS PAN-INDIA DELIVERY ON ALL PREPAID ORDERS ABOVE ₹799",
+    text: "Express Pan-India Delivery on All Prepaid Orders Above ₹799",
     link: "/category/sale",
-    cta: "Explore →",
+    cta: "Shop Now",
   },
   {
-    id: "def_seller_hub",
-    text: "SELL ON NARI PEHNAWA: EXPAND YOUR ETHNIC BRAND NATIONWIDE",
-    link: "/seller/register",
-    cta: "Register as Seller →",
-  },
-  {
-    id: "def_new_arrival",
-    text: "HANDCRAFTED BANARASI & LUCKNOWI KURTIS NOW IN STOCK",
-    link: "/new-arrivals",
-    cta: "View Collection →",
+    id: "def_cod",
+    text: "Cash on Delivery Available Across India • Easy 7-Day Hassle-Free Returns",
+    link: "/category/sale",
+    cta: "View Offers",
   },
 ];
 
@@ -38,7 +32,7 @@ const TopBar = () => {
     try {
       const [annRes, saleRes] = await Promise.all([
         fetch(`${API_BASE_URL}/announcements/?_t=${Date.now()}`).then((r) => (r.ok ? r.json() : [])).catch(() => []),
-        fetch(`${API_BASE_URL}/products/?on_sale=true&limit=10&_t=${Date.now()}`).then((r) => (r.ok ? r.json() : [])).catch(() => []),
+        fetch(`${API_BASE_URL}/products/?on_sale=true&limit=8&_t=${Date.now()}`).then((r) => (r.ok ? r.json() : [])).catch(() => []),
       ]);
 
       const baseAnnouncements = Array.isArray(annRes)
@@ -46,10 +40,10 @@ const TopBar = () => {
             .filter((a) => a.is_active !== false && a.text)
             .map((a) => ({
               id: a.id || a._id,
-              // Strip excessive emojis from text to keep it clean and professional
-              text: (a.text || "").replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "").trim().toUpperCase(),
+              // Strip excessive emojis to maintain a calm, premium luxury aesthetic
+              text: (a.text || "").replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "").trim(),
               link: a.link || "/category/sale",
-              cta: a.link?.includes("seller") ? "Register →" : "Shop Now →",
+              cta: a.sub_text ? a.sub_text.trim() : (a.link?.includes("new") ? "Explore" : "Shop Now"),
             }))
         : [];
 
@@ -66,21 +60,16 @@ const TopBar = () => {
         dealMap.forEach((_, dealText) => {
           activeDeals.push({
             id: `deal_${dealText}`,
-            text: `EXCLUSIVE FESTIVE OFFER: ${dealText.toUpperCase()} ON SELECTED STYLES`,
+            text: `Exclusive Festive Special: ${dealText}`,
             link: "/category/sale",
-            cta: "Shop Deals →",
+            cta: "View Collection",
           });
         });
       }
 
-      const sellerItem = {
-        id: "seller_hub_announcement",
-        text: "SELL ON NARI PEHNAWA: BECOME A VERIFIED MERCHANT PARTNER",
-        link: "/seller/register",
-        cta: "Register as Seller →",
-      };
-
-      const combined = [...activeDeals, ...baseAnnouncements, sellerItem];
+      // Marquee contains shopper-focused announcements only.
+      // Seller onboarding is prominently anchored in the fixed right concierge button.
+      const combined = [...activeDeals, ...baseAnnouncements];
       if (combined.length > 0) {
         setAnnouncements(combined);
       }
@@ -106,14 +95,14 @@ const TopBar = () => {
     };
   }, [loadAnnouncements]);
 
-  // Repeat for continuous seamless infinite loop
+  // Ensure sufficient repetitions for a seamless, glitch-free continuous infinite loop
   const baseItems = announcements.length < 4
     ? [...announcements, ...announcements, ...announcements, ...announcements]
     : announcements;
   const marqueeItems = [...baseItems, ...baseItems];
 
   return (
-    <div className="relative z-50 bg-gradient-to-r from-[#3B0713] via-[#660C22] to-[#3B0713] text-white border-b border-[#D4AF37]/30 select-none overflow-hidden h-[34px] sm:h-[36px] flex items-center">
+    <div className="relative z-50 bg-[#1F0407] text-[#F7F4EE] border-b border-[#D4AF37]/20 select-none overflow-hidden h-[34px] sm:h-[36px] flex items-center">
       <style>{`
         @keyframes npTopMarquee {
           0% {
@@ -136,53 +125,39 @@ const TopBar = () => {
           align-items: center;
           width: max-content;
           will-change: transform;
-          animation: npTopMarquee 65s linear infinite;
+          animation: npTopMarquee 58s linear infinite;
         }
         .np-marquee-track:hover {
           animation-play-state: paused;
         }
       `}</style>
 
-      {/* Left edge gradient fade mask */}
-      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-r from-[#3B0713] to-transparent z-10" />
+      {/* Left Edge Luxury Gradient Fade Mask */}
+      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-r from-[#1F0407] to-transparent z-10" />
 
       {/* Full-width continuous scrolling marquee track */}
       <div className="np-marquee-wrapper">
         <div className="np-marquee-track">
           {marqueeItems.map((item, idx) => {
-            const isSeller = Boolean(item.link && item.link.includes("seller"));
-
             const content = (
-              <div className="inline-flex items-center gap-2 sm:gap-3 text-xs font-medium tracking-wide text-white px-5 sm:px-8 group cursor-pointer leading-none">
-                {/* Clean separator */}
-                <span className="text-[#D4AF37] text-[10px] select-none opacity-80">✦</span>
+              <div className="inline-flex items-center gap-2.5 sm:gap-3 text-xs font-normal px-6 sm:px-9 group cursor-pointer leading-none">
+                {/* Elegant Minimal Gold Star Separator */}
+                <span className="text-[#D4AF37] text-[8px] select-none opacity-60">✦</span>
 
-                {/* Title Text strictly single line */}
-                <span className="font-semibold text-white/95 whitespace-nowrap tracking-wider text-[11px] sm:text-xs">
+                {/* Announcement Headline */}
+                <span className="font-sans font-medium text-[#F7F4EE]/90 whitespace-nowrap tracking-[0.04em] text-[11px] sm:text-[11.5px] transition-colors group-hover:text-white">
                   {item.text}
                 </span>
 
-                {/* Action Button */}
+                {/* Inline Minimal Luxury CTA */}
                 {item.cta && (
-                  <span className="inline-flex items-center text-[#FFE29A] font-bold text-[10px] sm:text-[11px] bg-white/10 px-2 py-0.5 rounded-full hover:bg-white/20 transition-colors whitespace-nowrap">
-                    {item.cta}
+                  <span className="inline-flex items-center gap-0.5 text-[#E5C378] font-semibold text-[10.5px] tracking-wide whitespace-nowrap opacity-90 group-hover:opacity-100 group-hover:underline">
+                    <span>{item.cta}</span>
+                    <ChevronRight className="w-2.5 h-2.5" />
                   </span>
                 )}
               </div>
             );
-
-            if (isSeller) {
-              return (
-                <button
-                  key={`${item.id || idx}-${idx}`}
-                  type="button"
-                  onClick={() => window.dispatchEvent(new CustomEvent("np_open_seller_register"))}
-                  className="inline-flex items-center hover:opacity-95 transition-opacity text-left cursor-pointer"
-                >
-                  {content}
-                </button>
-              );
-            }
 
             return item.link ? (
               <Link
@@ -201,16 +176,17 @@ const TopBar = () => {
         </div>
       </div>
 
-      {/* Permanently FIXED Right Button: Enquiry as Seller */}
-      <div className="absolute right-0 top-0 bottom-0 z-30 flex items-center pl-8 sm:pl-12 pr-2 sm:pr-4 bg-gradient-to-l from-[#3B0713] via-[#3B0713] to-transparent pointer-events-auto">
+      {/* Permanently FIXED Right Button: Enquiry as Seller (Refined Luxury Concierge Pill) */}
+      <div className="absolute right-0 top-0 bottom-0 z-30 flex items-center pl-8 sm:pl-12 pr-3 sm:pr-4 bg-gradient-to-l from-[#1F0407] via-[#1F0407]/95 to-transparent pointer-events-auto">
         <button
           type="button"
           onClick={() => window.dispatchEvent(new CustomEvent("np_open_seller_inquiry"))}
-          className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 rounded-full bg-gradient-to-r from-[#D4AF37] via-[#F3E5AB] to-[#D4AF37] text-[#3B0713] hover:from-[#E5C158] hover:to-[#FFF] text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-md transition-all cursor-pointer whitespace-nowrap border border-[#D4AF37] active:scale-95"
-          title="Submit merchant seller requirements & partner with Nari Pehnawa"
+          className="group inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2D060D] hover:bg-[#3D0A14] text-[#F3E5AB] hover:text-white text-[10.5px] sm:text-[11px] font-medium tracking-wide uppercase shadow-xs transition-all duration-200 cursor-pointer whitespace-nowrap border border-[#D4AF37]/45 hover:border-[#D4AF37] active:scale-95"
+          title="Submit merchant partner inquiry & sell on Nari Pehnawa"
         >
-          <FileText className="w-3 h-3 text-[#3B0713] flex-shrink-0" />
-          <span>Enquiry as Seller</span>
+          <Store className="w-3.5 h-3.5 text-[#D4AF37] transition-transform duration-200 group-hover:scale-110 flex-shrink-0" />
+          <span className="hidden sm:inline">Enquiry as Seller</span>
+          <span className="sm:hidden text-[10px]">Seller Enquiry</span>
         </button>
       </div>
     </div>

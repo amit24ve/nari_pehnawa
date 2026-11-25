@@ -587,12 +587,16 @@ const SellerOrders = () => {
                 <span className="font-bold text-slate-800">₹{selectedOrder.seller_subtotal || selectedOrder.total_amount || 0}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-600">Platform Handling Fee (+10 Extra NP Polybag):</span>
-                <span className="font-semibold text-slate-700">-₹10.00</span>
+                <span className="text-slate-600">Platform Commission ({selectedOrder.commission_rate ?? 10}%):</span>
+                <span className="font-semibold text-slate-700">
+                  -₹{Math.max(0, (selectedOrder.seller_subtotal || 0) - (selectedOrder.seller_payout || ((selectedOrder.seller_subtotal || 0) * 0.90))).toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between pt-1 border-t border-slate-200 font-bold text-slate-900 text-sm">
                 <span>Net Estimated Seller Settlement:</span>
-                <span className="text-[#0891b2]">₹{Math.max(0, (selectedOrder.seller_subtotal || selectedOrder.total_amount || 0) * 0.90 - 10).toFixed(2)}</span>
+                <span className="text-[#0891b2]">
+                  ₹{(selectedOrder.seller_payout || ((selectedOrder.seller_subtotal || 0) * 0.90)).toFixed(2)}
+                </span>
               </div>
             </div>
           </div>
