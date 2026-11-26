@@ -144,10 +144,14 @@ def create_order(order: OrderCreate, current_user: dict = Depends(get_current_us
                             it["seller_id"] = str(sid)
                             if prod.get("seller_name"):
                                 it["seller_name"] = prod.get("seller_name")
-                            if prod.get("pickup_location"):
-                                it["pickup_location"] = prod.get("pickup_location")
-                            if not order_data.get("pickup_location") and prod.get("pickup_location"):
-                                order_data["pickup_location"] = str(prod.get("pickup_location")).strip()
+                            pickup = prod.get("pickup_location")
+                            if not pickup:
+                                seller = db["sellers"].find_one({"_id": ObjectId(str(sid))}) if ObjectId.is_valid(str(sid)) else db["sellers"].find_one({"_id": str(sid)})
+                                if seller:
+                                    pickup = seller.get("pickup_location") or (seller.get("warehouse") or {}).get("pickup_location")
+                            if pickup:
+                                it["pickup_location"] = str(pickup).strip()
+                                order_data["pickup_location"] = str(pickup).strip()
                         elif not it.get("seller_id"):
                             it["seller_id"] = "owner"
                 except Exception:

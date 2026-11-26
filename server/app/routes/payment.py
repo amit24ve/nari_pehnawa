@@ -148,7 +148,7 @@ def _enrich_order_items_with_seller(order_data: dict, db):
                     it["seller_id"] = "owner"
         except Exception:
             pass
-    if first_seller_pickup and not order_data.get("pickup_location"):
+    if first_seller_pickup:
         order_data["pickup_location"] = first_seller_pickup
 
 
@@ -170,47 +170,57 @@ def _trigger_shiprocket(order_id: str, order_data: dict, db):
             sr = get_shiprocket_service()
             repo = ShippingRepository(db)
 
-            # Auto-resolve pickup_location from item's seller/warehouse database if not explicitly set
-            if not order_data.get("pickup_location"):
-                items = order_data.get("items", []) or []
-                for item in items:
-                    pid = item.get("product_id") or item.get("id") or item.get("_id")
-                    if pid:
-                        try:
-                            from bson import ObjectId
-                            prod = db["products"].find_one({"_id": ObjectId(str(pid))})
-                            if prod:
-                                # 1. Check if product belongs to a seller
-                                seller_id = prod.get("seller_id")
-                                if seller_id:
-                                    try:
-                                        seller = db["sellers"].find_one({"_id": ObjectId(str(seller_id))})
-                                        if seller:
-                                            s_pickup = seller.get("pickup_location") or (seller.get("warehouse") or {}).get("pickup_location")
-                                            if s_pickup:
-                                                order_data["pickup_location"] = str(s_pickup).strip()
-                                                # Auto-sync seller warehouse with Shiprocket if not yet verified
-                                                wh_data = seller.get("warehouse")
-                                                if wh_data and not wh_data.get("is_synced_shiprocket"):
-                                                    try:
-                                                        sr_res = await sr.add_pickup_location(wh_data)
-                                                        if sr_res.get("success"):
-                                                            db["sellers"].update_one(
-                                                                {"_id": seller["_id"]},
-                                                                {"$set": {"warehouse.is_synced_shiprocket": True}}
-                                                            )
-                                                    except Exception as sync_err:
-                                                        print(f"[Shiprocket] Auto-sync seller warehouse error: {sync_err}")
-                                                break
-                                    except Exception as s_err:
-                                        print(f"[Shiprocket] Seller resolution error: {s_err}")
+            # Auto-resolve & verify pickup_location from item's seller/warehouse database
+            items = order_data.get("items", []) or []
+            seller_pickup_resolved = None
 
-                                # 2. Check product's explicit pickup_location
-                                if prod.get("pickup_location"):
-                                    order_data["pickup_location"] = str(prod["pickup_location"]).strip()
-                                    break
+            for item in items:
+                pid = item.get("product_id") or item.get("id") or item.get("_id")
+                if pid:
+                    try:
+                        from bson import ObjectId
+                        prod = db["products"].find_one({"_id": ObjectId(str(pid))}) if ObjectId.is_valid(str(pid)) else db["products"].find_one({"_id": str(pid)})
+                        if prod:
+                            # 1. Check if product belongs to a seller
+                            seller_id = prod.get("seller_id")
+                            if seller_id and str(seller_id).lower() not in ("owner", "admin"):
+                                try:
+                                    seller = db["sellers"].find_one({"_id": ObjectId(str(seller_id))}) if ObjectId.is_valid(str(seller_id)) else db["sellers"].find_one({"_id": str(seller_id)})
+                                    if seller:
+                                        s_pickup = seller.get("pickup_location") or (seller.get("warehouse") or {}).get("pickup_location")
+                                        if s_pickup:
+                                            seller_pickup_resolved = str(s_pickup).strip()
+                                            order_data["pickup_location"] = seller_pickup_resolved
+                                            
+                                            # Guarantee auto-sync seller warehouse with Shiprocket if not yet verified
+                                            wh_data = seller.get("warehouse")
+                                            if wh_data and not wh_data.get("is_synced_shiprocket"):
+                                                try:
+                                                    sr_res = await sr.add_pickup_location(wh_data)
+                                                    if sr_res.get("success"):
+                                                        db["sellers"].update_one(
+                                                            {"_id": seller["_id"]},
+                                                            {"$set": {
+                                                                "warehouse.is_synced_shiprocket": True,
+                                                                "warehouse.shiprocket_synced_at": datetime.now(timezone.utc),
+                                                                "warehouse.shiprocket_response": sr_res
+                                                            }}
+                                                        )
+                                                        print(f"[Shiprocket] Auto-synced seller warehouse '{seller_pickup_resolved}' on order {order_id}")
+                                                except Exception as sync_err:
+                                                    print(f"[Shiprocket] Auto-sync seller warehouse error: {sync_err}")
+                                            break
+                                except Exception as s_err:
+                                    print(f"[Shiprocket] Seller resolution error: {s_err}")
 
-                                # 3. Fallback to in-house store warehouse resolution
+                            # 2. Check product's explicit pickup_location
+                            if not seller_pickup_resolved and prod.get("pickup_location"):
+                                seller_pickup_resolved = str(prod["pickup_location"]).strip()
+                                order_data["pickup_location"] = seller_pickup_resolved
+                                break
+
+                            # 3. Fallback to in-house store warehouse resolution
+                            if not seller_pickup_resolved and not order_data.get("pickup_location"):
                                 sz = item.get("size")
                                 wh_size_stock = prod.get("warehouse_size_stock") or {}
                                 wh_stock = prod.get("warehouse_stock") or {}
@@ -227,8 +237,20 @@ def _trigger_shiprocket(order_id: str, order_data: dict, db):
                                 elif int(wh_stock.get("home-1", 0) or 0) > 0:
                                     order_data["pickup_location"] = "home-1"
                                     break
-                        except Exception:
-                            pass
+                    except Exception:
+                        pass
+
+            # Persist the resolved pickup_location to the order document in DB
+            if order_data.get("pickup_location"):
+                try:
+                    from bson import ObjectId
+                    if ObjectId.is_valid(str(order_id)):
+                        db["orders"].update_one(
+                            {"_id": ObjectId(str(order_id))},
+                            {"$set": {"pickup_location": order_data["pickup_location"]}}
+                        )
+                except Exception:
+                    pass
 
             try:
                 await sr.fulfill_order(order_id, order_data, repo)
