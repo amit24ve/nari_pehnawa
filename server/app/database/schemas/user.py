@@ -48,6 +48,7 @@ class UserUpdate(BaseModel):
     phone: Optional[str] = None
     last_login: Optional[str] = None
     bio: Optional[str] = None
+    avatar: Optional[str] = None
 
 
 class PasswordChange(BaseModel):

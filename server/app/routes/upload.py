@@ -216,3 +216,63 @@ async def upload_review_image(
         "filename": filename,
         "size_kb": round(len(content) / 1024, 1),
     }
+
+
+@router.post("/avatar")
+async def upload_user_avatar(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Customer / User profile avatar upload."""
+    if file.content_type not in {"image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"}:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported image type. Please upload JPG, PNG, WebP, or AVIF.",
+        )
+
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(
+            status_code=400,
+            detail="Image too large. Maximum size is 10 MB.",
+        )
+
+    ext_map = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+        "image/gif": "gif",
+        "image/avif": "avif",
+    }
+    ext = ext_map.get(file.content_type, "jpg")
+    filename = f"avatar_{uuid.uuid4().hex[:12]}.{ext}"
+    dest = UPLOAD_DIR / filename
+
+    with open(dest, "wb") as f:
+        f.write(content)
+
+    avatar_url = f"/uploads/{filename}"
+
+    # Auto-update avatar in user record
+    try:
+        from app.database import get_database
+        from bson import ObjectId
+        db = get_database()
+        uid = current_user.get("id")
+        if uid:
+            if ObjectId.is_valid(uid):
+                db["users"].update_one({"_id": ObjectId(uid)}, {"$set": {"avatar": avatar_url}})
+                db["sellers"].update_one({"_id": ObjectId(uid)}, {"$set": {"avatar": avatar_url}})
+            u_email = current_user.get("email")
+            if u_email:
+                db["users"].update_many({"email": u_email}, {"$set": {"avatar": avatar_url}})
+                db["sellers"].update_many({"email": u_email}, {"$set": {"avatar": avatar_url}})
+    except Exception as e:
+        print(f"[Upload] Warning: avatar DB update failed: {e}")
+
+    return {
+        "url": avatar_url,
+        "filename": filename,
+        "size_kb": round(len(content) / 1024, 1),
+        "message": "Avatar uploaded and updated successfully."
+    }

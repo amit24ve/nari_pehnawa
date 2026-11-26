@@ -267,9 +267,10 @@ function MainLayout() {
                             element={<Navigate to="/user/profile" replace />}
                         />
                         <Route path="profile" element={<UserProfile />} />
-                        <Route path="coins" element={<UserCoins />} />
-                        <Route path="orders" element={<UserOrders />} />
-                        <Route path="settings" element={<UserSettings />} />
+                        <Route path="coins" element={<Navigate to="/user/profile?tab=coins" replace />} />
+                        <Route path="orders" element={<Navigate to="/user/profile?tab=orders" replace />} />
+                        <Route path="addresses" element={<Navigate to="/user/profile?tab=addresses" replace />} />
+                        <Route path="settings" element={<Navigate to="/user/profile?tab=security" replace />} />
                     </Route>
                 </Routes>
             </div>

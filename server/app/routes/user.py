@@ -982,8 +982,10 @@ def change_password(password_data: PasswordChange, current_user: dict = Depends(
         )
 
         return {
-            "message": "Password updated successfully. You can now log in using this password.",
+            "status": "success",
+            "message": "Password updated successfully! Your account is secured.",
             "access_token": new_token,
+            "token": new_token,
             "token_type": "bearer",
         }
     except HTTPException:

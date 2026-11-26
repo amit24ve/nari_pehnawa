@@ -78,12 +78,11 @@ def _require_order(order: Optional[dict], order_id: str) -> dict:
 
 
 async def _load_order_or_404(order_id: str, repo: ShippingRepository) -> dict:
-    try:
-        ObjectId(order_id)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid order_id")
-    order = await repo.get_order(order_id)
-    return _require_order(order, order_id)
+    clean_id = str(order_id or "").strip()
+    if not clean_id:
+        raise HTTPException(status_code=400, detail="Missing order identifier")
+    order = await repo.get_order(clean_id)
+    return _require_order(order, clean_id)
 
 
 def _shipping_info_response(order: dict) -> OrderShippingInfo:
@@ -657,12 +656,32 @@ async def get_order_shipping(
     current_user: dict = Depends(get_current_user),
     repo: ShippingRepository = Depends(get_shipping_repository),
 ):
-    """Fetch stored shipping/tracking info for an order (owner or admin)."""
+    """Fetch stored shipping/tracking info for an order (owner, seller, or admin)."""
     order = await _load_order_or_404(order_id, repo)
 
-    if current_user.get("role") != "admin" and str(order.get("user_id")) != str(
-        current_user.get("id")
-    ):
+    is_admin = current_user.get("role") in ("admin", "super_admin") or bool(current_user.get("is_admin"))
+    is_owner = str(order.get("user_id")) == str(current_user.get("id"))
+    if not is_owner and current_user.get("email"):
+        is_owner = (
+            order.get("customer_email") == current_user.get("email")
+            or (order.get("shipping_address") or {}).get("email") == current_user.get("email")
+        )
+    if not is_owner and current_user.get("phone"):
+        is_owner = (
+            order.get("phone") == current_user.get("phone")
+            or (order.get("shipping_address") or {}).get("phone") == current_user.get("phone")
+        )
+
+    # Check if seller owns products in this order
+    is_seller = False
+    if current_user.get("role") == "seller" or current_user.get("is_seller"):
+        sid = str(current_user.get("id"))
+        for it in order.get("items", []) or []:
+            if str(it.get("seller_id")) == sid:
+                is_seller = True
+                break
+
+    if not (is_admin or is_owner or is_seller):
         raise HTTPException(status_code=403, detail="Not authorised to view this order")
 
     return _shipping_info_response(order)

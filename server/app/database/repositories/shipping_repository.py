@@ -33,7 +33,25 @@ class ShippingRepository:
 
     async def get_order(self, order_id: str) -> Optional[dict]:
         def _fetch():
-            return self.orders.find_one({"_id": ObjectId(order_id)})
+            clean = str(order_id or "").strip()
+            if not clean:
+                return None
+            try:
+                if ObjectId.is_valid(clean):
+                    doc = self.orders.find_one({"_id": ObjectId(clean)})
+                    if doc:
+                        return doc
+            except Exception:
+                pass
+            return self.orders.find_one({
+                "$or": [
+                    {"order_number": clean},
+                    {"order_id": clean},
+                    {"shipping.shiprocket_order_id": clean},
+                    {"shipping.awb": clean},
+                    {"shipping.tracking_number": clean},
+                ]
+            })
 
         return await asyncio.to_thread(_fetch)
 
